@@ -127,7 +127,7 @@ const ArtistNew = () => {
   };
 
   const confirmFinalSubmit = async () => {
-    const result = { ophid:ophid};
+    const result = { ophid: ophid };
 
     Object.entries(statuses).forEach(([section, status]) => {
       if (status === "Rejected") {
@@ -143,16 +143,13 @@ const ArtistNew = () => {
     });
 
     console.log("Final Decision Body:", result);
-    const res = await axiosApi.post("/update-status",result);
+    const res = await axiosApi.post("/update-status", result);
 
     console.log(res);
-    
-    if(res.status === 200){
 
+    if (res.status === 200) {
       toast.success("Submitted!");
     }
-
-
 
     setConfirmSubmit(false);
   };
@@ -169,68 +166,74 @@ const ArtistNew = () => {
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
 
-        <SectionBlock
-          section="Personal"
-          artist={{
-            full_name: artist.full_name,
-            stage_name: artist.stage_name,
-            email: artist.email,
-            contact_number: artist.contact_number,
-            personal_photo: artist.personal_photo,
-            location: artist.location,
-          }}
-          reason={personalReason}
-          setReason={setPersonalReason}
-          confirmAction={confirmAction}
-          handleAction={handleAction}
-          confirmAndHandle={confirmAndHandle}
-          status={statuses.Personal}
-          setConfirmAction={setConfirmAction}
-        />
+        <div className="bg-gray-50 rounded-xl shadow-md p-6">
+          <SectionBlock
+            section="Personal"
+            artist={{
+              full_name: artist.full_name,
+              stage_name: artist.stage_name,
+              email: artist.email,
+              contact_number: artist.contact_number,
+              personal_photo: artist.personal_photo,
+              location: artist.location,
+            }}
+            reason={personalReason}
+            setReason={setPersonalReason}
+            confirmAction={confirmAction}
+            handleAction={handleAction}
+            confirmAndHandle={confirmAndHandle}
+            status={statuses.Personal}
+            setConfirmAction={setConfirmAction}
+          />
+        </div>
 
-        <SectionBlock
-          section="Professional"
-          artist={{
-            profession: artist.profession,
-            bio: artist.bio,
-            spotify: artist.spotify,
-            instagram: artist.instagram,
-            facebook: artist.facebook,
-            apple_music: artist.apple_music,
-            video: artist.video,
-            experience_yearly: artist.experience_yearly,
-            experience_monthly: artist.experience_monthly,
-            photos,
-          }}
-          reason={professionalReason}
-          setReason={setProfessionalReason}
-          confirmAction={confirmAction}
-          handleAction={handleAction}
-          confirmAndHandle={confirmAndHandle}
-          status={statuses.Professional}
-          setConfirmAction={setConfirmAction}
-        />
+        <div className="bg-gray-50 rounded-xl shadow-md p-6">
+          <SectionBlock
+            section="Professional"
+            artist={{
+              profession: artist.profession,
+              bio: artist.bio,
+              spotify: artist.spotify,
+              instagram: artist.instagram,
+              facebook: artist.facebook,
+              apple_music: artist.apple_music,
+              video: artist.video,
+              experience_yearly: artist.experience_yearly,
+              experience_monthly: artist.experience_monthly,
+              photos,
+            }}
+            reason={professionalReason}
+            setReason={setProfessionalReason}
+            confirmAction={confirmAction}
+            handleAction={handleAction}
+            confirmAndHandle={confirmAndHandle}
+            status={statuses.Professional}
+            setConfirmAction={setConfirmAction}
+          />
+        </div>
 
-        <SectionBlock
-          section="Documentation"
-          artist={{
-            aadhar_front: artist.aadhar_front,
-            aadhar_back: artist.aadhar_back,
-            pan_front: artist.pan_front,
-            signature: artist.signature,
-            bank_name: artist.bank_name,
-            account_holder: artist.account_holder,
-            account_number: artist.account_number,
-            ifsc_code: artist.ifsc_code,
-          }}
-          reason={documentReason}
-          setReason={setDocumentReason}
-          confirmAction={confirmAction}
-          handleAction={handleAction}
-          confirmAndHandle={confirmAndHandle}
-          status={statuses.Documentation}
-          setConfirmAction={setConfirmAction}
-        />
+        <div className="bg-gray-50 rounded-xl shadow-md p-6">
+          <SectionBlock
+            section="Documentation"
+            artist={{
+              aadhar_front: artist.aadhar_front,
+              aadhar_back: artist.aadhar_back,
+              pan_front: artist.pan_front,
+              signature: artist.signature,
+              bank_name: artist.bank_name,
+              account_holder: artist.account_holder,
+              account_number: artist.account_number,
+              ifsc_code: artist.ifsc_code,
+            }}
+            reason={documentReason}
+            setReason={setDocumentReason}
+            confirmAction={confirmAction}
+            handleAction={handleAction}
+            confirmAndHandle={confirmAndHandle}
+            status={statuses.Documentation}
+            setConfirmAction={setConfirmAction}
+          />
+        </div>
 
         <div className="pt-8">
           <button
@@ -290,12 +293,12 @@ const SectionBlock = ({
       <div className="border p-4 rounded-xl mb-4 space-y-2">
 
         {isPersonal && artist.personal_photo && (
-           <div className="grid grid-cols-2 gap-4">
-          <img
-            src={artist.personal_photo}
-            alt="Personal"
-            className="w-full h-64 rounded-lg object-cover border"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <img
+              src={artist.personal_photo}
+              alt="Personal"
+              className="w-full h-64 rounded-lg object-cover border"
+            />
           </div>
         )}
 
@@ -316,7 +319,6 @@ const SectionBlock = ({
             </div>
           </>
         )}
-
 
         {isDocumentation && documentImages.length > 0 && (
           <div className="grid grid-cols-2 gap-4">

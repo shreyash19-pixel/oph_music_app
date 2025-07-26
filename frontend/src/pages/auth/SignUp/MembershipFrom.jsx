@@ -19,7 +19,7 @@ const MembershipForm = ({ id }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log(ophid);
+
     const fetchMembershipForm = async () => {
       try {
 
@@ -43,7 +43,6 @@ const MembershipForm = ({ id }) => {
     }
   }, [ophid]);
 
-  console.log(ophid);
   return (
 
     <>

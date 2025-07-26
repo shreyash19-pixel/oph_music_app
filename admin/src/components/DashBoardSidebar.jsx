@@ -1,6 +1,5 @@
 import React from "react";
-import Sidebar from "./Sidebar"; // adjust path if needed
-import { ROLES } from "../utils/roles";
+import Sidebar from "./Sidebar";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -12,21 +11,27 @@ const homeLinks = [
 ];
 
 const DashBoardSidebar = ({ children }) => {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const navigate = useNavigate();
 
     const handleTitleClick = () => {
-        navigate("/home");  
+        navigate("/home");
     };
+    console.log(loading,"before");
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (!user) {
+        return <div>Please login</div>;
+    }
 
     return (
         <div className="h-screen flex overflow-hidden bg-gray-50 relative">
             <Sidebar
                 title={
-                    <button
-                        onClick={handleTitleClick}
-                        // className="text-blue-600 hover:underline focus:outline-none"
-                    >
+                    <button onClick={handleTitleClick}>
                         DashBoard
                     </button>
                 }

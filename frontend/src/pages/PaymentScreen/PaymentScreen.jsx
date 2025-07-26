@@ -44,7 +44,6 @@ const PaymentScreen = () => {
         step: "/auth/create-profile/personal-details",
         from: from,
       };
-      console.log("Submitting payment form data:", formData);
 
       const response = await axiosApi.post("/auth/payment", formData);
 
@@ -90,15 +89,40 @@ const PaymentScreen = () => {
         }
       }
 
-      if (response.data.success && from == "Song Registration") {
+      else if (response.data.success && from == "Song Registration") {
         {
           navigate("/dashboard/success", {
             state: {
               heading: "Your date blocked successfully!",
-              btnText: "View Calendar",
-              redirectTo: "/dashboard/time-calendar",
+              btnText: "Register another song",
+              redirectTo: "/dashboard/upload-song",
             },
           });
+        }
+      }
+
+      else if (response.data.success && from === "Event Registeration") {
+        {
+
+          const eventResponse = await axiosApi.post("/event/enroll-event", { ophid: oph_id, event_id: location.state.event_id },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                ...headers
+              }
+            }
+          )
+
+          if (eventResponse.data.success) {
+
+            navigate("/dashboard/success", {
+              state: {
+                heading: "Your Event Spot has been booked Successfully.",
+                btnText: "Back to Home",
+                redirectTo: "/dashboard/events",
+              },
+            });
+          }
         }
       }
 

@@ -55,7 +55,6 @@ const PersonalDetailsForm = () => {
   const [searchParams] = useSearchParams();
 
   const inputRef = useRef(null);
-  console.log(ophid);
   // const fetchVideo = async () => {
   //   try {
   //     const response = await axiosApi.get(

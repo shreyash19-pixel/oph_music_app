@@ -92,8 +92,7 @@ exports.getAllBookingsByID = async (req, res) => {
   try {
 
     const { ophid } = req.query;
-    console.log(ophid);
-
+  
     const bookings = await bookingModel.getAllBookingsByID(ophid);
 
     if (bookings) {

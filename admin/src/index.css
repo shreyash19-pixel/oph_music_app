@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+.react-datepicker__today-button {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background-color: #e6f2f4;
+  color: #0d3c44;
+  border-radius: 6px;
+}
+
+/* .react-datepicker__close-icon {
+  right: 10px !important;
+  background-color: white !important;
+  color:  #0d3c44!important;
+} */
+.react-datepicker__close-icon::after {
+  background-color: #0d3c44 !important; /* Your dark teal */
+  color: white !important;
+  width: 22px;
+  height: 20px;
+  font-size: 14px;
+  border-radius: 50%;
+  line-height: 20px;
+  text-align: center;
+  content: "×";
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
 /* *,
 body {
   margin: 0;

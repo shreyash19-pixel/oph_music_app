@@ -270,6 +270,7 @@ export default function AudioMetadataForm() {
 
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // const [subgenre, setSubgenre] = useState("");
 
@@ -512,8 +513,10 @@ export default function AudioMetadataForm() {
       // addArtistsWithImages(producerArtists, "producer");
 
       // Add audio file if exists
-      if (fileInputRef.current.files[0]) {
-        formData.append("audio_file", fileInputRef.current.files[0]);
+      const manualFile = fileInputRef.current.files[0];
+
+      if (manualFile || selectedFile) {
+        formData.append("audio_file", manualFile || selectedFile);
       } else {
         toast.error("Audio file is required");
         setIsSubmitting(false);
@@ -533,9 +536,9 @@ export default function AudioMetadataForm() {
 
       if (response.status === 201) {
         setIsLoading(false);
-        navigate(`/dashboard/upload-song/video-metadata/${response.data.song_id}`,{
-          state:{
-            SongName : songName
+        navigate(`/dashboard/upload-song/video-metadata/${response.data.song_id}`, {
+          state: {
+            SongName: location.state.songName
           }
         });
       }
@@ -578,9 +581,14 @@ export default function AudioMetadataForm() {
           // Set audio file feedback
           if (audio_metadata[0]?.audio_url) {
             setAudioFileUrl(audio_metadata[0]?.audio_url);
+
+            const blob = await getAudioAsBlob(audio_metadata[0]?.audio_url);
+            const file = new File([blob], "audio.mp3", { type: blob.type });
+            setSelectedFile(file);
             setUploadedFileName(
               audio_metadata[0]?.audio_url.split("/").pop()
             );
+
           }
 
           // Set secondary artists if they exist
@@ -632,6 +640,12 @@ export default function AudioMetadataForm() {
     fetchAudioMetadata();
 
   }, [contentId, headers]);
+
+  async function getAudioAsBlob(url) {
+    const response = await fetch(url);
+    const blob = await response.blob(); // File-like binary object
+    return blob;
+  }
 
   // Update the file input change handler
   const handleFileChange = (e) => {

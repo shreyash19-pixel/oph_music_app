@@ -2,24 +2,27 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../conf/axios";
 import getToken from "../../utils/getToken";
+import { useArtist } from "../auth/API/ArtistContext";
 
 export default function UploadSongs() {
   const navigate = useNavigate();
   const [pendingContent, setPendingContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { ophid, headers } = useArtist();
 
-  // Fetch pending content on component mount
   useEffect(() => {
     const fetchPendingContent = async () => {
       try {
         const token = getToken();
-        const response = await axiosApi.get('/content/pending', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+
+        const response = await axiosApi.get('/pending-song-registeration', {
+          headers: headers,
+          params: { ophid }
         });
+
         if (response.data.success) {
+          console.log(response);
           setPendingContent(response.data.data);
         }
       } catch (err) {
@@ -30,15 +33,21 @@ export default function UploadSongs() {
       }
     };
 
-    fetchPendingContent();
-  }, []);
+    // only fetch if both values are available
+    if (ophid && headers && headers.Authorization) {
+      fetchPendingContent();
+    }
+  }, [ophid, headers]);
+
 
   // Get the most recently updated pending content
   const submittedSongs = pendingContent.length > 0 ? pendingContent.map(song => ({
-    name: song.name,
-    status: song.status_text,
-    id: song.id,
+    name: song.Song_name,
+    status: song.status,
+    id: song.song_id,
     reject_reason: song.reject_reason,
+    next_page: song.current_page,
+    projectType: song.project_type
   })) : null;
 
   const handleProjectClick = (projectType) => {
@@ -101,7 +110,7 @@ export default function UploadSongs() {
           </button>
 
           <button
-            onClick={() => handleProjectClick("pay in advance")}
+            onClick={() => handleProjectClick("paid in advance")}
             className="w-full px-6 py-3 rounded-full border border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/10 transition-colors"
           >
             Paid in Advance
@@ -113,12 +122,19 @@ export default function UploadSongs() {
         {submittedSongs && submittedSongs.map((song) => (
           <div
             key={song.id} // Add key prop here
-            className="bg-gray-800/50 rounded-lg p-4"
-            onClick={() => ['Draft', 'Approved (pending)'].includes(song.status) ? navigate(`/dashboard/upload-song/audio-metadata/${song.id}`) : ['Rejected'].includes(song.status) ? navigate(`/dashboard/upload-song/register-song`) : null} 
+            className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
+            onClick={() => {
+              ['Draft', 'Approved', 'Pending'].includes(song.status) ? navigate(`/dashboard/upload-song/audio-metadata/${song.id}`, {
+                state: {
+                  songName: song.name,
+                }
+              }) : ['Rejected'].includes(song.status) ? navigate(`/dashboard/upload-song/register-song`) : null
+              localStorage.setItem("projectType", song.projectType)
+            }}
           >
             <div className="flex justify-between items-center">
               <div className="">
-                
+
                 <p className="text-sm text-gray-400">Submitted Song:</p>
                 <p className="text-lg">{song.name}</p>
               </div>
@@ -130,19 +146,19 @@ export default function UploadSongs() {
                   {song.created_at}
                 </span>
               </div>
-              
+
             </div>
             {/* Show rejection reason if status is Rejected */}
             {song.status === "Approved (pending)" &&
-            // song.status_text === "Audio/Video Meta Data Rejected" && 
-            (
-              <p className="text-red-400 mt-2">Audio/Video Meta Data Rejected</p>
-            )}
+              // song.status_text === "Audio/Video Meta Data Rejected" && 
+              (
+                <p className="text-red-400 mt-2">Audio/Video Meta Data Rejected</p>
+              )}
             {song.status === 'Rejected' && (
               <p className="text-red-400 mt-2">Reason: {song.reject_reason}</p>
             )}
           </div>
-          
+
         ))}
       </div>
     </div>

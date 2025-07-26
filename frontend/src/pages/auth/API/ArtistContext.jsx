@@ -58,6 +58,7 @@ export const ArtistProvider = ({ children }) => {
           "/auth/signin",
           "/auth/signup/payment-callback",
           "/auth/reset-password",
+          "/resources/music-learning-education",
         ];
 
         if (!openRoutes.includes(window.location.pathname)) {

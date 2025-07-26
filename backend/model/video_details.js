@@ -34,7 +34,7 @@ const insertVideoDetails = async (
 };
 
 const setJourneyStatus = async (ophid, song_id) => {
-  const [rows] = await db.execute("UPDATE songs_register SET song_register_journey = 'complete', current_page = NULL WHERE OPH_ID = ? AND song_id = ?", [ophid, song_id]);
+  const [rows] = await db.execute("UPDATE songs_register SET status = 'Pending', current_page = NULL WHERE OPH_ID = ? AND song_id = ?", [ophid, song_id]);
 
   return rows
 }

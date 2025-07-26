@@ -4,7 +4,7 @@ import { useArtist } from "../auth/API/ArtistContext";
 import Loading from "../../components/Loading";
 
 export default function TVPublishing() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [contents, setContents] = useState([]);
   const [selectedContentId, setSelectedContentId] = useState(null);
   const [selectedContent, setSelectedContent] = useState(null);
@@ -14,7 +14,7 @@ export default function TVPublishing() {
   const videoInputRef = useRef(null);
   const [uploadProgress, setUploadProgress] = useState({ audio: 0, video: 0 });
   const { headers } = useArtist();
-
+  
   const status = {
     0: "Locked",
     1: "Pending Submission",
@@ -23,26 +23,26 @@ export default function TVPublishing() {
     4: "Rejected",
   };
 
-  useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const response = await axiosApi.get("/tv-publishing/content", {
-          headers,
-        });
+  // useEffect(() => {
+  //   const fetchContent = async () => {
+  //     try {
+  //       const response = await axiosApi.get("/tv-publishing/content", {
+  //         headers,
+  //       });
 
-        setContents(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedContentId(response.data.data[0].id);
-          setSelectedContent(response.data.data[0]);
-        }
-      } catch (error) {
-        console.error("Error fetching content:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchContent();
-  }, []);
+  //       setContents(response.data.data);
+  //       if (response.data.data.length > 0) {
+  //         setSelectedContentId(response.data.data[0].id);
+  //         setSelectedContent(response.data.data[0]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching content:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchContent();
+  // }, []);
 
   const handleFileChange = (type) => (event) => {
     const file = event.target.files[0];
@@ -166,11 +166,12 @@ export default function TVPublishing() {
             TV PUBLISHING
           </h1>
 
-          {contents.length === 0 ? (
+          {contents.length === 1 ? (
             <p className="text-gray-300 text-xl">
               No content is unlocked for TV publishing
             </p>
-          ) : (
+          ) : 
+          (
             <div>
               <div className="space-y-2 bg-[#191D27]/35 p-4">
                 <label className="block text-gray-400">Song Name</label>

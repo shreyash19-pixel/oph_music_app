@@ -1,0 +1,19 @@
+.podcast-slider .slick-active {
+  -webkit-transform: scale(1.1);
+  -moz-transform: scale(1.1);
+  transform: scale(1.1);
+  -webkit-transition: transform 0.3s ease-in-out;
+  -moz-transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out;
+}
+
+.podcast-slider .slick-slide {
+  -webkit-transition: transform 0.3s ease-in-out;
+  -moz-transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out;
+}
+
+/* .slick-list {
+  padding: 45px 60px !important;
+  margin-left: 30px !important;
+} */

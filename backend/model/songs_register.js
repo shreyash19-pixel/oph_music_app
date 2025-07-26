@@ -4,7 +4,7 @@ const db = require("../DB/connect");
 const getSongID = async (name) => {
 
   const [rows] = await db.execute("SELECT song_id FROM songs_register WHERE Song_name = ?", [name])
-  
+
   return rows
 }
 
@@ -44,7 +44,7 @@ const insertHybridSong = async (OPH_ID,
   payment,
   Lyrics_services,
   available_on_music_platforms
-  ) => {
+) => {
 
   const [result] = await db.execute(
     `INSERT INTO songs_register 
@@ -64,13 +64,13 @@ const insertHybridSong = async (OPH_ID,
   return result;
 };
 
+const getPendingSongsList = async (ophid) => {
 
-const getSongRegDetailsByOPHID = async (ophid) => {
+  const [rows] = await db.execute("SELECT Song_name,project_type ,status, song_id, reject_reason, current_page FROM songs_register WHERE OPH_ID = ?", [ophid])
 
-  const [rows] = await db.execute("SELECT Song_name, song_id, current_page FROM songs_register WHERE OPH_ID = ? AND song_register_journey = 'incomplete' ORDER BY song_id LIMIT 1",[ophid])
   return rows
 
 }
 
 
-module.exports = { insertNewSong,insertHybridSong, getSongID, getSongRegDetailsByOPHID };
+module.exports = { insertNewSong, insertHybridSong, getSongID, getPendingSongsList };

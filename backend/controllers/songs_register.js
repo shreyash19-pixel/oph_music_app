@@ -77,38 +77,34 @@ exports.insertHybridSongRegDetails = async (req, res) => {
   }
 };
 
-exports.getSongRegistrationStatus = async (req, res) => {
+exports.getPendingSongsList = async (req, res) => {
 
   try{
-    const {
-      ophid
-    } = req.query
-
+    const {ophid} = req.query
     if(!ophid)
     {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields"
+        message: "Missing required field"
       })
     }
 
-    const response = await songRegModel.getSongRegDetailsByOPHID(ophid)
+    const response = await songRegModel.getPendingSongsList(ophid)
 
     if(response)
     {
       return res.status(200).json({
-        success:true,
-        message:"Data fetched successfully",
+        success: true,
+        message: "Data fetched successfully",
         data: response
       })
     }
-
   }
-  catch(error)
+  catch(err)
   {
     return res.status(500).json({
       success: false,
-      message : error.message
+      message: err
     })
   }
 

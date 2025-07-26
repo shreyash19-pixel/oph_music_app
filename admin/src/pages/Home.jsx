@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import DynamicTable from '../components/DynamicTable'
 import SearchableDynamicTable from "../components/SearchableDynamicTable";
 import DashBoardSidebar from "../components/DashBoardSidebar";
-import axios from "axios";
+import axiosApi from "../conf/axios";
 
 
 const NewSignup = () => {
@@ -10,7 +10,7 @@ const NewSignup = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await axios.get("http://localhost:5000/newsignup");
+      const res = await axiosApi.get("/newsignup");
 
       
       setTableData(res.data.userDetails);

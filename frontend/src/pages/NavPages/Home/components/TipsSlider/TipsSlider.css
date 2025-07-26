@@ -1,0 +1,29 @@
+.tips-slider {
+  margin: 0 -8px;
+  padding: 20px 0;
+  transform: rotate(-2.5deg);
+}
+
+.tips-slider .slick-track {
+  display: flex;
+  gap: 2px;
+}
+
+.tips-slider .slick-slide {
+  width: fit-content !important;
+}
+
+.tips-slider .slick-slide.slick-active {
+  opacity: 1;
+}
+.tips-slider img {
+  transition: transform 0.3s ease-in-out;
+}
+
+.tips-slider img:hover {
+  transform: scale(1.05);
+}
+
+video {
+  border-radius: 8px;
+}

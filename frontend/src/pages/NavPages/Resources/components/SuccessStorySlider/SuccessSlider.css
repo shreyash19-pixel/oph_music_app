@@ -1,0 +1,13 @@
+.success-slider .slick-slide {
+    transition: transform 0.5s ease; /* Smooth transition for scaling */
+    padding: 20px;
+  }
+  
+  .success-slider .slick-center {
+    transform: scale(1.1); /* Larger center slide */
+  }
+  
+  .success-slider .slick-slide:not(.slick-center) {
+    transform: scale(0.98);
+  }
+  

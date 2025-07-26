@@ -12,7 +12,8 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const location = useLocation();
-  const [songName, setSongName] = useState(location.state.songName);
+  const [songName, setSongName] = useState(location.state.SongName);
+  const projectType = localStorage.getItem("projectType") || ""
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
     credits: "",
@@ -119,12 +120,22 @@ export default function VideoMetadataForm() {
         },
       });
 
+      if (projectType === "paid in advance") {
+        navigate("/dashboard/success", {
+          state: {
+            heading: "Your Event Spot has been booked Successfully.",
+            btnText: "Back to Home",
+            redirectTo: "/dashboard/events",
+          },
+        });
 
+        return
+      }
 
       if (response.data.success) {
-        navigate("/auth/payment",{
-          state:{
-            from : "Song Registration"
+        navigate("/auth/payment", {
+          state: {
+            from: "Song Registration"
           }
         });
       }

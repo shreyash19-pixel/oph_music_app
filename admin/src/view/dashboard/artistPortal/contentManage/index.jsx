@@ -1,43 +1,65 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import axiosApi from "../../../../conf/axios";
 
-/**********************
- * Dummy starter data *
- **********************/
-const initialContent = {
-  project_type: "EP",
-  video_type: "Lyric Video",
-  release_date: "2025-10-05",
-};
+const ContentManage = () => {
+  const { ophid, songId } = useParams();
+  console.log(ophid,songId);
+  
 
-const initialAudio = {
-  song_name: "Rising Sun",
-  language: "Hindi",
-  genre: "Fusion",
-  sub_genre: "Indie",
-  mood: "Motivational",
-  lyrics: "Jaago re, sapno ko apna bana lo…",
-  primary_artist: "Rahul Sharma",
-  featuring: "",
-  lyricist: "Neha Gupta",
-  composer: "Rahul Sharma",
-  producer: "Beat Lab",
-  audio_url: "https://samplelib.com/lib/preview/mp3/sample-3s.mp3",
-};
-
-const initialVideo = {
-  credits: "Dir: S. Iyer | DOP: A. Singh",
-  image: "https://via.placeholder.com/150?text=Thumbnail",
-  video: "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
-};
-
-/*********************************************************/
-
-const contentManage = () => {
-  const [content, setContent] = useState(initialContent);
-  const [audio, setAudio] = useState(initialAudio);
-  const [video, setVideo] = useState(initialVideo);
-
+  const [content, setContent] = useState({});
+  const [audio, setAudio] = useState({});
+  const [video, setVideo] = useState({});
   const fileRefs = useRef({});
+
+  useEffect(() => {
+    const fetchSong = async () => {
+      try {
+        const res = await axiosApi.get(`/song-approved/${ophid}/${songId}`);
+        const song = res.data.song;
+        console.log(song);
+        
+
+        // Parse content fields
+        const parsedContent = {
+          project_type: song.project_type || "",
+          video_type: song.video_type || "Lyric Video",
+          release_date: song.release_date?.split("T")[0] || "",
+        };
+
+        const parsedAudio = {
+          song_name: song.audio_song_name || "",
+          language: song.language || "",
+          genre: song.genre || "",
+          sub_genre: song.sub_genre || "",
+          mood: song.mood || "",
+          lyrics: song.lyrics || "",
+          primary_artist: song.primary_artist || "",
+          featuring: song.featuring || "",
+          lyricist: song.lyricist || "",
+          composer: song.composer || "",
+          producer: song.producer || "",
+          audio_url: song.audio_url || "",
+        };
+
+        const parsedVideo = {
+          credits: song.credits || "",
+          image:
+            JSON.parse(song.image_url || "[]")[0] ||
+            "https://via.placeholder.com/150?text=No+Image",
+          video: song.video_url || "",
+        };
+
+        setContent(parsedContent);
+        setAudio(parsedAudio);
+        setVideo(parsedVideo);
+      } catch (error) {
+        console.error("Error fetching song data:", error);
+      }
+    };
+
+    fetchSong();
+  }, [ophid, songId]);
 
   const handleFile = (e, field, setter) => {
     const file = e.target.files[0];
@@ -53,9 +75,7 @@ const contentManage = () => {
     const isVideo = lower.includes("video");
     const isAudio = lower.includes("audio");
 
-    const downloadName = `${field}.${
-      isAudio ? "mp3" : isVideo ? "mp4" : "jpg"
-    }`;
+    const downloadName = `${field}.${isAudio ? "mp3" : isVideo ? "mp4" : "jpg"}`;
 
     return (
       <div className="space-y-2">
@@ -210,4 +230,4 @@ const contentManage = () => {
   );
 };
 
-export default contentManage;
+export default ContentManage;

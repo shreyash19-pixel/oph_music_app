@@ -1,0 +1,12 @@
+.reels-slider .slick-slide {
+  transition: transform 0.5s ease; /* Smooth transition for scaling */
+  padding: 20px;
+}
+
+.reels-slider .slick-center {
+  transform: scale(1.1); /* Larger center slide */
+}
+
+.reels-slider .slick-slide:not(.slick-center) {
+  transform: scale(0.98);
+}

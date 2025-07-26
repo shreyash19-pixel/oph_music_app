@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
+import { User } from "lucide-react";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [headers, setHeaders] = useState(
+    token ? { Authorization: `Bearer ${token}` } : null
+  );
 
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +27,7 @@ useEffect(() => {
       } else {
         setToken(storedToken);
         setUser(decoded);
+        
       }
     } catch (error) {
       console.error("Invalid token", error);
@@ -31,7 +36,8 @@ useEffect(() => {
       setUser(null);
     }
   }
-  setLoading(false); // ✅ Mark loading as complete
+  setLoading(false); 
+  
 }, []);
 
 
@@ -53,10 +59,11 @@ useEffect(() => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+    setHeaders(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout,loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout,loading,headers }}>
       {children}
     </AuthContext.Provider>
   );

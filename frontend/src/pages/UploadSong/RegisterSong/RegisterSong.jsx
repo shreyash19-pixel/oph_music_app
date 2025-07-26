@@ -291,7 +291,7 @@ export default function RegisterSongForm() {
 
 
 
-    if (projectType === "pay in advance") {
+    if (projectType === "paid in advance") {
       paidInAdvance(updatedFormData)
     }
     else if(projectType === "new project")
@@ -377,7 +377,7 @@ export default function RegisterSongForm() {
 
   //     // Set payment_ids based on project type
   //     const paymentIds =
-  //       projectType === "pay in advance"
+  //       projectType === "paid in advance"
   //         ? ["0"] // For "Paid in Advance", include null as a placeholder
   //         : [...(paymentData.newPaymentIds || [])];
 
@@ -433,7 +433,7 @@ export default function RegisterSongForm() {
 
   // Modify the release date input field based on project type
   const renderReleaseDateField = () => {
-    if (projectType === "pay in advance") {
+    if (projectType === "paid in advance") {
       return (
         <div className="space-y-2">
           <label className="block">

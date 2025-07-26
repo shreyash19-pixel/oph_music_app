@@ -21,11 +21,10 @@ import axiosApi from "../../conf/axios";
 
 const SidebarNav = ({ onClose }) => {
   const navigate = useNavigate();
-  const { logout, ophid, headers } = useArtist();
+  const { logout} = useArtist();
   const [userData, setUserData] = useState(null);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(false); // State to check if screen width is narrow
-  const [currentPageSongReg, setCurrentPageSongReg] = useState('')
   const [data, setData] = useState([]);
   
   useEffect(() => {
@@ -51,32 +50,6 @@ const SidebarNav = ({ onClose }) => {
     };
   }, []);
 
-  useEffect(() => {
-    const getSongRegistrationStatus = async () => {
-
-      try {
-        const response = await axiosApi.get("/get-song-registration-status",
-          {
-            headers: headers,
-            params : {ophid}
-          }
-        )
-
-        if(response.data.success)
-        { 
-          const responseData = response.data.data[0]
-          setData(responseData)
-          const path = `${responseData.current_page}${responseData.song_id}`
-          setCurrentPageSongReg(path)
-        }
-      }
-      catch (error) {
-        console.error("Error fetching data");
-      }
-
-    }
-    getSongRegistrationStatus()
-  }, [ophid, headers])
 
   const handleLogout = async () => {
     await logout();
@@ -110,7 +83,7 @@ const SidebarNav = ({ onClose }) => {
     {
       icon: <img src={SongUp} className="w-[24px] h-[24px]" />,
       label: "Songs Registration",
-      to: currentPageSongReg || '/dashboard/upload-song',
+      to: '/dashboard/upload-song',
     },
     {
       icon: <img src={Tv} className="w-[24px] h-[24px]" />,

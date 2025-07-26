@@ -142,9 +142,13 @@ const DynamicTable = ({
                 className="hover:bg-gray-100 transition cursor-pointer"
                 onClick={() => {
                   if (detailsUrl) {
-                    const idValue = row.ophid || row.OPH_ID;
-                    if (idValue) {
-                      navigate(`${detailsUrl}/${idValue}`);
+                    const ophidValue = row.ophid || row.OPH_ID;
+                    const songIdValue = row.song_id || row.songId;
+
+                    if (ophidValue && songIdValue) {
+                      navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
+                    } else if (ophidValue) {
+                      navigate(`${detailsUrl}/${ophidValue}`);
                     }
                   }
                 }}
@@ -157,13 +161,12 @@ const DynamicTable = ({
                 {showStatusIndicator && statusField && (
                   <td className="px-4 py-3 border-b border-gray-200">
                     <span
-                      className={`inline-block w-3 h-3 rounded-full ${
-                        getStatusForRow(row)?.toLowerCase() === "approved"
+                      className={`inline-block w-3 h-3 rounded-full ${getStatusForRow(row)?.toLowerCase() === "approved"
                           ? "bg-green-500"
                           : getStatusForRow(row)?.toLowerCase() === "rejected"
-                          ? "bg-red-500"
-                          : "bg-gray-500"
-                      }`}
+                            ? "bg-red-500"
+                            : "bg-gray-500"
+                        }`}
                     ></span>
                   </td>
                 )}

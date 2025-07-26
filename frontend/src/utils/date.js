@@ -23,4 +23,17 @@ function formatDateAndAdjustMonth(isoDate) {
     return `${formattedDate} - ${formattedTime}`;
   }
 
+  // utils.js or wherever your helper is
+export const formatDDMMYYYY = (dateStr) => {
+  if (!dateStr) return "";
+
+  const [day, month, year] = dateStr.split("/").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  // Ensure 2-digit day/month
+  const pad = (n) => n.toString().padStart(2, "0");
+
+  return `${pad(day)}/${pad(month)}/${year}`;
+};
+
   export default formatDateAndAdjustMonth

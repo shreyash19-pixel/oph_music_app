@@ -1,8 +1,18 @@
 import React, { useState } from "react";
-import { Menu, X, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  LogOut,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 
 const Sidebar = ({ title, links, userRole }) => {
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState({});
@@ -12,13 +22,16 @@ const Sidebar = ({ title, links, userRole }) => {
     setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  // Function to check if a link or section should be visible
-  console.log(userRole);
-  
   const canAccess = (roles) => {
-    if (!roles) return true; // No roles means open to all
-    console.log("CHECKING ACCESS", { roles, userRole, result: roles.includes(userRole) });
+    if (!roles) return true;
     return roles.includes(userRole);
+  };
+
+  const handleLogout = () => {
+    // Add your logout logic here (e.g., remove token, redirect)
+    console.log("Logging out...");
+    logout();
+    navigate("/");
   };
 
   return (
@@ -41,13 +54,28 @@ const Sidebar = ({ title, links, userRole }) => {
       >
         <div className="flex items-center justify-between px-4 mb-6">
           {!collapsed && <h1 className="text-xl font-bold">{title}</h1>}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded hover:bg-[#0b3239] transition"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <ChevronsRight className="w-5 h-5" /> : <ChevronsLeft className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center space-x-2">
+            {!collapsed && (
+              <button
+                onClick={handleLogout}
+                className="p-1 rounded hover:bg-[#0b3239] transition"
+                aria-label="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-1 rounded hover:bg-[#0b3239] transition"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <ChevronsRight className="w-5 h-5" />
+              ) : (
+                <ChevronsLeft className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
         <nav className="flex-1 overflow-y-auto px-2">
           <ul className="space-y-1">

@@ -53,7 +53,7 @@ const WebsiteConfig = () => {
     },
     {
       label: "Event Management",
-      route: "/eventManagement",
+      route: "/Events",
       roles: [
         ROLES.SUPER_ADMIN,
         ROLES.SALES_HEAD,

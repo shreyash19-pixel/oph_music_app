@@ -18,7 +18,6 @@ export default function DateChangeForm() {
     reason: "",
   });
   const { headers, ophid } = useArtist();
-  console.log(ophid);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {

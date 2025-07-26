@@ -23,10 +23,10 @@ import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
 import ArtistNew from "./view/dashboard/artistPortal/artistNew";
 import ArtistAll from "./view/dashboard/artistPortal/artistAll";
 import ContentNew from "./view/dashboard/artistPortal/contentNew";
-import ContentManage from "./view/dashboard/artistPortal/contentManage";
+// import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import NewSignupDetails from "./view/dashboard/New_signUp";
-import tvpublishing from "./view/dashboard/artistPortal/tvPublishing";
-import artistKPI from "./view/dashboard/artistPortal/artistKPI";
+// import tvpublishing from "./view/dashboard/artistPortal/tvPublishing";
+// import artistKPI from "./view/dashboard/artistPortal/artistKPI";
 import Alldata from "./view/dashboard/artistPortal/allData";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis";
 import ContentRelease from "./view/dashboard/artistPortal/contentRelease";
@@ -38,6 +38,9 @@ import Tickets from "./view/dashboard/artistPortal/Tickets";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
 import Artist_All from './view/dashboard/artistPortal/artistAll/Artist_All'
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
+import Content_New from "./view/dashboard/artistPortal/contentNew/Content_New";
+import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_manage";
+import ContentManage from "./view/dashboard/artistPortal/contentManage";
 
 
 function App() {
@@ -54,8 +57,8 @@ function App() {
           <Route path="/home" element={<Dashboard />} />
           <Route path="/ArtistNew/:ophid" element={<ArtistNew />} />
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
-          <Route path="/ContentNew" element={<ContentNew />} />
-          <Route path="/ContentManage" element={<ContentManage />} />
+          <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route path="/ContentManage/:ophid/:songId" element={<ContentManage />} />
           <Route path="/artistPortal" element={<ArtistPortal />} />
           <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
           <Route path="/New_SignUp" element={<Home/>} />
@@ -211,7 +214,7 @@ function App() {
                   ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
-                <ContentNew />
+                <Content_New/>
               </ProtectedRoute>
             }
           />
@@ -229,7 +232,7 @@ function App() {
                   ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
-                <ContentManage />
+                <Content_Manage />
               </ProtectedRoute>
             }
           />

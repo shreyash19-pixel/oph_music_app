@@ -39,16 +39,16 @@ const artistLinks = [
     children: [
       {
         label: "New",
-        route: "/content/new",
+        route: "/ContentNew",
       },
       {
         label: "Manage",
-        route: "/content/manage",
+        route: "/ContentManage",
       },
       {
         label: "Tv Publishing",
         route: "/content/tv",
-      },  
+      },
     ],
   },
   {
@@ -107,21 +107,47 @@ const artistLinks = [
 
 const ArtistSidebar = ({ children }) => {
   const navigate = useNavigate();
-  const handleTitleClick = () =>{
+  const handleTitleClick = () => {
     navigate("/home");
   }
-  const { user } = useAuth();
+  const handleGoHome = () => {
+    navigate('/')
+  }
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+  return (
+    <div className="flex items-center justify-center h-screen w-full bg-gray-50">
+      <div className="bg-white shadow-lg rounded-2xl p-10 text-center max-w-md w-full">
+        <h2 className="text-2xl font-bold text-gray-700 mb-4">Session expired or not logged in</h2>
+        <p className="text-gray-500 mb-6">
+          Please login again to continue accessing your dashboard.
+        </p>
+        <button
+          onClick={handleGoHome}
+          className="px-6 py-3 bg-[#0C3C44] text-white rounded-lg shadow hover:bg-[#0b353c] transition duration-300"
+        >
+          Go to Login
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-50 relative">
-      <Sidebar  title={
-                    <button
-                        onClick={handleTitleClick}
-                        // className="text-blue-600 hover:underline focus:outline-none"
-                    >
-                       Artist Portal
-                    </button>
-                } links={artistLinks} userRole={user.role} />
+      <Sidebar title={
+        <button
+          onClick={handleTitleClick}
+        // className="text-blue-600 hover:underline focus:outline-none"
+        >
+          Artist Portal
+        </button>
+      } links={artistLinks} userRole={user.role} />
       <main className="flex-1 p-10 overflow-y-auto">
         {children || (
           <div className="text-gray-400 italic flex justify-center items-center h-full">

@@ -8,6 +8,12 @@ import profileReducer  from "../slice/profile";
 import eventReducer from "../slice/events";
 import notificationReducer from "../slice/notification";
 import incomeReducer from "../slice/income";
+import websiteConfigReducer from "../slice/website_config";
+import artistReducer from "../slice/artist"
+import topPickReducer from "../slice/top_pick"
+import contentReducer from "../slice/content"
+import leaderboardReducer from "../slice/leaderboard"
+import contentInteractionReducer from "../slice/contentInteractionSlice"
 
 export const artistStore = configureStore({
     reducer : {
@@ -20,6 +26,13 @@ export const artistStore = configureStore({
         event : eventReducer,
         notification: notificationReducer,
         income : incomeReducer,
+        websiteConfig: websiteConfigReducer,
+        artist : artistReducer,
+        topPick : topPickReducer,
+        event : eventReducer,
+        content : contentReducer,
+        leaderboard : leaderboardReducer,
+        contentInteraction: contentInteractionReducer,
     }
 })
 
