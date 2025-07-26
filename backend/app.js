@@ -31,10 +31,10 @@ const adminSignIn = require("./admin/routes/adminSignIn")
 const newSignUp = require("./admin/routes/newSignUp")
 const newArtist = require("./admin/routes/newArtist")
 const allArtist = require("./admin/routes/allArtist")
-
+const tickets = require("./admin/routes/tickets")
 // ✅ Middleware order is important
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: true,
   credentials: true
 }));
 app.use(express.json());
@@ -64,6 +64,7 @@ app.use("/",adminSignIn);
 app.use("/",newSignUp);
 app.use("/",newArtist);
 app.use("/",allArtist);
+app.use("/",tickets);
 
 // ✅ Start server
 app.listen(port, () => {
