@@ -32,14 +32,14 @@ const adminSignIn = require("./admin/routes/adminSignIn")
 const newSignUp = require("./admin/routes/newSignUp")
 const newArtist = require("./admin/routes/newArtist")
 const allArtist = require("./admin/routes/allArtist")
-const tickets = require("./admin/routes/tickets")
-// ✅ Middleware order is important
 const songs = require("./admin/routes/songs")
 const payments = require("./admin/routes/payments")
 
+const tickets = require("./admin/routes/tickets")
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: true,
   credentials: true
 }));
 app.use(express.json());
