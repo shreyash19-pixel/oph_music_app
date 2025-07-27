@@ -2,68 +2,68 @@ import React, { useEffect, useState } from "react";
 import { Play, ChevronDown, Pause } from "lucide-react";
 import axiosApi from "../../conf/axios";
 import { useSelector } from "react-redux";
+import { useArtist } from "../auth/API/ArtistContext";
 
 function Leaderboard({ leaderboardData, artist_id }) {
+  console.log(leaderboardData);
   return (
     <div className="overflow-x-auto">
-    <table className="w-[100%] border-separate border-spacing-y-2">
-  <thead>
-    <tr className="text-center text-gray-400 rounded-2xl border-gray-800 rounded-2xl">
-      <th className="py-2 px-3 lg:px-4">#</th>
-      <th className="py-2 px-3 lg:px-4">ARTIST</th>
-      <th className="py-2 px-3 lg:px-4">STAGE NAME</th>
-      <th className="py-2 hidden lg:block px-3 lg:px-4">LOCATION</th>
-      <th className="py-2 px-3 lg:px-4">SONGS</th>
-      <th className="py-2 px-3 lg:px-4">REACH</th>
-      <th className="py-2 hidden lg:block px-3 lg:px-4">PROFILE</th>
-    </tr>
-  </thead>
-  <tbody>
-    {leaderboardData.map((artist) => (
-      <tr
-        onClick={() => {
-          window.open(`${import.meta.env.VITE_WEBSITE_URL}artists/${artist.artist_id}`, '_blank');
-        }}
-        key={artist.rank}
-        className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
-          artist.artist_id == artist_id ? "bg-[#6F4FA0]" : ""
-        }`}
-      >
-        <td className="px-3 lg:px-4 py-2">
-          <span
-            className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${
-              artist.rank === 1
-                ? "bg-yellow-400"
-                : artist.rank === 2
-                ? "bg-emerald-400"
-                : artist.rank === 3
-                ? "bg-cyan-400"
-                : "bg-transparent text-white"
-            }`}
-          >
-            {String(artist.rank).padStart(2, '0')}
-          </span>
-        </td>
-        <td className="py-2 flex items-center justify-center px-3 lg:px-4">
-          <img
-            src={`${artist.profile_img_url}?height=40&width=40`}
-            alt={artist.stage_name}
-            className="w-8 h-8 rounded-full"
-          />
-        </td>
-        <td className="py-2 px-3 lg:px-4">{artist.stage_name}</td>
-        <td className="py-2 hidden lg:block px-3 lg:px-4">{artist.location}</td>
-        <td className="py-2 px-3 lg:px-4">{artist.total_songs}</td>
-        <td className="py-2 px-3 lg:px-4">{artist.total_reach}</td>
-        <td className="py-2 hidden lg:block px-3 lg:px-4">
-          <button className="px-3 lg:px-4 py-2 bg-[#6F4FA0] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
-            View Profile
-          </button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+      <table className="w-[100%] border-separate border-spacing-y-2">
+        <thead>
+          <tr className="text-center text-gray-400 rounded-2xl border-gray-800 rounded-2xl">
+            <th className="py-2 px-3 lg:px-4">#</th>
+            <th className="py-2 px-3 lg:px-4">ARTIST</th>
+            <th className="py-2 px-3 lg:px-4">STAGE NAME</th>
+            <th className="py-2 hidden lg:block px-3 lg:px-4">LOCATION</th>
+            <th className="py-2 px-3 lg:px-4">SONGS</th>
+            <th className="py-2 px-3 lg:px-4">REACH</th>
+            <th className="py-2 hidden lg:block px-3 lg:px-4">PROFILE</th>
+          </tr>
+        </thead>
+        <tbody>
+          {leaderboardData.map((artist) => (
+            <tr
+              onClick={() => {
+                window.open(`${import.meta.env.VITE_WEBSITE_URL}artists/${artist.artist_id}`, '_blank');
+              }}
+              key={artist.rank}
+              className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${artist.artist_id == artist_id ? "bg-[#6F4FA0]" : ""
+                }`}
+            >
+              <td className="px-3 lg:px-4 py-2">
+                <span
+                  className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${artist.rank === 1
+                    ? "bg-yellow-400"
+                    : artist.rank === 2
+                      ? "bg-emerald-400"
+                      : artist.rank === 3
+                        ? "bg-cyan-400"
+                        : "bg-transparent text-white"
+                    }`}
+                >
+                  {String(artist.rank).padStart(2, '0')}
+                </span>
+              </td>
+              <td className="py-2 flex items-center justify-center px-3 lg:px-4">
+                <img
+                  src={`${artist.profile_img_url}?height=40&width=40`}
+                  alt={artist.stage_name}
+                  className="w-8 h-8 rounded-full"
+                />
+              </td>
+              <td className="py-2 px-3 lg:px-4">{artist.stage_name}</td>
+              <td className="py-2 hidden lg:block px-3 lg:px-4">{artist.location}</td>
+              <td className="py-2 px-3 lg:px-4">{artist.total_songs}</td>
+              <td className="py-2 px-3 lg:px-4">{artist.total_reach}</td>
+              <td className="py-2 hidden lg:block px-3 lg:px-4">
+                <button className="px-3 lg:px-4 py-2 bg-[#6F4FA0] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
+                  View Profile
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
     </div>
   );
@@ -239,15 +239,34 @@ export default function ArtistSpotlight() {
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [artist, setArtist] = useState(null);
+  const [artist, setArtist] = useState([]);
+  const { headers, ophid } = useArtist()
+
+  const professionOptions = [
+    { id: 1, name: "Singer" },
+    { id: 2, name: "Musician" },
+    { id: 3, name: "DJ" },
+    { id: 4, name: "Composer" },
+    { id: 5, name: "Instrumentalist" },
+    { id: 6, name: "Lyricist" },
+    { id: 7, name: "Music Producer" }
+  ];
+
 
   const fetchArtistSpotlight = async () => {
     setIsLoading(true);
     try {
-      const response = await axiosApi.get('/website-configs/highlighted-story');
-      if (response.status === 200) {
-        setArtist(response.data.data);
-        setArtistID(response.data.data.id);
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers not ready yet");
+        return;
+      }
+      const response = await axiosApi.get('/artist-spotlight/artist-info', {
+        headers: headers,
+        params: { ophid }
+      });
+      if (response.data.success) {
+        setArtist(response.data.data[0]);
+        setArtistID(response.data.data[0].ophid);
       }
     } catch (err) {
       setError("Failed to Load Artist Spotlight");
@@ -259,8 +278,15 @@ export default function ArtistSpotlight() {
 
   const fetchSongRankings = async () => {
     try {
-      const response = await axiosApi.get(`/content/rankings`);
-      if (response.status == 200) {
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers not ready yet");
+        return;
+      }
+      const response = await axiosApi.get('/artist-spotlight/songs-rankings', {
+        headers: headers,
+        params: { ophid }
+      });
+      if (response.data.success) {
         setSongs(response.data.data);
       }
     } catch (err) {
@@ -268,10 +294,13 @@ export default function ArtistSpotlight() {
     }
   };
 
+
   useEffect(() => {
-    fetchArtistSpotlight();
-    fetchSongRankings();
-  }, []);
+    if (ophid) {
+      fetchArtistSpotlight();
+      fetchSongRankings();
+    }
+  }, [ophid]);
 
   return (
     <>
@@ -298,36 +327,36 @@ export default function ArtistSpotlight() {
             {/* Artist Header */}
             <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] lg:px-0 px-6 lg:py-0 pt-6">ARTIST SPOTLIGHT</h1>
             <div className="flex justify-start items-center gap-4 px-6">
-  {/* Artist Image with Rank Badge */}
-  <div className="relative">
-    <img
-      src={artist.profile_img_url}
-      alt={artist.stage_name}
-      className="w-32 h-32 rounded-full border-4 border-[#5DC9DE] object-cover"
-    />
-    {/* Rank Badge */}
-    <span className="absolute bottom-0 right-0 bg-[#6F4FA0] lg:w-9 w-6 h-6 lg:h-9 transform -rotate-12 flex items-center justify-center text-sm font-bold">
-🌟
-    </span>
-  </div>
+              {/* Artist Image with Rank Badge */}
+              <div className="relative">
+                <img
+                  src={artist.personal_photo}
+                  alt={artist.stage_name}
+                  className="w-32 h-32 rounded-full border-4 border-[#5DC9DE] object-cover"
+                />
+                {/* Rank Badge */}
+                <span className="absolute bottom-0 right-0 bg-[#6F4FA0] lg:w-9 w-6 h-6 lg:h-9 transform -rotate-12 flex items-center justify-center text-sm font-bold">
+                  🌟
+                </span>
+              </div>
 
-  {/* Artist Info */}
-  <div className="text-left">
-    <h2 className="text-lg font-bold text-white">{artist.name}</h2>
-    <p className="text-gray-400">Stage Name: <span className="text-[#5DC9DE]">{artist.stage_name}</span></p>
-  </div>
-</div>
+              {/* Artist Info */}
+              <div className="text-left">
+                <h2 className="text-lg font-bold text-white">{artist.name}</h2>
+                <p className="text-gray-400">Stage Name: <span className="text-[#5DC9DE]">{artist.stage_name}</span></p>
+              </div>
+            </div>
 
 
 
             <div className="px-6">
-                    <p className="text-gray-400">Profession: {artist.profession_name}</p>
-                    <p className="text-gray-500 mt-4">
-                      {artist.highlighted_desc}
-                    </p>
-                  </div>
+              <p className="text-gray-400">Profession: {professionOptions}</p>
+              <p className="text-gray-500 mt-4">
+                {artist.highlighted_desc}
+              </p>
+            </div>
             {/* Tab Buttons */}
-                        <div className="flex justify-between sm:px-3 items-center">
+            <div className="flex justify-between sm:px-3 items-center">
               <div>
                 <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] lg:px-0 px-6 lg:py-0 pt-6 uppercase">{activeTab}</h1>
               </div>
