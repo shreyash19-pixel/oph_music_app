@@ -104,7 +104,7 @@ const PaymentScreen = () => {
       else if (response.data.success && from === "Event Registeration") {
         {
 
-          const eventResponse = await axiosApi.post("/event/enroll-event", { ophid: oph_id, event_id: location.state.event_id },
+          const eventResponse = await axiosApi.post("/event_part", { OPH_ID: oph_id, event_id: location.state.event_id },
             {
               headers: {
                 "Content-Type": "application/json",
@@ -113,7 +113,7 @@ const PaymentScreen = () => {
             }
           )
 
-          if (eventResponse.data.success) {
+          if (eventResponse.status === 201) {
 
             navigate("/dashboard/success", {
               state: {
