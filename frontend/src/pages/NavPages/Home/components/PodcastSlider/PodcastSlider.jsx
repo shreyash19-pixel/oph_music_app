@@ -9,48 +9,118 @@ import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Link, useNavigate } from "react-router-dom";
 import { Image, Shimmer } from "react-shimmer";
 
-function PodcastSlider({ searchText ,title }) {
+function PodcastSlider({ searchText, title }) {
   const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   // const [podcastData, setPodcastData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [playingIndex, setPlayingIndex] = useState(null);
   const [isPlayButtonClicked, setIsPlayButtonClicked] = useState(false);
   const videoRefs = useRef([]);
   const [allPodcasts, setAllPodcasts] = useState([]);
-  const [podcastData, setPodcastData] = useState([]);
-  
-  useEffect(() => {
-    const fetchContents = async () => {
-      try {
-        const response = await axiosApi.get("/podcasts");
-        setAllPodcasts(response.data.data); // Save original data
-        setPodcastData(response.data.data); // Initially show all
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchContents();
-  }, []);
-  
-  useEffect(() => {
-    if (searchText) {
-      const filteredPodcasts = allPodcasts.filter((podcast) =>
-        podcast.title.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setPodcastData(filteredPodcasts);
-    } else {
-      setPodcastData(allPodcasts); // Restore original list
+  // const [podcastData, setPodcastData] = useState([]);
+
+  // useEffect(() => {
+  //   const fetchContents = async () => {
+  //     try {
+  //       const response = await axiosApi.get("/podcasts");
+  //       setAllPodcasts(response.data.data); // Save original data
+  //       setPodcastData(response.data.data); // Initially show all
+  //     } catch (error) {
+  //       console.log(error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchContents();
+  // }, []);
+
+  const podcastData = [
+    {
+      id: 1,
+      title: "The Rise of Indie Music",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
+      artist_name: "IndieVibes",
+      duration_in_minutes: 12,
+      views: 15400,
+      credit_name: "Hosted by Riya Mehta",
+      keywords: ["music", "indie", "trending"]
+    },
+    {
+      id: 2,
+      title: "Behind The Mic: Ep 5",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
+      artist_name: "SoundCast",
+      duration_in_minutes: 9,
+      views: 8400,
+      credit_name: "Produced by AudioVerse",
+      keywords: ["audio", "interview", "studio"]
+    },
+    {
+      id: 3,
+      title: "Music and Mindfulness",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
+      artist_name: "ZenBeats",
+      duration_in_minutes: 15,
+      views: 22100,
+      credit_name: "Curated by Priya Sharma",
+      keywords: ["wellness", "meditation", "music"]
+    },
+    {
+      id: 4,
+      title: "The Rise of Indie Music",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
+      artist_name: "IndieVibes",
+      duration_in_minutes: 12,
+      views: 15400,
+      credit_name: "Hosted by Riya Mehta",
+      keywords: ["music", "indie", "trending"]
+    },
+    {
+      id: 5,
+      title: "Behind The Mic: Ep 5",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
+      artist_name: "SoundCast",
+      duration_in_minutes: 9,
+      views: 8400,
+      credit_name: "Produced by AudioVerse",
+      keywords: ["audio", "interview", "studio"]
+    },
+    {
+      id: 6,
+      title: "Music and Mindfulness",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
+      artist_name: "ZenBeats",
+      duration_in_minutes: 15,
+      views: 22100,
+      credit_name: "Curated by Priya Sharma",
+      keywords: ["wellness", "meditation", "music"]
     }
-  }, [searchText, allPodcasts]);
-  
-  
+  ];
+
+
+  // useEffect(() => {
+  //   if (searchText) {
+  //     const filteredPodcasts = allPodcasts.filter((podcast) =>
+  //       podcast.title.toLowerCase().includes(searchText.toLowerCase())
+  //     );
+  //     setPodcastData(filteredPodcasts);
+  //   } else {
+  //     setPodcastData(allPodcasts); // Restore original list
+  //   }
+  // }, [searchText, allPodcasts]);
+
+
 
 
   const formatListeners = (views) => {
-    if(views === undefined || views === null) return "0 Listeners";
+    if (views === undefined || views === null) return "0 Listeners";
     if (views >= 1000000) {
       return `${(views / 1000000).toFixed(1)}M Listeners`;
     } else if (views >= 1000) {
@@ -60,7 +130,7 @@ function PodcastSlider({ searchText ,title }) {
   };
 
   const handlePlayPauseVideo = (index) => {
-  debugger
+    debugger
     if (isDragging) return;
 
     // Set the flag to true when play button is clicked
@@ -128,7 +198,7 @@ function PodcastSlider({ searchText ,title }) {
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: podcastData.length >= 3 ? 1: podcastData.length,
+          slidesToShow: podcastData.length >= 3 ? 1 : podcastData.length,
           centerPadding: podcastData.length >= 3 ? "12%" : "0",
         },
       },
@@ -159,7 +229,7 @@ function PodcastSlider({ searchText ,title }) {
 
             <br />
             <span className="text-[#5DC9DE]">
-            ARTISTS LEARNING MUSIC PLATFORM STARTS HERE
+              ARTISTS LEARNING MUSIC PLATFORM STARTS HERE
             </span>
           </h1>
         )}
@@ -294,22 +364,22 @@ function PodcastSlider({ searchText ,title }) {
             ))}
           </Slider>
         )}
-          <div className="text-center mt-6 relative z-10 mb-4">
-  <a
-    href={import.meta.env.VITE_PORTAL_URL + "/auth/signup"}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="bg-[#5DC9DE] text-black font-semibold py-3 px-8 rounded-full hover:font-bold transition delay-300 pointer-events-auto"
-    // onClick={() => {
-    //   window.open(import.meta.env.VITE_PORTAL_URL + "/auth/signup", "_blank", "noopener,noreferrer");
-    // }}
-    // onTouchEnd={() => {
-    //   window.open(import.meta.env.VITE_PORTAL_URL + "/auth/signup", "_blank", "noopener,noreferrer");
-    // }}
-  >
-    COMMUNITY PLATFORM – SIGN UP
-  </a>
-</div>
+        <div className="text-center mt-6 relative z-10 mb-4">
+          <a
+            href={import.meta.env.VITE_PORTAL_URL + "/auth/signup"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#5DC9DE] text-black font-semibold py-3 px-8 rounded-full hover:font-bold transition delay-300 pointer-events-auto"
+          // onClick={() => {
+          //   window.open(import.meta.env.VITE_PORTAL_URL + "/auth/signup", "_blank", "noopener,noreferrer");
+          // }}
+          // onTouchEnd={() => {
+          //   window.open(import.meta.env.VITE_PORTAL_URL + "/auth/signup", "_blank", "noopener,noreferrer");
+          // }}
+          >
+            COMMUNITY PLATFORM – SIGN UP
+          </a>
+        </div>
 
       </div>
     </div>
