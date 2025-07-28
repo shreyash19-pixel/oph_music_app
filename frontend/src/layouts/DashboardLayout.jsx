@@ -41,12 +41,12 @@ const ArtistLayout = () => {
     // dispatch(fetchContentTypes());
     // dispatch(fetchPaymentPlans());
     // dispatch(fetchNewRelease());
-    // dispatch(fetchLeaderboard());
+    dispatch(fetchLeaderboard(headers));
     // dispatch(fetchTicketCategories());
     // dispatch(getProfile());
     // dispatch(fetchNotifications());
     // dispatch(fetchIncome(headers));
-  });
+  },[headers]);
 
   return (
     <div className="flex relative">

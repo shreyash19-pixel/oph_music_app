@@ -538,7 +538,8 @@ export default function AudioMetadataForm() {
         setIsLoading(false);
         navigate(`/dashboard/upload-song/video-metadata/${response.data.song_id}`, {
           state: {
-            SongName: location.state.songName
+            songName: location.state.songName,
+            release_date: location.state.release_date,
           }
         });
       }

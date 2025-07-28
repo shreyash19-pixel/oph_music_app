@@ -47,7 +47,8 @@ export default function UploadSongs() {
     id: song.song_id,
     reject_reason: song.reject_reason,
     next_page: song.current_page,
-    projectType: song.project_type
+    projectType: song.project_type,
+
   })) : null;
 
   const handleProjectClick = (projectType) => {
@@ -124,7 +125,7 @@ export default function UploadSongs() {
             key={song.id} // Add key prop here
             className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
             onClick={() => {
-              ['Draft', 'Approved', 'Pending'].includes(song.status) ? navigate(`/dashboard/upload-song/audio-metadata/${song.id}`, {
+              ['Draft', 'Approved', 'Pending'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
                 state: {
                   songName: song.name,
                 }

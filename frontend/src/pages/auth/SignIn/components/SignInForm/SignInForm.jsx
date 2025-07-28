@@ -34,6 +34,7 @@ const SignInForm = () => {
        
         toast.success("Login Successful");       
         localStorage.setItem("token", response.token);
+     
         const path = `${response.step}`
         navigate(path, {
           state: {
