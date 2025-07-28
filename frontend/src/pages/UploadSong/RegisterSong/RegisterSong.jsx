@@ -212,6 +212,7 @@ export default function RegisterSongForm() {
         navigate(`/dashboard/upload-song/audio-metadata/${response.data.contentID}`, {
           state: {
             songName : updatedFormData.name,
+            release_date: updatedFormData.release_date
           }
         });
       }
@@ -232,6 +233,7 @@ export default function RegisterSongForm() {
         navigate(`/dashboard/upload-song/audio-metadata/${response.data.contentID}`, {
           state: {
             songName : updatedFormData.name,
+            release_date: updatedFormData.release_date
           }
         });
       }
@@ -253,6 +255,7 @@ export default function RegisterSongForm() {
         navigate(`/dashboard/upload-song/audio-metadata/${response.data.contentID}`, {
           state: {
             songName : updatedFormData.name,
+            release_date: updatedFormData.release_date
           }
         });
       }
@@ -298,7 +301,7 @@ export default function RegisterSongForm() {
     {
       newProject(updatedFormData)
     }
-    else if(projectType === "hyrbid project")
+    else if(projectType === "hybrid project")
     {
       hybridProject(updatedFormData)
     }

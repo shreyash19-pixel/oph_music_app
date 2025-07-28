@@ -23,7 +23,9 @@ const resetPassword = require("./routes/reset_password")
 const membership = require("./routes/membership");
 const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
-const eventEnrollments = require("./routes/enroll_event");
+const eventParticipant = require("./admin/routes/eventParticipant")
+const artistSpotlight = require("./routes/artist-spotlight")
+const leaderboardRoute = require("./routes/leaderboard")
 
 
 //Admin route assignment
@@ -33,6 +35,7 @@ const newSignUp = require("./admin/routes/newSignUp")
 const newArtist = require("./admin/routes/newArtist")
 const allArtist = require("./admin/routes/allArtist")
 const songs = require("./admin/routes/songs")
+const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const tickets = require("./admin/routes/tickets")
 // ✅ Middleware order is important
@@ -59,7 +62,9 @@ app.use("/", personalDetails);
 app.use("/", membership);
 app.use("/", secondaryArtist);
 app.use("/", videoDetail);
-app.use("/", eventEnrollments);
+app.use("/", eventParticipant);
+app.use("/artist-spotlight",artistSpotlight);
+app.use("/",leaderboardRoute)
 
 
 //Admin Routes
@@ -71,6 +76,7 @@ app.use("/",newArtist);
 app.use("/",allArtist);
 app.use("/",tickets);
 app.use("/",songs);
+app.use("/",events);
 app.use("/",payments);
 
 // ✅ Start server

@@ -13,10 +13,12 @@ export const fetchNewRelease = createAsyncThunk('fetchNewRelease', async () => {
         console.log(err);
     }
 })
-export const fetchLeaderboard = createAsyncThunk('fetchLeaderboard', async () => {
+export const fetchLeaderboard = createAsyncThunk('fetchLeaderboard', async (headers) => {
     try {
-        const response = await axiosApi.get('/leaderboard');
-        if (response.status == 200) {
+        const response = await axiosApi.get('/leaderboard',{
+            headers: headers
+        });
+        if (response.data.success) {
             return response.data.data;
         }
     }

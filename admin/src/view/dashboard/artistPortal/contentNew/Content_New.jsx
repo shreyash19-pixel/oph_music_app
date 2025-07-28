@@ -15,7 +15,7 @@ const Content_New = () => {
         console.log("api success");
 
         const formattedData = res.data.data.map(item => {
-          // Assuming the date field is named 'date' or similar — update key accordingly
+          
           return {
             ...item,
             // Format all ISO strings to "DD MMM YYYY" (like 27 Jul 2025)

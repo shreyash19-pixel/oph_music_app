@@ -50,6 +50,7 @@ const PaymentScreen = () => {
 
       if (response.data.success && from == "Date booking") {
         {
+          console.log("booking");
           const CalenderRes = await axiosApi.post(
             "/booking",
             { oph_id: ophid, booking_date: location.state.date },
@@ -90,21 +91,30 @@ const PaymentScreen = () => {
       }
 
       else if (response.data.success && from == "Song Registration") {
-        {
-          navigate("/dashboard/success", {
-            state: {
-              heading: "Your date blocked successfully!",
-              btnText: "Register another song",
-              redirectTo: "/dashboard/upload-song",
-            },
-          });
+        { 
+          console.log(location);
+          const CalenderRes = await axiosApi.post(
+            "/booking",
+            { oph_id: ophid, booking_date: location.state.booking_date },
+            { headers: headers }
+          );
+
+          if (CalenderRes.data.success) {
+            navigate("/dashboard/success", {
+              state: {
+                heading: "Your date blocked successfully!",
+                btnText: "Register another song",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          }
         }
       }
 
       else if (response.data.success && from === "Event Registeration") {
         {
 
-          const eventResponse = await axiosApi.post("/event/enroll-event", { ophid: oph_id, event_id: location.state.event_id },
+          const eventResponse = await axiosApi.post("/event_part", { OPH_ID: oph_id, event_id: location.state.event_id },
             {
               headers: {
                 "Content-Type": "application/json",
@@ -113,7 +123,7 @@ const PaymentScreen = () => {
             }
           )
 
-          if (eventResponse.data.success) {
+          if (eventResponse.status === 201) {
 
             navigate("/dashboard/success", {
               state: {
