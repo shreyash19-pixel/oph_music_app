@@ -12,7 +12,8 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const location = useLocation();
-  const [songName, setSongName] = useState(location.state.SongName);
+  console.log(location);
+  const [songName, setSongName] = useState(location.state.songName);
   const projectType = localStorage.getItem("projectType") || ""
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
@@ -135,7 +136,8 @@ export default function VideoMetadataForm() {
       if (response.data.success) {
         navigate("/auth/payment", {
           state: {
-            from: "Song Registration"
+            from: "Song Registration",
+            booking_date: location.state.release_date
           }
         });
       }

@@ -20,8 +20,8 @@ const insertNewSong = async (OPH_ID,
 
   const [result] = await db.execute(
     `INSERT INTO songs_register 
-    (OPH_ID, project_type, Song_name,release_date, payment, Lyrics_services, current_page, song_register_journey)
-    VALUES (?, ?, ?, ?, ?, ?,?,?)`,
+    (OPH_ID, project_type, Song_name,release_date, payment, Lyrics_services, current_page)
+    VALUES (?, ?, ?, ?, ?, ?,?)`,
     [
       OPH_ID,
       project_type,
@@ -30,7 +30,6 @@ const insertNewSong = async (OPH_ID,
       payment,
       Lyrics_services,
       next_step,
-      'incomplete'
     ]
   );
 

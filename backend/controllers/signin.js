@@ -48,18 +48,23 @@ const signin = async (req, res) => {
     const result = await user_details.checkRejectedStep(dbUser.ophid);
 
     const checkRejectedStep = result[0];
-
+    
     if (checkRejectedStep.user_details_status === "rejected") {
       navTo = "/auth/create-profile/personal-details";
     } else if (checkRejectedStep.professional_details_status === "rejected") {
       navTo = "/auth/create-profile/professional-details";
     } else if (checkRejectedStep.document_details_status === "rejected") {
       navTo = "/auth/create-profile/documentation-details";
-    } else {
+    }
+    else if(checkRejectedStep.user_details_status === "completed" && checkRejectedStep.professional_details_status === "completed" && checkRejectedStep.document_details_status === "completed")
+    {
+      navTo = "/dashboard";
+    } 
+    else {
       navTo = dbUser.current_step;
     }
 
-    console.log(token);
+    console.log(navTo);
     
     
     return res.status(200).json({
