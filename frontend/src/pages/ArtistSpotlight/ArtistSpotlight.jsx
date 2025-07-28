@@ -237,7 +237,7 @@ export default function ArtistSpotlight() {
   const [artist_id, setArtistID] = useState(null);
   const [songsById, setSongsById] = useState([]);
   const [songs, setSongs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [artist, setArtist] = useState(null);
 
@@ -268,10 +268,10 @@ export default function ArtistSpotlight() {
     }
   };
 
-  useEffect(() => {
-    fetchArtistSpotlight();
-    fetchSongRankings();
-  }, []);
+  // useEffect(() => {
+  //   fetchArtistSpotlight();
+  //   fetchSongRankings();
+  // }, []);
 
   return (
     <>
