@@ -25,6 +25,7 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
+const leaderboardRoute = require("./routes/leaderboard")
 
 
 //Admin route assignment
@@ -63,7 +64,8 @@ app.use("/",membership);
 app.use("/", secondaryArtist);
 app.use("/", videoDetail);
 app.use("/", eventParticipant);
-app.use("/artist-spotlight",artistSpotlight)
+app.use("/artist-spotlight",artistSpotlight);
+app.use("/",leaderboardRoute)
 
 
 //Admin Routes

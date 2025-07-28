@@ -5,7 +5,6 @@ import { useSelector } from "react-redux";
 import { useArtist } from "../auth/API/ArtistContext";
 
 function Leaderboard({ leaderboardData, artist_id }) {
-  console.log(leaderboardData);
   return (
     <div className="overflow-x-auto">
       <table className="w-[100%] border-separate border-spacing-y-2">
@@ -21,16 +20,16 @@ function Leaderboard({ leaderboardData, artist_id }) {
           </tr>
         </thead>
         <tbody>
-          {leaderboardData.map((artist) => (
+          {leaderboardData.map((artist, index) => (
             <tr
               onClick={() => {
                 window.open(`${import.meta.env.VITE_WEBSITE_URL}artists/${artist.artist_id}`, '_blank');
               }}
-              key={artist.rank}
+              key={index}
               className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${artist.artist_id == artist_id ? "bg-[#6F4FA0]" : ""
                 }`}
             >
-              <td className="px-3 lg:px-4 py-2">
+              {/* <td className="px-3 lg:px-4 py-2">
                 <span
                   className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${artist.rank === 1
                     ? "bg-yellow-400"
@@ -43,10 +42,17 @@ function Leaderboard({ leaderboardData, artist_id }) {
                 >
                   {String(artist.rank).padStart(2, '0')}
                 </span>
+              </td> */}
+              <td className="px-3 lg:px-4 py-2">
+                <span
+                  className="w-8 h-8 flex items-center justify-center text-md font-bold text-white"
+                >
+                  {index}
+                </span>
               </td>
               <td className="py-2 flex items-center justify-center px-3 lg:px-4">
                 <img
-                  src={`${artist.profile_img_url}?height=40&width=40`}
+                  src={`${artist.personal_photo}?height=40&width=40`}
                   alt={artist.stage_name}
                   className="w-8 h-8 rounded-full"
                 />
@@ -54,7 +60,8 @@ function Leaderboard({ leaderboardData, artist_id }) {
               <td className="py-2 px-3 lg:px-4">{artist.stage_name}</td>
               <td className="py-2 hidden lg:block px-3 lg:px-4">{artist.location}</td>
               <td className="py-2 px-3 lg:px-4">{artist.total_songs}</td>
-              <td className="py-2 px-3 lg:px-4">{artist.total_reach}</td>
+              {/* <td className="py-2 px-3 lg:px-4">{artist.total_reach}</td> */}
+              <td className="py-2 px-3 lg:px-4">52,998</td>
               <td className="py-2 hidden lg:block px-3 lg:px-4">
                 <button className="px-3 lg:px-4 py-2 bg-[#6F4FA0] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
                   View Profile
@@ -69,25 +76,62 @@ function Leaderboard({ leaderboardData, artist_id }) {
   );
 }
 
-function Songs({ id, otherSongs }) {
+const SongDuration = ({ url }) => {
+  const [duration, setDuration] = useState(null);
+
+  useEffect(() => {
+    if (!url) return;
+
+    const audio = new Audio(url);
+    audio.addEventListener('loadedmetadata', () => {
+      setDuration(audio.duration); // duration is in seconds
+    });
+
+    // Cleanup
+    return () => {
+      audio.removeEventListener('loadedmetadata', () => { });
+    };
+  }, [url]);
+
+  return <td className="py-4 lg:block hidden px-2 lg:px-4">
+    {duration ? formatTime(duration) : 'Loading...'}
+  </td>;
+};
+
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+};
+
+function Songs() {
   const [audio, setAudio] = useState(null);
   const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
-  const [artistSongs, setArtistSongs] = useState(null);
+  const [artistSongs, setArtistSongs] = useState([]);
+
+  const { ophid, headers } = useArtist()
+
   const fetchSongRankingsById = async () => {
     try {
-      if (id) {
-        const response = await axiosApi.get(`/content/rankings?artist_id=${id}`)
-        if (response.status == 200) {
-          setArtistSongs(response.data.data)
-        }
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers are not ready yet")
+        return
+      }
+
+      const response = await axiosApi.get("/artist-spotlight/get-songs-rankings-by-id", {
+        headers: headers,
+        params: { ophid }
+      })
+      if (response.data.success) {
+        setArtistSongs(response.data.data)
       }
     }
     catch (err) {
-      console.log(err);
+      console.error(err);
     }
   }
   const handlePlayPause = (song) => {
-    if (playingSongId === song.content_id) {
+    if (playingSongId === song.song_id) {
       // Toggle play/pause for the same song
       if (!audio?.paused) {
         audio?.pause();
@@ -96,24 +140,28 @@ function Songs({ id, otherSongs }) {
         audio?.play()?.catch((error) => {
           console.error('Audio play failed:', error);
         });
-        setPlayingSongId(song.content_id);
+        setPlayingSongId(song.song_id);
       }
     } else {
       // New song selected
       if (audio) {
         audio.pause();
       }
-      const newAudio = new Audio(song.audio_file_url);
+      const newAudio = new Audio(song.audio_url);
       newAudio.play().catch((error) => {
         console.error('Audio play failed:', error);
       });
       setAudio(newAudio);
-      setPlayingSongId(song.content_id);
+      setPlayingSongId(song.song_id);
     }
   };
+
+
   useEffect(() => {
-    fetchSongRankingsById();
-  }, [])
+    if (ophid) {
+      fetchSongRankingsById();
+    }
+  }, [headers, ophid])
 
   return (
     <div className="space-y-6">
@@ -131,37 +179,40 @@ function Songs({ id, otherSongs }) {
           </thead>
           <tbody>
             {artistSongs &&
-              artistSongs.map((artist, index) => (
+              Object.values(artistSongs)?.map((artist, index) => (
                 <tr key={index}>
                   <td className="py-4 px-2 lg:px-4">
                     <span className="bg-green-500 px-2 py-1 text-sm">
-                      {artist.rank}
+                      {/* {artist.rank} */}
+                      {index}
                     </span>
                   </td>
                   <td className="py-4 px-2 lg:px-4">
                     <div
                       onClick={() => {
-                        window.open(`${import.meta.env.VITE_WEBSITE_URL}content/${artist.content_id}`, '_blank');
+                        window.open(`${import.meta.env.VITE_WEBSITE_URL}content/${artist.OPH_ID}`, '_blank');
                       }}
                     >
-                      <div>{artist.name}</div>
+                      <div>{artist.primary_artist}</div>
                       <div className="text-sm text-gray-400">
-                        {artist.secondary_artists.map((art, ind) =>
-                          ind !== artist.secondary_artists.length - 1
-                            ? art + ", "
-                            : art
-                        )}
+                        {artist.secondary_artists
+                          .map((art) => art.artist_name)
+                          .filter(Boolean) // removes null or undefined names
+                          .join(", ")
+                        }
                       </div>
+
                     </div>
                   </td>
-                  <td className="py-4 px-2 lg:px-4">{artist.total_reach}</td>
-                  <td className="py-4 lg:block hidden px-2 lg:px-4">05:12</td>
+                  {/* <td className="py-4 px-2 lg:px-4">{artist.total_reach}</td> */}
+                  <td className="py-4 px-2 lg:px-4">93,52,548</td>
+                  <SongDuration url={artist.audio_url} />
                   <td className="py-4 px-2 lg:px-4">
                     <button
                       className="p-2 bg-[#6F4FA0] rounded-full hover:bg-[#6F4FA0] transition-colors"
                       onClick={() => handlePlayPause(artist)}
                     >
-                      {playingSongId === artist.content_id && !audio?.paused ? (
+                      {playingSongId === artist.song_id && !audio?.paused ? (
                         <Pause className="w-4 h-4" />
                       ) : (
                         <Play className="w-4 h-4" />
@@ -188,28 +239,30 @@ function Songs({ id, otherSongs }) {
             </tr>
           </thead>
           <tbody>
-            {otherSongs &&
-              otherSongs.slice(0, 5).map((artist, index) => (
-                <tr key={artist.content_id}>
+            {artistSongs &&
+              Object.values(artistSongs).slice(0, 5).map((artist, index) => (
+                <tr key={index}>
                   <td className="py-4 px-2 lg:px-4">
                     <span className="px-2 py-1 rounded text-sm">
-                      {artist.rank}
+                      {index}
                     </span>
                   </td>
                   <td className="py-4 px-2 lg:px-4">
                     <div>
-                      <div>{artist.name}</div>
+                      <div>{artist.primary_artist}</div>
                       <div className="text-sm text-gray-400">
-                        {artist.secondary_artists.map((art, ind) =>
-                          ind !== artist.secondary_artists.length - 1
-                            ? art + ", "
-                            : art
-                        )}
+                        {artist.secondary_artists
+                          .map((art) => art.artist_name)
+                          .filter(Boolean) // removes null or undefined names
+                          .join(", ")
+                        }
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-2 lg:px-4">{artist.total_reach}</td>
-                  <td className="py-4 lg:block hidden px-2 lg:px-4">05:12</td>
+                  {/* <td className="py-4 px-2 lg:px-4">{artist.total_reach}</td> */}
+                  <td className="py-4 px-2 lg:px-4">93,52,548</td>
+                  {/* <td className="py-4 lg:block hidden px-2 lg:px-4">{calculateSongDur(artist.audio_url)}</td> */}
+                  <SongDuration url={artist.audio_url} />
                   <td className="py-4 px-2 lg:px-4">
                     <button
                       className="p-2 bg-[#6F4FA0] rounded-full hover:bg-[#6F4FA0] transition-colors"
@@ -236,7 +289,6 @@ export default function ArtistSpotlight() {
   const leaderboard = useSelector((state) => state.newRelease.leaderboard);
   const [artist_id, setArtistID] = useState(null);
   const [songsById, setSongsById] = useState([]);
-  const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [artist, setArtist] = useState([]);
@@ -276,29 +328,18 @@ export default function ArtistSpotlight() {
     }
   };
 
-  const fetchSongRankings = async () => {
-    try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers not ready yet");
-        return;
+  function getProfession(profession) {
+    let prof = professionOptions.find((pf) => {
+      if (pf.id === parseInt(profession)) {
+        return pf
       }
-      const response = await axiosApi.get('/artist-spotlight/songs-rankings', {
-        headers: headers,
-        params: { ophid }
-      });
-      if (response.data.success) {
-        setSongs(response.data.data);
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
+    })
+    return prof.name
+  }
 
   useEffect(() => {
     if (ophid) {
       fetchArtistSpotlight();
-      fetchSongRankings();
     }
   }, [ophid]);
 
@@ -342,7 +383,7 @@ export default function ArtistSpotlight() {
 
               {/* Artist Info */}
               <div className="text-left">
-                <h2 className="text-lg font-bold text-white">{artist.name}</h2>
+                <h2 className="text-lg font-bold text-white">{artist.full_name}</h2>
                 <p className="text-gray-400">Stage Name: <span className="text-[#5DC9DE]">{artist.stage_name}</span></p>
               </div>
             </div>
@@ -350,9 +391,9 @@ export default function ArtistSpotlight() {
 
 
             <div className="px-6">
-              <p className="text-gray-400">Profession: {professionOptions}</p>
+              <p className="text-gray-400">Profession: {getProfession(artist.Profession)}</p>
               <p className="text-gray-500 mt-4">
-                {artist.highlighted_desc}
+                {artist.Bio}
               </p>
             </div>
             {/* Tab Buttons */}
@@ -378,9 +419,9 @@ export default function ArtistSpotlight() {
 
             {/* Render Active Tab */}
             {activeTab === "leaderboard" ? (
-              <Leaderboard leaderboardData={leaderboard} artist_id={artist_id} />
+              <Leaderboard leaderboardData={leaderboard} artist_id={artist.ophid} />
             ) : (
-              <Songs id={artist_id} otherSongs={songs} />
+              <Songs />
             )}
 
             {/* Note Section */}

@@ -5,3 +5,4 @@ const {getLeaderboardDetailsController} = require("../controllers/leaderboard")
 
 router.get("/leaderboard", authMiddleware, getLeaderboardDetailsController)
 
+module.exports = router
