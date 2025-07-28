@@ -11,7 +11,7 @@ const connectDB = require("./DB/connect");
 // Routes
 const signinRoute = require("./routes/signin");
 const signupRoute = require("./routes/signup");
-const paymentRoute = require("./routes/payment");
+const withdraw = require("./routes/withdraw");
 const professionalDetailsRoute = require("./routes/professional_details")
 const documentationDetailsRoute = require("./routes/documentation_details")
 const dateBookingRoute = require("./routes/date_booking")
@@ -34,7 +34,6 @@ const newArtist = require("./admin/routes/newArtist")
 const allArtist = require("./admin/routes/allArtist")
 const songs = require("./admin/routes/songs")
 const payments = require("./admin/routes/payments")
-
 const tickets = require("./admin/routes/tickets")
 // ✅ Middleware order is important
 app.use(cors({
@@ -47,7 +46,7 @@ app.use(express.json());
 // ✅ Mount routes
 app.use("/", signupRoute);
 app.use("/", signinRoute);
-app.use("/", paymentRoute);
+app.use("/", withdraw);
 app.use("/", professionalDetailsRoute);
 app.use("/", documentationDetailsRoute);
 
@@ -57,7 +56,7 @@ app.use("/", songDetailsRoute);
 app.use("/", forgotPassword);
 app.use("/", resetPassword);
 app.use("/", personalDetails);
-app.use("/",membership);
+app.use("/", membership);
 app.use("/", secondaryArtist);
 app.use("/", videoDetail);
 app.use("/", eventEnrollments);
