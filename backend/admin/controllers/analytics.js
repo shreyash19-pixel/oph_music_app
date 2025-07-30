@@ -1,5 +1,5 @@
 const SongSocialMetrics = require("../model/analytics");
-
+const db = require('../../DB/connect');
 const createMetrics = async (req, res) => {
   try {
     const data = req.body;
@@ -40,7 +40,25 @@ const getMetricById = async (req, res) => {
   }
 };
 
+const kpi = async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT 
+        OPH_ID, 
+        COUNT(song_id) AS song_count,
+        SUM(youtube_views) AS total_views
+      FROM song_social_metrics
+      GROUP BY OPH_ID
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching OPH_ID song counts:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports ={
-    createMetrics,updateMetrics,getAllMetrics,getMetricById
+    createMetrics,updateMetrics,getAllMetrics,getMetricById,kpi
 
 }
