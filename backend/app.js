@@ -37,7 +37,7 @@ const allArtist = require("./admin/routes/allArtist")
 const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
-
+const analytics = require("./admin/routes/analytics")
 const tickets = require("./admin/routes/tickets")
 // ✅ Middleware order is important
 app.use(cors({
@@ -79,6 +79,7 @@ app.use("/",tickets);
 app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
+app.use("/",analytics);
 
 // ✅ Start server
 app.listen(port, () => {

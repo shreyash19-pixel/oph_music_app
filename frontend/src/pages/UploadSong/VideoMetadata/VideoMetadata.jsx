@@ -137,7 +137,8 @@ export default function VideoMetadataForm() {
         navigate("/auth/payment", {
           state: {
             from: "Song Registration",
-            booking_date: location.state.release_date
+            booking_date: location.state.release_date,
+            song_id:contentId
           }
         });
       }

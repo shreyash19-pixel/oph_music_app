@@ -9,8 +9,8 @@ import { Link } from "react-router-dom";
 
 function SuccessSlider({ searchText ,title  }) {
   const [isDragging, setIsDragging] = useState(false);
-  const [successData, setSuccessData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [successData, setSuccessData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [playingIndex, setPlayingIndex] = useState(null);
   const videoRefs = useRef([]);
 const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,31 +18,101 @@ const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [allSuccess, setAllSuccess] = useState([]);
 
-  useEffect(() => {
-    const fetchContents = async () => {
-      try {
-        const response = await axiosApi.get("/success-stories");
-        setAllSuccess(response.data.data); // Save original data
-        setSuccessData(response.data.data); // Initially show all
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchContents();
-  }, []);
-  
-  useEffect(() => {
-    if (searchText) {
-      const filteredSuccess = allSuccess.filter((reel) =>
-        reel.title.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setSuccessData(filteredSuccess);
-    } else {
-      setSuccessData(allSuccess); // Restore original list
+  const successData = [
+    {
+      id: 1,
+      title: "The Rise of Indie Music",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
+      artist_name: "IndieVibes",
+      duration_in_minutes: 12,
+      views: 15400,
+      credit_name: "Hosted by Riya Mehta",
+      keywords: ["music", "indie", "trending"]
+    },
+    {
+      id: 2,
+      title: "Behind The Mic: Ep 5",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
+      artist_name: "SoundCast",
+      duration_in_minutes: 9,
+      views: 8400,
+      credit_name: "Produced by AudioVerse",
+      keywords: ["audio", "interview", "studio"]
+    },
+    {
+      id: 3,
+      title: "Music and Mindfulness",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
+      artist_name: "ZenBeats",
+      duration_in_minutes: 15,
+      views: 22100,
+      credit_name: "Curated by Priya Sharma",
+      keywords: ["wellness", "meditation", "music"]
+    },
+    {
+      id: 4,
+      title: "The Rise of Indie Music",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
+      artist_name: "IndieVibes",
+      duration_in_minutes: 12,
+      views: 15400,
+      credit_name: "Hosted by Riya Mehta",
+      keywords: ["music", "indie", "trending"]
+    },
+    {
+      id: 5,
+      title: "Behind The Mic: Ep 5",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
+      artist_name: "SoundCast",
+      duration_in_minutes: 9,
+      views: 8400,
+      credit_name: "Produced by AudioVerse",
+      keywords: ["audio", "interview", "studio"]
+    },
+    {
+      id: 6,
+      title: "Music and Mindfulness",
+      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
+      artist_name: "ZenBeats",
+      duration_in_minutes: 15,
+      views: 22100,
+      credit_name: "Curated by Priya Sharma",
+      keywords: ["wellness", "meditation", "music"]
     }
-  }, [searchText, allSuccess]);
+  ];
+
+
+  // useEffect(() => {
+  //   const fetchContents = async () => {
+  //     try {
+  //       const response = await axiosApi.get("/success-stories");
+  //       setAllSuccess(response.data.data); // Save original data
+  //       setSuccessData(response.data.data); // Initially show all
+  //     } catch (error) {
+  //       console.log(error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchContents();
+  // }, []);
+  
+  // useEffect(() => {
+  //   if (searchText) {
+  //     const filteredSuccess = allSuccess.filter((reel) =>
+  //       reel.title.toLowerCase().includes(searchText.toLowerCase())
+  //     );
+  //     setSuccessData(filteredSuccess);
+  //   } else {
+  //     setSuccessData(allSuccess); // Restore original list
+  //   }
+  // }, [searchText, allSuccess]);
   
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);

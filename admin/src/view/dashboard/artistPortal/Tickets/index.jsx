@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosApi from "../../../../../../frontend/src/conf/axios";
 
 export default function AdminTicketList() {
   const [tickets, setTickets] = useState([]);
@@ -7,8 +7,8 @@ export default function AdminTicketList() {
   const [summaryMap, setSummaryMap] = useState({});
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/getTicketSummaries")
+    axiosApi
+      .get("/getTicketSummaries")
       .then((res) => {
         if (res.data && Array.isArray(res.data.data)) {
           setTickets(res.data.data);
