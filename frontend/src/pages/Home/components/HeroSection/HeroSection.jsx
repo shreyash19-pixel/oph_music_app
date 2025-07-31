@@ -5,9 +5,9 @@ import formatDateAndAdjustMonth from "../../../../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { changeSelectedEvent } from "../../../../slice/events";
-import getToken from "../../../../utils/getToken";
 import SongDetails from "../../../SongDetails/SongDetails";
 import SongCard from "../../../../components/SongCard";
+import Video from '../../../../assets/videos/video.mp4'
 
 const HeroSection = ({ firstEvent }) => {
   const [videoModal, setVideoModal] = useState(false);
@@ -19,18 +19,18 @@ const HeroSection = ({ firstEvent }) => {
 
   const [isPlaying, setIsPlaying] = useState(false); // Track video play state
   const videoRef = useRef(null);
-  const [video, setVideo] = useState(null);
+  const [video, setVideo] = useState(Video);
 
-  const fetchVideo = async () => {
-    try {
-      const response = await axiosApi.get(
-        "artist-website-configs?param=signup_video"
-      );
-      setVideo(response.data.data[0]);
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  // const fetchVideo = async () => {
+  //   try {
+  //     const response = await axiosApi.get(
+  //       "artist-website-configs?param=signup_video"
+  //     );
+  //     setVideo(response.data.data[0]);
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
   const handlePlay = () => setIsPlaying(true);
   const handlePause = () => setIsPlaying(false);
   const togglePlayPause = () => {
@@ -42,9 +42,9 @@ const HeroSection = ({ firstEvent }) => {
       }
     }
   };
-  useEffect(() => {
-    fetchVideo();
-  }, []);
+  // useEffect(() => {
+  //   fetchVideo();
+  // }, []);
 
   useEffect(() => {}, [firstEvent]);
 
@@ -62,31 +62,31 @@ const HeroSection = ({ firstEvent }) => {
     });
   };
 
-  const createEventReg = async () => {
-    const token = getToken();
-    if (location.state?.status === "success") {
-      const payment_id = location.state.paymentData.newPaymentIds[0];
+  // const createEventReg = async () => {
+  //   const token = getToken();
+  //   if (location.state?.status === "success") {
+  //     const payment_id = location.state.paymentData.newPaymentIds[0];
 
-      const response = await axiosApi.post(
-        `/events/${firstEvent.id}/artist-booking`,
-        {
-          payment_id: payment_id,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status == 200) {
-        console.log("Success");
-      }
-    }
-  };
+  //     const response = await axiosApi.post(
+  //       `/events/${firstEvent.id}/artist-booking`,
+  //       {
+  //         payment_id: payment_id,
+  //       },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  //     if (response.status == 200) {
+  //       console.log("Success");
+  //     }
+  //   }
+  // };
 
-  useEffect(() => {
-    createEventReg();
-  }, [location.state]);
+  // useEffect(() => {
+  //   createEventReg();
+  // }, [location.state]);
 
   return (
     <div className="space-y-6 px-8 p-4">
@@ -113,93 +113,89 @@ const HeroSection = ({ firstEvent }) => {
       {/* <SongDetails/> */}
 
       <SongCard
-        title={firstEvent.name}
-        thumbnailUrl={firstEvent.thumbnail_url}
-        thumbnailAlt="Song Thumbnail"
-        releaseDate={formatDateAndAdjustMonth(firstEvent.event_date_time)}
+        releaseData = {firstEvent}
       />
 
       {/* Event Banner */}
-      <div
+      {/* <div
         className="relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
         style={{
           backgroundImage: "url('/assets/images/songUploadCardBg.png')",
         }}
       >
         {firstEvent && (
-  <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
-    {/* Left Content Section */}
-    <div className="w-full md:w-2/3 space-y-4">
-      {/* Header */}
-      <div>
-        <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
-          NEW EVENT
-        </p>
-        <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-          {firstEvent.name}
-        </h2>
-      </div>
+          <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
+            Left Content Section
+            <div className="w-full md:w-2/3 space-y-4">
+              Header
+              <div>
+                <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
+                  NEW EVENT
+                </p>
+                <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
+                  {firstEvent.name}
+                </h2>
+              </div>
 
-      {/* Details */}
-      <div className="text-slate-300 text-sm sm:text-base space-y-2">
-        <div className="flex flex-wrap gap-1 sm:gap-2">
-          <span>Competition Date:</span>
-          <span className="font-medium text-white">
-            {formatDateAndAdjustMonth(firstEvent.event_date_time)}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1 sm:gap-2">
-          <span>Registration Date:</span>
-          <span className="font-medium text-white">
-            {formatDateAndAdjustMonth(firstEvent.regn_start)} -{" "}
-            {formatDateAndAdjustMonth(firstEvent.regn_end)}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1 sm:gap-2">
-          <span>Registration Fee:</span>
-          <span className="font-medium text-white">
-            {firstEvent.fees}/-
-          </span>
-        </div>
-      </div>
+              Details
+              <div className="text-slate-300 text-sm sm:text-base space-y-2">
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <span>Competition Date:</span>
+                  <span className="font-medium text-white">
+                    {formatDateAndAdjustMonth(firstEvent.event_date_time)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <span>Registration Date:</span>
+                  <span className="font-medium text-white">
+                    {formatDateAndAdjustMonth(firstEvent.regn_start)} -{" "}
+                    {formatDateAndAdjustMonth(firstEvent.regn_end)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <span>Registration Fee:</span>
+                  <span className="font-medium text-white">
+                    {firstEvent.fees}/-
+                  </span>
+                </div>
+              </div>
 
-      {/* Register Button */}
-      <div>
-        {firstEvent.is_registered ? (
-          <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
-            Registered
-          </button>
-        ) : (
-          <button
-            onClick={() => handleClick(firstEvent)}
-            className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
-          >
-            Register
-          </button>
+              Register Button
+              <div>
+                {firstEvent.is_registered ? (
+                  <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
+                    Registered
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleClick(firstEvent)}
+                    className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
+                  >
+                    Register
+                  </button>
+                )}
+              </div>
+            </div>
+
+            Right Image Section
+            <div className="w-full md:w-[35%]">
+              <img
+                src={firstEvent.thumbnail_url}
+                alt="Event thumbnail"
+                className="w-full h-full max-h-[250px] object-cover rounded-lg"
+              />
+            </div>
+          </div>
         )}
-      </div>
-    </div>
-
-    {/* Right Image Section */}
-    <div className="w-full md:w-[35%]">
-      <img
-        src={firstEvent.thumbnail_url}
-        alt="Event thumbnail"
-        className="w-full h-full max-h-[250px] object-cover rounded-lg"
-      />
-    </div>
-  </div>
-)}
-
-      </div>
+      </div> */}
 
       {/* Registration Modal */}
-      {isModalOpen && (
+      {/* {isModalOpen && (
         <RegistrationModal
           id={firstEvent?.id}
           setIsModalOpen={setIsModalOpen}
         />
-      )}
+      )} */}
 
       {/* Video Modal */}
       {videoModal && (
@@ -223,7 +219,10 @@ const HeroSection = ({ firstEvent }) => {
             <button
               onClick={() => {
                 const video = document.getElementById("video-player");
+                console.log(video);
+                
                 if (video.paused) {
+                  console.log("hello");
                   video.play();
                 } else {
                   video.pause();
@@ -242,7 +241,6 @@ const HeroSection = ({ firstEvent }) => {
             {/* Video */}
             <video
               id="video-player"
-              src={video?.value}
               className="w-full h-auto max-h-[70vh] rounded-lg"
               autoPlay
               playsInline
@@ -254,7 +252,10 @@ const HeroSection = ({ firstEvent }) => {
               onPlay={() =>
                 document.getElementById("play-button").classList.add("hidden")
               }
-            />
+            >
+              <source src={video} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       )}

@@ -4,43 +4,21 @@ import { differenceInDays } from "date-fns";
 import axiosApi from "../conf/axios";
 import formatDateAndAdjustMonth from "../utils/date";
 
-const SongCard = () => {
+const SongCard = ({releaseData}) => {
+
+  console.log(releaseData);
+  
+
   const navigate = useNavigate();
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const userData = localStorage.getItem("userData");
-  const parsedData = JSON.parse(userData);
 
-  useEffect(() => {
-    axiosApi
-      .get("/content/upcoming-release-details", {
-        headers: {
-          Authorization: `Bearer ${parsedData.token}`,
-        },
-      })
-      .then((res) => {
-        if (res.data.success) {
-          setData(res.data.data);
-        } else {
-          // setError("No data found");
-        }
-      })
-      .catch((err) => {
-        // setError("Something went wrong!");
-        console.error(err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-  if (error || !data) return <div>{error}</div>;
-
-  const releaseDate = data.content.release_date;
-  const title = data.content.name;
-  const thumbnailUrl = "/assets/images/song-thumbnail-placeholder.png"; // or from API if available
-  const thumbnailAlt = `${title} Thumbnail`;
+  const releaseDate = formatDateAndAdjustMonth(releaseData?.dateTime);
+  const title = releaseData?.EventName;
+  const thumbnailUrl = releaseData?.image; // or from API if available
+  const thumbnailAlt = `${releaseData?.EventName} Thumbnail`;
 
   const daysUntilRelease = differenceInDays(
     new Date(releaseDate).setHours(0, 0, 0, 0), // Normalize releaseDate to midnight
@@ -86,13 +64,13 @@ transition-all duration-250 border-0 select-none hover:shadow-[inset_0_-25px_18p
         </button>
       </div>
 
-      {/* <div className="w-48 h-48 rounded-lg overflow-hidden">
+      <div className="w-48 h-48 rounded-lg overflow-hidden">
         <img
           src={thumbnailUrl}
           // alt={thumbnailAlt}
           className="w-full h-full object-cover"
         />
-      </div> */}
+      </div>
     </div>
   );
 };
