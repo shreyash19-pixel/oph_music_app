@@ -17,7 +17,7 @@ export const fetchAllEvents = createAsyncThunk('fetchAllEvents', async (headers,
 });
 
 export const changeSelectedEvent = createAsyncThunk('changeSelectedEvent', ({ data: data }) => {
-    return data.id;
+    return data.event_id;
 });
 
 export const eventSlice = createSlice({

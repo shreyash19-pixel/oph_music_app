@@ -5,10 +5,7 @@ import axiosApi from "../conf/axios";
 import formatDateAndAdjustMonth from "../utils/date";
 
 const SongCard = ({releaseData}) => {
-
-  console.log(releaseData);
   
-
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +29,7 @@ const SongCard = ({releaseData}) => {
 
   return (
     <div
-      onClick={() => navigate("/dashboard/song-details")}
+      onClick={() => navigate("/dashboard/events")}
       style={{
         backgroundImage: "url('/assets/images/songUploadCardBg.png')",
       }}

@@ -54,8 +54,8 @@ const HeroSection = ({ firstEvent }) => {
     // Navigate to the payment page
     await navigate("/dashboard/payment", {
       state: {
-        amount: e.fees,
-        planIds: [e.payment_plan_id],
+        amount: e.registrationFee_normal,
+        // planIds: [e.payment_plan_id],
         returnPath: "/dashboard/events",
         heading: "Complete Event Registration",
       },
@@ -117,7 +117,7 @@ const HeroSection = ({ firstEvent }) => {
       />
 
       {/* Event Banner */}
-      {/* <div
+      <div
         className="relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
         style={{
           backgroundImage: "url('/assets/images/songUploadCardBg.png')",
@@ -125,42 +125,42 @@ const HeroSection = ({ firstEvent }) => {
       >
         {firstEvent && (
           <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
-            Left Content Section
+            {/* Left Content Section */}
             <div className="w-full md:w-2/3 space-y-4">
-              Header
+              {/* Header */}
               <div>
                 <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
                   NEW EVENT
                 </p>
                 <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-                  {firstEvent.name}
+                  {firstEvent.EventName}
                 </h2>
               </div>
 
-              Details
+              {/* Details */}
               <div className="text-slate-300 text-sm sm:text-base space-y-2">
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <span>Competition Date:</span>
                   <span className="font-medium text-white">
-                    {formatDateAndAdjustMonth(firstEvent.event_date_time)}
+                    {formatDateAndAdjustMonth(firstEvent.dateTime)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <span>Registration Date:</span>
                   <span className="font-medium text-white">
-                    {formatDateAndAdjustMonth(firstEvent.regn_start)} -{" "}
-                    {formatDateAndAdjustMonth(firstEvent.regn_end)}
+                    {formatDateAndAdjustMonth(firstEvent.registrationStart)} -{" "}
+                    {formatDateAndAdjustMonth(firstEvent.registrationEnd)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <span>Registration Fee:</span>
                   <span className="font-medium text-white">
-                    {firstEvent.fees}/-
+                    {firstEvent.registrationFee_normal}/-
                   </span>
                 </div>
               </div>
 
-              Register Button
+              {/* Register Button */}
               <div>
                 {firstEvent.is_registered ? (
                   <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
@@ -177,25 +177,25 @@ const HeroSection = ({ firstEvent }) => {
               </div>
             </div>
 
-            Right Image Section
+            {/* Right Image Section */}
             <div className="w-full md:w-[35%]">
               <img
-                src={firstEvent.thumbnail_url}
+                src={firstEvent.image}
                 alt="Event thumbnail"
                 className="w-full h-full max-h-[250px] object-cover rounded-lg"
               />
             </div>
           </div>
         )}
-      </div> */}
+      </div>
 
       {/* Registration Modal */}
-      {/* {isModalOpen && (
+      {isModalOpen && (
         <RegistrationModal
-          id={firstEvent?.id}
+          id={firstEvent?.event_id}
           setIsModalOpen={setIsModalOpen}
         />
-      )} */}
+      )}
 
       {/* Video Modal */}
       {videoModal && (
