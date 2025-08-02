@@ -24,6 +24,9 @@ const EventsNewReleases = ({ secondEvent }) => {
 
   const newReleases = useSelector((state) => state.newRelease.newRelease);
 
+  console.log(newReleases);
+  
+
   const handlePlayPause = (song) => {
     if (audio && playingSongId === song.id) {
       // Toggle play/pause for the same song
@@ -132,15 +135,15 @@ const EventsNewReleases = ({ secondEvent }) => {
                 before:z-5"
             >
               <img
-                src={secondEvent.thumbnail_url}
+                src={secondEvent.image}
                 alt="Live event"
                 className="rounded-lg w-full h-full object-cover"
               />
               <div className="absolute bottom-0 left-0 p-4">
                 <div className="text-xs text-cyan-400 mb-2">
-                  {formatDateTime(secondEvent.event_date_time)} - {secondEvent.location}
+                  {formatDateTime(secondEvent.dateTime)} - {secondEvent.location}
                 </div>
-                <h3 className="text-2xl font-bold mb-2">{secondEvent.name}</h3>
+                <h3 className="text-2xl font-bold mb-2">{secondEvent.EventName}</h3>
                 {secondEvent.is_registered ? (
                   <button
                     disabled={true}
@@ -177,28 +180,29 @@ const EventsNewReleases = ({ secondEvent }) => {
               <span className="w-24 text-right">PLAY</span>
               <span className="w-24 text-right">LISTEN</span>
             </div>
-            {newReleases.slice(0, visibleSongs).map((song, index) => (
+            {Object.values(newReleases)?.slice(0, visibleSongs).map((song, index) => (
               <div
-                key={song.id}
-                onClick={() => window.open(import.meta.env.VITE_WEBSITE_URL + 'artists' + `/${song.artist_id}`, '_blank')}
+                key={song.songId}
+                onClick={() => window.open(import.meta.env.VITE_WEBSITE_URL + 'artists' + `/${song.ophid}`, '_blank')}
                 className="flex hover:cursor-pointer items-center py-2 border-b border-gray-800"
               >
-                <img src="https://images.pexels.com/photos/30799437/pexels-photo-30799437/free-photo-of-women-surfing-adventure-on-bali-beach.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" className="w-10 h-10 rounded-md" alt="" />
+                <img src= {song?.imageUrl[0]} className="w-10 h-10 rounded-md" alt="" />
                 <div className="flex-grow ms-4 truncate">
                   <div className="font-medium">
                     <span className="block sm:hidden">
-                      {song.content_name.length > 5 ? song.content_name.slice(0, 5) + "..." : song.content_name}
+                      {song.secondaryArtist?.length > 5 ? song.secondaryArtist.slice(0, 5) + "..." : song.secondaryArtist}
                     </span>
 
                     <span className="hidden sm:block">
-                      {song.content_name}
+                      {song.secondaryArtist}
                     </span>
                   </div>
                   <div className="text-sm text-gray-400">{song.primary_artist}</div>
                 </div>
 
                 <span className="w-24 text-right text-gray-400">
-                  {song.total_views}
+                  {/* {song.total_views} */}
+                  92,829
                 </span>
                 <span className="w-24 flex items-center justify-end ml-auto">
                   <button
@@ -208,7 +212,7 @@ const EventsNewReleases = ({ secondEvent }) => {
                       handlePlayPause(song);
                     }}
                   >
-                    {playingSongId === song.id && !audio?.paused ? (
+                    {playingSongId === song.songId && !audio?.paused ? (
                       <FaPause className="w-3 h-3" />
                     ) : (
                       <FaPlay className="w-3 h-3" />

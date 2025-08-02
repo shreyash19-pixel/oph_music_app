@@ -28,7 +28,7 @@ import NewSignupDetails from "./view/dashboard/New_signUp";
 // import tvpublishing from "./view/dashboard/artistPortal/tvPublishing";
 // import artistKPI from "./view/dashboard/artistPortal/artistKPI";
 import Alldata from "./view/dashboard/artistPortal/allData";
-import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis";
+import Content_Analysis from "./view/dashboard/artistPortal/contentAnalysis";
 import ContentRelease from "./view/dashboard/artistPortal/contentRelease";
 import Notifications from "./view/dashboard/artistPortal/notifications";
 import PaymentAll from "./view/dashboard/artistPortal/paymentAll";
@@ -42,6 +42,9 @@ import Content_New from "./view/dashboard/artistPortal/contentNew/Content_New";
 import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_manage";
 import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/index";
+import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
+
+
 
 function App() {
   return (
@@ -63,8 +66,11 @@ function App() {
           />
           <Route path="/artistPortal" element={<ArtistPortal />} />
           <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
+
           <Route path="/New_SignUp" element={<Home />} />
           <Route path="/Withdraw/:ophid" element={<Withdraw />} />
+          <Route path="/Content_Analysis/:ophid/:songId" element={<ContentAnalysis />} />
+
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
 
@@ -305,7 +311,7 @@ function App() {
             path="/ContentAnalysis"
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-                <ContentAnalysis />
+                <Content_Analysis />
               </ProtectedRoute>
             }
           />

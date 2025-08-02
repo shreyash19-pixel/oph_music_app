@@ -2,11 +2,13 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosApi from "../conf/axios";
 
 
-export const fetchNewRelease = createAsyncThunk('fetchNewRelease', async () => {
+export const fetchNewRelease = createAsyncThunk('fetchNewRelease', async (headers) => {
     try {
-        const response = await axiosApi.get('/content/latest-releases');
-        if (response.status == 200) {
-            return response.data.data;
+        const response = await axiosApi.get('/home/new-releases',{
+            headers: headers
+        });
+        if (response.data.success) {
+            return response.data;
         }
     }
     catch (err) {

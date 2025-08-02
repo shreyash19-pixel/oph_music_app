@@ -14,6 +14,8 @@ const PaymentScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const from = location.state.from;
+  const song_id = location.state.song_id;
+  const event_id = location.state.event_id;
   const [oph_id, setoph_id] = useState("")
 
   const {
@@ -43,7 +45,11 @@ const PaymentScreen = () => {
         Status: "Under Review",
         step: "/auth/create-profile/personal-details",
         from: from,
+        song_id:song_id,
+        event_id:event_id
       };
+      console.log(JSON.stringify(formData));
+      
 
       const response = await axiosApi.post("/auth/payment", formData);
 
@@ -222,3 +228,11 @@ const PaymentScreen = () => {
 };
 
 export default PaymentScreen;
+
+
+
+'trg_video_status_change'
+'trg_payment_status_change_update_only'
+
+'trg_update_status_payment_after_insert'
+'trg_update_status_payment_after_update'
