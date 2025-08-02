@@ -14,7 +14,7 @@ const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionSto
 
 export default function RegisterSongForm() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation();  
   const [blockedDates, setBlockedDates] = useState([]); // Add state for blocked dates
   const [artistBlockedDates, setArtistBlockedDates] = useState([]); // Add state for blocked dates
   const [songReg, setSongReg] = useState(true);
@@ -32,7 +32,7 @@ export default function RegisterSongForm() {
   localStorage.setItem("projectType", projectType);
   const [formData, setFormData] = useState({
     oph_id: ophid,
-    name: "",
+    name: location.state.songName || "" ,
     release_date: "",
     p_line: "",
     cp_line: "",
@@ -563,6 +563,7 @@ export default function RegisterSongForm() {
                 onChange={handleChange}
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
                 required
+                disabled = {location.state.songName}
               />
             </div>
 

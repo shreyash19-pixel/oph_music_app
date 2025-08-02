@@ -45,7 +45,7 @@ export default function UploadSongs() {
     reject_reason: song.reject_reason,
     next_page: song.current_page,
     projectType: song.project_type,
-
+    release_date: song.release_date
   })) : null;
 
   const handleProjectClick = (projectType) => {
@@ -125,6 +125,7 @@ export default function UploadSongs() {
               ['Draft', 'Approved', 'Pending'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
                 state: {
                   songName: song.name,
+                  release_date: song.release_date
                 }
               }) : ['Rejected'].includes(song.status) ? navigate(`/dashboard/upload-song/register-song`) : null
               localStorage.setItem("projectType", song.projectType)

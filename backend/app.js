@@ -27,6 +27,7 @@ const artistSpotlight = require("./routes/artist-spotlight")
 const leaderboardRoute = require("./routes/leaderboard")
 const withdraw = require("./routes/withdraw");
 const homeRoute = require("./routes/home")
+const paymentRoute = require("./routes/payment");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp")
@@ -69,6 +70,7 @@ app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
 app.use("/",leaderboardRoute)
 app.use("/",homeRoute)
+app.use("/",paymentRoute)
 
 //Admin Routes
 
