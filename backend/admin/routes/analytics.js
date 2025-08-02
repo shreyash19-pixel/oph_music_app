@@ -15,6 +15,6 @@ router.get("/allanalytics", controller.getAllMetrics);
 // GET single metric by id
 router.get("/analytics/:id", controller.getMetricById);
 
-router.get('/kpi', controller.kpi);
+router.get('/leaderboard_data', controller.kpi);
 
 module.exports = router;
