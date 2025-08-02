@@ -41,6 +41,15 @@ const getParticipantByOphAndEvent = async (req, res) => {
   }
 };
 
+const getParticipant = async (req, res) => {
+  try {
+    const participant = await EventParticipant.getParticipant();
+    res.status(200).json({ success: true, data: participant });
+  } catch (error) {
+    console.error("Error fetching participant:", error.message);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
 // PATCH /participants/:id
 const updateParticipantStatus = async (req, res) => {
   const { id } = req.params;
@@ -62,5 +71,6 @@ module.exports = {
   registerParticipant,
   getParticipantsByEvent,
   getParticipantByOphAndEvent,
-  updateParticipantStatus
+  updateParticipantStatus,
+  getParticipant,
 };

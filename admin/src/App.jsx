@@ -17,7 +17,8 @@ import Contact from "./view/dashboard/websiteConfig/contact";
 import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import Collab from "./view/dashboard/websiteConfig/collab";
-import Events from "./view/dashboard/websiteConfig/Events";
+import EventAdminForm from './view/dashboard/websiteConfig/Events'
+import Events from "./view/dashboard/websiteConfig/Events/events";
 import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
 import ArtistNew from "./view/dashboard/artistPortal/artistNew";
 import ArtistAll from "./view/dashboard/artistPortal/artistAll";
@@ -42,8 +43,7 @@ import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_
 import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
-
-
+import EventParticipation from "./view/dashboard/websiteConfig/Events/eventParticipation";
 
 function App() {
   return (
@@ -68,8 +68,15 @@ function App() {
 
           <Route path="/New_SignUp" element={<Home />} />
           <Route path="/Withdraw/:ophid" element={<Withdraw />} />
-          <Route path="/Content_Analysis/:ophid/:songId" element={<ContentAnalysis />} />
-
+          <Route
+            path="/Content_Analysis/:ophid/:songId"
+            element={<ContentAnalysis />}
+          />
+          <Route path="/AllEvents" element={<Events />} />
+          <Route
+            path="/event_participants"
+            element={<EventParticipation />}
+          />
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
 
@@ -156,7 +163,7 @@ function App() {
                   ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
-                <Events />
+                <EventAdminForm />
               </ProtectedRoute>
             }
           />

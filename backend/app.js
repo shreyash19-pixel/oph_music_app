@@ -24,6 +24,7 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
+const homeRoute = require("./routes/home")
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
 const incrementTrafficCounter = require("./routes/increment_traffic_counter")
@@ -40,10 +41,10 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
-
 const tickets = require("./admin/routes/tickets")
 const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require('./admin/routes/leaderboard')
+const kpi = require('./admin/routes/kpi')
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -86,8 +87,10 @@ app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
 app.use("/",analytics);
-app.use('/',leaderboard)
+app.use("/",leaderboard);
+app.use("/",kpi)
 app.use('/',AdminWithdraw)
+
 
 // ✅ Start server
 app.listen(port, () => {

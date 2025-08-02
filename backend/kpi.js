@@ -1,110 +1,102 @@
+import Backendaxios from "./utils/backendAxios.js";
+import axios from "axios"; // used to send to your backend server (e.g. http://localhost:5000)
+
 console.time("totalTime");
 
-// --------------------- Constants --------------------- //
-const NUM_TEST_ARTISTS = 10000;
-
-// Weights
 const TRAFFIC_WEIGHT = 0.20;
 const SONGS_WEIGHT = 0.15;
 const VIEW_WEIGHT = 0.30;
 const EVENT_WEIGHT = 0.20;
 const AVG_VIEW_WEIGHT = 0.15;
 
-// --------------------- Generate Test Data --------------------- //
-console.time("dataGeneration");
-
-const generateTestArtists = (num) => {
-    const data = {};
-    for (let i = 1; i <= num; i++) {
-        data[`artist${i}`] = {
-            traffic: Math.floor(Math.random() * 5000),
-            songs: Math.floor(Math.random() * 10) + 1,
-            view: Math.floor(Math.random() * 100000),
-            event: Math.floor(Math.random() * 15) + 1,
-            avgView: Math.floor(Math.random() * 1000) + 50
-        };
-    }
-    return data;
+const timeToSeconds = (timeStr) => {
+  const [h, m, s] = timeStr.split(":").map(Number);
+  return (h * 3600) + (m * 60) + s;
 };
 
-const artistData = generateTestArtists(NUM_TEST_ARTISTS);
-
-console.timeEnd("dataGeneration");
-
-// --------------------- Calculate Max Values --------------------- //
-console.time("maxCalculation");
-
-const calculateMaxValues = (artists) => {
-    const maxValues = {};
-    for (const artistKey in artists) {
-        const artist = artists[artistKey];
-        for (const field in artist) {
-            if (!maxValues[field] || artist[field] > maxValues[field].value) {
-                maxValues[field] = { value: artist[field], artist: artistKey };
-            }
-        }
-    }
-    return maxValues;
+const fetchKPIData = async () => {
+  try {
+    const res = await Backendaxios.get("/get_kpi_model");
+    return res.data.map((entry) => ({
+      OPH_ID: entry.OPH_ID,
+      user_traffic: entry.user_traffic || 0,
+      song_count: entry.song_count || 0,
+      total_views: parseInt(entry.total_views, 10) || 0,
+      avg_view_duration: entry.avg_view_duration || "00:00:00",
+      total_accepted_events: entry.total_accepted_events || 0,
+      avgViewInSeconds: timeToSeconds(entry.avg_view_duration || "00:00:00"),
+    }));
+  } catch (err) {
+    console.error("Error fetching KPI data:", err);
+    return [];
+  }
 };
 
-const maxValues = calculateMaxValues(artistData);
+const processArtists = async () => {
+  const artistArray = await fetchKPIData();
+  console.timeEnd("dataFetch");
 
-console.timeEnd("maxCalculation");
+  // Max values
+  const maxValues = {
+    user_traffic: 0,
+    song_count: 0,
+    total_views: 0,
+    total_accepted_events: 0,
+    avgViewInSeconds: 0,
+  };
 
-// --------------------- Normalize Scores --------------------- //
-console.time("scoreCalculation");
+  artistArray.forEach((artist) => {
+    Object.keys(maxValues).forEach((key) => {
+      maxValues[key] = Math.max(maxValues[key], artist[key]);
+    });
+  });
 
-const normalizeScores = (artist, maxValues) => {
-    return {
-        traffic: (artist.traffic / maxValues.traffic.value) * 100,
-        songs: (artist.songs / maxValues.songs.value) * 100,
-        view: (artist.view / maxValues.view.value) * 100,
-        event: (artist.event / maxValues.event.value) * 100,
-        avgView: (artist.avgView / maxValues.avgView.value) * 100,
+  const backendURL = "/insert_kpi_score"; // change this if deployed
+
+  for (const artist of artistArray) {
+    const normalized = {
+      traffic: (artist.user_traffic / maxValues.user_traffic) * 100 || 0,
+      songs: (artist.song_count / maxValues.song_count) * 100 || 0,
+      view: (artist.total_views / maxValues.total_views) * 100 || 0,
+      event: (artist.total_accepted_events / maxValues.total_accepted_events) * 100 || 0,
+      avgView: (artist.avgViewInSeconds / maxValues.avgViewInSeconds) * 100 || 0,
     };
+
+    const score = (
+      normalized.traffic * TRAFFIC_WEIGHT +
+      normalized.songs * SONGS_WEIGHT +
+      normalized.view * VIEW_WEIGHT +
+      normalized.event * EVENT_WEIGHT +
+      normalized.avgView * AVG_VIEW_WEIGHT
+    ).toFixed(2);
+
+    try {
+      await Backendaxios.post(backendURL, {
+        OPH_ID: artist.OPH_ID,
+        user_traffic: artist.user_traffic,
+        song_count: artist.song_count,
+        total_views: artist.total_views,
+        avg_view_duration: artist.avg_view_duration,
+        total_accepted_events: artist.total_accepted_events,
+        score,
+      });
+    } catch (err) {
+      console.error(`Failed to insert KPI for ${artist.OPH_ID}`, err.message);
+    }
+  }
+
+  console.log("✅ All KPI scores inserted/updated.");
 };
 
-const artistMap = new Map();
+console.time("dataFetch");
+console.time("scoreCalculation");
+console.time("sorting");
+console.time("totalTime");
 
-for (const artistKey in artistData) {
-    const rawData = artistData[artistKey];
-    const normalized = normalizeScores(rawData, maxValues);
-    artistMap.set(artistKey, {
-        ...rawData,
-        score: normalized
-    });
-}
-
-console.timeEnd("scoreCalculation");
-
-// --------------------- Calculate Weighted Scores & Sort --------------------- //
-console.time("finalScoreCalculation");
-
-const artistScores = [];
-
-for (const [artistName, artistEntry] of artistMap.entries()) {
-    const s = artistEntry.score;
-
-    const weightedScore =
-        (s.traffic * TRAFFIC_WEIGHT) +
-        (s.songs * SONGS_WEIGHT) +
-        (s.view * VIEW_WEIGHT) +
-        (s.event * EVENT_WEIGHT) +
-        (s.avgView * AVG_VIEW_WEIGHT);
-
-    artistScores.push({
-        artist: artistName,
-        score: weightedScore
-    });
-}
-
-artistScores.sort((a, b) => b.score - a.score);
-
-console.timeEnd("finalScoreCalculation");
-
-// --------------------- Total Time --------------------- //
-console.timeEnd("totalTime");
-
-// --------------------- Example Output --------------------- //
-console.log("Top 5 artists by weighted score:");
-console.log(artistScores.slice(0, 5));
+processArtists()
+  .then(() => {
+    console.timeEnd("scoreCalculation");
+    console.timeEnd("sorting");
+    console.timeEnd("totalTime");
+  })
+  .catch((err) => console.error("Processing failed:", err));
