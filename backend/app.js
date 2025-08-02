@@ -11,7 +11,6 @@ const connectDB = require("./DB/connect");
 // Routes
 const signinRoute = require("./routes/signin");
 const signupRoute = require("./routes/signup");
-const paymentRoute = require("./routes/payment");
 const professionalDetailsRoute = require("./routes/professional_details")
 const documentationDetailsRoute = require("./routes/documentation_details")
 const dateBookingRoute = require("./routes/date_booking")
@@ -25,7 +24,7 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
-
+const leaderboardRoute = require("./routes/leaderboard")
 
 
 //Admin route assignment
@@ -38,8 +37,8 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
+
 const tickets = require("./admin/routes/tickets")
-const leaderboard = require("./admin/routes/leaderboard")
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -51,7 +50,7 @@ app.use(express.json());
 // ✅ Mount routes
 app.use("/", signupRoute);
 app.use("/", signinRoute);
-app.use("/", paymentRoute);
+app.use("/", withdraw);
 app.use("/", professionalDetailsRoute);
 app.use("/", documentationDetailsRoute);
 
@@ -61,12 +60,12 @@ app.use("/", songDetailsRoute);
 app.use("/", forgotPassword);
 app.use("/", resetPassword);
 app.use("/", personalDetails);
-app.use("/",membership);
+app.use("/", membership);
 app.use("/", secondaryArtist);
 app.use("/", videoDetail);
 app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
-
+app.use("/",leaderboardRoute)
 
 
 //Admin Routes
@@ -80,8 +79,8 @@ app.use("/",tickets);
 app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
+app.use("/",AdminWithdraw);
 app.use("/",analytics);
-app.use("/",leaderboard);
 
 // ✅ Start server
 app.listen(port, () => {

@@ -13,23 +13,21 @@ export default function VideoMetadataForm() {
   const [error, setError] = useState(null);
   const location = useLocation();
   console.log(location);
+  
   const [songName, setSongName] = useState(location.state.songName);
-  const projectType = localStorage.getItem("projectType") || ""
+  const projectType = localStorage.getItem("projectType") || "";
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
     credits: "",
     thumbnails: [],
     video_file: null,
     existing_thumbnails: [],
-    existing_video_url: null
+    existing_video_url: null,
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPaidForLyricalVideo, setHasPaidForLyricalVideo] = useState(false); // Add state for lyrical video payment
-
-
-
 
   const urlToFile = async (url, fileName, mimeType) => {
     const res = await fetch(url);
@@ -60,13 +58,15 @@ export default function VideoMetadataForm() {
   const removeExistingPhoto = async (index) => {
     try {
       setIsRemoving(true);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        existing_thumbnails: prev.existing_thumbnails.filter((_, i) => i !== index)
+        existing_thumbnails: prev.existing_thumbnails.filter(
+          (_, i) => i !== index
+        ),
       }));
     } catch (error) {
-      console.error('Error removing photo:', error);
-      toast.error('Failed to remove photo');
+      console.error("Error removing photo:", error);
+      toast.error("Failed to remove photo");
     } finally {
       setIsRemoving(false);
     }
@@ -87,13 +87,20 @@ export default function VideoMetadataForm() {
 
     if (isSubmitting) return;
 
-    if (formData.thumbnails.length === 0 && formData.existing_thumbnails.length === 0) {
-      toast.error('At least one thumbnail is required');
+    if (
+      formData.thumbnails.length === 0 &&
+      formData.existing_thumbnails.length === 0
+    ) {
+      toast.error("At least one thumbnail is required");
       return;
     }
 
-    if (!hasPaidForLyricalVideo && !formData.video_file && !formData.existing_video_url) {
-      toast.error('Video file is required');
+    if (
+      !hasPaidForLyricalVideo &&
+      !formData.video_file &&
+      !formData.existing_video_url
+    ) {
+      toast.error("Video file is required");
       return;
     }
 
@@ -102,8 +109,8 @@ export default function VideoMetadataForm() {
       setIsLoading(true);
 
       const formDataToSend = new FormData();
-      formDataToSend.append("song_id", contentId)
-      formDataToSend.append("ophid", ophid)
+      formDataToSend.append("song_id", contentId);
+      formDataToSend.append("ophid", ophid);
       formDataToSend.append("credits", formData.credits);
 
       if (formData.video_file) {
@@ -111,7 +118,7 @@ export default function VideoMetadataForm() {
       }
 
       formData.thumbnails.forEach((thumbnail) => {
-        formDataToSend.append('thumbnails', thumbnail);
+        formDataToSend.append("thumbnails", thumbnail);
       });
 
       const response = await axiosApi.post(`/video-details`, formDataToSend, {
@@ -122,15 +129,31 @@ export default function VideoMetadataForm() {
       });
 
       if (projectType === "paid in advance") {
-        navigate("/dashboard/success", {
-          state: {
-            heading: "Your Event Spot has been booked Successfully.",
-            btnText: "Back to Home",
-            redirectTo: "/dashboard/events",
+        const response = await axiosApi.post(
+          "/insert-calender-song-project",
+          {
+            oph_id: ophid,
+            song_name: location.state.songName,
+            project_type: projectType,
           },
-        });
+          {
+            headers: {
+              ...headers,
+              "Content-Type" : "application/json"
+            },
+          }
+        );
 
-        return
+        if (response.data.success) {
+          navigate("/dashboard/success", {
+            state: {
+              heading: "Your Event Spot has been booked Successfully.",
+              btnText: "Back to Home",
+              redirectTo: "/dashboard/events",
+            },
+          });
+        }
+        return;
       }
 
       if (response.data.success) {
@@ -138,13 +161,15 @@ export default function VideoMetadataForm() {
           state: {
             from: "Song Registration",
             booking_date: location.state.release_date,
-            song_id:contentId
-          }
+            song_id: contentId,
+            songName: location.state.songName,
+            project_type: location.state.project_type,
+          },
         });
       }
     } catch (error) {
       console.error("Error uploading video metadata:", error);
-      toast.error('Failed to upload video metadata. Please try again.');
+      toast.error("Failed to upload video metadata. Please try again.");
     } finally {
       setIsSubmitting(false);
       setIsLoading(false);
@@ -158,7 +183,7 @@ export default function VideoMetadataForm() {
   useEffect(() => {
     const fetchVideoMetadata = async () => {
       if (!contentId) {
-        setError('No content ID provided');
+        setError("No content ID provided");
         setIsLoading(false);
         return;
       }
@@ -166,7 +191,7 @@ export default function VideoMetadataForm() {
       try {
         const response = await axiosApi.get(`/video-details`, {
           headers,
-          params: { contentId }
+          params: { contentId },
         });
 
         if (response.data.success) {
@@ -181,45 +206,46 @@ export default function VideoMetadataForm() {
           // Convert image URLs to File[]
           const imageFiles = await Promise.all(
             imageUrls.map(async (url, index) => {
-              const fileName = url.split('/').pop() || `image_${index}.jpg`;
-              return await urlToFile(url, fileName, 'image/jpeg');
+              const fileName = url.split("/").pop() || `image_${index}.jpg`;
+              return await urlToFile(url, fileName, "image/jpeg");
             })
           );
 
           // Convert video URL to File (if exists)
           let videoFile = null;
           if (data.video_url) {
-            const fileName = data.video_url.split('/').pop() || 'video.mp4';
-            videoFile = await urlToFile(data.video_url, fileName, 'video/mp4');
+            const fileName = data.video_url.split("/").pop() || "video.mp4";
+            videoFile = await urlToFile(data.video_url, fileName, "video/mp4");
           }
 
           // ✅ Replace thumbnails and video_file (not append)
           setFormData({
-            credits: data.credits || '',
+            credits: data.credits || "",
             existing_thumbnails: imageUrls,
             thumbnails: imageFiles,
             video_file: videoFile,
             existing_video_url: data.video_url || null,
-            reject_reason: data.reject_reason || null
+            reject_reason: data.reject_reason || null,
           });
         }
       } catch (err) {
-        console.error('Error fetching video metadata:', err);
-        setError('Failed to load video metadata');
+        console.error("Error fetching video metadata:", err);
+        setError("Failed to load video metadata");
       }
     };
 
     fetchVideoMetadata();
   }, [contentId, headers]);
 
-
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
       <div className="max-w-xl space-y-8">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">VIDEO METADATA</h1>
-        {
-          formData.reject_reason && <p className="text-red-700">Reason: {formData.reject_reason}</p>
-        }
+        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          VIDEO METADATA
+        </h1>
+        {formData.reject_reason && (
+          <p className="text-red-700">Reason: {formData.reject_reason}</p>
+        )}
 
         {(isLoading || isRemoving || isUploading) && <Loading />}
 
@@ -297,7 +323,9 @@ export default function VideoMetadataForm() {
               ))} */}
 
               {/* Upload Button */}
-              {formData.thumbnails.length + formData.existing_thumbnails.length < 3 && (
+              {formData.thumbnails.length +
+                formData.existing_thumbnails.length <
+                3 && (
                 <label className="cursor-pointer">
                   <input
                     type="file"
@@ -358,8 +386,8 @@ export default function VideoMetadataForm() {
                       <Plus className="w-8 h-8 text-gray-500" />
                       <span className="text-gray-500">
                         {formData.existing_video_url
-                          ? 'Upload New Video File'
-                          : 'Upload Video File'}
+                          ? "Upload New Video File"
+                          : "Upload Video File"}
                       </span>
                     </div>
                   )}
@@ -374,7 +402,7 @@ export default function VideoMetadataForm() {
             disabled={isLoading}
             className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
           >
-            {isLoading ? 'Loading...' : 'Submit'}
+            {isLoading ? "Loading..." : "Submit"}
           </button>
         </form>
       </div>

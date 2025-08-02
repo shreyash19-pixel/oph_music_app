@@ -56,10 +56,9 @@ const PaymentScreen = () => {
 
       if (response.data.success && from == "Date booking") {
         {
-          console.log("booking");
           const CalenderRes = await axiosApi.post(
             "/booking",
-            { oph_id: ophid, booking_date: location.state.date },
+            { oph_id: ophid, booking_date: location.state.date, song_name: null, project_type: null},
             { headers: headers }
           );
 
@@ -98,10 +97,9 @@ const PaymentScreen = () => {
 
       else if (response.data.success && from == "Song Registration") {
         { 
-          console.log(location);
           const CalenderRes = await axiosApi.post(
             "/booking",
-            { oph_id: ophid, booking_date: location.state.booking_date },
+            { oph_id: ophid, booking_date: location.state.booking_date, song_name: location.state.songName, project_type: location.state.project_type },
             { headers: headers }
           );
 

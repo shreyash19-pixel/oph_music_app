@@ -40,7 +40,7 @@ const ArtistLayout = () => {
     // dispatch(fetchBlockedDates());
     // dispatch(fetchContentTypes());
     // dispatch(fetchPaymentPlans());
-    // dispatch(fetchNewRelease());
+    dispatch(fetchNewRelease(headers));
     dispatch(fetchLeaderboard(headers));
     // dispatch(fetchTicketCategories());
     // dispatch(getProfile());
