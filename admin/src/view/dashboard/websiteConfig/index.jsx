@@ -66,14 +66,26 @@ const WebsiteConfig = () => {
       children: [
         {
           label: "Event Creation",
-          route: "/Events"
-        }
-      ]
+          route: "/Events",
+        },
+        {
+          label: "Events",
+          route: "/allEvents",
+        },
+        {
+          label: "Event Participants",
+          route: "/event_participants",
+        },
+      ],
     },
     {
       label: "Leaderboard",
       route: "/leaderboard",
-      roles: [ROLES.ADMINISTRATIVE_HEAD, ROLES.ADMINISTRATIVE_MEMBER, ROLES.SUPER_ADMIN],
+      roles: [
+        ROLES.ADMINISTRATIVE_HEAD,
+        ROLES.ADMINISTRATIVE_MEMBER,
+        ROLES.SUPER_ADMIN,
+      ],
     },
   ];
 
