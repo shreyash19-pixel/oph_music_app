@@ -42,13 +42,14 @@ const insertHybridSong = async (OPH_ID,
   release_date,
   payment,
   Lyrics_services,
-  available_on_music_platforms
+  available_on_music_platforms,
+  next_step
 ) => {
 
   const [result] = await db.execute(
     `INSERT INTO songs_register 
-    (OPH_ID, project_type, Song_name,release_date, payment, Lyrics_services,availability_on_music_platform)
-    VALUES (?, ?, ?, ?, ?, ?,?)`,
+    (OPH_ID, project_type, Song_name,release_date, payment, Lyrics_services,availability_on_music_platform, current_page)
+    VALUES (?, ?, ?, ?, ?, ?,?,?)`,
     [
       OPH_ID,
       project_type,
@@ -56,7 +57,8 @@ const insertHybridSong = async (OPH_ID,
       release_date,
       payment,
       Lyrics_services,
-      available_on_music_platforms
+      available_on_music_platforms,
+      next_step
     ]
   );
 

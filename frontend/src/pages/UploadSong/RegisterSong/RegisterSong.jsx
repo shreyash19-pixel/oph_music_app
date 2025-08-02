@@ -45,13 +45,12 @@ export default function RegisterSongForm() {
 
   useEffect(() => {
     if (ophid) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        oph_id: ophid
+        oph_id: ophid,
       }));
     }
   }, [ophid]);
-
 
   const handleTotalPayment = () => {
     if (songReg && lyricalVid) {
@@ -81,7 +80,7 @@ export default function RegisterSongForm() {
           setIsLoading(false);
           // Extract just the dates from the response
           const dates = response.data.data.map(
-            (item) => item.current_booking_date?.split("T")[0]
+            (item) => item.current_booking_date
           );
 
           setBlockedDates(dates);
@@ -92,41 +91,33 @@ export default function RegisterSongForm() {
     };
 
     fetchBlockedDates();
-
   }, []);
-
 
   useEffect(() => {
     const fetchBlockedDatesByOPHID = async () => {
-
       try {
-        if (!ophid) return
+        if (!ophid) return;
 
         const response = await axiosApi.get("/bookings-by-id", {
           headers: headers,
-          params: { ophid }
-        })
-
-        console.log(response.data.data);
+          params: { ophid },
+        });
 
         if (response.data.success) {
           setIsLoading(false);
           // Extract just the dates from the response
-          const individualDates = response.data.data.map(
-            (item) => item.current_booking_date?.split("T")[0]
+          const individualDates = response.data.data.filter((date) => date.song_name === null).map(
+            (item) => item.current_booking_date
           );
 
           setArtistBlockedDates(individualDates);
         }
-
+      } catch (error) {
+        console.error("Error fetching blocked dates by ophid", error);
       }
-      catch (error) {
-        console.error("Error fetching blocked dates by ophid", error)
-      }
-
-    }
-    fetchBlockedDatesByOPHID()
-  }, [ophid])
+    };
+    fetchBlockedDatesByOPHID();
+  }, [ophid]);
 
   // Modified useEffect to handle initial payment plan selection
   // useEffect(() => {
@@ -193,7 +184,6 @@ export default function RegisterSongForm() {
     if (isNaN(parsedDate.getTime())) return false;
 
     const formattedDate = parsedDate.toISOString().split("T")[0];
-    console.log(formattedDate);
     // return
     return blockedDates.some(
       (blockedDate) =>
@@ -202,70 +192,101 @@ export default function RegisterSongForm() {
   };
 
   const newProject = async (updatedFormData) => {
-
     try {
-      const response = await axiosApi.post("/register-new-song",
-        { oph_id: ophid, project_type: projectType, name: updatedFormData.name, release_date: updatedFormData.release_date, lyricalVid: updatedFormData.lyricalVid, next_step : updatedFormData.next_step},
-        { headers: headers })
-      console.log(response);
-      if (response.data.success) {
-        navigate(`/dashboard/upload-song/audio-metadata/${response.data.contentID}`, {
-          state: {
-            songName : updatedFormData.name,
-            release_date: updatedFormData.release_date
-          }
-        });
-      }
-    }
-    catch (error) {
-      console.error("Error booking date", error)
-    }
+      const response = await axiosApi.post(
+        "/register-new-song",
+        {
+          oph_id: ophid,
+          project_type: projectType,
+          name: updatedFormData.name,
+          release_date: updatedFormData.release_date,
+          lyricalVid: updatedFormData.lyricalVid,
+          next_step: updatedFormData.next_step,
+        },
+        { headers: headers }
+      );
 
-  }
+      if (response.data.success) {
+        navigate(
+          `/dashboard/upload-song/audio-metadata/${response.data.contentID}`,
+          {
+            state: {
+              songName: updatedFormData.name,
+              release_date: updatedFormData.release_date,
+              project_type: projectType,
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error booking date", error);
+    }
+  };
 
   const hybridProject = async (updatedFormData) => {
-
     try {
-      const response = await axiosApi.post("/register-hybrid-song",
-        { oph_id: ophid, project_type: projectType, name: updatedFormData.name, release_date: updatedFormData.release_date, lyricalVid: updatedFormData.lyricalVid, available_on_music_platforms: updatedFormData.available_on_music_platforms, next_step : updatedFormData.next_step },
-        { headers: headers })
+      const response = await axiosApi.post(
+        "/register-hybrid-song",
+        {
+          oph_id: ophid,
+          project_type: projectType,
+          name: updatedFormData.name,
+          release_date: updatedFormData.release_date,
+          lyricalVid: updatedFormData.lyricalVid,
+          available_on_music_platforms:
+            updatedFormData.available_on_music_platforms,
+          next_step: updatedFormData.next_step,
+        },
+        { headers: headers }
+      );
       if (response.data.success) {
-        navigate(`/dashboard/upload-song/audio-metadata/${response.data.contentID}`, {
-          state: {
-            songName : updatedFormData.name,
-            release_date: updatedFormData.release_date
+        navigate(
+          `/dashboard/upload-song/audio-metadata/${response.data.contentID}`,
+          {
+            state: {
+              songName: updatedFormData.name,
+              release_date: updatedFormData.release_date,
+            },
           }
-        });
+        );
       }
+    } catch (error) {
+      console.error("Error booking date", error);
     }
-    catch (error) {
-      console.error("Error booking date", error)
-    }
-
-  }
+  };
 
   const paidInAdvance = async (updatedFormData) => {
-
     try {
-      const response = await axiosApi.post("/register-hybrid-song",
-        { oph_id: ophid, project_type: projectType, name: updatedFormData.name, release_date: updatedFormData.release_date, lyricalVid: updatedFormData.lyricalVid, available_on_music_platforms: updatedFormData.available_on_music_platforms, next_step : updatedFormData.next_step },
-        { headers: headers })
+      const response = await axiosApi.post(
+        "/register-hybrid-song",
+        {
+          oph_id: ophid,
+          project_type: projectType,
+          name: updatedFormData.name,
+          release_date: updatedFormData.release_date,
+          lyricalVid: updatedFormData.lyricalVid,
+          available_on_music_platforms:
+            updatedFormData.available_on_music_platforms,
+          next_step: updatedFormData.next_step,
+        },
+        { headers: headers }
+      );
       console.log(response);
       if (response.data.success) {
-        navigate(`/dashboard/upload-song/audio-metadata/${response.data.contentID}`, {
-          state: {
-            songName : updatedFormData.name,
-            release_date: updatedFormData.release_date
+        navigate(
+          `/dashboard/upload-song/audio-metadata/${response.data.contentID}`,
+          {
+            state: {
+              songName: updatedFormData.name,
+              release_date: updatedFormData.release_date,
+            },
           }
-        });
+        );
       }
+    } catch (error) {
+      console.error("Error booking date", error);
     }
-    catch (error) {
-      console.error("Error booking date", error)
-    }
-
-  }
-
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -284,26 +305,20 @@ export default function RegisterSongForm() {
       p_line: `${artistName} - ${stageName}`,
       available_on_music_platforms:
         formData.available_on_music_platforms || false, // This line adds it
-      next_step: '/dashboard/upload-song/audio-metadata/'
+      next_step: "/dashboard/upload-song/audio-metadata/",
     };
     // console.log(updatedFormData, "updatedFormData");
 
     // Remove `c_line` and `isAvailableOnMusicPlatform`
     // const { c_line, ...payload } = updatedFormData;
-    // delete updatedFormData.isAvailableOnMusicPlatform;    
-
-
+    // delete updatedFormData.isAvailableOnMusicPlatform;
 
     if (projectType === "paid in advance") {
-      paidInAdvance(updatedFormData)
-    }
-    else if(projectType === "new project")
-    {
-      newProject(updatedFormData)
-    }
-    else if(projectType === "hybrid project")
-    {
-      hybridProject(updatedFormData)
+      paidInAdvance(updatedFormData);
+    } else if (projectType === "new project") {
+      newProject(updatedFormData);
+    } else if (projectType === "hybrid project") {
+      hybridProject(updatedFormData);
     }
     // if (updatedFormData.available_on_music_platforms) {
     //   toast.success("Song Registered Successfully !!!!");
@@ -452,7 +467,9 @@ export default function RegisterSongForm() {
             <option value="">Select a blocked date</option>
             {artistBlockedDates.map((date) => (
               <option key={date} value={date}>
-                {new Date(date).toLocaleDateString()}
+                {new Date(date).toLocaleDateString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                })}
               </option>
             ))}
           </select>
@@ -461,7 +478,6 @@ export default function RegisterSongForm() {
     }
 
     return (
-
       <div className="space-y-2">
         <label className="block">
           Release Date <span className="text-red-500">*</span>

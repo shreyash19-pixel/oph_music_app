@@ -51,7 +51,7 @@ function Navbar() {
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
             onClick={() => {
-              window.location.href = import.meta.env.VITE_WEBSITE_URL + "artists";
+              navigate("/find-your-collaborator")
             }}
           >
             Artists

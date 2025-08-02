@@ -368,8 +368,6 @@ export default function AudioMetadataForm() {
     setLangID(e.target.value);
   };
 
-
-
   const handleGenreChange = (e) => {
     setGenre(e.target.value);
   };
@@ -540,6 +538,7 @@ export default function AudioMetadataForm() {
           state: {
             songName: location.state.songName,
             release_date: location.state.release_date,
+            project_type: location.state.project_type
           }
         });
       }
