@@ -20,7 +20,11 @@ const saveLeaderBoardScore = async (req, res) => {
 const fetchAllScores = async (req, res) => {
   try {
     const scores = await leaderboardController.getAllScores();
-    res.status(200).json(scores);
+    res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: scores
+    });
   } catch (err) {
     console.error('Error fetching scores:', err);
     res.status(500).json({ message: 'Internal server error' });

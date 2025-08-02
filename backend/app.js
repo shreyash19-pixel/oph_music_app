@@ -24,10 +24,10 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
-const leaderboardRoute = require("./routes/leaderboard")
 const withdraw = require("./routes/withdraw");
 const homeRoute = require("./routes/home")
 const paymentRoute = require("./routes/payment");
+const songSocialMetrics = require("./routes/song_social_metrics")
 
 
 //Admin route assignment
@@ -40,6 +40,7 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
+const  leaderboard = require("./admin/routes/leaderboard")
 
 const tickets = require("./admin/routes/tickets")
 // ✅ Middleware order is important
@@ -68,10 +69,9 @@ app.use("/", secondaryArtist);
 app.use("/", videoDetail);
 app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
-app.use("/",leaderboardRoute)
 app.use("/",homeRoute)
 app.use("/",paymentRoute)
-
+app.use("/",songSocialMetrics)
 
 //Admin Routes
 
@@ -84,8 +84,8 @@ app.use("/",tickets);
 app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
-app.use("/",AdminWithdraw);
 app.use("/",analytics);
+app.use("/",leaderboard)
 
 // ✅ Start server
 app.listen(port, () => {

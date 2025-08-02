@@ -21,63 +21,31 @@ import { artistStore } from "../app/artist.js";
 import RequestTicketForm from "../pages/RequestTicket/RequestTicket";
 import ArtistProfile from "../pages/ArtistProfile/ArtistProfile";
 import Events from "../pages/Events/Events";
-  import IncomeWithdrawal from "../pages/Income/Income";
+import IncomeWithdrawal from "../pages/Income/Income";
 import VideoMetadataForm from "../pages/UploadSong/VideoMetadata/VideoMetadata";
 import Error from "../pages/Error.jsx";
 import React from "react";
 import MembershipForm from "../pages/auth/SignUp/MembershipFrom.jsx";
 import ErrorScreen from "../pages/ErrorScreen/ErrorScreen.jsx";
+import ArtistDetail from "../pages/ArtistDetail/ArtistDetail.jsx";
 const ArtistRoutes = () => {
   return (
     <Provider store={artistStore}>
       <Routes>
-      <Route path="/" element={<DashboardLayout />}>
-      
-        <Route index element={<Home />} />
-        <Route path="notification" element={<Notification />} />
-        <Route path="song-details" element={<SongDetails />} />
-        <Route path="learnings" element={<Learnings />} />
-        <Route path="time-calendar" element={<TimeCalendar />}></Route>
-        <Route path="block-date" element={<BlockDateForm />}></Route>
-        <Route path="date-change" element={<DateChange />} />
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<Home />} />
+          <Route path="notification" element={<Notification />} />
+          <Route path="song-details" element={<SongDetails />} />
+          <Route path="learnings" element={<Learnings />} />
+          <Route path="time-calendar" element={<TimeCalendar />}></Route>
+          <Route path="block-date" element={<BlockDateForm />}></Route>
+          <Route path="date-change" element={<DateChange />} />
 
           <Route path="success" element={<SuccessScreen />} />
           <Route path="error" element={<ErrorScreen />} />
           <Route path="payment" element={<PaymentScreen />} />
 
-        <Route path="upload-song" element={<UploadSongs />} />
-        <Route
-          path="upload-song/register-song"
-          element={<SongRegistrationForm />}
-        />
-        <Route
-          path="upload-song/audio-metadata/:contentId"
-          element={<AudioMetadataForm />}
-        />
-        <Route
-          path="upload-song/video-metadata/:contentId"
-          element={<VideoMetadataForm />}
-        />
-        <Route
-          path="request-ticket"
-          element={<RequestTicketForm />}
-        />
-         <Route
-          path="events"
-          element={<Events />}
-        />
-        <Route
-          path="profile"
-          element={<ArtistProfile/>}
-        />
-         <Route
-          path="income"
-          element={<IncomeWithdrawal/>}
-        />
-                 <Route
-          path="notifications"
-          element={<Notification />}
-        />
+          <Route path="upload-song" element={<UploadSongs />} />
           <Route
             path="upload-song/register-song"
             element={<SongRegistrationForm />}
@@ -92,6 +60,26 @@ const ArtistRoutes = () => {
           />
           <Route path="request-ticket" element={<RequestTicketForm />} />
           <Route path="events" element={<Events />} />
+
+          <Route path="profile" element={<ArtistProfile />} />
+          <Route path="income" element={<IncomeWithdrawal />} />
+          <Route path="notifications" element={<Notification />} />
+          <Route
+            path="upload-song/register-song"
+            element={<SongRegistrationForm />}
+          />
+          <Route
+            path="upload-song/audio-metadata/:contentId"
+            element={<AudioMetadataForm />}
+          />
+          <Route
+            path="upload-song/video-metadata/:contentId"
+            element={<VideoMetadataForm />}
+          />
+          <Route path="request-ticket" element={<RequestTicketForm />} />
+          <Route path="events" element={<Events />} />
+          <Route path="artist-detail/:id" element={<ArtistDetail />} />
+
           <Route path="profile" element={<ArtistProfile />} />
           <Route path="income" element={<IncomeWithdrawal />} />
           <Route path="notifications" element={<Notification />} />
