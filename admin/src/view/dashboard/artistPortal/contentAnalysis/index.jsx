@@ -25,8 +25,7 @@ const Content_Analysis = () => {
         title="Content Analysis"
         data={tableData}
         showStatusIndicator={false}
-        includeColumns={"OPH_ID,song_name,youtube_views,youtube_engagement,youtube_avg_view_duration,youtube_revenue,insta_engagement"}
-        
+        includeColumns={"OPH_ID,song_id,song_name"}
         pageSize={10}
         detailsUrl="/Content_Analysis"
       />
