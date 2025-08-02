@@ -42,6 +42,7 @@ const analytics = require("./admin/routes/analytics")
 const tickets = require("./admin/routes/tickets")
 const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require('./admin/routes/leaderboard')
+const kpi = require('./admin/routes/kpi')
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -85,6 +86,7 @@ app.use("/",payments);
 app.use("/",AdminWithdraw);
 app.use("/",analytics);
 app.use("/",leaderboard);
+app.use("/",kpi)
 
 // ✅ Start server
 app.listen(port, () => {
