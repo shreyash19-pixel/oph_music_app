@@ -9,15 +9,22 @@ const ContentAnalysis = () => {
   const [loading, setLoading] = useState(true);
 
   const [metrics, setMetrics] = useState({
-    id: "",
+    youtube_views: "",
+    youtube_engagement: "",
+    youtube_avg_view_duration: "00:00:00",
+    youtube_revenue: "",
+    insta_engagement: "",
+  });
+
+  const [originalMetrics, setOriginalMetrics] = useState({
     song_id: "",
     OPH_ID: "",
     song_name: "",
-    youtube_views: "",
-    youtube_engagement: "",
-    youtube_avg_view_duration: "",
-    youtube_revenue: "",
-    insta_engagement: "",
+    youtube_views: 0,
+    youtube_engagement: 0,
+    youtube_avg_view_duration: "00:00:00",
+    youtube_revenue: 0,
+    insta_engagement: 0,
   });
 
   useEffect(() => {
@@ -27,15 +34,23 @@ const ContentAnalysis = () => {
         const res = await axiosApi.get(`/analytics/${songId}`);
         const data = res.data;
 
-        setMetrics({
+        setOriginalMetrics({
           song_id: data.song_id || "",
           OPH_ID: data.OPH_ID || "",
           song_name: data.song_name || "",
-          youtube_views: data.youtube_views || "",
-          youtube_engagement: data.youtube_engagement || "",
-          youtube_avg_view_duration: data.youtube_avg_view_duration || "",
-          youtube_revenue: data.youtube_revenue || "",
-          insta_engagement: data.insta_engagement || "",
+          youtube_views: parseInt(data.youtube_views) || 0,
+          youtube_engagement: parseInt(data.youtube_engagement) || 0,
+          youtube_avg_view_duration: data.youtube_avg_view_duration || "00:00:00",
+          youtube_revenue: parseFloat(data.youtube_revenue) || 0,
+          insta_engagement: parseInt(data.insta_engagement) || 0,
+        });
+
+        setMetrics({
+          youtube_views: "",
+          youtube_engagement: "",
+          youtube_avg_view_duration: "00:00:00",
+          youtube_revenue: "",
+          insta_engagement: "",
         });
       } catch (err) {
         console.error("Failed to fetch metrics", err);
@@ -56,25 +71,45 @@ const ContentAnalysis = () => {
     }));
   };
 
+  const addTimes = (t1, t2) => {
+    const toSec = (t) => {
+      const [h, m, s] = t.split(":").map(Number);
+      return h * 3600 + m * 60 + s;
+    };
+
+    const totalSec = toSec(t1) + toSec(t2);
+    const hrs = String(Math.floor(totalSec / 3600)).padStart(2, "0");
+    const mins = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
+    const secs = String(totalSec % 60).padStart(2, "0");
+
+    return `${hrs}:${mins}:${secs}`;
+  };
+
   const handleSave = async () => {
     try {
-    const res = await axiosApi.put(`/update_analytics/${songId}`, {
-      youtube_views: metrics.youtube_views,
-      youtube_engagement: metrics.youtube_engagement,
-      youtube_avg_view_duration: metrics.youtube_avg_view_duration,
-      youtube_revenue: metrics.youtube_revenue,
-      insta_engagement: metrics.insta_engagement,
-    });
+      const payload = {
+        youtube_views:
+          originalMetrics.youtube_views + parseInt(metrics.youtube_views || 0),
+        youtube_engagement:
+          originalMetrics.youtube_engagement + parseInt(metrics.youtube_engagement || 0),
+        youtube_avg_view_duration: addTimes(
+          originalMetrics.youtube_avg_view_duration,
+          metrics.youtube_avg_view_duration || "00:00:00"
+        ),
+        youtube_revenue:
+          originalMetrics.youtube_revenue + parseFloat(metrics.youtube_revenue || 0),
+        insta_engagement:
+          originalMetrics.insta_engagement + parseInt(metrics.insta_engagement || 0),
+      };
 
-    toast.success("📤 Social metrics saved!");
-    
-    console.log("Updated:", res.data);
-  } catch (err) {
-    console.error("Update failed", err);
-    alert("Failed to update analytics.");
-  }
+      const res = await axiosApi.put(`/update_analytics/${songId}`, payload);
 
-    console.log("Saving metrics:", metrics);
+      toast.success("📤 Social metrics saved!");
+      console.log("Updated:", res.data);
+    } catch (err) {
+      console.error("Update failed", err);
+      alert("Failed to update analytics.");
+    }
   };
 
   const handlePageChange = (e) => {
@@ -94,10 +129,11 @@ const ContentAnalysis = () => {
           defaultValue=""
           className="border px-4 py-2 rounded-md bg-white text-gray-700"
         >
-          <option value="" disabled>Go to Page...</option>
+          <option value="" disabled>
+            Go to Page...
+          </option>
           <option value={`/ArtistNew/${ophid}`}>Content Manage</option>
           <option value={`/content-analysis/${ophid}/${songId}`}>Content Analysis</option>
-          {/* Add more pages here as needed */}
         </select>
       </div>
 
@@ -109,36 +145,36 @@ const ContentAnalysis = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ReadOnlyField label="Song ID" value={metrics.song_id} />
-            <ReadOnlyField label="OPH ID" value={metrics.OPH_ID} />
-            <ReadOnlyField label="Song Name" value={metrics.song_name} />
+            <ReadOnlyField label="Song ID" value={originalMetrics.song_id} />
+            <ReadOnlyField label="OPH ID" value={originalMetrics.OPH_ID} />
+            <ReadOnlyField label="Song Name" value={originalMetrics.song_name} />
 
             <EditableField
-              label="YouTube Views"
+              label="YouTube Views (Add to Current)"
               name="youtube_views"
               value={metrics.youtube_views}
               onChange={handleChange}
             />
             <EditableField
-              label="YouTube Engagement"
+              label="YouTube Engagement (Add to Current)"
               name="youtube_engagement"
               value={metrics.youtube_engagement}
               onChange={handleChange}
             />
             <EditableField
-              label="YouTube Avg. View Duration"
+              label="YouTube Avg. View Duration (Add to Current)"
               name="youtube_avg_view_duration"
               value={metrics.youtube_avg_view_duration}
               onChange={handleChange}
             />
             <EditableField
-              label="YouTube Revenue"
+              label="YouTube Revenue (Add to Current)"
               name="youtube_revenue"
               value={metrics.youtube_revenue}
               onChange={handleChange}
             />
             <EditableField
-              label="Instagram Engagement"
+              label="Instagram Engagement (Add to Current)"
               name="insta_engagement"
               value={metrics.insta_engagement}
               onChange={handleChange}
