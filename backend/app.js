@@ -25,9 +25,9 @@ const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
 const withdraw = require("./routes/withdraw");
-const homeRoute = require("./routes/home")
 const paymentRoute = require("./routes/payment");
 const songSocialMetrics = require("./routes/song_social_metrics")
+const homeRoute = require("./routes/home")
 
 
 //Admin route assignment
@@ -40,9 +40,10 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
-const  leaderboard = require("./admin/routes/leaderboard")
 
 const tickets = require("./admin/routes/tickets")
+const AdminWithdraw = require("./admin/routes/withdraw");
+const leaderboard = require('./admin/routes/leaderboard')
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -54,10 +55,8 @@ app.use(express.json());
 // ✅ Mount routes
 app.use("/", signupRoute);
 app.use("/", signinRoute);
-app.use("/", withdraw);
 app.use("/", professionalDetailsRoute);
 app.use("/", documentationDetailsRoute);
-
 app.use("/", dateBookingRoute);
 app.use("/", songResgisterRoute);
 app.use("/", songDetailsRoute);
@@ -71,7 +70,9 @@ app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
 app.use("/",homeRoute)
 app.use("/",paymentRoute)
-app.use("/",songSocialMetrics)
+app.use('/',withdraw)
+app.use('/',songSocialMetrics)
+
 
 //Admin Routes
 
@@ -85,7 +86,8 @@ app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
 app.use("/",analytics);
-app.use("/",leaderboard)
+app.use('/',leaderboard)
+app.use('/',AdminWithdraw)
 
 // ✅ Start server
 app.listen(port, () => {
