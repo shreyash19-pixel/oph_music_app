@@ -26,7 +26,7 @@ const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
-const songSocialMetrics = require("./routes/song_social_metrics")
+const incrementTrafficCounter = require("./routes/increment_traffic_counter")
 const homeRoute = require("./routes/home")
 
 
@@ -71,7 +71,7 @@ app.use("/artist-spotlight",artistSpotlight);
 app.use("/",homeRoute)
 app.use("/",paymentRoute)
 app.use('/',withdraw)
-app.use('/',songSocialMetrics)
+app.use('/',incrementTrafficCounter)
 
 
 //Admin Routes

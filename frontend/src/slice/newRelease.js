@@ -8,7 +8,7 @@ export const fetchNewRelease = createAsyncThunk('fetchNewRelease', async (header
             headers: headers
         });
         if (response.data.success) {
-            return response.data;
+            return response.data.data;
         }
     }
     catch (err) {

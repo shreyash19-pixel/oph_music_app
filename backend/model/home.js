@@ -4,7 +4,7 @@ const db = require("../DB/connect")
 
 const newReleases = async () => {
 
-    const [rows] = await db.execute("WITH CTESongStatus AS (SELECT sr.OPH_ID, sr.Song_name, sr.song_id, sr.`status` AS song_register_status , ad.`status` AS audio_details_status, vd.`status` AS video_details_status, vd.image_url,ad.audio_url, sa.artist_name, ad.primary_artist FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id ) SELECT * FROM CTESongStatus WHERE song_register_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'")
+    const [rows] = await db.execute("SELECT sr.song_id, vd.image_url, ad.Song_name, sa.artist_name, ssm.youtube_views, ad.audio_url, ad.primary_artist FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id ORDER BY ssm.youtube_views DESC LIMIT 5")
 
     const songMap = {}
 
@@ -20,6 +20,7 @@ const newReleases = async () => {
                 songId: row.song_id,
                 imageUrl: JSON.parse(row.image_url),
                 audioUrl: row.audio_url,
+                youtubeViews: row.youtube_views,
                 secondaryArtist: []
             }
         }

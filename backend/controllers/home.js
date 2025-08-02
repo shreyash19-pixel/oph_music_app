@@ -6,9 +6,6 @@ const newReleasesController = async (req, res) => {
     try{
         const response = await newReleases()
 
-        console.log("in controller");
-        
-
         if(response)
         {
             return res.status(200).json({

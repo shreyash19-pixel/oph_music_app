@@ -1,7 +1,7 @@
-const {songSocialMetric, getTrafficCounter} = require("../model/song_social_metrics")
+const {incrementTrafficCounter, getTrafficCounter} = require("../model/increment_traffic_counter")
 
 
-const songSocialMetricController = async (req, res) => {
+const incrementTrafficCounterController = async (req, res) => {
 
     try
     {
@@ -17,9 +17,9 @@ const songSocialMetricController = async (req, res) => {
 
         const traffic = await getTrafficCounter(ophid)
 
-        const updatedTrafficCounter = traffic[0].traffic
+        const updatedTrafficCounter = traffic[0].traffic + traffic_counter
 
-        const response = await songSocialMetric(ophid, updatedTrafficCounter)
+        const response = await incrementTrafficCounter(ophid, updatedTrafficCounter)
 
         if(response)
         {
@@ -40,4 +40,4 @@ const songSocialMetricController = async (req, res) => {
 
 }
 
-module.exports = {songSocialMetricController}
+module.exports = {incrementTrafficCounterController}
