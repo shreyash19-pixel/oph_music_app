@@ -14,15 +14,12 @@ export default function UploadSongs() {
   useEffect(() => {
     const fetchPendingContent = async () => {
       try {
-        const token = getToken();
-
         const response = await axiosApi.get('/pending-song-registeration', {
           headers: headers,
           params: { ophid }
         });
 
         if (response.data.success) {
-          console.log(response);
           setPendingContent(response.data.data);
         }
       } catch (err) {

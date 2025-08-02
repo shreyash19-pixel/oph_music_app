@@ -40,7 +40,7 @@ exports.insertNewSongRegDetails = async (req, res) => {
 
 exports.insertHybridSongRegDetails = async (req, res) => {
   try {
-    const { oph_id, project_type, name, release_date, lyricalVid, available_on_music_platforms } = req.body;
+    const { oph_id, project_type, name, release_date, lyricalVid, available_on_music_platforms, next_step } = req.body;
 
     console.log(req.body);
 
@@ -58,7 +58,8 @@ exports.insertHybridSongRegDetails = async (req, res) => {
       release_date,
       lyricalVid === false ? "base" : "base + lyrics",
       lyricalVid === false ? 0 : 1,
-      available_on_music_platforms
+      available_on_music_platforms,
+      next_step
     );
 
     if (RegSongRes) {

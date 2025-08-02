@@ -8,7 +8,7 @@ import { Helmet } from "react-helmet";
 function Artists() {
   const [artists, setArtists] = useState([]);
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
 
   const fetchAllArtists = async () => {

@@ -67,7 +67,7 @@ function Home() {
       {!isLoading && !error && firstEvent && (
         <>
           <HeroSection firstEvent={firstEvent} />
-          <EventsNewReleases secondEvent={secondEvent} />
+          {/* <EventsNewReleases secondEvent={secondEvent} /> */}
           {/* <ArtistRankingSection data={artistsdata} selectedMonth={"January"} /> */}
         </>
       )}

@@ -32,8 +32,6 @@ export default function TimeCalendar() {
           }
         );
 
-        console.log(response);
-
         if (response.data.status=200) {
           const dateMap = {};
           setData(response.data.data)
