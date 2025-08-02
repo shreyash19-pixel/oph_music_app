@@ -8,7 +8,7 @@ router.post('/update_leaderboard', leaderboard.saveLeaderBoardScore);
 
 
 // GET /api/leaderboard -> all scores
-router.get('/Leaderboard', leaderboard.fetchAllScores);
+router.get('/leaderboard', leaderboard.fetchAllScores);
 
 // GET /api/leaderboard/:ophid -> single score
 // router.get('/:ophid', fetchScoreByOphId);

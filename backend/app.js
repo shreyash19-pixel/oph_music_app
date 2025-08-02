@@ -24,9 +24,10 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
-const homeRoute = require("./routes/home")
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
+const songSocialMetrics = require("./routes/song_social_metrics")
+const homeRoute = require("./routes/home")
 
 
 //Admin route assignment
@@ -39,6 +40,7 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
+
 const tickets = require("./admin/routes/tickets")
 const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require('./admin/routes/leaderboard')
@@ -69,7 +71,8 @@ app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
 app.use("/",homeRoute)
 app.use("/",paymentRoute)
-app.use("/",withdraw)
+app.use('/',withdraw)
+app.use('/',songSocialMetrics)
 
 
 //Admin Routes
@@ -83,10 +86,11 @@ app.use("/",tickets);
 app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
-app.use("/",AdminWithdraw);
 app.use("/",analytics);
 app.use("/",leaderboard);
 app.use("/",kpi)
+app.use('/',AdminWithdraw)
+
 
 // ✅ Start server
 app.listen(port, () => {

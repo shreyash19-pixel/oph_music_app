@@ -15,7 +15,8 @@ const insertOrUpdateScore = async ({ OPH_ID, song_count, total_views, score }) =
 };
 
 const getAllScores = async () => {
-  const [rows] = await db.execute(`SELECT * FROM leaderBoard_scores ORDER BY score DESC`);
+  const [rows] = await db.execute(`WITH CTELeaderboard AS (SELECT ud.stage_name, ud.personal_photo, ud.location ,ls.* FROM 
+    user_details ud JOIN leaderBoard_scores ls ON ud.ophid = ls.OPH_ID) SELECT *, ROW_NUMBER() OVER (ORDER BY score DESC) AS ranks FROM CTELeaderboard`);
   return rows;
 };
 

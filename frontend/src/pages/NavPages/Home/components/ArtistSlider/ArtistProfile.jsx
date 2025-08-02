@@ -141,76 +141,79 @@ const ArtistProfile = ({ id }) => {
               </div>
             </div>
 
-          {/* Songs Section */}
-<table className="w-full mb-12">
-  <thead>
-    <tr className="text-gray-400 border-b border-gray-800">
-      <th className="text-left pb-4">#</th>
-      <th className="text-left pb-4 relative left-4 hidden sm:table-cell">
-        SONG'S NAME
-      </th>
-      <th className="text-left pb-4">PLAYS</th>
-      <th className="text-center pb-4">TIME</th>
-      <th className="text-center pb-4">PLAY</th>
-    </tr>
-  </thead>
-  <tbody>
-    {artist &&
-      artist.songs.map((song, index) => (
-        <tr
-          key={index}
-          className="border-b border-gray-800 hover:bg-gray-800/50"
-        >
-          <td className="py-4">
-            <div className="flex flex-col sm:flex-row gap-1 sm:gap-0">
-              <span className="font-medium">
-                {index + 1 < 10 ? "0" + (index + 1) : index + 1}
-              </span>
-              {/* Mobile-only song name */}
-              <span className="text-sm text-gray-400 sm:hidden truncate w-[120px]">
-                {truncateText(song.name, 20)}
-              </span>
-            </div>
-          </td>
+            {/* Songs Section */}
+            <table className="w-full mb-12">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-800">
+                  <th className="text-left pb-4">#</th>
+                  <th className="text-left pb-4 relative left-4 hidden sm:table-cell">
+                    SONG'S NAME
+                  </th>
+                  <th className="text-left pb-4">PLAYS</th>
+                  <th className="text-center pb-4">TIME</th>
+                  <th className="text-center pb-4">PLAY</th>
+                </tr>
+              </thead>
+              <tbody>
+                {artist &&
+                  artist.songs.map((song, index) => (
+                    <tr
+                      key={index}
+                      className="border-b border-gray-800 hover:bg-gray-800/50"
+                    >
+                      <td className="py-4">
+                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-0">
+                          <span className="font-medium">
+                            {index + 1 < 10 ? "0" + (index + 1) : index + 1}
+                          </span>
+                          {/* Mobile-only song name */}
+                          <span className="text-sm text-gray-400 sm:hidden truncate w-[120px]">
+                            {truncateText(song.name, 20)}
+                          </span>
+                        </div>
+                      </td>
 
-          {/* Song name - only visible on tablet and above */}
-          <td className="py-4 hidden sm:table-cell">
-            <div className="ms-5">
-              <div className="font-medium truncate overflow-hidden whitespace-nowrap w-[150px]">
-                {truncateText(song.name, 20)}
-              </div>
-              {song.featuring_artists &&
-                song.featuring_artists.map((artist, ind) => (
-                  <span
-                    key={ind}
-                    className="text-gray-400 me-2 text-sm"
-                  >
-                    {artist}
-                    {ind !== song.featuring_artists.length - 1 && ", "}
-                  </span>
-                ))}
-            </div>
-          </td>
+                      {/* Song name - only visible on tablet and above */}
+                      <td className="py-4 hidden sm:table-cell">
+                        <div className="ms-5">
+                          <div className="font-medium truncate overflow-hidden whitespace-nowrap w-[150px]">
+                            {truncateText(song.name, 20)}
+                          </div>
+                          {song.featuring_artists &&
+                            song.featuring_artists.map((artist, ind) => (
+                              <span
+                                key={ind}
+                                className="text-gray-400 me-2 text-sm"
+                              >
+                                {artist}
+                                {ind !== song.featuring_artists.length - 1 &&
+                                  ", "}
+                              </span>
+                            ))}
+                        </div>
+                      </td>
 
-          <td className="py-4">{song.total_views}</td>
-          <td className="py-4 text-center">{song.duration_in_minutes}</td>
+                      <td className="py-4">{song.total_views}</td>
+                      <td className="py-4 text-center">
+                        {song.duration_in_minutes}
+                      </td>
 
-          <td className="py-4 flex justify-center">
-            <button
-              className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0] ml-4"
-              onClick={() => handlePlayPause(song)}
-            >
-              {playingSongId === song.id && !audio?.paused ? (
-                <FaPause className="text-white" size={13} />
-              ) : (
-                <FaPlay className="text-white ml-1" size={13} />
-              )}
-            </button>
-          </td>
-        </tr>
-      ))}
-  </tbody>
-</table>
+                      <td className="py-4 flex justify-center">
+                        <button
+                          className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0] ml-4"
+                          onClick={() => handlePlayPause(song)}
+                        >
+                          {playingSongId === song.id && !audio?.paused ? (
+                            <FaPause className="text-white" size={13} />
+                          ) : (
+                            <FaPlay className="text-white ml-1" size={13} />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
 
             <a
               href={`/artists/${id}`}
