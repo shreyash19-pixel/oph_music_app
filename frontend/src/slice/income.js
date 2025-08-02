@@ -21,13 +21,15 @@ export const fetchIncome = createAsyncThunk(
     }
 );
 
-export const getWithDrawHistory = createAsyncThunk('getWithDrawHistory', async (headers, { rejectWithValue }) => {
+export const getWithDrawHistory = createAsyncThunk('getWithDrawHistory', async (ophID,headers, { rejectWithValue }) => {
     try {
-        const response = await axiosApi.get('/income/withdrawal-history', {
-            headers: headers
+        const response = await axiosApi.get('http://localhost:5000/getWithdraw', {
+            headers: headers,
+            ophID : ophID
         });
-        if (response.status === 200) {
-            return response.data.data.withdrawals;
+        if (response.status === 201) {
+            return response.data.data;
+;
         }
         return rejectWithValue('Failed to fetch withdrawal history');
     }
@@ -39,10 +41,14 @@ export const getWithDrawHistory = createAsyncThunk('getWithDrawHistory', async (
 
 export const postWithdraw = createAsyncThunk('postWithdraw', async ({ data, headers }, { rejectWithValue }) => {
     try {
-        const response = await axiosApi.post('/income/withdraw', data, {
-            headers: headers
-        });
-        if (response.status === 200) {
+        const response = await axiosApi.post(
+          "http://localhost:5000/sendWithdraw",
+          data,
+          {
+            headers: headers,
+          }
+        );
+        if (response.status === 201) {
             return response.data.data;
         }
         return rejectWithValue('Withdrawal failed');
