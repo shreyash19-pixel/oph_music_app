@@ -25,7 +25,7 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
-const leaderboardRoute = require("./routes/leaderboard")
+
 
 
 //Admin route assignment
@@ -39,6 +39,7 @@ const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
 const tickets = require("./admin/routes/tickets")
+const leaderboard = require("./admin/routes/leaderboard")
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -65,7 +66,7 @@ app.use("/", secondaryArtist);
 app.use("/", videoDetail);
 app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
-app.use("/",leaderboardRoute)
+
 
 
 //Admin Routes
@@ -80,6 +81,7 @@ app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
 app.use("/",analytics);
+app.use("/",leaderboard);
 
 // ✅ Start server
 app.listen(port, () => {
