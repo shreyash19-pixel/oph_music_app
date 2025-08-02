@@ -32,7 +32,7 @@ import Content_Analysis from "./view/dashboard/artistPortal/contentAnalysis";
 import ContentRelease from "./view/dashboard/artistPortal/contentRelease";
 import Notifications from "./view/dashboard/artistPortal/notifications";
 import PaymentAll from "./view/dashboard/artistPortal/paymentAll";
-import PaymentWidthdrawal from "./view/dashboard/artistPortal/paymentsWithdrawals";
+import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/Payment";
 import Settings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
@@ -41,7 +41,9 @@ import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
 import Content_New from "./view/dashboard/artistPortal/contentNew/Content_New";
 import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_manage";
 import ContentManage from "./view/dashboard/artistPortal/contentManage";
+import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/index";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
+
 
 
 function App() {
@@ -54,16 +56,21 @@ function App() {
           <Route path="/signup" element={<AdminSignUpForm />} />
           <Route path="/WebsiteConfig" element={<WebsiteConfig />} />
 
-
           <Route path="/home" element={<Dashboard />} />
           <Route path="/ArtistNew/:ophid" element={<ArtistNew />} />
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
-          <Route path="/ContentManage/:ophid/:songId" element={<ContentManage />} />
+          <Route
+            path="/ContentManage/:ophid/:songId"
+            element={<ContentManage />}
+          />
           <Route path="/artistPortal" element={<ArtistPortal />} />
           <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
-          <Route path="/New_SignUp" element={<Home/>} />
+
+          <Route path="/New_SignUp" element={<Home />} />
+          <Route path="/Withdraw/:ophid" element={<Withdraw />} />
           <Route path="/Content_Analysis/:ophid/:songId" element={<ContentAnalysis />} />
+
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
 
@@ -115,7 +122,7 @@ function App() {
                 allowedRoles={[
                   ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,  
+                  ROLES.ADMINISTRATIVE_MEMBER,
                 ]}
               >
                 <HomePage />
@@ -216,7 +223,7 @@ function App() {
                   ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
-                <Content_New/>
+                <Content_New />
               </ProtectedRoute>
             }
           />
@@ -288,7 +295,7 @@ function App() {
                   ROLES.ADMINISTRATIVE_MEMBER,
                 ]}
               >
-                <TimeCalender/>
+                <TimeCalender />
               </ProtectedRoute>
             }
           />
@@ -333,10 +340,10 @@ function App() {
             }
           />
           <Route
-            path="/PaymentWithdrawal"
+            path="/PaymentWithdraw"
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-                <PaymentWidthdrawal />
+                <PaymentWithdraw />
               </ProtectedRoute>
             }
           />

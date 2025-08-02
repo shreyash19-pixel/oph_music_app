@@ -36,16 +36,7 @@ const createTicket = async (req, res) => {
       const url = await uploadToS3(file, `tickets/${ophID}/attachments`);
       uploadedPhotoURLs.push(url);
     }
- console.log(
-   ophID,
-   name,
-   email,
-   subject,
-   description,
-   category,
-   ticketNumber,
-   JSON.stringify(uploadedPhotoURLs)
- );
+    
     const result = await ticketModel.createTicket(
       ophID,
       name,

@@ -72,12 +72,13 @@ const artistLinks = [
     children: [
       {
         label: "All",
-        route: "/payments/all",
+        route: "/PaymentAll",
       },
       {
-        label: "Withdrawals",
-        route: "/payments/withdrawals",
+        label: "withdrawals",
+        route: "/PaymentWithdraw",
       },
+      
     ],
   },
   { label: "All Data", route: "/data" },
