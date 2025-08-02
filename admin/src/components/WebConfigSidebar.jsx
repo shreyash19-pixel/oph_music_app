@@ -69,6 +69,13 @@ const WebsiteConfig = () => {
         {
             label:"Event Creation",
             route: "/Events"
+        },{
+          label: "Events",
+          route: "/AllEvents",
+        },
+        {
+          label: "Event Participants",
+          route: "/event_participants",
         }
       ]
     },

@@ -24,6 +24,7 @@ const secondaryArtist = require("./routes/secondary_artist")
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
+const homeRoute = require("./routes/home")
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
 const songSocialMetrics = require("./routes/song_social_metrics")
@@ -40,7 +41,6 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
-
 const tickets = require("./admin/routes/tickets")
 const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require('./admin/routes/leaderboard')

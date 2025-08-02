@@ -8,6 +8,13 @@ const getParticipantByOphAndEvent = async (ophid) => {
   return rows; // assuming one record per OPH_ID + event
 };
 
+const getParticipant = async () => {
+  const [rows] = await db.execute(
+    "SELECT * FROM event_participants",
+  );
+  return rows; 
+};
+
 const getParticipantsByEventId = async (event_id) => {
   const [rows] = await db.execute(
     "SELECT * FROM event_participants WHERE event_id = ?",
@@ -35,5 +42,6 @@ module.exports = {
   getParticipantByOphAndEvent,
   getParticipantsByEventId,
   registerParticipant,
-  updateParticipantStatus
+  updateParticipantStatus,
+  getParticipant,
 };
