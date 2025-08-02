@@ -12,8 +12,6 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const location = useLocation();
-  console.log(location);
-  
   const [songName, setSongName] = useState(location.state.songName);
   const projectType = localStorage.getItem("projectType") || "";
   const { headers, ophid } = useArtist();
@@ -28,6 +26,9 @@ export default function VideoMetadataForm() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPaidForLyricalVideo, setHasPaidForLyricalVideo] = useState(false); // Add state for lyrical video payment
+
+  const [checkBookingDates, setCheckBookingDates] = useState([]);
+  const [navigateToSongReg, setNavigateToSongReg] = useState(false);
 
   const urlToFile = async (url, fileName, mimeType) => {
     const res = await fetch(url);
@@ -139,7 +140,7 @@ export default function VideoMetadataForm() {
           {
             headers: {
               ...headers,
-              "Content-Type" : "application/json"
+              "Content-Type": "application/json",
             },
           }
         );
@@ -180,62 +181,125 @@ export default function VideoMetadataForm() {
     return <div className="text-red-500">{error}</div>;
   }
 
-  useEffect(() => {
-    const fetchVideoMetadata = async () => {
-      if (!contentId) {
-        setError("No content ID provided");
-        setIsLoading(false);
+  const checkIfDateIsAvail = () => {
+    const check = checkBookingDates.find((date) => {
+      const formattedDate = new Date(
+        location.state.release_date
+      ).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      });
+
+      const formattedReleaseDate = new Date(date).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      });
+
+      if (formattedReleaseDate === formattedDate) {
+        return date;
+      }
+    });
+
+    if (check) {
+      setNavigateToSongReg(true);
+    }
+  };
+
+  const checkAlreadyBookedDate = async () => {
+    try {
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers are not ready yet");
         return;
       }
 
-      try {
-        const response = await axiosApi.get(`/video-details`, {
-          headers,
-          params: { contentId },
-        });
+      const response = await axiosApi.get("/bookings", {
+        headers: headers,
+      });
 
-        if (response.data.success) {
-          const { video_metadata } = response?.data?.data;
-          const data = video_metadata?.[0];
-
-          if (!data) return;
-
-          // Parse existing image URLs
-          const imageUrls = data.image_url ? JSON.parse(data.image_url) : [];
-
-          // Convert image URLs to File[]
-          const imageFiles = await Promise.all(
-            imageUrls.map(async (url, index) => {
-              const fileName = url.split("/").pop() || `image_${index}.jpg`;
-              return await urlToFile(url, fileName, "image/jpeg");
-            })
-          );
-
-          // Convert video URL to File (if exists)
-          let videoFile = null;
-          if (data.video_url) {
-            const fileName = data.video_url.split("/").pop() || "video.mp4";
-            videoFile = await urlToFile(data.video_url, fileName, "video/mp4");
-          }
-
-          // ✅ Replace thumbnails and video_file (not append)
-          setFormData({
-            credits: data.credits || "",
-            existing_thumbnails: imageUrls,
-            thumbnails: imageFiles,
-            video_file: videoFile,
-            existing_video_url: data.video_url || null,
-            reject_reason: data.reject_reason || null,
-          });
-        }
-      } catch (err) {
-        console.error("Error fetching video metadata:", err);
-        setError("Failed to load video metadata");
+      if (response.data.success) {
+        const date = response.data.data.map(
+          (data) => data.current_booking_date
+        );
+        setCheckBookingDates(date);
       }
-    };
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
+  const fetchVideoMetadata = async () => {
+    if (!contentId) {
+      setError("No content ID provided");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axiosApi.get(`/video-details`, {
+        headers,
+        params: { contentId },
+      });
+
+      if (response.data.success) {
+        const { video_metadata } = response?.data?.data;
+        const data = video_metadata?.[0];
+
+        if (!data) return;
+
+        // Parse existing image URLs
+        const imageUrls = data.image_url ? JSON.parse(data.image_url) : [];
+
+        // Convert image URLs to File[]
+        const imageFiles = await Promise.all(
+          imageUrls.map(async (url, index) => {
+            const fileName = url.split("/").pop() || `image_${index}.jpg`;
+            return await urlToFile(url, fileName, "image/jpeg");
+          })
+        );
+
+        // Convert video URL to File (if exists)
+        let videoFile = null;
+        if (data.video_url) {
+          const fileName = data.video_url.split("/").pop() || "video.mp4";
+          videoFile = await urlToFile(data.video_url, fileName, "video/mp4");
+        }
+
+        // ✅ Replace thumbnails and video_file (not append)
+        setFormData({
+          credits: data.credits || "",
+          existing_thumbnails: imageUrls,
+          thumbnails: imageFiles,
+          video_file: videoFile,
+          existing_video_url: data.video_url || null,
+          reject_reason: data.reject_reason || null,
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching video metadata:", err);
+      setError("Failed to load video metadata");
+    }
+  };
+
+  useEffect(() => {
+    if (checkBookingDates.length > 0) {
+      checkIfDateIsAvail();
+    }
+  }, [checkBookingDates]);
+
+  useEffect(() => {
+    checkAlreadyBookedDate();
     fetchVideoMetadata();
   }, [contentId, headers]);
+
+  if (navigateToSongReg) {
+    navigate("/dashboard/error", {
+      state: {
+        heading:
+          "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
+        btnText: "Song registration",
+        redirectTo: "/dashboard/upload-song/register-song",
+        songName: songName,
+      },
+    });
+  }
 
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">

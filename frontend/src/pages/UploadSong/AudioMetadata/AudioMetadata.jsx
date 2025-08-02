@@ -63,40 +63,34 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
 
     const formData = new FormData();
 
-    formData.append("artist_name", data.name)
-    formData.append("artist_type", data.artistType)
-    formData.append("song_id", data.contentId)
-    formData.append("legal_name", data.legal_name)
-    formData.append("spotify_url", data.spotify_url)
-    formData.append("facebook_url", data.facebook_url)
-    formData.append("instagram_url", data.instagram_url)
-    formData.append("apple_music_url", data.apple_music_url)
+    formData.append("artist_name", data.name);
+    formData.append("artist_type", data.artistType);
+    formData.append("song_id", data.contentId);
+    formData.append("legal_name", data.legal_name);
+    formData.append("spotify_url", data.spotify_url);
+    formData.append("facebook_url", data.facebook_url);
+    formData.append("instagram_url", data.instagram_url);
+    formData.append("apple_music_url", data.apple_music_url);
 
     if (data.profile_image) {
-
-      formData.append("profile_image", data.profile_image)
+      formData.append("profile_image", data.profile_image);
     }
 
-
     try {
-
       const response = await axiosApi.post("/secondary-artist", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          ...headers
-        }
-      })
+          ...headers,
+        },
+      });
 
       if (response.data.success) {
         onArtistAdd(artistType, data);
         onClose();
       }
-
+    } catch (error) {
+      console.error("Error posting secondary artist");
     }
-    catch (error) {
-      console.error("Error posting secondary artist")
-    }
-
   };
 
   const handleFileChange = (e) => {
@@ -117,7 +111,6 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
     }
 
     setProfileImage(file);
-
   };
 
   return (
@@ -254,15 +247,19 @@ export default function AudioMetadataForm() {
   const [mood, setMood] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [primary, setPrimary] = useState("");
-  const [languages, setLanguages] = useState([{ name: "english", id: 1 }, { name: "hindi", id: 2 }, { name: "marathi", id: 3 }]);
+  const [languages, setLanguages] = useState([
+    { name: "english", id: 1 },
+    { name: "hindi", id: 2 },
+    { name: "marathi", id: 3 },
+  ]);
   const [audioFileUrl, setAudioFileUrl] = useState(null);
-  const location = useLocation()
+  const location = useLocation();
+
   const [songName, setSongName] = useState(location.state.songName);
   const [showSecondaryForm, setShowSecondaryForm] = useState(false);
   const [selectedArtistType, setSelectedArtistType] = useState("");
   const [rejectReason, setRejectReason] = useState(null);
   const { headers, artist, user, ophid } = useArtist();
-
   const [featuringArtists, setFeaturingArtists] = useState([]);
   const [lyricistArtists, setLyricistArtists] = useState([]);
   const [composerArtists, setComposerArtists] = useState([]);
@@ -271,6 +268,8 @@ export default function AudioMetadataForm() {
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [checkBookingDates, setCheckBookingDates] = useState([]);
+  const [navigateToSongReg, setNavigateToSongReg] = useState(false);
 
   // const [subgenre, setSubgenre] = useState("");
 
@@ -402,23 +401,30 @@ export default function AudioMetadataForm() {
     setShowSecondaryForm(false);
   };
 
-  const handleArtistRemove = async (artistType, index, artistName, artistLegalName) => {
+  const handleArtistRemove = async (
+    artistType,
+    index,
+    artistName,
+    artistLegalName
+  ) => {
+    const formData = new FormData();
 
-    const formData = new FormData()
-
-    formData.append("song_id", contentId)
-    formData.append("artist_type", artistType)
-    formData.append("artist_name", artistName)
-    formData.append("legal_name", artistLegalName)
+    formData.append("song_id", contentId);
+    formData.append("artist_type", artistType);
+    formData.append("artist_name", artistName);
+    formData.append("legal_name", artistLegalName);
 
     try {
-
-      const response = await axiosApi.post("/remove-secondary-artist", formData, {
-        headers: {
-          "Content-Type": "application/json",
-          ...headers
+      const response = await axiosApi.post(
+        "/remove-secondary-artist",
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...headers,
+          },
         }
-      })
+      );
 
       if (response.data.success) {
         switch (artistType) {
@@ -435,19 +441,13 @@ export default function AudioMetadataForm() {
             setProducerArtists((prev) => prev.filter((_, i) => i !== index));
             break;
         }
-
       }
-
-    }
-    catch (e) {
+    } catch (e) {
       console.log("Error removing artist");
     }
-
-
   };
 
   const handleSubmit = async (e) => {
-    ;
     e.preventDefault();
 
     // setIsLoading(true);
@@ -463,16 +463,15 @@ export default function AudioMetadataForm() {
       formData.append("languages", langID);
       formData.append("genre", genre);
       formData.append("sub_genre", subGenre);
-      formData.append("project_type", checkProjectType)
+      formData.append("project_type", checkProjectType);
 
       formData.append(
         "primary_artist",
-        `${user?.userData?.artist.name} - ${user?.userData?.artist.stage_name
-        }`
+        `${user?.userData?.artist.name} - ${user?.userData?.artist.stage_name}`
       );
       formData.append("mood", mood);
       formData.append("lyrics", lyrics);
-      formData.append("next_step", "/dashboard/upload-song/video-metadata/")
+      formData.append("next_step", "/dashboard/upload-song/video-metadata/");
 
       // Add secondary artists as objects
       // const addArtistsWithImages = (artists, type) => {
@@ -521,26 +520,25 @@ export default function AudioMetadataForm() {
         return;
       }
 
-      const response = await axiosApi.post(
-        `/audio-details`,
-        formData,
-        {
-          headers: {
-            ...headers,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axiosApi.post(`/audio-details`, formData, {
+        headers: {
+          ...headers,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.status === 201) {
         setIsLoading(false);
-        navigate(`/dashboard/upload-song/video-metadata/${response.data.song_id}`, {
-          state: {
-            songName: location.state.songName,
-            release_date: location.state.release_date,
-            project_type: location.state.project_type
+        navigate(
+          `/dashboard/upload-song/video-metadata/${response.data.song_id}`,
+          {
+            state: {
+              songName: location.state.songName,
+              release_date: location.state.release_date,
+              project_type: location.state.project_type,
+            },
           }
-        });
+        );
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
@@ -548,97 +546,142 @@ export default function AudioMetadataForm() {
       setIsSubmitting(false);
     }
   };
-  useEffect(() => {
 
-    const fetchAudioMetadata = async () => {
-      if (!contentId || !headers) {
+  const checkIfDateIsAvail = () => {
+    const check = checkBookingDates.find((date) => {
+      const formattedDate = new Date(
+        location.state.release_date
+      ).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      });
+
+      const formattedReleaseDate = new Date(date).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      });
+
+      if (formattedReleaseDate === formattedDate) {
+        return date;
+      }
+    });
+
+    if (check) {
+      setNavigateToSongReg(true);
+    }
+  };
+
+  const checkAlreadyBookedDate = async () => {
+    try {
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers are not ready yet");
         return;
       }
 
-      try {
-        const response = await axiosApi.get(
-          `/audio-and-secondary-artist`,
-          {
-            headers: headers,
-            params: { contentId, ophid }
-          }
+      const response = await axiosApi.get("/bookings", {
+        headers: headers,
+      });
+
+      if (response.data.success) {
+        const date = response.data.data.map(
+          (data) => data.current_booking_date
+        );
+        setCheckBookingDates(date);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchAudioMetadata = async () => {
+    if (!contentId || !headers) {
+      return;
+    }
+
+    try {
+      const response = await axiosApi.get(`/audio-and-secondary-artist`, {
+        headers: headers,
+        params: { contentId, ophid },
+      });
+
+      if (response.data.success) {
+        const { audio_metadata, secondary_artists } = response.data.data;
+
+        setSongName(audio_metadata[0]?.Song_name || location.state.songName);
+        setLangID(audio_metadata[0]?.language || null);
+        setGenre(audio_metadata[0]?.genre || "");
+        setSubGenre(audio_metadata[0]?.sub_genre || "");
+        setMood(audio_metadata[0]?.mood || "");
+        setLyrics(audio_metadata[0]?.lyrics || "");
+        setPrimary(audio_metadata[0]?.primary_artist || "");
+        setLanguages(
+          languages.find((lang) => lang.id === audio_metadata[0]?.language) ||
+            languages
+        );
+        setRejectReason(audio_metadata[0]?.reject_reason || "");
+
+        // Set audio file feedback
+        if (audio_metadata[0]?.audio_url) {
+          setAudioFileUrl(audio_metadata[0]?.audio_url);
+
+          const blob = await getAudioAsBlob(audio_metadata[0]?.audio_url);
+          const file = new File([blob], "audio.mp3", { type: blob.type });
+          setSelectedFile(file);
+          setUploadedFileName(audio_metadata[0]?.audio_url.split("/").pop());
+        }
+
+        // Set secondary artists if they exist
+        const parseArtist = (artist) => ({
+          name: artist.artist_name,
+          legal_name: artist.Legal_name,
+          spotify_url: artist.SpotifyLink,
+          facebook_url: artist.FacebookLink,
+          instagram_url: artist.InstagramLink,
+          apple_music_url: artist.AppleMusicLink,
+          profile_image: artist.artistPictureUrl
+            ? { name: "profile_image", url: artist.artistPictureUrl }
+            : null,
+        });
+
+        setFeaturingArtists(
+          secondary_artists
+            .filter((artist) => artist.artist_type === "Featuring Artist")
+            .map(parseArtist)
         );
 
-        if (response.data.success) {
-          const { audio_metadata, secondary_artists } =
-            response.data.data;
+        setLyricistArtists(
+          secondary_artists
+            .filter((artist) => artist.artist_type === "Lyricist Artist")
+            .map(parseArtist)
+        );
 
-          setSongName(audio_metadata[0]?.Song_name || location.state.songName);
-          setLangID(audio_metadata[0]?.language || null);
-          setGenre(audio_metadata[0]?.genre || "");
-          setSubGenre(audio_metadata[0]?.sub_genre || "");
-          setMood(audio_metadata[0]?.mood || "");
-          setLyrics(audio_metadata[0]?.lyrics || "");
-          setPrimary(audio_metadata[0]?.primary_artist || "");
-          setLanguages(languages.find(lang => lang.id === audio_metadata[0]?.language) || languages);
-          setRejectReason(audio_metadata[0]?.reject_reason || "");
+        setComposerArtists(
+          secondary_artists
+            .filter((artist) => artist.artist_type === "Composer Artist")
+            .map(parseArtist)
+        );
 
-          // Set audio file feedback
-          if (audio_metadata[0]?.audio_url) {
-            setAudioFileUrl(audio_metadata[0]?.audio_url);
-
-            const blob = await getAudioAsBlob(audio_metadata[0]?.audio_url);
-            const file = new File([blob], "audio.mp3", { type: blob.type });
-            setSelectedFile(file);
-            setUploadedFileName(
-              audio_metadata[0]?.audio_url.split("/").pop()
-            );
-
-          }
-
-          // Set secondary artists if they exist
-          const parseArtist = (artist) => ({
-            name: artist.artist_name,
-            legal_name: artist.Legal_name,
-            spotify_url: artist.SpotifyLink,
-            facebook_url: artist.FacebookLink,
-            instagram_url: artist.InstagramLink,
-            apple_music_url: artist.AppleMusicLink,
-            profile_image: artist.artistPictureUrl
-              ? { name: "profile_image", url: artist.artistPictureUrl }
-              : null,
-          });
-
-          setFeaturingArtists(
-            secondary_artists
-              .filter(artist => artist.artist_type === "Featuring Artist")
-              .map(parseArtist)
-          );
-
-          setLyricistArtists(
-            secondary_artists
-              .filter(artist => artist.artist_type === "Lyricist Artist")
-              .map(parseArtist)
-          );
-
-          setComposerArtists(
-            secondary_artists
-              .filter(artist => artist.artist_type === "Composer Artist")
-              .map(parseArtist)
-          );
-
-          setProducerArtists(
-            secondary_artists
-              .filter(artist => artist.artist_type === "Producer Artist")
-              .map(parseArtist)
-          );
-
-        }
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          console.error("Error fetching audio metadata:", error);
-          setError(`Failed to load audio metadata: ${error.message}`);
-        }
+        setProducerArtists(
+          secondary_artists
+            .filter((artist) => artist.artist_type === "Producer Artist")
+            .map(parseArtist)
+        );
       }
-    };
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Error fetching audio metadata:", error);
+        setError(`Failed to load audio metadata: ${error.message}`);
+      }
+    }
+  };
 
+  useEffect(() => {
+    if (checkBookingDates.length > 0) {
+      checkIfDateIsAvail();
+    }
+  }, [checkBookingDates]);
+
+  useEffect(() => {
+    checkAlreadyBookedDate();
     fetchAudioMetadata();
-
   }, [contentId, headers]);
 
   async function getAudioAsBlob(url) {
@@ -669,6 +712,17 @@ export default function AudioMetadataForm() {
     setAudioFileUrl(URL.createObjectURL(file)); // Preview the uploaded file
   };
 
+  if (navigateToSongReg) {
+    navigate("/dashboard/error", {
+      state: {
+        heading: "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
+        btnText: "Song registration",
+        redirectTo: "/dashboard/upload-song/register-song",
+        songName: songName
+      },
+    });
+  }
+
   // if (isLoading) {
   //   return <div>Loading...</div>;
   // }
@@ -682,7 +736,6 @@ export default function AudioMetadataForm() {
   // }
 
   return (
-
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
       {isLoading && (
         <div className="text-center py-4">
@@ -694,16 +747,17 @@ export default function AudioMetadataForm() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Primary Artist Form */}
           <div
-            className={`max-w-xl col-span-1 ${showSecondaryForm ? "hidden lg:block" : ""
-              }`}
+            className={`max-w-xl col-span-1 ${
+              showSecondaryForm ? "hidden lg:block" : ""
+            }`}
           >
             <div className="">
               <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 Audio Metadata
               </h1>
-              {
-                rejectReason && <p className="text-red-700">Reason: {rejectReason}</p>
-              }
+              {rejectReason && (
+                <p className="text-red-700">Reason: {rejectReason}</p>
+              )}
               <div className="space-y-2 my-2">
                 <label className="block">
                   Song Name <span className="text-red-500">*</span>
@@ -719,7 +773,6 @@ export default function AudioMetadataForm() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Language Dropdown */}
                 <div className="space-y-2">
-
                   <label className="block">
                     Language <span className="text-red-500">*</span>
                   </label>
@@ -814,10 +867,7 @@ export default function AudioMetadataForm() {
                   </label>
                   <input
                     type="text"
-                    value={`${user?.userData?.artist.name
-                      } - ${user?.userData?.artist
-                        .stage_name
-                      }`}
+                    value={`${user?.userData?.artist.name} - ${user?.userData?.artist.stage_name}`}
                     onChange={(e) => setPrimary(e.target.value)}
                     className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
                     required
@@ -859,7 +909,14 @@ export default function AudioMetadataForm() {
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleArtistRemove(type, index, artist.name, artist.legal_name)}
+                              onClick={() =>
+                                handleArtistRemove(
+                                  type,
+                                  index,
+                                  artist.name,
+                                  artist.legal_name
+                                )
+                              }
                               className="text-red-500 hover:text-red-400"
                             >
                               Remove
@@ -870,7 +927,6 @@ export default function AudioMetadataForm() {
                     </div>
                   ))}
                 </div>
-
 
                 {/* Audio File Upload */}
                 <div className="space-y-2">
@@ -926,7 +982,8 @@ export default function AudioMetadataForm() {
               />
             </div>
           )}
-        </div>)}
+        </div>
+      )}
       <ToastContainer />
     </div>
   );

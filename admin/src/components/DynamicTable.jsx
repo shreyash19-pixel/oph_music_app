@@ -95,11 +95,14 @@ const DynamicTable = ({
   };
 
   const getStatusForRow = (row) => {
-    const rowId = row.ophid || row.OPH_ID;
+    const rowId = row.ophid || row.OPH_ID || row.ophID;
     if (!rowId || !statusData || statusData.length === 0) return "";
 
     const matched = statusData.find(
-      (statusRow) => statusRow.ophid === rowId || statusRow.OPH_ID === rowId
+      (statusRow) =>
+        statusRow.ophid === rowId ||
+        statusRow.OPH_ID === rowId ||
+        statusRow.ophID === rowId
     );
 
     return matched ? matched[statusField] : "";
@@ -142,7 +145,7 @@ const DynamicTable = ({
                 className="hover:bg-gray-100 transition cursor-pointer"
                 onClick={() => {
                   if (detailsUrl) {
-                    const ophidValue = row.ophid || row.OPH_ID;
+                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;  
                     const songIdValue = row.song_id || row.songId;
 
                     if (ophidValue && songIdValue) {

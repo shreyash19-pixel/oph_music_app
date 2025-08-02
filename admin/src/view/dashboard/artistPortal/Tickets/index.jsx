@@ -36,8 +36,8 @@ export default function AdminTicketList() {
     const summary = summaryMap[ticketNumber];
     if (!summary) return alert("Please write a summary before submitting.");
 
-    axios
-      .post("http://localhost:5000/resolveTicket", {
+    axiosApi
+      .post("/resolveTicket", {
         ticketNumber,
         notes: summary,
       })

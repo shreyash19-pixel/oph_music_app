@@ -26,6 +26,7 @@ import VideoMetadataForm from "../pages/UploadSong/VideoMetadata/VideoMetadata";
 import Error from "../pages/Error.jsx";
 import React from "react";
 import MembershipForm from "../pages/auth/SignUp/MembershipFrom.jsx";
+import ErrorScreen from "../pages/ErrorScreen/ErrorScreen.jsx";
 const ArtistRoutes = () => {
   return (
     <Provider store={artistStore}>
@@ -41,6 +42,7 @@ const ArtistRoutes = () => {
         <Route path="date-change" element={<DateChange />} />
 
           <Route path="success" element={<SuccessScreen />} />
+          <Route path="error" element={<ErrorScreen />} />
           <Route path="payment" element={<PaymentScreen />} />
 
         <Route path="upload-song" element={<UploadSongs />} />

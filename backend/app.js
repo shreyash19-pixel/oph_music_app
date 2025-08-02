@@ -25,6 +25,9 @@ const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
 const homeRoute = require("./routes/home")
+const withdraw = require("./routes/withdraw");
+const paymentRoute = require("./routes/payment");
+
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp")
@@ -64,6 +67,9 @@ app.use("/", videoDetail);
 app.use("/", eventParticipant);
 app.use("/artist-spotlight",artistSpotlight);
 app.use("/",homeRoute)
+app.use("/",paymentRoute)
+app.use("/",withdraw)
+
 
 //Admin Routes
 

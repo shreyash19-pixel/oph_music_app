@@ -10,7 +10,7 @@ const PaymentWithdraw = () => {
   useEffect(() => {
     const fetchData = async () => {
       const res = await axiosApi.get("/getAllWithdraw");
-      setTableData(res.data.data);
+      setTableData(res.data.data);  
       console.log(res.data.data);
     };
 
@@ -23,7 +23,6 @@ const PaymentWithdraw = () => {
           title="Withdraw"
           data={tableData}
           showStatusIndicator={false}
-          excludeColumns={""}
           pageSize={10}
           detailsUrl="/Withdraw"
         />
