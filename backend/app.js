@@ -29,6 +29,7 @@ const withdraw = require("./routes/withdraw");
 const homeRoute = require("./routes/home")
 const paymentRoute = require("./routes/payment");
 
+
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp")
 const adminSignIn = require("./admin/routes/adminSignIn")
@@ -41,7 +42,6 @@ const payments = require("./admin/routes/payments")
 const analytics = require("./admin/routes/analytics")
 
 const tickets = require("./admin/routes/tickets")
-const AdminWithdraw = require("./admin/routes/withdraw");
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -72,6 +72,7 @@ app.use("/",leaderboardRoute)
 app.use("/",homeRoute)
 app.use("/",paymentRoute)
 
+
 //Admin Routes
 
 app.use("/",adminSignUp);
@@ -85,6 +86,7 @@ app.use("/",events);
 app.use("/",payments);
 app.use("/",AdminWithdraw);
 app.use("/",analytics);
+
 // ✅ Start server
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}...`);
