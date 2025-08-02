@@ -1,13 +1,18 @@
 const db = require("../DB/connect"); // Your mysql2/promise connection
 
 // Insert a new withdraw request
-async function createWithdrawRequest(ophID, withdrawAmount) {
+const withdrawal_id = Math.floor(1000 + Math.random() * 9000).toString();
+async function createWithdrawRequest(ophID, withdraw_amount) {
   const query = `
-    INSERT INTO withdraw (ophID, withdraw_amount)
-    VALUES (?, ?)
+    INSERT INTO withdraw (ophID, withdraw_amount,withdrawal_id)
+    VALUES (?, ?, ?)
   `;
-    const [result] = await db.execute(query, [ophID, withdrawAmount]);
-    return result;
+  const [result] = await db.execute(query, [
+    ophID,
+    withdraw_amount,
+    withdrawal_id,
+  ]);
+  return result;
 }
 
 const getWithdraw = async (ophID) => {

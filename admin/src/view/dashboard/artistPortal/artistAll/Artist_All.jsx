@@ -2,6 +2,7 @@ import React,{useState,useEffect} from 'react'
 import axiosApi from '../../../../conf/axios';
 import SearchableDynamicTable from '../../../../components/SearchableDynamicTable';
 import ArtistSidebar from '../../../../components/ArtistSidebar';
+import { all } from 'axios';
 
 
 const Artist_All = () => {
@@ -10,8 +11,6 @@ const Artist_All = () => {
   useEffect(() => {
     const fetchData = async () => {
       const res = await axiosApi.get("/completed");
-
-      
       setTableData(res.data.userDetails);
       console.log(res.data.userDetails);
     };

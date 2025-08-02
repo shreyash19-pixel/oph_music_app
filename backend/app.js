@@ -11,7 +11,6 @@ const connectDB = require("./DB/connect");
 // Routes
 const signinRoute = require("./routes/signin");
 const signupRoute = require("./routes/signup");
-const withdraw = require("./routes/withdraw");
 const professionalDetailsRoute = require("./routes/professional_details")
 const documentationDetailsRoute = require("./routes/documentation_details")
 const dateBookingRoute = require("./routes/date_booking")
@@ -26,7 +25,7 @@ const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant")
 const artistSpotlight = require("./routes/artist-spotlight")
 const leaderboardRoute = require("./routes/leaderboard")
-
+const withdraw = require("./routes/withdraw");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp")
@@ -38,6 +37,7 @@ const songs = require("./admin/routes/songs")
 const events = require("./admin/routes/events")
 const payments = require("./admin/routes/payments")
 const tickets = require("./admin/routes/tickets")
+const AdminWithdraw = require("./admin/routes/withdraw");
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -78,7 +78,7 @@ app.use("/",tickets);
 app.use("/",songs);
 app.use("/",events);
 app.use("/",payments);
-
+app.use("/",AdminWithdraw);
 // ✅ Start server
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}...`);

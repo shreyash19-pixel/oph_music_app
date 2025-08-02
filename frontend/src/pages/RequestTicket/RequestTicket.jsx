@@ -185,7 +185,7 @@ export default function RequestTicketForm() {
       // }
 
       const response = await axiosApi.post(
-        "http://localhost:5000/sendTicket",
+        "/sendTicket",
         formDataObj,
         {
           headers: {
@@ -341,7 +341,7 @@ export default function RequestTicketForm() {
 
         try {
           const response = await axios.get(
-            `http://localhost:5000/getTicket?ophID=${ophid}`
+            `/getTicket?ophID=${ophid}`
           );
 
           const sanitized = response.data.data.map((ticket) => ({

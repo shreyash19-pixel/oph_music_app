@@ -2,17 +2,19 @@ const withdrawModel = require("../../backend/model/withdraw");
 
 const createWithdrawRequest = async (req, res) => {
   try {
-    const { ophID, withdraw_amount } = req.body;
+    const { ophID, withdraw_amount, withdrawal_id } = req.body;
 
-    if (!ophID || !withdraw_amount) {
+    if (!ophID || !withdraw_amount || !withdrawal_id) {
       return res
         .status(400)
         .json({ message: "ophID and withdraw_amount are required" });
     }
 
+    
     const result = await withdrawModel.createWithdrawRequest(
       ophID,
-      withdraw_amount
+      withdraw_amount,
+      withdrawal_id
     );
     res
       .status(201)

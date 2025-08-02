@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchIncome, getWithDrawHistory, postWithdraw } from "../../slice/income";
 import { useArtist } from "../auth/API/ArtistContext";
 import axiosApi from "../../conf/axios";
+import { toast } from "react-toastify";
 
 
 export default function IncomeWithdrawal() {
@@ -104,11 +105,10 @@ export default function IncomeWithdrawal() {
   const submitWithdraw = async (e) => {
     e.preventDefault();
    if (!withdrawAmount || !ophid) return;
-     setLoading(true);
     try {
      const payload = {
        withdraw_amount: withdrawAmount,
-       ophid,
+       ophID: ophid,
      };
 
      console.log("Sending payload:", payload);
@@ -119,7 +119,8 @@ export default function IncomeWithdrawal() {
        { headers: { ...headers } }
      );
 
-     if (res.status === 201) {
+      if (res.status === 201) {
+        toast.success("Withdrawal request submitted successfully")
        setStatus({ type: "success", message: "Withdrawal request submitted" });
        setWithdrawAmount("");
       //  fetchHistory(); // refresh
@@ -128,10 +129,7 @@ export default function IncomeWithdrawal() {
      }
     } catch (err) {
       console.error("Post Error:", err);
-      setStatus({
-        type: "error",
-        message: err.response?.data?.message || "Something went wrong",
-      });
+      toast.error(err.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -141,7 +139,7 @@ export default function IncomeWithdrawal() {
 
       try {
         const response = await axiosApi.get(
-          `http://localhost:5000/getWithdraw?ophID=${ophid}`
+          `/getWithdraw?ophID=${ophid}`
         );
 
         const withdrawals = response.data.data;
@@ -152,6 +150,8 @@ export default function IncomeWithdrawal() {
           message: err.message || "Failed to fetch withdrawal history",
           status: "Failed",
         });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -207,6 +207,8 @@ export default function IncomeWithdrawal() {
   if (loading) {
     return <div className="min-h-[calc(100vh-70px)] flex items-center justify-center">Loading...</div>;
   }
+
+   const randomWithdrawNumber = Math.floor(1000 + Math.random() * 9000);
 
   // if (isError) {
   //   return (
@@ -322,6 +324,9 @@ export default function IncomeWithdrawal() {
                   key={`${withdrawals.created_at}-${withdrawals.withdraw_amount}`}
                   className="bg-gray-800/50 rounded-lg p-4"
                 >
+                  {/* <p className="text-xs text-gray-400">
+                    Withdrawal No: {randomWithdrawNumber}
+                  </p> */}
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-gray-300">
