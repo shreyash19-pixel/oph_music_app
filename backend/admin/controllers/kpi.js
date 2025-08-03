@@ -44,10 +44,35 @@ const insertOrUpdateKpiScore = async (req, res) => {
   }
 };
 
+const getTopSearchedArtistsController = async (req, res) => {
+
+  try
+  {
+    const {q} = req.query
+    
+    
+
+  }
+
+  catch(err)
+  {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+
 const fetchAllKpiScores = async (req, res) => {
   try {
     const scores = await SongSocialMetrics.getAllKpiScores();
-    res.status(200).json(scores);
+    res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: scores
+    });
   } catch (error) {
     console.error("Error fetching KPI scores:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -55,5 +80,5 @@ const fetchAllKpiScores = async (req, res) => {
 };
 
 module.exports = {
-  getSongMetricsSummary,fetchAllKpiScores,insertOrUpdateKpiScore
+  getSongMetricsSummary,fetchAllKpiScores,insertOrUpdateKpiScore, getTopSearchedArtistsController
 };

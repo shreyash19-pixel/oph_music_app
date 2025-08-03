@@ -14,28 +14,32 @@ const MusicPlayerProfile2 = () => {
   const audioRef = useRef(null); // Ref for audio
   const artistData = useSelector((state) => state.topPick.topPicks);
 
+  const songsArray = Object.values(artistData).sort(
+    (a, b) => b.ophid - a.ophid
+  );
+
   const [playingSongId, setPlayingSongId] = useState(null);
 
   const handlePlayPause = (song) => {
     const current = audioRef.current;
 
-    if (current && playingSongId === song.id) {
+    if (current && playingSongId === song.songId) {
       if (!current.paused) {
         current.pause();
         setPlayingSongId(null);
       } else {
         current.play();
-        setPlayingSongId(song.id);
+        setPlayingSongId(song.songId);
       }
     } else {
       if (current) {
         current.pause();
       }
 
-      const newAudio = new Audio(song.audio_file_url);
+      const newAudio = new Audio(song.audioUrl);
       audioRef.current = newAudio;
       newAudio.play();
-      setPlayingSongId(song.id);
+      setPlayingSongId(song.songId);
 
       newAudio.onended = () => {
         setPlayingSongId(null);
@@ -89,16 +93,20 @@ const MusicPlayerProfile2 = () => {
     return val[(rank % 5) + 1];
   };
 
-  return artistData.length > 0 ? (
+  return songsArray.length > 0 ? (
     <div className="toppicks-section xl:px-16 pt-20 pb-14 bg-black z-20 relative text-white lg:px-10 px-6">
       <div className="mx-auto">
         <div className="flex justify-between">
           <div>
             <h2 className="text-4xl font-bold text-left mb-2">
-              <span className="text-[#5DC9DE]">LEADING ARTISTS </span>OF THE SPOTLIGHT
+              <span className="text-[#5DC9DE]">LEADING ARTISTS </span>OF THE
+              SPOTLIGHT
             </h2>
             <p className="text-gray-400 text-left mb-12">
-            The artists are grabing every opportunity and rising as the stars of tomorrow. The best platform for independent artists. What are you waiting for? Create your profile and take a chance to collaborate with our community artists.
+              The artists are grabing every opportunity and rising as the stars
+              of tomorrow. The best platform for independent artists. What are
+              you waiting for? Create your profile and take a chance to
+              collaborate with our community artists.
             </p>
           </div>
           <div className="sm:pe-4 ms-5 sm:ms-0 py-4 lg:py-0">
@@ -106,49 +114,62 @@ const MusicPlayerProfile2 = () => {
               onClick={() => sliderRef.current?.slickPrev()}
               className="z-10 bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-colors mr-2"
             >
-              <img src={arrowLeftIc} alt="Previous" className="w-[20px] h-[20px]" />
+              <img
+                src={arrowLeftIc}
+                alt="Previous"
+                className="w-[20px] h-[20px]"
+              />
             </button>
             <button
               onClick={() => sliderRef.current?.slickNext()}
               className="z-10 bg-[#6F4FA0] mt-3 lg:mt-0 p-2 rounded-full hover:bg-[#6F4FA0] transition-colors"
             >
-              <img src={arrowRightIc} alt="Next" className="w-[20px] h-[20px]" />
+              <img
+                src={arrowRightIc}
+                alt="Next"
+                className="w-[20px] h-[20px]"
+              />
             </button>
           </div>
         </div>
 
         <Slider ref={sliderRef} {...settings} className="gap-6">
-          {artistData.map((artist, index) => (
-            <div key={index} className="lg:px-4 px-5 py-5 max-w-full sm:max-w-[95%]">
+          {songsArray.map((artist, index) => (
+            <div
+              key={index}
+              className="lg:px-4 px-5 py-5 max-w-full sm:max-w-[95%]"
+            >
               <div className="relative overflow-visible rounded-xl">
                 <div
                   className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
-                    artist.rank
+                    index + 1
                   )} w-16 h-16 flex items-center justify-center rounded-lg -rotate-12`}
                 >
-                  <span className="text-black text-4xl font-bold">{artist.rank}</span>
+                  <span className="text-black text-4xl font-bold">
+                    {index + 1}
+                  </span>
                 </div>
 
                 <div
                   className="relative h-64 hover:cursor-pointer"
-                  onClick={() => navigate(`/artists/${artist.id}`)}
+                  onClick={() => navigate(`/artists/${artist.ophid}`)}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
                   <Image
-                    src={artist.profile_img_url}
+                    src={artist.personalPhoto}
                     fallback={<Shimmer width="100%" height="100%" />}
-                    alt={artist.name}
+                    alt={artist.primaryArtist}
                     NativeImgProps={{
                       className: "w-full h-full object-cover",
                     }}
                   />
                   <div className="absolute bottom-0 left-0 p-6 text-white">
                     <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
-                      {artist.name}
+                      {artist.primaryArtist}
                     </h3>
                     <p className="text-sm text-gray-500">
                       Stage Name:{" "}
-                      <span className="text-[#5DC9DE]">{artist.stage_name}</span>
+                      <span className="text-[#5DC9DE]">{artist.stageName}</span>
                     </p>
                   </div>
                 </div>
@@ -156,7 +177,7 @@ const MusicPlayerProfile2 = () => {
                 <div className="xl:p-6">
                   {artist.songs.slice(0, 5).map((song, songIndex) => (
                     <div
-                      key={song.id}
+                      key={song.songId}
                       className="flex items-center z-40 justify-between py-3 border-b border-gray-800 last:border-0"
                     >
                       <div>
@@ -165,9 +186,12 @@ const MusicPlayerProfile2 = () => {
                             {songIndex < 10 ? "0" + (songIndex + 1) : songIndex}
                           </span>
                           <div>
-                            <h4 className="font-semibold">{song.name}</h4>
+                            <h4 className="font-semibold">{song.songName}</h4>
                             <p className="text-sm text-gray-400">
-                              {song.featuring_artists.join(", ")}
+                              {song.primaryArtist}
+                              {song.secondaryArtist.length > 0 && (
+                                <span>, {song.secondaryArtist.join(", ")}</span>
+                              )}
                             </p>
                           </div>
                         </div>
@@ -179,7 +203,8 @@ const MusicPlayerProfile2 = () => {
                         }}
                         className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors ml-4"
                       >
-                        {playingSongId === song.id && !audioRef.current?.paused ? (
+                        {playingSongId === song.songId &&
+                        !audioRef.current?.paused ? (
                           <FaPause className="text-black" size={11} />
                         ) : (
                           <FaPlay className="text-black ml-[0.5px]" size={11} />
