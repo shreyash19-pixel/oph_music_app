@@ -9,9 +9,9 @@ function Leaderboard({ leaderboardData, artist_id }) {
   const navigate = useNavigate();
   const { headers } = useArtist();
 
-  const incrementTraffic = async () => {
+  const incrementTraffic = async (artistId) => {
     try {
-      const response = await axiosApi.post("/increment-traffic", {ophid: artist_id, traffic_counter : 1} , {
+      const response = await axiosApi.post("/increment-traffic", {ophid: artistId, traffic_counter : 1} , {
         headers: {
           ...headers,
           "Content-Type": "application/json",
@@ -44,7 +44,7 @@ function Leaderboard({ leaderboardData, artist_id }) {
           {leaderboardData &&
             leaderboardData.map((artist, index) => (
               <tr
-                onClick={incrementTraffic}
+                onClick={() => incrementTraffic(artist.OPH_ID)}
                 key={artist.ranks}
                 className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
                   artist.OPH_ID == artist_id ? "bg-[#6F4FA0]" : ""
