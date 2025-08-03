@@ -68,7 +68,7 @@ function Home() {
         <>
           <HeroSection firstEvent={firstEvent} />
           <EventsNewReleases secondEvent={secondEvent} />
-          {/* <ArtistRankingSection data={artistsdata} selectedMonth={"January"} /> */}
+          <ArtistRankingSection data={artistsdata} selectedMonth={"January"} />
         </>
       )}
     </div>

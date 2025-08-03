@@ -4,7 +4,7 @@ const db = require("../DB/connect")
 
 const newReleases = async () => {
 
-    const [rows] = await db.execute("SELECT sr.song_id, vd.image_url, ad.Song_name, sa.artist_name, ssm.youtube_views, ad.audio_url, ad.primary_artist FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id ORDER BY ssm.youtube_views DESC LIMIT 5")
+    const [rows] = await db.execute("WITH CTESongRankings AS (SELECT sr.song_id, vd.image_url, ad.Song_name, sa.artist_name, ssm.youtube_views, ad.audio_url, ad.primary_artist, sr.`status` song_register_status, ad.`status` audio_details_status, vd.`status` video_details_status FROM song_social_metrics ssm LEFT JOIN songs_register sr ON ssm.song_id = sr.song_id LEFT JOIN audio_details ad ON ssm.song_id = ad.song_id LEFT JOIN video_details vd ON ssm.song_id = vd.song_id LEFT JOIN secondary_artist sa ON ssm.song_id = sa.song_id ORDER BY ssm.youtube_views DESC LIMIT 5) SELECT * FROM CTESongRankings WHERE song_register_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' ")
 
     const songMap = {}
 

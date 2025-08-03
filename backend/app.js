@@ -31,8 +31,6 @@ const homeRoute = require("./routes/home")
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
 const incrementTrafficCounter = require("./routes/increment_traffic_counter")
-const homeRoute = require("./routes/home")
-
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp")
