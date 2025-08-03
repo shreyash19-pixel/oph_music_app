@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import useSocketRegistration from "../../../../hook/useSocketRegistration";
 
 const ArtistContext = createContext();
 
@@ -13,7 +14,7 @@ export const ArtistProvider = ({ children }) => {
   );
   const [ophid, setOphid] = useState(null);
   const [user, setUser] = useState(null);
-
+  
 
   // Decode token and extract artist ID
   useEffect(() => {
@@ -43,7 +44,13 @@ export const ArtistProvider = ({ children }) => {
       setHeaders(null);
     }
   }, [token]);
-
+  
+  useEffect(() => {
+    console.log("👤 User state changed:", user);
+  }, [user]);
+  console.log(ophid);
+  
+  useSocketRegistration(ophid);
   // Validate token on mount and redirect if needed
   useEffect(() => {
     const verifyToken = () => {

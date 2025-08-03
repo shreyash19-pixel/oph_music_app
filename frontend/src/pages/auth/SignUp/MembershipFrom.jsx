@@ -27,7 +27,7 @@ const MembershipForm = ({ id }) => {
         // const artist_id = JSON.parse(localStorage.getItem("userData")).artist.id;
         // console.log("Artist ID:", JSON.parse(localStorage.getItem("userData")).artist.id);
         const response = await axiosApi.get(`auth/membership?ophid=${ophid}`, { headers });
-        console.log("API Response:", response.data);
+        // console.log("API Response:", response.data);
         if (typeof response.data === "string") {
           setContent(response.data);
         } else {

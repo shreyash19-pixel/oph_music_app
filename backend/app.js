@@ -1,10 +1,13 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
 const port = process.env.PORT;
 
+const server = http.createServer(app);
 // Connect DB (assumed it runs inside connectDB file)
 const connectDB = require("./DB/connect");
 
@@ -53,6 +56,34 @@ app.use(cors({
 }));
 app.use(express.json());
 
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
+  },
+});
+
+const userSockets = {};
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("register", (ophId) => {
+    userSockets[ophId] = socket.id;
+    console.log(`Registered OPH_ID: ${ophId} with socket: ${socket.id}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+    for (const [ophId, sId] of Object.entries(userSockets)) {
+      if (sId === socket.id) {
+        delete userSockets[ophId];
+        break;
+      }
+    }
+  });
+});
+
 // ✅ Mount routes
 app.use("/", signupRoute);
 app.use("/", signinRoute);
@@ -93,6 +124,7 @@ app.use('/',AdminWithdraw)
 
 
 // ✅ Start server
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is listening on port ${port}...`);
 });
+
