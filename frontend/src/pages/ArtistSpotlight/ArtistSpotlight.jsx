@@ -19,7 +19,7 @@ function Leaderboard({ leaderboardData, artist_id }) {
       });
 
       if (response.data.success) {
-        navigate(`/dashboard/artist-detail/${artist_id}`);
+        navigate(`/dashboard/artist-detail/${artistId}`);
       }
     } catch (err) {
       console.error(err);
