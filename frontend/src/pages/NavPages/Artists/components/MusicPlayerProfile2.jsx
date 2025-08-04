@@ -15,7 +15,7 @@ const MusicPlayerProfile2 = () => {
   const artistData = useSelector((state) => state.topPick.topPicks);
 
   const songsArray = Object.values(artistData).sort(
-    (a, b) => b.ophid - a.ophid
+    (a, b) => b.kpiScore - a.kpiScore
   );
 
   const [playingSongId, setPlayingSongId] = useState(null);

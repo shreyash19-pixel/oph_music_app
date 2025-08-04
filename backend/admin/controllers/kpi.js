@@ -50,7 +50,24 @@ const getTopSearchedArtistsController = async (req, res) => {
   {
     const {q} = req.query
     
-    
+    if(!q)
+    {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+
+    const response = await SongSocialMetrics.getTopSearchedArtists(q)
+
+    if(response)
+    {
+      return res.status(201).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
 
   }
 
