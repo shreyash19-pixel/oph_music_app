@@ -82,6 +82,34 @@ const getTopSearchedArtistsController = async (req, res) => {
 }
 
 
+const getTopArtistsController = async (req, res) => {
+
+  try
+  {
+    const response = await SongSocialMetrics.getTopArtists()
+
+    if(response)
+    {
+      return res.status(201).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
+
+  }
+
+  catch(err)
+  {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+
 const fetchAllKpiScores = async (req, res) => {
   try {
     const scores = await SongSocialMetrics.getAllKpiScores();
@@ -97,5 +125,5 @@ const fetchAllKpiScores = async (req, res) => {
 };
 
 module.exports = {
-  getSongMetricsSummary,fetchAllKpiScores,insertOrUpdateKpiScore, getTopSearchedArtistsController
+  getSongMetricsSummary,fetchAllKpiScores,insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController
 };

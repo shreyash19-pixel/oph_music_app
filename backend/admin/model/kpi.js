@@ -77,6 +77,13 @@ const getTopSearchedArtists = async (searchQuery) => {
 
 } 
 
+const getTopArtists = async () => {
+  const [rows] = await db.execute("SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid")
+
+  return rows
+
+}
+
 // Fetch all KPI scores, sorted by score descending
 const getAllKpiScores = async () => {
   const [rows] = await db.execute(
@@ -124,4 +131,4 @@ const getAllKpiScores = async () => {
   return songMap;
 };
 
-module.exports = { getMetricsSummary, getAllKpiScores, KpiScore, getTopSearchedArtists };
+module.exports = { getMetricsSummary, getAllKpiScores, KpiScore, getTopSearchedArtists, getTopArtists };
