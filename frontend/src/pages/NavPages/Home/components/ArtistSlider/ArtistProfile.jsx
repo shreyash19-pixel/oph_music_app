@@ -17,7 +17,7 @@ const ArtistProfile = ({ id }) => {
   const fetchArtistDetail = async () => {
     setLoading(true);
     try {
-      const response = await axiosApi.get(`/artists/${id}`);
+      const response = await axiosApi.get(`/get-top-artist-detail?id=${id}`);
       setArtist(response.data.data);
     } catch (err) {
       setError("Failed to load artists");

@@ -22,37 +22,22 @@ const ArtistSlider = ({ rows = 1 }) => {
   const [currArtist, setCurrentArtist] = useState(null);
 
 
-  //  useEffect(() => {
-  //   const fetchArtists = async (page = 1) => {
-  //     try {
-  //       const response = await axiosApi.get(
-  //         `/leaderboard/ranked-artists?page=${page}&per_page=${perPage}`
-  //       );
-  //       setArtists(response.data.data);
-  //       setTotalPages(response.data.pagination.total_pages);
-  //     } catch (error) {
-  //       console.error("Error fetching artists:", error);
-  //     }
-  //   };
-
-  //   fetchArtists(currentPage);
-  // }, [currentPage]);
-
   useEffect(() => {
-    const fetchArtists = async (page = 1) => {
+    const fetchArtists = async (page) => {
       try {
         const response = await axiosApi.get(
-          "/get-top-artist"
+          `/get-top-artist?page=${page}&per_page=${perPage}`
         );
         setArtists(response.data.data);
-        // setTotalPages(response.data.pagination.total_pages);
-        setTotalPages(4);
+        setTotalPages(response.data.pagination);
       } catch (error) {
         console.error("Error fetching artists:", error);
       }
     };
 
-    fetchArtists(currentPage);
+    if (currentPage) {
+      fetchArtists(currentPage);
+    }
   }, [currentPage]);
 
   const handleArtistClick = (id, index) => {
@@ -104,7 +89,7 @@ const ArtistSlider = ({ rows = 1 }) => {
           </div>
           <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               className="z-10 bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-colors mr-2"
               disabled={currentPage === 1}
             >
@@ -116,7 +101,7 @@ const ArtistSlider = ({ rows = 1 }) => {
             </button>
             <button
               onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                setCurrentPage(Math.min(currentPage + 1, totalPages))
               }
               className="z-10 bg-[#6F4FA0] mt-3 lg:mt-0 p-2 rounded-full hover:bg-[#6F4FA0] transition-colors"
               disabled={currentPage === totalPages}
@@ -195,11 +180,10 @@ const ArtistSlider = ({ rows = 1 }) => {
                       }
                       alt={artist.stage_name}
                       NativeImgProps={{
-                        className: ` w-[200px] md:w rounded-full h-[200px] md:h-full object-cover ${
-                          artist.OPH_ID === currArtist
+                        className: ` w-[200px] md:w rounded-full h-[200px] md:h-full object-cover ${artist.OPH_ID === currArtist
                             ? "border-4 border-primary"
                             : ""
-                        }`,
+                          }`,
                       }}
                     />
                   </div>
@@ -210,11 +194,10 @@ const ArtistSlider = ({ rows = 1 }) => {
                     }}
                   >
                     <a
-                      className={`text-lg font-semibold ${
-                        artist.OPH_ID === currArtist
+                      className={`text-lg font-semibold ${artist.OPH_ID === currArtist
                           ? "text-[#5DC9DE]"
                           : "text-white"
-                      }`}
+                        }`}
                       onClick={(e) => {
                         e.preventDefault();
                         handleArtistClick(artist.OPH_ID, index);
@@ -223,17 +206,16 @@ const ArtistSlider = ({ rows = 1 }) => {
                       {artist.stage_name}
                     </a>
                     <p
-                      className={`text-sm ${
-                        artist.OPH_ID === currArtist
+                      className={`text-sm ${artist.OPH_ID === currArtist
                           ? "text-white"
                           : "text-gray-400"
-                      }`}
+                        }`}
                     >
                       {artist.total_views >= 1000000
                         ? `${(artist.total_views / 1000000).toFixed(1)}M`
                         : artist.total_views >= 1000
-                        ? `${(artist.total_views / 1000).toFixed(1)}K`
-                        : artist.total_views}{" "}
+                          ? `${(artist.total_views / 1000).toFixed(1)}K`
+                          : artist.total_views}{" "}
                       + Listeners
                     </p>
                   </div>

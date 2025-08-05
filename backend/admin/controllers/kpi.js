@@ -46,12 +46,10 @@ const insertOrUpdateKpiScore = async (req, res) => {
 
 const getTopSearchedArtistsController = async (req, res) => {
 
-  try
-  {
-    const {q} = req.query
-    
-    if(!q)
-    {
+  try {
+    const { q } = req.query
+
+    if (!q) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
@@ -60,8 +58,7 @@ const getTopSearchedArtistsController = async (req, res) => {
 
     const response = await SongSocialMetrics.getTopSearchedArtists(q)
 
-    if(response)
-    {
+    if (response) {
       return res.status(201).json({
         success: true,
         message: "Data fetched successfully",
@@ -71,8 +68,7 @@ const getTopSearchedArtistsController = async (req, res) => {
 
   }
 
-  catch(err)
-  {
+  catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message
@@ -84,23 +80,40 @@ const getTopSearchedArtistsController = async (req, res) => {
 
 const getTopArtistsController = async (req, res) => {
 
-  try
-  {
-    const response = await SongSocialMetrics.getTopArtists()
+  try {
 
-    if(response)
-    {
-      return res.status(201).json({
+    const { page, per_page } = req.query
+
+    if (!page || !per_page) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+
+    const formattedPage = parseInt(page)
+    const formattedPerPage = parseInt(per_page)
+    const response = await SongSocialMetrics.getTopArtists(formattedPage, formattedPerPage)
+    let totalPages = await SongSocialMetrics.getTotalPages() 
+    
+    let countTotalPages = 0
+    if (totalPages) {
+      let totalPageCount = totalPages[0].rows
+      countTotalPages = Math.ceil(totalPageCount / formattedPerPage)
+    }
+
+    if (response && totalPages && countTotalPages !== 0) {
+      return res.status(200).json({
         success: true,
         message: "Data fetched successfully",
-        data: response
+        data: response,
+        pagination: countTotalPages
       })
     }
 
   }
 
-  catch(err)
-  {
+  catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message
@@ -125,5 +138,5 @@ const fetchAllKpiScores = async (req, res) => {
 };
 
 module.exports = {
-  getSongMetricsSummary,fetchAllKpiScores,insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController
+  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController
 };

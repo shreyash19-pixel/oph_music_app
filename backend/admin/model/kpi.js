@@ -77,11 +77,19 @@ const getTopSearchedArtists = async (searchQuery) => {
 
 } 
 
-const getTopArtists = async () => {
-  const [rows] = await db.execute("SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid")
+const getTopArtists = async (page, per_page) => {
+  const rowsToSkip = (page - 1) * per_page 
+
+  const query = `SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid LIMIT ${per_page} OFFSET ${rowsToSkip}`
+
+  const [rows] = await db.query(query)
+  return rows
+}
+
+const getTotalPages = async () => {
+  const [rows] = await db.execute("WITH CTEGetTotalPages AS (SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid) SELECT COUNT(*) `rows` FROM CTEGetTotalPages")
 
   return rows
-
 }
 
 // Fetch all KPI scores, sorted by score descending
@@ -131,4 +139,4 @@ const getAllKpiScores = async () => {
   return songMap;
 };
 
-module.exports = { getMetricsSummary, getAllKpiScores, KpiScore, getTopSearchedArtists, getTopArtists };
+module.exports = { getMetricsSummary, getAllKpiScores, KpiScore, getTopSearchedArtists, getTopArtists, getTotalPages };
