@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Elipse from "../../../../../../public/assets/images/elipse.png";
+import { SongDuration } from "../../../../ArtistSpotlight/ArtistSpotlight";
 
 const ArtistProfile = ({ id }) => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const ArtistProfile = ({ id }) => {
   const fetchArtistDetail = async () => {
     setLoading(true);
     try {
+      console.log('in api');
+      
       const response = await axiosApi.get(`/get-top-artist-detail?id=${id}`);
       setArtist(response.data.data);
     } catch (err) {
@@ -45,13 +48,13 @@ const ArtistProfile = ({ id }) => {
   };
 
   const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.id) {
+    if (audio && playingSongId === song.song_id) {
       if (!audio.paused) {
         audio.pause();
         setPlayingSongId(null);
       } else {
         audio.play();
-        setPlayingSongId(song.id);
+        setPlayingSongId(song.song_id);
       }
     } else {
       if (audio) {
@@ -61,7 +64,7 @@ const ArtistProfile = ({ id }) => {
       newAudio.play();
       setAudio(newAudio);
       setCurrentAudio(song.audio_file_url);
-      setPlayingSongId(song.id);
+      setPlayingSongId(song.song_id);
 
       newAudio.onended = () => {
         setPlayingSongId(null);
@@ -102,7 +105,7 @@ const ArtistProfile = ({ id }) => {
                 onClick={() => setShowVideoModal(true)}
               >
                 <img
-                  src={artist.profile_img_url}
+                  src={artist.personal_photo}
                   alt={artist.stage_name}
                   className="w-full h-full object-cover"
                 />
@@ -195,7 +198,7 @@ const ArtistProfile = ({ id }) => {
 
                       <td className="py-4">{song.total_views}</td>
                       <td className="py-4 text-center">
-                        {song.duration_in_minutes}
+                        <SongDuration url = {song.audio_file_url} />
                       </td>
 
                       <td className="py-4 flex justify-center">
@@ -203,7 +206,7 @@ const ArtistProfile = ({ id }) => {
                           className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0] ml-4"
                           onClick={() => handlePlayPause(song)}
                         >
-                          {playingSongId === song.id && !audio?.paused ? (
+                          {playingSongId === song.song_id && !audio?.paused ? (
                             <FaPause className="text-white" size={13} />
                           ) : (
                             <FaPlay className="text-white ml-1" size={13} />

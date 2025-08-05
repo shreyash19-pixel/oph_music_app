@@ -137,6 +137,44 @@ const fetchAllKpiScores = async (req, res) => {
   }
 };
 
+
+const getArtistProfile = async (req, res) => {
+
+  try{
+
+    const {id} = req.query
+
+    if(!id)
+    {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required field"
+      })
+    }
+
+    const response = await SongSocialMetrics.getArtistProfile(id)
+    console.log(response);
+    
+    if(response)
+    {
+      return res.status(200).json({
+        success:true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
+
+  }
+
+  catch (err){
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
 module.exports = {
-  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController
+  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController, getArtistProfile
 };

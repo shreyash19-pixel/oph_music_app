@@ -40,7 +40,7 @@ const ArtistSlider = ({ rows = 1 }) => {
     }
   }, [currentPage]);
 
-  const handleArtistClick = (id, index) => {
+  const handleArtistClick = (id, index) => {    
     setCurrentArtist(id);
     setSelectedArtist(id);
     setAutoplay(false);
@@ -165,7 +165,7 @@ const ArtistSlider = ({ rows = 1 }) => {
                   className="group relative pointer-events-auto"
                   onTouchEnd={(e) => {
                     //  e.preventDefault();
-                    //  handleArtistClick(artist.id, index);
+                     handleArtistClick(artist.OPH_ID, index);
                   }}
                 >
                   <div className="flex justify-center overflow-hidden">
