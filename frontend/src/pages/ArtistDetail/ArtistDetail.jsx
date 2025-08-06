@@ -7,8 +7,10 @@ import Twitter from "../../../public/assets/images/twitter.png";
 import Linkedin from "../../../public/assets/images/linkedin.png";
 import Insta from "../../../public/assets/images/instagram.png";
 import Story from "../../../public/assets/images/story.png";
+import { useArtist } from "../../pages/auth/API/ArtistContext";
 import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
+import { SongDuration } from "../ArtistSpotlight/ArtistSpotlight";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -24,7 +26,9 @@ const ArtistDetail = () => {
   const videoRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [relatedArtists, setRelatedArtists] = useState([]);
-  const [artistProfession, setArtistProfession] = useState("");
+
+  const { headers, ophid } = useArtist()
+
   const handleImageClick = (src) => {
     setSelectedImage(src);
   };
@@ -50,7 +54,6 @@ const ArtistDetail = () => {
       }
     }
   };
-  const rankedArtists = useSelector((state) => state.topPick.topPicks);
 
   // Assuming `artist` is the current artist whose related artists you want
   // debugger
@@ -63,35 +66,60 @@ const ArtistDetail = () => {
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
     try {
-      const response = await axiosApi.get(`/artists/${id}`);
-      console.log(response.data.data);
 
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers are not ready")
+        return
+      }
+
+      const response = await axiosApi.get(`/get-artist-detail?id=${id}`, {
+        headers: headers
+      }
+      );
       setArtist(response.data.data);
-      setArtistProfession(response.data.data.profession);
-      console.log(artist, "artist");
-      console.log(artistProfession, "artistProfession");
     } catch (err) {
       console.log(err);
       setError("Artist Not Found");
     } finally {
       setIsLoading(false);
     }
-
-    // console.log(JSON.stringify(artist));
   };
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchIndividualArtist(); // First fetch artist
-    };
-    fetchData();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [id]);
+
+  const fetchRankedArtists = async () => {
+    try {
+
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers are not ready")
+        return
+      }
+
+      const response = await axiosApi.get(
+        `/get-releated-artists?q=${artist.profession}`, {
+          headers: headers
+        }
+      );
+      setRelatedArtists(
+        response.data.data.filter((data) => data.ophid !== id).slice(0, 8)
+      );
+    } catch (error) {
+      console.error("Failed to fetch related artists", error);
+    }
+  };
 
   useEffect(() => {
-    if (artist.profession) {
-      fetchRankedArtists();
+    if (ophid) {
+      fetchIndividualArtist()
     }
-  }, [artist.profession]);
+
+  }, [headers, ophid, id]);
+
+
+  useEffect(() => {
+    if (ophid) {
+      fetchRankedArtists()
+    }
+  }, [artist, headers, ophid])
+
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -154,18 +182,7 @@ const ArtistDetail = () => {
     };
   }, []);
 
-  const fetchRankedArtists = async () => {
-    try {
-      const response = await axiosApi.get(
-        `/artists/search?q=${artist.profession}`
-      );
-      setRelatedArtists(
-        response.data.data.filter((data) => data.id !== id).slice(0, 8)
-      );
-    } catch (error) {
-      console.error("Failed to fetch related artists", error);
-    }
-  };
+
 
   const formatListeners = (views) => {
     if (views >= 1000000) {
@@ -186,6 +203,28 @@ const ArtistDetail = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  const professionOptions = [
+    { id: 1, name: "Singer" },
+    { id: 2, name: "Musician" },
+    { id: 3, name: "DJ" },
+    { id: 4, name: "Composer" },
+    { id: 5, name: "Instrumentalist" },
+    { id: 6, name: "Lyricist" },
+    { id: 7, name: "Music Producer" }
+  ];
+
+
+  const setProfession = (prof) => {
+    const profession = professionOptions.find((p) => {
+      if (parseInt(prof) === p.id) {
+        return p
+      }
+    })
+    return profession.name
+
+  }
+
   return (
     <>
       {isLoading && (
@@ -242,7 +281,7 @@ const ArtistDetail = () => {
                     src={artist.video_bio}
                     className="w-full rounded-xl object-cover overflow-hidden aspect-[4/3] cursor-pointer"
                     poster={
-                      artist.profile_img_url ||
+                      artist.personal_photo ||
                       "/assets/images/struggleSectionThumbnail.png"
                     }
                     onClick={handlePlayPauseVideo} // Click on video to play/pause
@@ -267,7 +306,7 @@ const ArtistDetail = () => {
                 <p className="text-gray-400 mb-2">
                   Profession:{" "}
                   <span className="font-bold text-white">
-                    {artist.profession}
+                    {setProfession(artist.profession)}
                   </span>
                 </p>
                 <p className="text-gray-400 mb-2">
@@ -277,7 +316,7 @@ const ArtistDetail = () => {
                   </span>
                 </p>
                 <p className="text-primary mb-2 font-bold">
-                  {artist.total_content} Songs —{" "}
+                  {artist.total_content} {artist.total_content > 1 ? 'Songs' : 'Song'}  —{" "}
                   {formatListeners(artist.total_views)}
                 </p>
                 <p className="text-gray-400 mb-6">{artist.bio}</p>
@@ -304,7 +343,7 @@ const ArtistDetail = () => {
                     />
                   </a>
                   <a
-                    href={artist.linkedin_url}
+                    href={artist.linkedin_url || ''}
                     className="text-white w-10 h-10 object-cover hover:text-white"
                   >
                     <img
@@ -314,7 +353,7 @@ const ArtistDetail = () => {
                     />
                   </a>
                   <a
-                    href={artist.twitter_url}
+                    href={artist.twitter_url || ''}
                     className="text-white hover:text-white"
                   >
                     <img
@@ -325,11 +364,11 @@ const ArtistDetail = () => {
                   </a>
 
                   <div>
-                    {artist?.artist_story ? (
+                    {artist?.video_bio ? (
                       <>
                         {/* Image trigger */}
                         <a
-                          href={artist.artist_story}
+                          href={artist.video_bio}
                           className="text-white hover:text-white"
                           onClick={handleModalOpen}
                         >
@@ -360,7 +399,7 @@ const ArtistDetail = () => {
                                   className="w-full h-full rounded-lg"
                                 >
                                   <source
-                                    src={artist.artist_story}
+                                    src={artist.video_bio}
                                     type="video/mp4"
                                   />
                                   Your browser does not support the video tag.
@@ -414,7 +453,7 @@ const ArtistDetail = () => {
                     <td className="py-3 px-1 text-center">
                       <div className="flex flex-col items-center justify-center h-full w-full">
                         <span className="font-medium break-words">
-                          {song.name}
+                          {song.song_name}
                         </span>
                         <span className="text-gray-400 text-[11px] sm:text-xs">
                           {song.primary_artist}
@@ -425,14 +464,14 @@ const ArtistDetail = () => {
                     {/* Plays */}
                     <td className="py-3 px-1 text-center">
                       <div className="flex justify-center items-center h-full w-full">
-                        {song.total_views}
+                        {song.total_song_views}
                       </div>
                     </td>
 
                     {/* Time */}
                     <td className="py-3 px-1 text-center">
                       <div className="flex justify-center items-center h-full w-full">
-                        {song.duration_in_minutes}
+                        <SongDuration url={song.duration_in_minutes} />
                       </div>
                     </td>
 
@@ -538,11 +577,11 @@ const RelatedArtists = ({ rankedArtists }) => {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {rankedArtists &&
           rankedArtists.map((artist, index) => (
-            <Link key={index} to={`/artists/${artist.id}`}>
+            <Link key={index} to={`/dashboard/artist-detail/${artist.ophid}`}>
               <div className="flex flex-col items-center">
                 <div className="flex justify-center mb-2">
                   <img
-                    src={artist.profile_img_url}
+                    src={artist.personal_photo}
                     alt={artist.stage_name}
                     style={{ borderRadius: "50%" }}
                     className="sm:w-[100px] w-[100px] h-[100px] sm:h-[100px] object-cover"
