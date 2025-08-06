@@ -25,7 +25,7 @@ import ArtistAll from "./view/dashboard/artistPortal/artistAll";
 import ContentNew from "./view/dashboard/artistPortal/contentNew";
 // import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import NewSignupDetails from "./view/dashboard/New_signUp";
-// import tvpublishing from "./view/dashboard/artistPortal/tvPublishing";
+import Tvpublishing from "./view/dashboard/artistPortal/tvPublishing/tv";
 // import artistKPI from "./view/dashboard/artistPortal/artistKPI";
 import Alldata from "./view/dashboard/artistPortal/allData";
 import Content_Analysis from "./view/dashboard/artistPortal/contentAnalysis";
@@ -76,10 +76,8 @@ function App() {
             element={<ContentAnalysis />}
           />
           <Route path="/AllEvents" element={<Events />} />
-          <Route
-            path="/event_participants"
-            element={<EventParticipation />}
-          />
+          <Route path="/event_participants" element={<EventParticipation />} />
+          <Route path="/content/tv" element={<Tvpublishing />} />
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
 
