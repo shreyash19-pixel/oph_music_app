@@ -48,6 +48,7 @@ export const ArtistProvider = ({ children }) => {
   useEffect(() => {
     console.log("👤 User state changed:", user);
   }, [user]);
+  
   console.log(ophid);
   
   useSocketRegistration(ophid);

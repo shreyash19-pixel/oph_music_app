@@ -55,7 +55,7 @@ const artistLinks = [
     label: "Analytics",
     roles: [ROLES.SUPER_ADMIN, ROLES.OPERATION_HEAD, ROLES.OPERATION_MEMBER],
     children: [
-      { label: "Artist KPI", route: "/analytics/kpi" },
+      { label: "Artist KPI", route: "/ArtistKPI" },
       { label: "Content Analysis", route: "/ContentAnalysis" },
       { label: "Content Release", route: "/analytics/release" },
     ],

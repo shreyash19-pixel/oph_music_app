@@ -10,8 +10,6 @@ const insertPayment = async (OPH_ID, Transaction_ID, Review, Status, From, song_
 };
 
 
-
-
 module.exports = {
   insertPayment
 };
