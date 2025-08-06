@@ -35,9 +35,9 @@ const ArtistRankingTable = ({ data = [], title = "Ranking" }) => {
         {data.length > 0 ? (
           data.map((artist, index) => (
             <div
-              key={artist.id}
+              key={artist.OPH_ID}
               className="flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer hover:bg-gray-900/30"
-              onClick={() => handleProfileClick(artist.id)}
+              onClick={() => handleProfileClick(artist.OPH_ID)}
             >
               {/* <div className="flex-1 text-gray-300 font-bold">
                 <span
@@ -68,12 +68,12 @@ const ArtistRankingTable = ({ data = [], title = "Ranking" }) => {
               <div className="flex-1 text-gray-300">{artist.stage_name}</div>
               
               <div className="flex-1 text-center text-gray-300">
-                {formatListeners(artist.total_reach || artist.total_views)}
+                {formatListeners(artist.total_views ||  artist.total_reach )}
               </div>
               <div className="flex-1 hidden sm:flex justify-center">
-                <Link to={`/artists/${artist.id}`}>
+                <Link to={`/artists/${artist.OPH_ID}`}>
                   <button
-              onClick={() => handleProfileClick(artist.id)}
+              onClick={() => handleProfileClick(artist.OPH_ID)}
 
                     className="px-4 py-1 text-sm text-cyan-400 border border-cyan-400 rounded-full hover:bg-cyan-400 hover:text-black"
                   >
