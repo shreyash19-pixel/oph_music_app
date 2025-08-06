@@ -20,6 +20,7 @@ import CancellationPolicy from "../pages/NavPages/Legals/CancelationPolicy";
 import Disclaimer from "../pages/NavPages/Legals/Disclaimer";
 import RefundPolicy from "../pages/NavPages/Legals/RefundPolicy";
 import TermsAndConditions from "../pages/NavPages/Legals/TermsAndConditions";
+import ArtistDetail from "../pages/NavPages/ArtistDetail/ArtistDetail";
 
 const NavRoutes = () => {
   return (
@@ -32,16 +33,27 @@ const NavRoutes = () => {
           <Route path="events/:id" element={<IndividualEvent />} />
           <Route path="payment" element={<PaymentScreen />} />
           <Route path="find-your-collaborator" element={<Artists />} />
+          <Route path="/public-artist-detail" element={<ArtistDetail />} />
           <Route path="artists/:id" element={<MusicPlayerProfile />} />
-          <Route path="leaderboard/top-music-networking-platform-for-creators/" element={<Leaderboard />} />
-          <Route path="resources/music-learning-education" element={<Resources />} />
+          <Route
+            path="leaderboard/top-music-networking-platform-for-creators/"
+            element={<Leaderboard />}
+          />
+          <Route
+            path="resources/music-learning-education"
+            element={<Resources />}
+          />
+
           <Route path="content/:id" element={<IndividualPodcast />} />
           <Route path="success" element={<SuccessScreen />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/cancellation-policy" element={<CancellationPolicy/>} />
+          <Route path="/cancellation-policy" element={<CancellationPolicy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path ="/refund-policy" element={<RefundPolicy />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route
+            path="/terms-and-conditions"
+            element={<TermsAndConditions />}
+          />
           <Route path="*" element={<Error />} />
         </Route>
       </Routes>

@@ -245,16 +245,15 @@ const ArtistProfile = ({ id }) => {
               </tbody>
             </table>
 
-            <a
-              href={`/artists/${id}`}
+            <button
               onClick={(e) => {
                 e.preventDefault();
-                navigate(`/artists/${id}`);
+                navigate(`/public-artist-detail?id=${id}`);
               }}
               className="underline hover:cursor-pointer text-lg text-[#5DC9DE] block"
             >
               See More...
-            </a>
+            </button>
           </div>
         </div>
       )}

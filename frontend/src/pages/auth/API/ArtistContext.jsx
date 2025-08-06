@@ -67,8 +67,12 @@ export const ArtistProvider = ({ children }) => {
           "/auth/signup/payment-callback",
           "/auth/reset-password",
           "/resources/music-learning-education",
-          "/find-your-collaborator"
+          "/find-your-collaborator",
+          "/public-artist-detail",
         ];
+
+        console.log(window.location.pathname);
+        
 
         if (!openRoutes.includes(window.location.pathname)) {
           navigate("/auth/login");

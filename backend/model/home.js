@@ -41,15 +41,14 @@ const newReleases = async () => {
 
 const getReleatedArtists = async (profession) => {
 
-    const [rows] = await db.execute("SELECT ud.ophid, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID WHERE pd.Profession = ?", [profession])
-
+    const [rows] = await db.execute("SELECT ud.ophid, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID WHERE pd.Profession = ?", [profession])    
     return rows
 
 } 
 
 const getArtistDetail = async (ophid) => {
 
-    const [rows] = await db.execute("WITH CTEArtistDetail AS (SELECT ud.ophid, ud.full_name `name`, pd.PhotoURLs photos ,ud.personal_photo, ud.stage_name, pd.VideoURL video_bio, pd.Profession profession, ud.location, kpi.total_views, pd.Bio bio, pd.FacebookLink facebook_url, pd.InstagramLink instagram_url, ad.Song_name song_name, ad.primary_artist primary_artist, ssm.youtube_views total_song_views,ad. audio_url duration_in_minutes, sr.`status` song_registeration_status, ad.`status` audio_details_status ,vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id WHERE ud.ophid = ?) SELECT * FROM CTEArtistDetail WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'", [ophid])
+    const [rows] = await db.execute("WITH CTEArtistDetail AS (SELECT ud.ophid, ud.full_name `name`, pd.PhotoURLs photos ,ud.personal_photo, ud.stage_name, pd.VideoURL video_bio, pd.Profession profession, ud.location, kpi.total_views, pd.Bio bio, pd.FacebookLink facebook_url, pd.InstagramLink instagram_url, ad.Song_name song_name, ad.primary_artist primary_artist, ssm.youtube_views total_song_views,ad.audio_url duration_in_minutes, sr.`status` song_registeration_status, ad.`status` audio_details_status ,vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id WHERE ud.ophid = ?) SELECT * FROM CTEArtistDetail WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'", [ophid])
 
     const [song_count] = await db.execute(
         "WITH CTEArtistSongCount AS (SELECT sr.OPH_ID, sr.`status` song_registration_status , ad.`status` audio_details_status, vd.`status` video_details_status FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE sr.OPH_ID = ?) SELECT OPH_ID, COUNT(OPH_ID) song_count FROM CTEArtistSongCount WHERE song_registration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' GROUP BY OPH_ID",

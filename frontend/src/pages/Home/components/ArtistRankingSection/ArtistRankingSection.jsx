@@ -40,6 +40,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
   const handleProfileClick = async (artistId) => {
 
     console.log("in profile click");
+    console.log(artistId);
     
     // Add your view profile logic here
      try {
@@ -51,7 +52,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
       });
 
       if (response.data.success) {
-        navigate(`/dashboard/artist-detail/${artistId}`);
+        navigate(`/dashboard/artist-detail?id=${artistId}`);
       }
     } catch (err) {
       console.error(err);
