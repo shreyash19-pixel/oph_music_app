@@ -577,7 +577,7 @@ const RelatedArtists = ({ rankedArtists }) => {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {rankedArtists &&
           rankedArtists.map((artist, index) => (
-            <Link key={index} to={`/dashboard/artist-detail/${artist.ophid}`}>
+            <Link key={index} to={`/dashboard/artist-detail/${artist.id}`}>
               <div className="flex flex-col items-center">
                 <div className="flex justify-center mb-2">
                   <img
