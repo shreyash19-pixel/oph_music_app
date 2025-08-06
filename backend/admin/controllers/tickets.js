@@ -83,26 +83,54 @@ const getAllTickets = async (req, res) => {
 };
 
 // controller/ticketsController.js
-const updateResolvedSummary = async (req, res) => {
-  const { ticketNumber, notes } = req.body;
+// const updateResolvedSummary = async (req, res) => {
+//   const { ticketNumber, notes } = req.body;
 
-  if (!ticketNumber || !notes) {
+//   if (!ticketNumber || !notes) {
+//     return res.status(400).json({ message: "Missing required fields" });
+//   }
+
+//   try {
+//     const summary = await ticketModel.updateResolvedSummary(
+//       ticketNumber,
+//       notes
+//     );
+//     return res.status(200).json({ uccess: true, data: summary });
+//   } catch (error) {
+//     console.error("Error updating ticket:", error.message);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal Server Error" });
+//   }
+// };
+
+const updateResolvedSummary = async (req, res) => {
+  const { ticketNumber, notes, ophid } = req.body;
+
+  if (!ticketNumber || !notes || !ophid) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   try {
-    const summary = await ticketModel.updateResolvedSummary(
-      ticketNumber,
-      notes
-    );
-    return res.status(200).json({ uccess: true, data: summary });
+    const summary = await ticketModel.updateResolvedSummary(ticketNumber, notes);
+
+    
+    const userSocketId = onlineUsers.get(ophid);
+    if (userSocketId && req.app.get("io")) {
+      req.app.get("io").to(userSocketId).emit("ticket-updated", {
+        ticketNumber,
+        message: `Ticket #${ticketNumber} was updated.`,
+        notes,
+      });
+    }
+
+    return res.status(200).json({ success: true, data: summary });
   } catch (error) {
     console.error("Error updating ticket:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
 
 
 const getTicketSummaries = async (req, res) => {

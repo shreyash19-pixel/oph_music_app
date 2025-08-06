@@ -78,7 +78,7 @@ const ArtistRoutes = () => {
           />
           <Route path="request-ticket" element={<RequestTicketForm />} />
           <Route path="events" element={<Events />} />
-          <Route path="artist-detail/:id" element={<ArtistDetail />} />
+          <Route path="artist-detail" element={<ArtistDetail />} />
 
           <Route path="profile" element={<ArtistProfile />} />
           <Route path="income" element={<IncomeWithdrawal />} />

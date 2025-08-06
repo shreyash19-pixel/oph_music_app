@@ -44,16 +44,137 @@ const insertOrUpdateKpiScore = async (req, res) => {
   }
 };
 
+const getTopSearchedArtistsController = async (req, res) => {
+
+  try {
+    const { q } = req.query
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+
+    const response = await SongSocialMetrics.getTopSearchedArtists(q)
+
+    if (response) {
+      return res.status(201).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
+
+  }
+
+  catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+
+const getTopArtistsController = async (req, res) => {
+
+  try {
+
+    const { page, per_page } = req.query
+
+    if (!page || !per_page) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+
+    const formattedPage = parseInt(page)
+    const formattedPerPage = parseInt(per_page)
+    const response = await SongSocialMetrics.getTopArtists(formattedPage, formattedPerPage)
+    let totalPages = await SongSocialMetrics.getTotalPages() 
+    
+    let countTotalPages = 0
+    if (totalPages) {
+      let totalPageCount = totalPages[0].rows
+      countTotalPages = Math.ceil(totalPageCount / formattedPerPage)
+    }
+
+    if (response && totalPages && countTotalPages !== 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response,
+        pagination: countTotalPages
+      })
+    }
+
+  }
+
+  catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+
 const fetchAllKpiScores = async (req, res) => {
   try {
     const scores = await SongSocialMetrics.getAllKpiScores();
-    res.status(200).json(scores);
+    res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: scores
+    });
   } catch (error) {
     console.error("Error fetching KPI scores:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
+
+const getArtistProfile = async (req, res) => {
+
+  try{
+
+    const {id} = req.query
+
+    if(!id)
+    {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required field"
+      })
+    }
+
+    const response = await SongSocialMetrics.getArtistProfile(id)
+    console.log(response);
+    
+    if(response)
+    {
+      return res.status(200).json({
+        success:true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
+
+  }
+
+  catch (err){
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
 module.exports = {
-  getSongMetricsSummary,fetchAllKpiScores,insertOrUpdateKpiScore
+  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController, getArtistProfile
 };

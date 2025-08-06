@@ -1,87 +1,127 @@
-import React,{ useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
-import { fetchNotifications } from "../../slice/notification";
-import {useArtist} from "../auth/API/ArtistContext"
+import { useArtist } from "../auth/API/ArtistContext";
+import { useNavigate } from "react-router-dom";
 import Noti from "../../../public/assets/images/noti.png";
+
 const Notification = () => {
-  const {headers} = useArtist()
-  const dispatch = useDispatch();
-  const newNots = useSelector((state) => state.notification.new);
-  const earlier = useSelector((state) => state.notification.earlier);
+  const { headers, ophid } = useArtist(); // ✅ Assume ophid comes from context
+  const [notifications, setNotifications] = useState([]);
 
+  // ✅ Fetch notifications on mount
   useEffect(() => {
-    dispatch(fetchNotifications({headers}));
-  }, []); // Fetch notifications on mount
-
-  useEffect(() => {
-    const updateNotifications = async () => {
-      if (!newNots || newNots.length === 0) return;
-
+    const fetchNotifications = async () => {
+      if (!ophid) return;
       try {
-        await Promise.all(
-          newNots.map((note) =>
-            axiosApi.put(
-              `/notifications/${note.id}/read`,
-              {}, // Empty body
-              { headers: headers }
-            )
-          )
-        );
-        console.log("Notifications updated successfully");
+        const { data } = await axiosApi.get(`/notification/${ophid}`, {
+          headers,
+        });
+        setNotifications(data);
       } catch (err) {
-        console.error("Error updating notifications:", err);
+        console.error("Failed to fetch notifications:", err);
       }
     };
 
-    updateNotifications();
-  }, [newNots]); // Runs when `newNots` is updated
+    fetchNotifications();
+  }, [ophid]);
 
-  const NotificationItem = ({ title, description, link }) => (
-    <div
-    onClick={() => {
-      if (link) {
-        window.open(link, '_blank');
-      }
+  // ✅ Mark as read + open link
+  const handleNotificationClick = async (note) => {
+    if (note.read_status) {
+      if (note.link) window.open(note.link, "_blank");
+      return;
+    }
 
+    try {
+      await axiosApi.put(`/notification/${note.id}/read`, {}, { headers });
 
-    }}
-    className="flex gap-4 p-4 border-b border-gray-800 hover:bg-gray-800/50">
-      <div className="flex-shrink-0">
-        <div className="w-12 h-12 p-2 bg-cyan-950 rounded-lg flex items-center justify-center">
-          {/* ADD MUSIC ICON */}
-           <img src={Noti} alt="" />
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === note.id ? { ...n, read_status: true } : n)),
+      );
+
+      // if (note.link) window.open(note.link, "_blank");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
+  // ✅ Render single notification item
+  const NotificationItem = ({ note }) => {
+    // const navigate = useNavigate();
+
+    // const handleClick = (e) => {
+    //   e.stopPropagation();
+    //   if (!note.link) return;
+
+    //   // Ensure link starts with /dashboard
+    //   const linkTo = note.link.startsWith("/dashboard")
+    //     ? note.link
+    //     : `/dashboard/${note.link}`;
+
+    //   navigate(linkTo);
+    // };
+
+    return (
+      <div
+        onClick={() => handleNotificationClick(note)}
+        className={`flex gap-4 p-4 border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer ${
+          !note.read_status ? "bg-[#1e293b]" : ""
+        }`}
+      >
+        <div className="flex-shrink-0">
+          <div className="w-12 h-12 p-2 bg-cyan-950 rounded-lg flex items-center justify-center">
+            <img src={Noti} alt="notification icon" />
+          </div>
+        </div>
+        <div className="flex flex-col justify-center">
+          <h3 className="text-white font-medium mb-1">{note.title}</h3>
+          <p className="text-gray-400 text-sm">{note.message}</p>
+
+          {/* {note.link && (
+            <span
+              onClick={handleClick}
+              className="text-cyan-400 text-xs mt-2 hover:text-cyan-300 underline inline-block"
+            >
+              {note.link}
+            </span>
+          )}*/}
         </div>
       </div>
-      <div>
-        <h3 className="text-white font-medium mb-1">{title}</h3>
-        <p className="text-gray-400 text-sm">{description}</p>
-      </div>
-    </div>
-  );
+    );
+  };
+
+  // Split notifications
+  const newNots = notifications.filter((n) => !n.read_status);
+  const earlier = notifications.filter((n) => n.read_status);
 
   return (
     <div className="bg-black min-h-[calc(100vh-70px)] text-white">
       <div className="px-8 py-6">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">NOTIFICATION</h1>
+        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          NOTIFICATION
+        </h1>
 
+        {/* NEW NOTIFICATIONS */}
         <div className="mb-8">
           <h2 className="text-cyan-400 text-xs mb-4">NEW</h2>
-          {newNots && newNots.length > 0 ? (
+          {newNots.length > 0 ? (
             <div className="bg-[#151D26]">
-              {
-                newNots.map((note) => <NotificationItem key={note.id} {...note} />)
-              }
+              {newNots.map((note) => (
+                <NotificationItem key={note.id} note={note} />
+              ))}
             </div>
           ) : (
             <p className="text-gray-600">No New Notifications</p>
           )}
         </div>
 
+        {/* EARLIER NOTIFICATIONS */}
         <div>
           <h2 className="text-cyan-400 text-xs mb-4">EARLIER</h2>
-          {earlier && earlier.length > 0 ? (
-            earlier.map((note) => <NotificationItem key={note.id} {...note} />)
+          {earlier.length > 0 ? (
+            earlier.map((note) => (
+              <NotificationItem key={note.id} note={note} />
+            ))
           ) : (
             <p className="text-gray-600">No Earlier Notifications</p>
           )}

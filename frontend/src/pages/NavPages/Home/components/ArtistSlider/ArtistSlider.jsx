@@ -20,25 +20,27 @@ const ArtistSlider = ({ rows = 1 }) => {
   const perPage = 6;
 
   const [currArtist, setCurrentArtist] = useState(null);
-  const artistsFromRedux = useSelector((state) => state.artist.artists);
+
 
   useEffect(() => {
-    const fetchArtists = async (page = 1) => {
+    const fetchArtists = async (page) => {
       try {
         const response = await axiosApi.get(
-          `/leaderboard/ranked-artists?page=${page}&per_page=${perPage}`
+          `/get-top-artist?page=${page}&per_page=${perPage}`
         );
         setArtists(response.data.data);
-        setTotalPages(response.data.pagination.total_pages);
+        setTotalPages(response.data.pagination);
       } catch (error) {
         console.error("Error fetching artists:", error);
       }
     };
 
-    fetchArtists(currentPage);
+    if (currentPage) {
+      fetchArtists(currentPage);
+    }
   }, [currentPage]);
 
-  const handleArtistClick = (id, index) => {
+  const handleArtistClick = (id, index) => {    
     setCurrentArtist(id);
     setSelectedArtist(id);
     setAutoplay(false);
@@ -87,7 +89,7 @@ const ArtistSlider = ({ rows = 1 }) => {
           </div>
           <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               className="z-10 bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-colors mr-2"
               disabled={currentPage === 1}
             >
@@ -99,7 +101,7 @@ const ArtistSlider = ({ rows = 1 }) => {
             </button>
             <button
               onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                setCurrentPage(Math.min(currentPage + 1, totalPages))
               }
               className="z-10 bg-[#6F4FA0] mt-3 lg:mt-0 p-2 rounded-full hover:bg-[#6F4FA0] transition-colors"
               disabled={currentPage === totalPages}
@@ -158,17 +160,17 @@ const ArtistSlider = ({ rows = 1 }) => {
             }}
           >
             {artists.map((artist, index) => (
-              <div key={artist.id} className="px-4 cursor-pointer mb-10">
+              <div key={artist.OPH_ID} className="px-4 cursor-pointer mb-10">
                 <div
                   className="group relative pointer-events-auto"
                   onTouchEnd={(e) => {
                     //  e.preventDefault();
-                    //  handleArtistClick(artist.id, index);
+                     handleArtistClick(artist.OPH_ID, index);
                   }}
                 >
                   <div className="flex justify-center overflow-hidden">
                     <Image
-                      src={artist.profile_img_url}
+                      src={artist.personal_photo}
                       fallback={
                         <Shimmer
                           width={200}
@@ -178,45 +180,42 @@ const ArtistSlider = ({ rows = 1 }) => {
                       }
                       alt={artist.stage_name}
                       NativeImgProps={{
-                        className: ` w-[200px] md:w rounded-full h-[200px] md:h-full object-cover ${
-                          artist.id === currArtist
+                        className: ` w-[200px] md:w rounded-full h-[200px] md:h-full object-cover ${artist.OPH_ID === currArtist
                             ? "border-4 border-primary"
                             : ""
-                        }`,
+                          }`,
                       }}
                     />
                   </div>
                   <div
                     className="flex flex-col text-center items-center justify-end p-4"
                     onMouseUp={(e) => {
-                      if (e.button === 0) handleArtistClick(artist.id, index);
+                      if (e.button === 0) handleArtistClick(artist.OPH_ID, index);
                     }}
                   >
                     <a
-                      className={`text-lg font-semibold ${
-                        artist.id === currArtist
+                      className={`text-lg font-semibold ${artist.OPH_ID === currArtist
                           ? "text-[#5DC9DE]"
                           : "text-white"
-                      }`}
+                        }`}
                       onClick={(e) => {
                         e.preventDefault();
-                        handleArtistClick(artist.id, index);
+                        handleArtistClick(artist.OPH_ID, index);
                       }}
                     >
                       {artist.stage_name}
                     </a>
                     <p
-                      className={`text-sm ${
-                        artist.id === currArtist
+                      className={`text-sm ${artist.OPH_ID === currArtist
                           ? "text-white"
                           : "text-gray-400"
-                      }`}
+                        }`}
                     >
                       {artist.total_views >= 1000000
                         ? `${(artist.total_views / 1000000).toFixed(1)}M`
                         : artist.total_views >= 1000
-                        ? `${(artist.total_views / 1000).toFixed(1)}K`
-                        : artist.total_views}{" "}
+                          ? `${(artist.total_views / 1000).toFixed(1)}K`
+                          : artist.total_views}{" "}
                       + Listeners
                     </p>
                   </div>

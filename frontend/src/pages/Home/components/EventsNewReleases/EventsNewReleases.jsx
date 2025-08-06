@@ -24,7 +24,9 @@ const EventsNewReleases = ({ secondEvent }) => {
 
   const newReleases = useSelector((state) => state.newRelease.newRelease);
 
-  const songsArray = Object.values(newReleases).sort((a, b) => b.songId - a.songId);
+  const songsArray = Object.values(newReleases).sort(
+    (a, b) => b.youtubeViews - a.youtubeViews
+  );
 
   const handlePlayPause = (song) => {
     if (audio && playingSongId === song.songId) {
@@ -189,29 +191,27 @@ const EventsNewReleases = ({ secondEvent }) => {
               <span className="w-24 text-right">LISTEN</span>
             </div>
             {songsArray.length > 0 &&
-              songsArray
-                .slice(0, visibleSongs)
-                .map((song, index) => (
-                  <div
-                    key={song.songId}
-                    onClick={() =>
-                      window.open(
-                        import.meta.env.VITE_WEBSITE_URL +
-                          "artists" +
-                          `/${song.ophid}`,
-                        "_blank"
-                      )
-                    }
-                    className="flex hover:cursor-pointer items-center py-2 border-b border-gray-800"
-                  >
-                    <img
-                      src={song.imageUrl[0]}
-                      className="w-10 h-10 rounded-md"
-                      alt=""
-                    />
-                    <div className="flex-grow ms-4 truncate">
-                      <div className="font-medium">
-                        {/* <span className="block sm:hidden">
+              songsArray.slice(0, visibleSongs).map((song, index) => (
+                <div
+                  key={song.songId}
+                  onClick={() =>
+                    window.open(
+                      import.meta.env.VITE_WEBSITE_URL +
+                        "artists" +
+                        `/${song.ophid}`,
+                      "_blank"
+                    )
+                  }
+                  className="flex hover:cursor-pointer items-center py-2 border-b border-gray-800"
+                >
+                  <img
+                    src={song.imageUrl[0]}
+                    className="w-10 h-10 rounded-md"
+                    alt=""
+                  />
+                  <div className="flex-grow ms-4 truncate">
+                    <div className="font-medium">
+                      {/* <span className="block sm:hidden">
                     {song.secondaryArtist?.length > 5 ? song.secondaryArtist.slice(0, 5) + "..." : song.secondaryArtist}
                     </span>
                     
@@ -219,36 +219,37 @@ const EventsNewReleases = ({ secondEvent }) => {
                     {song.secondaryArtist}
                     </span> */}
 
-                        <span className="hidden sm:block">
-                          {song.songName}
-                        </span>
-                        <div className="text-sm text-gray-400">
-                          {song.primaryArtist} {song.secondaryArtist.length > 0 && song.secondaryArtist.map((sa) => sa )}
-                        </div>
+                      <span className="hidden sm:block">{song.songName}</span>
+                      <div className="text-sm text-gray-400 truncate max-w-full overflow-hidden whitespace-nowrap">
+                        {song.primaryArtist}
+                        {song.secondaryArtist.length > 0 && !song.secondaryArtist.includes(null) && (
+                          <span>, {song.secondaryArtist.join(", ")}</span>
+                        )}
                       </div>
                     </div>
-
-                    <span className="w-24 text-right text-gray-400">
-                      {/* {song.total_views} */}
-                      {song.youtubeViews}
-                    </span>
-                    <span className="w-24 flex items-center justify-end ml-auto">
-                      <button
-                        className="p-2 bg-[#6F4FA0] rounded-full hover:bg-purple-500 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent triggering the parent onClick
-                          handlePlayPause(song);
-                        }}
-                      >
-                        {playingSongId === song.songId && !audio?.paused ? (
-                          <FaPause className="w-3 h-3" />
-                        ) : (
-                          <FaPlay className="w-3 h-3" />
-                        )}
-                      </button>
-                    </span>
                   </div>
-                ))}
+
+                  <span className="w-24 text-right text-gray-400">
+                    {/* {song.total_views} */}
+                    {song.youtubeViews}
+                  </span>
+                  <span className="w-24 flex items-center justify-end ml-auto">
+                    <button
+                      className="p-2 bg-[#6F4FA0] rounded-full hover:bg-purple-500 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent onClick
+                        handlePlayPause(song);
+                      }}
+                    >
+                      {playingSongId === song.songId && !audio?.paused ? (
+                        <FaPause className="w-3 h-3" />
+                      ) : (
+                        <FaPlay className="w-3 h-3" />
+                      )}
+                    </button>
+                  </span>
+                </div>
+              ))}
             <div className="text-center">
               {visibleSongs < newReleases.length && (
                 <button

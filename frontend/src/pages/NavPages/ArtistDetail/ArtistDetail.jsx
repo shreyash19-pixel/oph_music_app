@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import axiosApi from "../../conf/axios";
+import axiosApi from "../../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
-import Face from "../../../public/assets/images/facebook.png";
-import Twitter from "../../../public/assets/images/twitter.png";
-import Linkedin from "../../../public/assets/images/linkedin.png";
-import Insta from "../../../public/assets/images/instagram.png";
-import Story from "../../../public/assets/images/story.png";
-import { useArtist } from "../../pages/auth/API/ArtistContext";
+import Face from "../../../../public/assets/images/facebook.png";
+import Twitter from "../../../../public/assets/images/twitter.png";
+import Linkedin from "../../../../public/assets/images/linkedin.png";
+import Insta from "../../../../public/assets/images/instagram.png";
+import Story from "../../../../public/assets/images/story.png";
 import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
-import { SongDuration } from "../ArtistSpotlight/ArtistSpotlight";
+import { SongDuration } from "../../ArtistSpotlight/ArtistSpotlight";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,15 +20,12 @@ const ArtistDetail = () => {
   const [playingSongId, setPlayingSongId] = useState(null);
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
-
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlayingVid, setIsPlayingVid] = useState(false);
   const videoRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [relatedArtists, setRelatedArtists] = useState([]);
-
-  const { headers, ophid } = useArtist();
 
   const handleImageClick = (src) => {
     setSelectedImage(src);
@@ -68,14 +64,7 @@ const ArtistDetail = () => {
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
     try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers are not ready");
-        return;
-      }
-
-      const response = await axiosApi.get(`/get-artist-detail?id=${id}`, {
-        headers: headers,
-      });
+      const response = await axiosApi.get(`/get-artist-detail?id=${id}`);
       setArtist(response.data.data);
     } catch (err) {
       console.log(err);
@@ -87,16 +76,8 @@ const ArtistDetail = () => {
 
   const fetchRankedArtists = async () => {
     try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers are not ready");
-        return;
-      }
-
       const response = await axiosApi.get(
-        `/get-releated-artists?q=${artist.profession}`,
-        {
-          headers: headers,
-        }
+        `/get-releated-artists?q=${artist.profession}`
       );
       setRelatedArtists(
         response.data.data.filter((data) => data.ophid !== id).slice(0, 8)
@@ -107,16 +88,12 @@ const ArtistDetail = () => {
   };
 
   useEffect(() => {
-    if (ophid) {
-      fetchIndividualArtist();
-    }
-  }, [headers, ophid, id]);
+    fetchIndividualArtist();
+  }, [id]);
 
   useEffect(() => {
-    if (ophid) {
-      fetchRankedArtists();
-    }
-  }, [artist, headers, ophid]);
+    fetchRankedArtists();
+  }, [artist]);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -571,10 +548,7 @@ const RelatedArtists = ({ rankedArtists }) => {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {rankedArtists &&
           rankedArtists.map((artist, index) => (
-            <Link
-              key={index}
-              to={`/dashboard/artist-detail?id=${artist.ophid}`}
-            >
+            <Link key={index} to={`/dashboard/artist-detail/${artist.ophid}`}>
               <div className="flex flex-col items-center">
                 <div className="flex justify-center mb-2">
                   <img

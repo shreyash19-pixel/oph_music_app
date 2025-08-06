@@ -44,6 +44,8 @@ import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
 import EventParticipation from "./view/dashboard/websiteConfig/Events/eventParticipation";
+import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
+import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
 
 function App() {
   return (
@@ -58,6 +60,7 @@ function App() {
           <Route path="/home" element={<Dashboard />} />
           <Route path="/ArtistNew/:ophid" element={<ArtistNew />} />
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
+          <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
           <Route
             path="/ContentManage/:ophid/:songId"
@@ -285,7 +288,7 @@ function App() {
                   ROLES.OPERATION_MEMBER,
                 ]}
               >
-                <artistKPI />
+                <Artist_Kpi />
               </ProtectedRoute>
             }
           />
