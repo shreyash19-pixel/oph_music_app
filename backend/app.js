@@ -28,7 +28,7 @@ const homeRoute = require("./routes/home")
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
 const incrementTrafficCounter = require("./routes/increment_traffic_counter")
-const homeRoute = require("./routes/home")
+
 
 
 //Admin route assignment
@@ -45,6 +45,7 @@ const tickets = require("./admin/routes/tickets")
 const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require('./admin/routes/leaderboard')
 const kpi = require('./admin/routes/kpi')
+const tvPublishing = require("./admin/routes/tvPublishing");
 // ✅ Middleware order is important
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -90,6 +91,7 @@ app.use("/",analytics);
 app.use("/",leaderboard);
 app.use("/",kpi)
 app.use('/',AdminWithdraw)
+app.use("/",tvPublishing);
 
 
 // ✅ Start server
