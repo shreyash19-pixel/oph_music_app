@@ -7,11 +7,14 @@ import { useNavigate } from "react-router-dom";
 
 function Leaderboard({ leaderboardData, artist_id }) {
   const navigate = useNavigate();
-  const { headers } = useArtist();
+  const { headers, ophid } = useArtist();
+
+
+
 
   const incrementTraffic = async (artistId) => {
     try {
-      const response = await axiosApi.post("/increment-traffic", {ophid: artistId, traffic_counter : 1} , {
+      const response = await axiosApi.post("/increment-traffic", { ophid: artistId, traffic_counter: 1 }, {
         headers: {
           ...headers,
           "Content-Type": "application/json",
@@ -46,21 +49,19 @@ function Leaderboard({ leaderboardData, artist_id }) {
               <tr
                 onClick={() => incrementTraffic(artist.OPH_ID)}
                 key={artist.ranks}
-                className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
-                  artist.OPH_ID == artist_id ? "bg-[#6F4FA0]" : ""
-                }`}
+                className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${artist.OPH_ID == artist_id ? "bg-[#6F4FA0]" : ""
+                  }`}
               >
                 <td className="px-3 lg:px-4 py-2">
                   <span
-                    className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${
-                      artist.ranks === 1
+                    className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${artist.ranks === 1
                         ? "bg-yellow-400"
                         : artist.ranks === 2
-                        ? "bg-emerald-400"
-                        : artist.ranks === 3
-                        ? "bg-cyan-400"
-                        : "bg-transparent text-white"
-                    }`}
+                          ? "bg-emerald-400"
+                          : artist.ranks === 3
+                            ? "bg-cyan-400"
+                            : "bg-transparent text-white"
+                      }`}
                   >
                     {String(artist.ranks).padStart(2, "0")}
                   </span>
@@ -105,7 +106,7 @@ export const SongDuration = ({ url }) => {
 
     // Cleanup
     return () => {
-      audio.removeEventListener("loadedmetadata", () => {});
+      audio.removeEventListener("loadedmetadata", () => { });
     };
   }, [url]);
 
@@ -210,8 +211,7 @@ function Songs() {
                     <div
                       onClick={() => {
                         window.open(
-                          `${import.meta.env.VITE_WEBSITE_URL}content/${
-                            artist.OPH_ID
+                          `${import.meta.env.VITE_WEBSITE_URL}content/${artist.OPH_ID
                           }`,
                           "_blank"
                         );
@@ -292,7 +292,7 @@ function Songs() {
                         onClick={() => handlePlayPause(artist)}
                       >
                         {playingSongId === artist.content_id &&
-                        !audio?.paused ? (
+                          !audio?.paused ? (
                           <Pause className="w-4 h-4" />
                         ) : (
                           <Play className="w-4 h-4" />
@@ -320,6 +320,31 @@ export default function ArtistSpotlight() {
   const [error, setError] = useState(null);
   const [artist, setArtist] = useState([]);
   const { headers, ophid } = useArtist();
+
+
+  const [notes, setNotes] = useState("")
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      console.log(ophid,headers,"Testing");
+      
+      try {
+        if (!ophid || !headers) return;
+        const response = await axiosApi.get(`/notes/${ophid}`, {
+          headers,
+        });
+        console.log(response);
+        
+        if (response.data) {
+          setNotes(response.data[0].Notes);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notes", err);
+      }
+    };
+
+    fetchNotes();
+  }, [ophid, headers]);
 
   const professionOptions = [
     { id: 1, name: "Singer" },
@@ -436,21 +461,19 @@ export default function ArtistSpotlight() {
               </div>
               <div className="flex lg:px-0 gap-4 px-3">
                 <button
-                  className={`hover:text-cyan-400 ${
-                    activeTab === "leaderboard"
+                  className={`hover:text-cyan-400 ${activeTab === "leaderboard"
                       ? "text-cyan-400 border-cyan-400"
                       : "text-gray-400"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("leaderboard")}
                 >
                   ARTISTS
                 </button>
                 <button
-                  className={` hover:text-cyan-400 ${
-                    activeTab === "songs"
+                  className={` hover:text-cyan-400 ${activeTab === "songs"
                       ? "text-cyan-400 border-cyan-400"
                       : "text-gray-400"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("songs")}
                 >
                   SONGS
@@ -473,11 +496,8 @@ export default function ArtistSpotlight() {
               <h3 className="text-xl font-semibold text-cyan-400">
                 Note (How to improve ranking):
               </h3>
-              <p className="text-gray-500">
-                Lorem ipsum is simply dummy text of the printing and typesetting
-                industry. Lorem Ipsum has been the industry&apos;s standard
-                dummy text ever since the 1500s, when an unknown printer took
-                Lorem Ipsum.
+              <p className="text-gray-500 whitespace-pre-line">
+                {notes || "No notes available yet."}
               </p>
             </div>
           </div>

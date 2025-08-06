@@ -64,7 +64,7 @@ export default function Events() {
             ? participantData
             : [participantData]; // wrap single object into array
 
-          console.log("✅ Normalized artist registrations:", normalizedData);
+          console.log("ormalized artist registrations:", normalizedData);
           setArtistBookEvents(normalizedData);
         }
       } catch (err) {
@@ -189,7 +189,7 @@ export default function Events() {
                   })} - {event.location}
 
                 </div>
-                {event.event_id}
+                
                 <div className="text-cyan-400">{event.EventName}</div>
                 <p className="text-gray-400 text-sm">
                   {event.description.length > 50

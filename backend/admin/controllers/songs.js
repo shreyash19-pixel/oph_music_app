@@ -1,4 +1,5 @@
-const songsModel = require('../model/songs')
+const songsModel = require("../model/songs");
+const { saveNotification } = require("../../utils/notify");
 
 getAll = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ getAll = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch songs',
+      message: "Failed to fetch songs",
     });
   }
 };
@@ -22,13 +23,17 @@ const getSongsUnderReview = async (req, res) => {
     console.log("Params:", req.params);
 
     if (!ophId || !songId) {
-      return res.status(400).json({ message: "OPH_ID and songId are required" });
+      return res
+        .status(400)
+        .json({ message: "OPH_ID and songId are required" });
     }
 
     const data = await songsModel.getSongsByOphIdUnderReview(ophId, songId);
 
     if (data.length === 0) {
-      return res.status(404).json({ message: "No song found under review with provided OPH_ID and songId" });
+      return res.status(404).json({
+        message: "No song found under review with provided OPH_ID and songId",
+      });
     }
 
     res.status(200).json({ song: data[0] });
@@ -42,7 +47,6 @@ const getAllApprovedSongs = async (req, res) => {
   try {
     const data = await songsModel.getAllApprovedSongs();
     console.log("Fetched");
-    
 
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "No approved songs found" });
@@ -61,13 +65,17 @@ const getSongApproved = async (req, res) => {
     console.log("Params:", req.params);
 
     if (!ophId || !songId) {
-      return res.status(400).json({ message: "OPH_ID and songId are required" });
+      return res
+        .status(400)
+        .json({ message: "OPH_ID and songId are required" });
     }
 
     const data = await songsModel.getSongsByOphIdApproved(ophId, songId);
 
     if (data.length === 0) {
-      return res.status(404).json({ message: "No song found under review with provided OPH_ID and songId" });
+      return res.status(404).json({
+        message: "No song found under review with provided OPH_ID and songId",
+      });
     }
 
     res.status(200).json({ song: data[0] });
@@ -85,19 +93,66 @@ const updateSongSectionStatus = async (req, res) => {
     console.log("from Content");
 
     if (!["Audio", "Video"].includes(section)) {
-      return res.status(400).json({ error: "Invalid section. Must be 'audio' or 'video'." });
+      return res
+        .status(400)
+        .json({ error: "Invalid section. Must be 'audio' or 'video'." });
     }
 
     const table = section === "Audio" ? "audio_details" : "video_details";
     console.log(table);
 
     // Pass ophid only for audio
-    const result = await songsModel.updateSongStatus(table, status, reason, songId, section === "Audio" ? ophid : null);
+    const result = await songsModel.updateSongStatus(
+      table,
+      status,
+      reason,
+      songId,
+      section === "Audio" ? ophid : null,
+    );
 
     console.log(result);
-
+    console.log("test");
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "No matching record found." });
+    }
+
+    //  Build notification message
+    const statusText =
+      status === "accepted"
+        ? "approved"
+        : status === "rejected"
+          ? "rejected"
+          : "updated";
+    const message = `${section} for your song was ${statusText}.`;
+    const title = `${section} ${status}`;
+    const link = `upload-song/audio-metadata/${songId}`;
+
+    //  Save to DB
+    const notification = await saveNotification({
+      ophid,
+      message,
+      title,
+      link,
+    });
+
+    //  Emit via Socket.IO if user is online
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+
+    if (!io || !onlineUsers) {
+      console.warn("Socket IO or onlineUsers map is not initialized");
+    } else {
+      console.log("Online Users Map:", Array.from(onlineUsers.entries()));
+      const userSocketId = onlineUsers.get(ophid);
+
+      if (userSocketId) {
+        io.to(userSocketId).emit("ticket-updated", notification);
+        console.log(
+          `Emitted 'ticket-updated' to ophid ${ophid}, socket ID: ${userSocketId}`,
+        );
+      } else {
+        console.log(`No active socket found for ophid: ${ophid}`);
+      }
     }
 
     res.json({ message: `Status updated for ${section}.` });
@@ -107,5 +162,10 @@ const updateSongSectionStatus = async (req, res) => {
   }
 };
 
-
-module.exports={getAll,getSongsUnderReview,getAllApprovedSongs,getSongApproved,updateSongSectionStatus}
+module.exports = {
+  getAll,
+  getSongsUnderReview,
+  getAllApprovedSongs,
+  getSongApproved,
+  updateSongSectionStatus,
+};
