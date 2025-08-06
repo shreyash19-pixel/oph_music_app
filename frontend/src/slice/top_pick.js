@@ -5,7 +5,7 @@ import axiosApi from "../conf/axios";
 
 export const fetchTopPicks = createAsyncThunk('fetchTopPicks', async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosApi.get('/leaderboard/top-artists');
+      const response = await axiosApi.get('/kpi_score');
       return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to fetch top artists");

@@ -11,26 +11,26 @@ function Artists() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
 
-  const fetchAllArtists = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axiosApi.get("/artists/search");
-      setArtists(response.data.data);
-    } catch (err) {
-      setError("Failed to fetch Artists");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const fetchAllArtists = async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     const response = await axiosApi.get("/artists/search");
+  //     setArtists(response.data.data);
+  //   } catch (err) {
+  //     setError("Failed to fetch Artists");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchAllArtists();
-  }, []);
+  // useEffect(() => {
+  //   fetchAllArtists();
+  // }, []);
 
-  const formatListeners = (number) => {
-    const parsed = Number(number);
-    return isNaN(parsed) ? "0" : parsed.toLocaleString();
-  };
+  // const formatListeners = (number) => {
+  //   const parsed = Number(number);
+  //   return isNaN(parsed) ? "0" : parsed.toLocaleString();
+  // };
 
   return (
     <>

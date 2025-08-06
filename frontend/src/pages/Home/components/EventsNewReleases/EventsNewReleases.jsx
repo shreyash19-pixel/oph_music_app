@@ -25,7 +25,7 @@ const EventsNewReleases = ({ secondEvent }) => {
   const newReleases = useSelector((state) => state.newRelease.newRelease);
 
   const songsArray = Object.values(newReleases).sort(
-    (a, b) => b.songId - a.songId
+    (a, b) => b.youtubeViews - a.youtubeViews
   );
 
   const handlePlayPause = (song) => {

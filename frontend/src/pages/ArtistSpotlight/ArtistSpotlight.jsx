@@ -93,7 +93,7 @@ function Leaderboard({ leaderboardData, artist_id }) {
   );
 }
 
-const SongDuration = ({ url }) => {
+export const SongDuration = ({ url }) => {
   const [duration, setDuration] = useState(null);
 
   useEffect(() => {
