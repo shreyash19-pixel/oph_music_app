@@ -14,6 +14,9 @@ function Home() {
   const [error, setError] = useState(null);
   const {headers} = useArtist()
 
+
+  
+
   const fetchFirstEvent = async () => {
     setIsLoading(true);
 
@@ -30,8 +33,7 @@ function Home() {
       console.log(response);
       
       if (response.data.success) {
-        setFirstEvent(response.data.data[0]);
-        setSecondEvent(response.data.data[1]);
+        setSecondEvent(response.data.data[0]);
       }
     } catch (err) {
       console.log(err);
@@ -66,7 +68,7 @@ function Home() {
       )}
       {!isLoading && !error && firstEvent && (
         <>
-          <HeroSection firstEvent={firstEvent} />
+          <HeroSection firstEvent={firstEvent} secondEvent={secondEvent} />
           <EventsNewReleases secondEvent={secondEvent} />
           <ArtistRankingSection data={artistsdata} selectedMonth={"January"} />
         </>

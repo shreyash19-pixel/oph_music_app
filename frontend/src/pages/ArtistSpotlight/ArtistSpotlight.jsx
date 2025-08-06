@@ -22,7 +22,7 @@ function Leaderboard({ leaderboardData, artist_id }) {
       });
 
       if (response.data.success) {
-        navigate(`/dashboard/artist-detail/${artistId}`);
+        navigate(`/dashboard/artist-detail?id=${artistId}`);
       }
     } catch (err) {
       console.error(err);
