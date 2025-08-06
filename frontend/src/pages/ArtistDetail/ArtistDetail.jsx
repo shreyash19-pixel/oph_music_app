@@ -15,7 +15,7 @@ const ArtistDetail = () => {
   const [showButton, setShowButton] = useState(true);
   const [videoElement, setVideoElement] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
-  const [audio, setAudio] = useState(null);
+  const audioRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const { id } = useParams();
   const [error, setError] = useState(null);
@@ -118,29 +118,41 @@ const ArtistDetail = () => {
   };
 
   const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.id) {
-      if (!audio.paused) {
-        audio.pause();
+    const current = audioRef.current;
+    if (current && playingSongId === song.song_id) {
+      // Toggle play/pause for the same song
+      if (!current.paused) {
+        current.pause();
         setPlayingSongId(null);
       } else {
-        audio.play();
-        setPlayingSongId(song.id);
+        current.play();
+        setPlayingSongId(song.song_id);
       }
     } else {
-      if (audio) {
-        audio.pause();
+      // New song selected
+      if (current) {
+        current.pause();
       }
       const newAudio = new Audio(song.audio_file_url);
+      audioRef.current = newAudio;
       newAudio.play();
-      setAudio(newAudio);
-      setCurrentAudio(song.audio_file_url);
-      setPlayingSongId(song.id);
+      setPlayingSongId(song.song_id);
 
+      // Handle when the song ends
       newAudio.onended = () => {
         setPlayingSongId(null);
       };
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setPlayingSongId(null);
+    };
+  }, []);
 
   const fetchRankedArtists = async () => {
     try {
@@ -431,7 +443,7 @@ const ArtistDetail = () => {
                           className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#6F4FA0]"
                           onClick={() => handlePlayPause(song)}
                         >
-                          {playingSongId === song.id && !audio?.paused ? (
+                          {playingSongId === song.id && !audioRef?.paused ? (
                             <FaPause className="text-white" size={13} />
                           ) : (
                             <FaPlay className="text-white ml-1" size={13} />

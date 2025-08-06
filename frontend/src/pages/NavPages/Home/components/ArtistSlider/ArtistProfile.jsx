@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
@@ -10,7 +10,7 @@ const ArtistProfile = ({ id }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [artist, setArtist] = useState(null);
-  const [audio, setAudio] = useState(null);
+  const audioRef = useRef(null);
   const [currentAudio, setCurrentAudio] = useState(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -19,7 +19,7 @@ const ArtistProfile = ({ id }) => {
     setLoading(true);
     try {
       console.log('in api');
-      
+
       const response = await axiosApi.get(`/get-top-artist-detail?id=${id}`);
       setArtist(response.data.data);
     } catch (err) {
@@ -48,29 +48,33 @@ const ArtistProfile = ({ id }) => {
   };
 
   const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.song_id) {
-      if (!audio.paused) {
-        audio.pause();
+    const current = audioRef.current;
+    if (current && playingSongId === song.song_id) {
+      // Toggle play/pause for the same song
+      if (!current.paused) {
+        current.pause();
         setPlayingSongId(null);
       } else {
-        audio.play();
+        current.play();
         setPlayingSongId(song.song_id);
       }
     } else {
-      if (audio) {
-        audio.pause();
+      // New song selected
+      if (current) {
+        current.pause();
       }
       const newAudio = new Audio(song.audio_file_url);
+      audioRef.current = newAudio;
       newAudio.play();
-      setAudio(newAudio);
-      setCurrentAudio(song.audio_file_url);
       setPlayingSongId(song.song_id);
 
+      // Handle when the song ends
       newAudio.onended = () => {
         setPlayingSongId(null);
       };
     }
   };
+
 
   useEffect(() => {
     fetchArtistDetail();
@@ -78,12 +82,12 @@ const ArtistProfile = ({ id }) => {
 
   useEffect(() => {
     return () => {
-      if (audio) {
-        audio.pause();
-        setPlayingSongId(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
       }
+      setPlayingSongId(null);
     };
-  }, [audio]);
+  }, []);
   return (
     <>
       {loading && (
@@ -198,7 +202,7 @@ const ArtistProfile = ({ id }) => {
 
                       <td className="py-4">{song.total_views}</td>
                       <td className="py-4 text-center">
-                        <SongDuration url = {song.audio_file_url} />
+                        <SongDuration url={song.audio_file_url} />
                       </td>
 
                       <td className="py-4 flex justify-center">
@@ -206,7 +210,7 @@ const ArtistProfile = ({ id }) => {
                           className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0] ml-4"
                           onClick={() => handlePlayPause(song)}
                         >
-                          {playingSongId === song.song_id && !audio?.paused ? (
+                          {playingSongId === song.song_id && !audioRef?.paused ? (
                             <FaPause className="text-white" size={13} />
                           ) : (
                             <FaPlay className="text-white ml-1" size={13} />
