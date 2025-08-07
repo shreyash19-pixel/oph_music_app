@@ -10,6 +10,15 @@ const insertPayment = async (OPH_ID, Transaction_ID, Review, Status, From, song_
 };
 
 
+const insertSongID = async (ophid, song_id) => {
+
+  const [rows] = await db.execute("UPDATE sign_up_payment SET song_id = ? WHERE OPH_ID = ?", [song_id, ophid])
+  return rows
+
+}
+
+
 module.exports = {
-  insertPayment
+  insertPayment,
+  insertSongID
 };

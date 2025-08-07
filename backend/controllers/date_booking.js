@@ -40,7 +40,7 @@ exports.insertSongAndProjectController = async (req, res) => {
     const response = await bookingModel.insertSongAndProject(
       oph_id,
       song_name,
-      project_type
+      project_type,
     );
 
     if (response) {
