@@ -4,6 +4,6 @@ const tvPublishing = () => {
   return (
     <div>tvPublishing</div>
   )
-}
+} 
 
 export default tvPublishing

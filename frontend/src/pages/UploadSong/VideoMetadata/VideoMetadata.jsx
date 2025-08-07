@@ -189,11 +189,11 @@ export default function VideoMetadataForm() {
         timeZone: "Asia/Kolkata",
       });
 
-      const formattedReleaseDate = new Date(date).toLocaleDateString("en-IN", {
+      const formattedReleaseDate = new Date(date.date).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
       });
 
-      if (formattedReleaseDate === formattedDate) {
+      if (formattedReleaseDate === formattedDate && date.ophid !== ophid) {
         return date;
       }
     });
@@ -216,7 +216,12 @@ export default function VideoMetadataForm() {
 
       if (response.data.success) {
         const date = response.data.data.map(
-          (data) => data.current_booking_date
+          (data) => {
+            return {
+              date: data.current_booking_date,
+              ophid: data.oph_id
+            }
+          }
         );
         setCheckBookingDates(date);
       }

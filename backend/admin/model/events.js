@@ -1,7 +1,7 @@
 const db = require('../../DB/connect');
 
 const getAllEvents = async () => {
-  const [rows] = await db.execute('SELECT * FROM OphData.events');
+  const [rows] = await db.execute('SELECT * FROM OphData.events ORDER BY dateTime');
   return rows;
 };
 

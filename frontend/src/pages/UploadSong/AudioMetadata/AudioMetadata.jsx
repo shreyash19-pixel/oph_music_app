@@ -547,7 +547,8 @@ export default function AudioMetadataForm() {
     }
   };
 
-  const checkIfDateIsAvail = () => {
+  const checkIfDateIsAvail = () => {  
+      
     const check = checkBookingDates.find((date) => {
       const formattedDate = new Date(
         location.state.release_date
@@ -555,11 +556,11 @@ export default function AudioMetadataForm() {
         timeZone: "Asia/Kolkata",
       });
 
-      const formattedReleaseDate = new Date(date).toLocaleDateString("en-IN", {
+      const formattedReleaseDate = new Date(date.date).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
       });
 
-      if (formattedReleaseDate === formattedDate) {
+      if (formattedReleaseDate === formattedDate && date.ophid !== ophid) {
         return date;
       }
     });
@@ -582,8 +583,14 @@ export default function AudioMetadataForm() {
 
       if (response.data.success) {
         const date = response.data.data.map(
-          (data) => data.current_booking_date
+          (data) => {
+            return {
+              date: data.current_booking_date,
+              ophid: data.oph_id
+            }
+          }
         );
+        
         setCheckBookingDates(date);
       }
     } catch (err) {

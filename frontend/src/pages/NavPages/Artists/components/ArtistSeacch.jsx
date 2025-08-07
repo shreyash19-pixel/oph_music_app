@@ -12,7 +12,7 @@ const ArtistRankingTable = ({ data = [], title = "Ranking" }) => {
   };
 
   const handleProfileClick = (artistId) => {
-    navigate(`/artists/${artistId}`);
+    navigate(`/public-artist-detail?id=${artistId}`);
   };
 
   return (
