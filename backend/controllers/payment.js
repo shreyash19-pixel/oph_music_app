@@ -53,4 +53,39 @@ const payment = async (req, res) => {
   }
 };
 
-module.exports = { payment };
+
+const insertSongIDController = async (req, res) => {
+
+  try{
+    const {ophid,song_id} = req.body
+
+    if(!ophid || !song_id)
+    {
+      return res.status(400).json({
+        success: false,
+        message : "Missing required field"
+      })
+    }
+
+    const response = await paymentInfo.insertSongID(ophid, song_id)
+
+    if(response)
+    {
+      return res.status(201).json({
+        success: true,
+        message: "Data updated successfully"
+      })
+    }
+
+  }
+  catch(err)
+  {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+module.exports = { payment, insertSongIDController };

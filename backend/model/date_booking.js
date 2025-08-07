@@ -14,7 +14,7 @@ const insertBooking = async (oph_id, booking_date, song_name, project_type) => {
 const insertSongAndProject = async (oph_id, song_name, project_type) => {
   const [rows] = await db.execute(
     "UPDATE calender SET song_name = ?, project_type = ? WHERE oph_id = ?",
-    [song_name, project_type, oph_id]
+    [song_name, project_type ,oph_id]
   );
 
   return rows;
