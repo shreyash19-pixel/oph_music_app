@@ -15,6 +15,8 @@ const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionSto
 export default function RegisterSongForm() {
   const navigate = useNavigate();
   const location = useLocation();  
+  console.log(location);
+  
   const [blockedDates, setBlockedDates] = useState([]); // Add state for blocked dates
   const [artistBlockedDates, setArtistBlockedDates] = useState([]); // Add state for blocked dates
   const [songReg, setSongReg] = useState(true);
@@ -246,6 +248,7 @@ export default function RegisterSongForm() {
             state: {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
+              project_type: projectType,
             },
           }
         );
@@ -279,6 +282,7 @@ export default function RegisterSongForm() {
             state: {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
+              project_type: projectType,
             },
           }
         );

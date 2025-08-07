@@ -255,6 +255,9 @@ export default function AudioMetadataForm() {
   const [audioFileUrl, setAudioFileUrl] = useState(null);
   const location = useLocation();
 
+  console.log(location);
+  
+
   const [songName, setSongName] = useState(location.state.songName);
   const [showSecondaryForm, setShowSecondaryForm] = useState(false);
   const [selectedArtistType, setSelectedArtistType] = useState("");

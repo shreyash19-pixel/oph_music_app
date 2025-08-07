@@ -30,9 +30,11 @@ const artistSpotlight = require("./routes/artist-spotlight");
 const homeRoute = require("./routes/home");
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
-const incrementTrafficCounter = require("./routes/increment_traffic_counter");
-const spotlight_notes = require("./routes/spotlight_notes");
-const notification = require("./routes/notification");
+const incrementTrafficCounter = require("./routes/increment_traffic_counter")
+const spotlight_notes = require("./routes/spotlight_notes")
+const notification = require('./routes/notification')
+
+
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
