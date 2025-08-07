@@ -17,7 +17,7 @@ import Contact from "./view/dashboard/websiteConfig/contact";
 import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import Collab from "./view/dashboard/websiteConfig/collab";
-import EventAdminForm from './view/dashboard/websiteConfig/Events'
+import EventAdminForm from "./view/dashboard/websiteConfig/Events";
 import Events from "./view/dashboard/websiteConfig/Events/events";
 import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
 import ArtistNew from "./view/dashboard/artistPortal/artistNew";
@@ -36,7 +36,7 @@ import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/P
 import Settings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
-import Artist_All from './view/dashboard/artistPortal/artistAll/Artist_All'
+import Artist_All from "./view/dashboard/artistPortal/artistAll/Artist_All";
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
 import Content_New from "./view/dashboard/artistPortal/contentNew/Content_New";
 import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_manage";
@@ -46,6 +46,7 @@ import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/Conte
 import EventParticipation from "./view/dashboard/websiteConfig/Events/eventParticipation";
 import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
 import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
+import CreateResource from "./view/dashboard/websiteConfig/resource";
 
 function App() {
   return (
@@ -118,7 +119,7 @@ function App() {
                   ROLES.OPERATION_MEMBER,
                 ]}
               >
-                <Resource />
+                <CreateResource />
               </ProtectedRoute>
             }
           />

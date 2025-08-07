@@ -3,7 +3,7 @@ import { Menu, X } from "lucide-react";
 import Sidebar from "../../../components/Sidebar";
 import { ROLES } from "./../../../utils/roles";
 import { useAuth } from "../../../auth/AuthProvider";
-import {useNavigate} from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
 // WebsiteConfig page – independent component
 // Tailwind‑only styling – brand colour #0d3c44
@@ -25,13 +25,22 @@ const WebsiteConfig = () => {
     },
     {
       label: "Resource Management",
-      route: "/resource",
       roles: [
         ROLES.SUPER_ADMIN,
         ROLES.ADMINISTRATIVE_HEAD,
         ROLES.ADMINISTRATIVE_MEMBER,
         ROLES.OPERATION_HEAD,
         ROLES.OPERATION_MEMBER,
+      ],
+      children: [
+        {
+          label: "Create Resource",
+          route: "/resource",
+        },
+        {
+          label: "View/Update Resource",
+          route: "/allResource",
+        },
       ],
     },
     {
@@ -96,14 +105,16 @@ const WebsiteConfig = () => {
   }
 
   const handleGoHome = () => {
-    navigate('/')
-  }
+    navigate("/");
+  };
 
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen w-full bg-gray-50">
         <div className="bg-white shadow-lg rounded-2xl p-10 text-center max-w-md w-full">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">Session expired or not logged in</h2>
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">
+            Session expired or not logged in
+          </h2>
           <p className="text-gray-500 mb-6">
             Please login again to continue accessing your dashboard.
           </p>

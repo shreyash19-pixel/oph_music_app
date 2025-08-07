@@ -30,9 +30,9 @@ const artistSpotlight = require("./routes/artist-spotlight");
 const homeRoute = require("./routes/home");
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
-const incrementTrafficCounter = require("./routes/increment_traffic_counter")
-const homeRoute = require("./routes/home")
-
+const incrementTrafficCounter = require("./routes/increment_traffic_counter");
+const spotlight_notes = require("./routes/spotlight_notes");
+const notification = require("./routes/notification");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -46,8 +46,10 @@ const payments = require("./admin/routes/payments");
 const analytics = require("./admin/routes/analytics");
 const tickets = require("./admin/routes/tickets");
 const AdminWithdraw = require("./admin/routes/withdraw");
-const leaderboard = require('./admin/routes/leaderboard')
-const kpi = require('./admin/routes/kpi')
+const leaderboard = require("./admin/routes/leaderboard");
+const kpi = require("./admin/routes/kpi");
+const resource = require("./admin/routes/resource");
+
 // ✅ Middleware order is important
 app.use(
   cors({
@@ -125,20 +127,20 @@ app.use("/", notification);
 
 //Admin Routes
 
-app.use("/",adminSignUp);
-app.use("/",adminSignIn);
-app.use("/",newSignUp);
-app.use("/",newArtist);
-app.use("/",allArtist);
-app.use("/",tickets);
-app.use("/",songs);
-app.use("/",events);
-app.use("/",payments);
-app.use("/",analytics);
-app.use("/",leaderboard);
-app.use("/",kpi)
-app.use('/',AdminWithdraw)
-
+app.use("/", adminSignUp);
+app.use("/", adminSignIn);
+app.use("/", newSignUp);
+app.use("/", newArtist);
+app.use("/", allArtist);
+app.use("/", tickets);
+app.use("/", songs);
+app.use("/", events);
+app.use("/", payments);
+app.use("/", analytics);
+app.use("/", leaderboard);
+app.use("/", kpi);
+app.use("/", resource);
+app.use("/", AdminWithdraw);
 
 // ✅ Start server
 server.listen(port, () => {

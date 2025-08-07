@@ -1,15 +1,13 @@
  Tasks
 
-    ☐ Fix routes in Sign-in/Sign-up, route to dashboard after full accepted.
     ☐ Make the home in dashboard with videos,events,top 5 songs and more.
     ☐ Whole Tv publishing and Artist spotlight.(Front,Back,Admin)
     ✔ Require dumb data for analytics from OPH Client. @done(25-08-07 09:50)
     ☐ Whole analytics. (Front,Back,Admin)
     ☐ In kpi add Duration , Overall Performance and total audiance react.
     ☐ Fix static video in all pages.
-    ☐ Fix Payment Routing.
+    ☐ Fix Payment Routing For Qr.
     ☐ Feature to add QR from admin with amount.
-    ☐ Add song reject section where user can change the song details.
     ☐ Also check if the reject reason is being emptied after re submission of all forms(Registration and song register)
     ☐ Add all the itratable data to DB and give admin the power to add new data(Bank name , profession , song language , genre etc etc )
     ☐ Re test and fix all the after reject cases.
@@ -21,50 +19,53 @@
 ## Sections(Remaining)
 
 ### Frontend (Client)
-☐ Navpages => Home => Compelete
-☐ Navpages => Event => Compelete
-☐ Navpages => Artist => Fix mapping for specialist artists , retest and fix for remianing bugs.
-☐ Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
-☐ Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike)
-☐ Navpages => Contact => Compelete
-☐ SignIn/SignUp/Login => Fix routes in Sign-in/Sign-up, route to dashboard after full accepted.
-☐ Dashboard => Home => Remove Event card and only keep song card.
-☐ Dashboard => Home => Get Details => Complete page
-☐ Dashboard => Calender => Add Artist Profile Image
-☐ Dashboard => Song Registration => In-Progess(Will update task after testing )
-☐ Dashboard => Tv Publishing => Compelete
-☐ Dashboard => artist spotlight => Fix icons.
-☐ Dashboard => Analytics => Compelete
-☐ Dashboard => Request Tickets => Compeleted aka Done. => Go to Testing
-☐ Dashboard => Events => Compeleted aka Done. => Go to Testing.
-☐ Dashboard => Income => Make api to get bank details and show it , as get and show Available Amount\
-☐ Dashboard => KPI => Compelete
+☐ ALL Navpages => Home => Compelete
+☐ NN Navpages => Event => Compelete
+☐ SP Navpages => Artist => Fix mapping for specialist artists , retest and fix for remianing bugs.
+☐ SP Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
+☐ NN Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike)
+☐ JS Navpages => Contact => Compelete
+☐ NN SignIn/SignUp/Login => Fix routes in Sign-in/Sign-up, route to dashboard after full accepted.
+☐ JS Dashboard => Home => Remove Event card and only keep song card.
+☐ JS Dashboard => Home => Get Details => Complete page
+☐ SP Dashboard => Calender => Add Artist Profile Image
+✔ Dashboard => Song Registration => In-Progess(Will update task after testing ) => Compeleted => Go to Testing @done(25-08-07 23:33)
+☐ JS Dashboard => Tv Publishing => Compelete
+☐ NN Dashboard => artist spotlight => Fix icons.
+☐ JS Dashboard => Analytics => Compelete
+✔ Dashboard => Request Tickets => Compeleted aka Done. => Go to Testing @done(25-08-07 23:22)
+✔ Dashboard => Events => Compeleted aka Done. => Go to Testing. @done(25-08-07 23:22)
+☐ NN Dashboard => Income => Make api to get bank details and show it , as get and show Available Amount\
+☐ JS Dashboard => KPI => Compelete
+✔ Dashboard => Notification => Done => Go to Testing @done(25-08-07 23:32)
+☐ JS Dashboard => Learning => Compelete
 
 ### Backend
 ☐ All appropriate and needed changes.
-☐ Notification => Add for all status updates.
-☐ Admin => Artist Portal => New => Change query to fetch only when all forms are Completed.
+☐ ALL Notification => Add for all status updates.
+☐ NN Admin => Artist Portal => New => Change query to fetch only when all forms are Completed.
+☐ ALL Email Hits
 ### Admin
 ☐ New Signup => Done => Go to testing.
-☐ Artist Portal =>Artist => New => Update layout to show based on filled/submitted count.
-☐ Artist Portal =>Artist => All => Done. => Go to Testing.
-☐ Artist Portal =>Content => New => Test and fix, Update based on new api.
-☐ Artist Portal =>Content => Manage => Test and fix, Update based on new api.
-☐ Artist Portal =>Analytics => Artist KPI => Compeleted => Go to Testing.
-☐ Artist Portal =>Analytics => Content analysis => Compeleted => Go to Testing.
-☐ Artist Portal =>Analytics => Content Release => Complete
-☐ Artist Portal =>Payment => All => Compelete.
-☐ Artist Portal =>Payment => Withdraw => Fix table layout
-☐ Artist Portal =>Payment => Withdraw-Redirect => Fix layout.
-☐ Artist Portal =>All Data => Compelete
-☐ Artist Portal =>Time Calender => Complete
-☐ Artist Portal =>Tickets => Give table view and Redirect to Individual Page .Fix layout inside the redirect
-☐ Artist Portal =>Setting => Compelete.
-☐ Website Config => Contact => Compelete
-☐ Website Config => Resource => Compelete
-☐ Website Config => Homepage => Compelete
-☐ Website Config => Collab => Compelete
-☐ Website Config => Leaderboard => Compelete
-☐ Website Config => Event => Event Creation => Done => Go to Testing
-☐ Website Config => Event => Events => Add SideBar and fix table layout
-☐ Website Config => Event => Event Participation => Add SideBar and fix table layout, also add working filter based on specific Event(aka eventName or event_id on the backend side)
+☐ NN Artist Portal =>Artist => New => Update layout to show based on filled/submitted count.
+✔ Artist Portal =>Artist => All => Done. => Go to Testing. @done(25-08-07 23:32)
+☐ SP Artist Portal =>Content => New => Test and fix, Update based on new api.
+☐ NN Artist Portal =>Content => Manage => Test and fix, Update based on new api.
+✔ Artist Portal =>Analytics => Artist KPI => Compeleted => Go to Testing. @done(25-08-07 23:32)
+✔ Artist Portal =>Analytics => Content analysis => Compeleted => Go to Testing. @done(25-08-07 23:32)
+☐ SP Artist Portal =>Analytics => Content Release => Complete
+☐ JS Artist Portal =>Payment => All => Compelete.
+☐ JS Artist Portal =>Payment => Withdraw => Fix table layout
+☐ JS Artist Portal =>Payment => Withdraw-Redirect => Fix layout.
+☐ NN Artist Portal =>All Data => Compelete
+☐ SP Artist Portal =>Time Calender => Complete
+☐ JS Artist Portal =>Tickets => Give table view and Redirect to Individual Page .Fix layout inside the redirect
+☐ ALL Artist Portal =>Setting => Compelete.
+☐ JS Website Config => Contact => Compelete
+☐ NN - Website Config => Resource => Compelete
+☐ ALL Website Config => Homepage => Compelete
+☐ JS Website Config => Collab => Compelete
+☐ JS Website Config => Leaderboard => Compelete
+✔ Website Config => Event => Event Creation => Done => Go to Testing @done(25-08-07 23:32)
+☐ JS Website Config => Event => Events => Add SideBar and fix table layout
+☐ JS Website Config => Event => Event Participation => Add SideBar and fix table layout, also add working filter based on specific Event(aka eventName or event_id on the backend side)
