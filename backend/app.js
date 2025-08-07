@@ -48,8 +48,9 @@ const payments = require("./admin/routes/payments");
 const analytics = require("./admin/routes/analytics");
 const tickets = require("./admin/routes/tickets");
 const AdminWithdraw = require("./admin/routes/withdraw");
-const leaderboard = require('./admin/routes/leaderboard')
-const kpi = require('./admin/routes/kpi')
+const leaderboard = require("./admin/routes/leaderboard");
+const kpi = require("./admin/routes/kpi");
+const resource = require("./admin/routes/resource");
 
 // ✅ Middleware order is important
 app.use(
@@ -128,20 +129,20 @@ app.use("/", notification);
 
 //Admin Routes
 
-app.use("/",adminSignUp);
-app.use("/",adminSignIn);
-app.use("/",newSignUp);
-app.use("/",newArtist);
-app.use("/",allArtist);
-app.use("/",tickets);
-app.use("/",songs);
-app.use("/",events);
-app.use("/",payments);
-app.use("/",analytics);
-app.use("/",leaderboard);
-app.use("/",kpi)
-app.use('/',AdminWithdraw)
-
+app.use("/", adminSignUp);
+app.use("/", adminSignIn);
+app.use("/", newSignUp);
+app.use("/", newArtist);
+app.use("/", allArtist);
+app.use("/", tickets);
+app.use("/", songs);
+app.use("/", events);
+app.use("/", payments);
+app.use("/", analytics);
+app.use("/", leaderboard);
+app.use("/", kpi);
+app.use("/", resource);
+app.use("/", AdminWithdraw);
 
 // ✅ Start server
 server.listen(port, () => {
