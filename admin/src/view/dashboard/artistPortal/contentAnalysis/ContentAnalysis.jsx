@@ -40,7 +40,8 @@ const ContentAnalysis = () => {
           song_name: data.song_name || "",
           youtube_views: parseInt(data.youtube_views) || 0,
           youtube_engagement: parseInt(data.youtube_engagement) || 0,
-          youtube_avg_view_duration: data.youtube_avg_view_duration || "00:00:00",
+          youtube_avg_view_duration:
+            data.youtube_avg_view_duration || "00:00:00",
           youtube_revenue: parseFloat(data.youtube_revenue) || 0,
           insta_engagement: parseInt(data.insta_engagement) || 0,
         });
@@ -88,27 +89,22 @@ const ContentAnalysis = () => {
   const handleSave = async () => {
     try {
       const payload = {
-        youtube_views:
-          originalMetrics.youtube_views + parseInt(metrics.youtube_views || 0),
-        youtube_engagement:
-          originalMetrics.youtube_engagement + parseInt(metrics.youtube_engagement || 0),
-        youtube_avg_view_duration: addTimes(
-          originalMetrics.youtube_avg_view_duration,
-          metrics.youtube_avg_view_duration || "00:00:00"
-        ),
-        youtube_revenue:
-          originalMetrics.youtube_revenue + parseFloat(metrics.youtube_revenue || 0),
-        insta_engagement:
-          originalMetrics.insta_engagement + parseInt(metrics.insta_engagement || 0),
+        song_id: songId,
+        youtube_views: parseInt(metrics.youtube_views || 0),
+        youtube_engagement: parseInt(metrics.youtube_engagement || 0),
+        youtube_avg_view_duration:
+          metrics.youtube_avg_view_duration || "00:00:00",
+        youtube_revenue: parseFloat(metrics.youtube_revenue || 0),
+        insta_engagement: parseInt(metrics.insta_engagement || 0),
+        // Date: new Date().toISOString(), // or format as needed
       };
 
-      const res = await axiosApi.put(`/update_analytics/${songId}`, payload);
-
+      const res = await axiosApi.post(`/update_analytics`, payload);
       toast.success("📤 Social metrics saved!");
-      console.log("Updated:", res.data);
+      console.log("Inserted:", res.data);
     } catch (err) {
-      console.error("Update failed", err);
-      alert("Failed to update analytics.");
+      console.error("Insert failed", err);
+      toast.error("Failed to save analytics.");
     }
   };
 
@@ -123,7 +119,9 @@ const ContentAnalysis = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Bar */}
       <div className="bg-white shadow px-6 py-4 flex justify-between items-center w-full border-b">
-        <h1 className="text-xl font-semibold text-[#0d3c44]">Content Analysis</h1>
+        <h1 className="text-xl font-semibold text-[#0d3c44]">
+          Content Analysis
+        </h1>
         <select
           onChange={handlePageChange}
           defaultValue=""
@@ -133,7 +131,9 @@ const ContentAnalysis = () => {
             Go to Page...
           </option>
           <option value={`/ArtistNew/${ophid}`}>Content Manage</option>
-          <option value={`/content-analysis/${ophid}/${songId}`}>Content Analysis</option>
+          <option value={`/content-analysis/${ophid}/${songId}`}>
+            Content Analysis
+          </option>
         </select>
       </div>
 
@@ -141,13 +141,17 @@ const ContentAnalysis = () => {
       <div className="w-full px-8 py-10">
         <div className="bg-white rounded-2xl shadow-md p-8 space-y-6 w-full">
           <div className="text-lg text-gray-600">
-            <strong>OphID:</strong> {ophid} &nbsp; | &nbsp; <strong>SongID:</strong> {songId}
+            <strong>OphID:</strong> {ophid} &nbsp; | &nbsp;{" "}
+            <strong>SongID:</strong> {songId}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ReadOnlyField label="Song ID" value={originalMetrics.song_id} />
             <ReadOnlyField label="OPH ID" value={originalMetrics.OPH_ID} />
-            <ReadOnlyField label="Song Name" value={originalMetrics.song_name} />
+            <ReadOnlyField
+              label="Song Name"
+              value={originalMetrics.song_name}
+            />
 
             <EditableField
               label="YouTube Views (Add to Current)"
@@ -197,7 +201,9 @@ const ContentAnalysis = () => {
 
 const ReadOnlyField = ({ label, value }) => (
   <div>
-    <label className="block text-gray-700 text-sm font-semibold mb-1">{label}</label>
+    <label className="block text-gray-700 text-sm font-semibold mb-1">
+      {label}
+    </label>
     <input
       type="text"
       readOnly
@@ -209,7 +215,9 @@ const ReadOnlyField = ({ label, value }) => (
 
 const EditableField = ({ label, name, value, onChange }) => (
   <div>
-    <label className="block text-gray-700 text-sm font-semibold mb-1">{label}</label>
+    <label className="block text-gray-700 text-sm font-semibold mb-1">
+      {label}
+    </label>
     <input
       type="text"
       name={name}
