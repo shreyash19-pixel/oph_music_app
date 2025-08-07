@@ -28,9 +28,9 @@ exports.createBooking = async (req, res) => {
 
 exports.insertSongAndProjectController = async (req, res) => {
   try {
-    const { oph_id, song_name, project_type } = req.body;
+    const { oph_id, song_name, project_type, song_id } = req.body;
 
-    if (!oph_id || !song_name || !project_type) {
+    if (!oph_id || !song_name || !project_type || !song_id) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
@@ -40,7 +40,8 @@ exports.insertSongAndProjectController = async (req, res) => {
     const response = await bookingModel.insertSongAndProject(
       oph_id,
       song_name,
-      project_type
+      project_type,
+      song_id
     );
 
     if (response) {

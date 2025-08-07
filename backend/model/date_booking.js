@@ -11,10 +11,10 @@ const insertBooking = async (oph_id, booking_date, song_name, project_type) => {
   return result;
 };
 
-const insertSongAndProject = async (oph_id, song_name, project_type) => {
+const insertSongAndProject = async (oph_id, song_name, project_type, song_id) => {
   const [rows] = await db.execute(
-    "UPDATE calender SET song_name = ?, project_type = ? WHERE oph_id = ?",
-    [song_name, project_type, oph_id]
+    "UPDATE calender SET song_name = ?, project_type = ?, song_id = ? WHERE oph_id = ?",
+    [song_name, project_type, song_id ,oph_id]
   );
 
   return rows;

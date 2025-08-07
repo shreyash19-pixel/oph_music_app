@@ -12,6 +12,8 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const location = useLocation();
+  console.log(location);
+  
   const [songName, setSongName] = useState(location.state.songName);
   const projectType = localStorage.getItem("projectType") || "";
   const { headers, ophid } = useArtist();
@@ -136,6 +138,7 @@ export default function VideoMetadataForm() {
             oph_id: ophid,
             song_name: location.state.songName,
             project_type: projectType,
+            song_id: contentId
           },
           {
             headers: {

@@ -31,7 +31,9 @@ const homeRoute = require("./routes/home");
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
 const incrementTrafficCounter = require("./routes/increment_traffic_counter")
-const homeRoute = require("./routes/home")
+const spotlight_notes = require("./routes/spotlight_notes")
+const notification = require('./routes/notification')
+
 
 
 //Admin route assignment
@@ -48,6 +50,7 @@ const tickets = require("./admin/routes/tickets");
 const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require('./admin/routes/leaderboard')
 const kpi = require('./admin/routes/kpi')
+
 // ✅ Middleware order is important
 app.use(
   cors({
