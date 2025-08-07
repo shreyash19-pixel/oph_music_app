@@ -138,7 +138,6 @@ export default function VideoMetadataForm() {
             oph_id: ophid,
             song_name: location.state.songName,
             project_type: projectType,
-            song_id: contentId
           },
           {
             headers: {
