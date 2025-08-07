@@ -13,7 +13,7 @@ export default function VideoMetadataForm() {
   const [error, setError] = useState(null);
   const location = useLocation();
   console.log(location);
-  
+
   const [songName, setSongName] = useState(location.state.songName);
   const projectType = localStorage.getItem("projectType") || "";
   const { headers, ophid } = useArtist();
@@ -148,13 +148,25 @@ export default function VideoMetadataForm() {
         );
 
         if (response.data.success) {
-          navigate("/dashboard/success", {
-            state: {
-              heading: "Your Event Spot has been booked Successfully.",
-              btnText: "Back to Home",
-              redirectTo: "/dashboard/events",
-            },
-          });
+          const paymentUpdateResponse = await axiosApi.post(
+            "/insert-songid-payment",
+            {ophid: ophid ,song_id: contentId },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (paymentUpdateResponse.data.success) {
+            navigate("/dashboard/success", {
+              state: {
+                heading: "Your Event Spot has been booked Successfully.",
+                btnText: "Back to Home",
+                redirectTo: "/dashboard/events",
+              },
+            });
+          }
         }
         return;
       }
@@ -191,9 +203,12 @@ export default function VideoMetadataForm() {
         timeZone: "Asia/Kolkata",
       });
 
-      const formattedReleaseDate = new Date(date.date).toLocaleDateString("en-IN", {
-        timeZone: "Asia/Kolkata",
-      });
+      const formattedReleaseDate = new Date(date.date).toLocaleDateString(
+        "en-IN",
+        {
+          timeZone: "Asia/Kolkata",
+        }
+      );
 
       if (formattedReleaseDate === formattedDate && date.ophid !== ophid) {
         return date;
@@ -217,14 +232,12 @@ export default function VideoMetadataForm() {
       });
 
       if (response.data.success) {
-        const date = response.data.data.map(
-          (data) => {
-            return {
-              date: data.current_booking_date,
-              ophid: data.oph_id
-            }
-          }
-        );
+        const date = response.data.data.map((data) => {
+          return {
+            date: data.current_booking_date,
+            ophid: data.oph_id,
+          };
+        });
         setCheckBookingDates(date);
       }
     } catch (err) {
