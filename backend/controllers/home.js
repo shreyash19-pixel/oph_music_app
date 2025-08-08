@@ -1,4 +1,4 @@
-const {newReleases, getArtistDetail, getReleatedArtists} = require("../model/home")
+const {newReleases, getArtistDetail, getReleatedArtists, getUpcomingSong} = require("../model/home")
 
 
 const newReleasesController = async (req, res) => {
@@ -97,4 +97,39 @@ const getReleatedArtistsController = async (req, res) => {
 }
 
 
-module.exports = {newReleasesController, getArtistDetailController, getReleatedArtistsController}
+const getUpcomingSongController = async (req ,res) => {
+
+    try{
+        const {ophid} = req.query
+
+        if(!ophid)
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required field"
+            })
+        }
+
+        const response = await getUpcomingSong(ophid)
+
+        if(response)
+        {
+            return res.status(200).json({
+                success: true,
+                message: "Data Fetch Successfully",
+                data: response
+            })
+        }
+    }
+    catch(err)
+    {
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        })
+    }
+
+}
+
+
+module.exports = {newReleasesController, getArtistDetailController, getReleatedArtistsController, getUpcomingSongController}
