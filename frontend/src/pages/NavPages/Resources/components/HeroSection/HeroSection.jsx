@@ -31,8 +31,9 @@ const HeroSection = ({ onSearch }) => {
     }
 
     try {
-      const response = await axiosApi.get(`/content/search?q=${value}`);
+      const response = await axiosApi.get(`/podcast/search?q=${value}`);
       setSearchResults(response.data.data);
+      console.log(response.data);
       setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
@@ -65,7 +66,6 @@ const HeroSection = ({ onSearch }) => {
 
       {/* Content */}
       <div className="relative z-20 max-w-3xl w-full text-center space-y-6 mx-auto mt-8 md:mt-12 lg:mt-20 xl:mt-24">
-
         {/* <div className="relative md:mt-12 z-20 max-w-3xl w-full text-center space-y-6 mx-auto"> */}
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mt-8 text-center leading-snug">
           FROM LEARNING TO LAUNCH –{" "}
@@ -75,10 +75,10 @@ const HeroSection = ({ onSearch }) => {
         </h1>
 
         <p className="text-gray-300 text-base sm:text-lg mt-4 max-w-3xl text-center px-4">
-          Access free music education podcasts, videos, and reels in our online community platform.
-          Learn from success stories and grow with the best music community in India.
+          Access free music education podcasts, videos, and reels in our online
+          community platform. Learn from success stories and grow with the best
+          music community in India.
         </p>
-
 
         {/* Search bar */}
         <div className="flex justify-center mt-8 relative" ref={dropdownRef}>
@@ -117,19 +117,19 @@ const HeroSection = ({ onSearch }) => {
                     >
                       <img
                         src={
-                          result.thumbnails?.[0] ||
+                          result.thumbnail_url ||
                           "/assets/images/default-thumbnail.png"
                         }
-                        alt={result.name}
+                        alt={result.title}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
                       <div className="flex-1">
                         <h3 className="font-medium text-white text-left">
-                          {result.name}
+                          {result.title}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <span>{result.stage_name}</span>
-                          <span>{formatViews(result.total_views)}</span>
+                          <span>{result.artist_name}</span>
+                          <span>{formatViews(result.views)}</span>
                         </div>
                       </div>
                       <img

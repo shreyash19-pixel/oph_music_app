@@ -30,6 +30,8 @@ const SongSocialMetrics = {
   updateMetrics: async (metrics) => {
     const {
       song_id,
+      OPH_ID,
+      song_name,
       youtube_views,
       youtube_engagement,
       youtube_avg_view_duration,
@@ -38,11 +40,13 @@ const SongSocialMetrics = {
     } = metrics;
 
     const [result] = await db.execute(
-      `INSERT INTO song_social_metrics_bkp
-       (song_id, youtube_views, youtube_engagement, youtube_avg_view_duration, youtube_revenue, insta_engagement)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO song_social_metrics
+        (song_id, OPH_ID, song_name, youtube_views, youtube_engagement, youtube_avg_view_duration, youtube_revenue, insta_engagement, date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         song_id,
+        OPH_ID,
+        song_name,
         youtube_views,
         youtube_engagement,
         youtube_avg_view_duration,
@@ -55,17 +59,15 @@ const SongSocialMetrics = {
   },
 
   getAllMetrics: async () => {
-    const [rows] = await db.execute(
-      `SELECT *
-      FROM song_social_metrics_bkp
-      GROUP BY song_id;`,
-    );
+    const [rows] = await db.query(`SELECT *
+          FROM song_social_metrics
+          GROUP BY song_id`);
     return rows;
   },
 
   getMetricById: async (id) => {
-    const [rows] = await db.execute(
-      `SELECT * FROM song_social_metrics_bkp WHERE song_id = ?`,
+    const [rows] = await db.query(
+      `SELECT * FROM song_social_metrics WHERE song_id = ?`,
       [id],
     );
     return rows[0];

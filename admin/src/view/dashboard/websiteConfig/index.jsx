@@ -38,7 +38,7 @@ const WebsiteConfig = () => {
           route: "/resource",
         },
         {
-          label: "View/Update Resource",
+          label: "View Resource",
           route: "/allResource",
         },
       ],

@@ -1,144 +1,84 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import axiosApi from "../../../../../conf/axios"; // Your API config
-import PlayButton from "../../../../../../public/assets/images/play_button.png"; // Play Button Image
+import axiosApi from "../../../../../conf/axios";
+import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
-function ReelsSlider({  searchText ,title }) {
+function ReelsSlider({ searchText, title }) {
   const [isDragging, setIsDragging] = useState(false);
-  // const [reelsData, setReelsData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [allReels, setAllReels] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [playingIndex, setPlayingIndex] = useState(null);
   const videoRefs = useRef([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
   const [isPlaying, setIsPlaying] = useState(true);
 
-  const [allReels, setAllReels] = useState([]);
+  useEffect(() => {
+    const fetchReels = async () => {
+      try {
+        const response = await axiosApi.get("/allReels");
+        const sortedData = (response.data.data || []).sort(
+          (a, b) => b.views - a.views,
+        );
+        setAllReels(sortedData);
+      } catch (err) {
+        console.error("Error fetching reels:", err);
+        toast.error("Failed to load reels.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReels();
+  }, []);
 
-
-  const reelsData = [
-    {
-      id: 1,
-      title: "The Rise of Indie Music",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
-      artist_name: "IndieVibes",
-      duration_in_minutes: 12,
-      views: 15400,
-      credit_name: "Hosted by Riya Mehta",
-      keywords: ["music", "indie", "trending"]
-    },
-    {
-      id: 2,
-      title: "Behind The Mic: Ep 5",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
-      artist_name: "SoundCast",
-      duration_in_minutes: 9,
-      views: 8400,
-      credit_name: "Produced by AudioVerse",
-      keywords: ["audio", "interview", "studio"]
-    },
-    {
-      id: 3,
-      title: "Music and Mindfulness",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
-      artist_name: "ZenBeats",
-      duration_in_minutes: 15,
-      views: 22100,
-      credit_name: "Curated by Priya Sharma",
-      keywords: ["wellness", "meditation", "music"]
-    },
-    {
-      id: 4,
-      title: "The Rise of Indie Music",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
-      artist_name: "IndieVibes",
-      duration_in_minutes: 12,
-      views: 15400,
-      credit_name: "Hosted by Riya Mehta",
-      keywords: ["music", "indie", "trending"]
-    },
-    {
-      id: 5,
-      title: "Behind The Mic: Ep 5",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
-      artist_name: "SoundCast",
-      duration_in_minutes: 9,
-      views: 8400,
-      credit_name: "Produced by AudioVerse",
-      keywords: ["audio", "interview", "studio"]
-    },
-    {
-      id: 6,
-      title: "Music and Mindfulness",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
-      artist_name: "ZenBeats",
-      duration_in_minutes: 15,
-      views: 22100,
-      credit_name: "Curated by Priya Sharma",
-      keywords: ["wellness", "meditation", "music"]
+  const filteredReels = useMemo(() => {
+    if (searchText) {
+      return allReels.filter((reel) =>
+        reel.title.toLowerCase().includes(searchText.toLowerCase()),
+      );
     }
-  ];
-
-// useEffect(() => {
-//   const fetchContents = async () => {
-//     try {
-//       const response = await axiosApi.get("/reels");
-//       setAllReels(response.data.data); // Save original data
-//       setReelsData(response.data.data); // Initially show all
-//     } catch (error) {
-//       console.log(error);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-//   fetchContents();
-// }, []);
-
-// useEffect(() => {
-//   if (searchText) {
-//     const filteredReels = allReels.filter((reel) =>
-//       reel.title.toLowerCase().includes(searchText.toLowerCase())
-//     );
-//     setReelsData(filteredReels);
-//   } else {
-//     setReelsData(allReels); // Restore original list
-//   }
-// }, [searchText, allReels]);
+    return allReels;
+  }, [searchText, allReels]);
 
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
     setIsPlaying(true);
     setTimeout(() => {
-      document.getElementById("video-player").play();
+      const video = document.getElementById("video-player");
+      if (video) {
+        video.play().catch((error) => {
+          console.error("Autoplay failed:", error);
+        });
+      }
     }, 300);
   };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVideo("");
     setIsPlaying(false);
   };
+
   const togglePlayPause = (e) => {
     e.stopPropagation();
     const video = document.getElementById("video-player");
-    if (video.paused) {
-      video.play();
-      setIsPlaying(true);
-    } else {
-      video.pause();
-      setIsPlaying(false);
+    if (video) {
+      if (video.paused) {
+        video.play();
+        setIsPlaying(true);
+      } else {
+        video.pause();
+        setIsPlaying(false);
+      }
     }
   };
+
   const handleMouseDown = () => {
     setIsDragging(false);
   };
@@ -152,93 +92,55 @@ function ReelsSlider({  searchText ,title }) {
       openModal(videoUrl);
     }
   };
- 
-  const handlePlayVideo = (index) => {
-    if (playingIndex !== null && videoRefs.current[playingIndex]) {
-      videoRefs.current[playingIndex].pause();
-    }
-    setPlayingIndex(index);
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].play();
-    }
-    setReelPlaying(true); // Stop autoplay
-    setSwipeEnabled(false); // Disable swipe when video is playing
-  };
-
-  const handlePauseVideo = (index) => {
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].pause();
-      setPlayingIndex(null);
-    }
-    setReelPlaying(false);
-    setSwipeEnabled(true); // Enable swipe when video is paused
-  };
-
-  const handlePlayPauseVideo = (index) => {
-    if (isDragging) return; // Prevent playing while dragging
-
-    // Pause the currently playing video if it's different
-    if (
-      playingIndex !== null &&
-      playingIndex !== index &&
-      videoRefs.current[playingIndex]
-    ) {
-      videoRefs.current[playingIndex].pause();
-      videoRefs.current[playingIndex].currentTime = 0; // Reset the video to the beginning
-    }
-
-    // Toggle play/pause for the clicked video
-    if (playingIndex === index) {
-      videoRefs.current[index].pause();
-      videoRefs.current[index].currentTime = 0; // Reset the video to the beginning
-      setPlayingIndex(null);
-    } else {
-      setPlayingIndex(index);
-      if (videoRefs.current[index]) {
-        videoRefs.current[index].play();
-      }
-    }
-  };
 
   const stopAllVideos = () => {
     videoRefs.current.forEach((video) => {
       if (video) {
         video.pause();
+        video.currentTime = 0;
       }
     });
     setPlayingIndex(null);
   };
 
-  // Set slick slider settings based on reels data count
   const settings = {
-    infinite: true,
+    infinite: filteredReels.length >= 3,
     speed: 500,
-    slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length, // Show up to 3 slides
+    slidesToShow: filteredReels.length >= 3 ? 3 : filteredReels.length,
     slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 1000,
+    autoplay: !isModalOpen,
+    autoplaySpeed: 3000,
     dots: false,
     arrows: false,
-    centerMode: reelsData.length >= 3, // Enable centering for 3+ items
-    centerPadding: reelsData.length >= 3 ? "15%" : "0", // Adjust center padding for 3+ items
+    centerMode: filteredReels.length >= 3,
+    centerPadding: filteredReels.length >= 3 ? "15%" : "0",
     beforeChange: () => setIsDragging(true),
     afterChange: () => {
       setIsDragging(false);
-      stopAllVideos(); // Stop video when slider moves
+      stopAllVideos();
     },
     responsive: [
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length,
-          centerPadding: reelsData.length >= 3 ? "12%" : "0",
+          slidesToShow: filteredReels.length >= 3 ? 3 : filteredReels.length,
+          centerPadding: filteredReels.length >= 3 ? "12%" : "0",
         },
       },
       {
         breakpoint: 768,
         settings: {
-          slidesToShow: reelsData.length >= 3 ? 2 : reelsData.length,
-          centerPadding: reelsData.length >= 3 ? "6%" : "0",
+          slidesToShow: filteredReels.length >= 2 ? 2 : filteredReels.length,
+          centerPadding: filteredReels.length >= 2 ? "6%" : "0",
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: 1,
+          centerPadding: "20%",
+          infinite: filteredReels.length >= 2,
+          centerMode: filteredReels.length >= 2,
         },
       },
     ],
@@ -248,163 +150,111 @@ function ReelsSlider({  searchText ,title }) {
     return <div>Loading...</div>;
   }
 
+  if (filteredReels.length === 0) {
+    return (
+      <div className="bg-black text-white py-12 text-center">
+        <div className="container mx-auto px-4 lg:px-16">
+          <h2 className="text-xl lg:text-5xl font-bold uppercase mt-4">
+            No Reels Found
+          </h2>
+          {searchText && (
+            <p className="text-gray-400 mt-4 text-lg">
+              No content found matching "{searchText}".
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-black text-white py-7">
-      <div className="container mx-auto mb-12 px-4 lg:px-16">
+    <div className="bg-black text-white py-12">
+      <div className="container mx-auto mb-16 px-4 lg:px-16">
         {title ? (
-          <h2 className="text-[#5DC9DE] text-2xl font-bold uppercase drop-shadow-[0_0_20px_white] text-center">
+          <h2 className="text-[#5DC9DE] text-3xl md:text-4xl font-bold uppercase drop-shadow-[0_0_20px_white] text-center">
             {title}
           </h2>
         ) : (
-          <h1 className="text-xl lg:text-4xl font-bold text-center mb-8 leading-tight uppercase mt-2">
+          <h1 className="text-2xl md:text-5xl font-bold text-center mb-10 leading-tight uppercase mt-4">
             Reels
           </h1>
         )}
       </div>
 
       <div className="reels-slider w-full px-4 lg:px-16">
-        {/* If there are less than 3 items, show them without the slider */}
-        {reelsData.length < 3 ? (
-          <div className="flex overflow-x-auto">
-            {reelsData.map((reel, index) => (
-              <div key={index} className="px-2 lg:px-4 w-full">
-                <div className="rounded-xl overflow-hidden relative">
-                  {playingIndex === index ? (
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
-                      autoPlay
-                      src={reel.video_url}
-                      controls
-                      className="w-[90%] h-[100px] sm:h-[400px] object-cover rounded-xl"
-                      onEnded={() => setPlayingIndex(null)}
-                      onClick={() => handlePlayPauseVideo(index)}
-                      onMouseUp={() => handleMouseUp(reel.video_url)}
+        {filteredReels.length <= 2 ? (
+          <div className="flex justify-center flex-wrap gap-6 md:gap-8 lg:gap-10">
+            {filteredReels.map((reel, index) => (
+              <div
+                key={index}
+                className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/5"
+              >
+                <div
+                  className="relative overflow-hidden rounded-2xl cursor-pointer shadow-lg transform transition-transform duration-300 hover:scale-105"
+                  style={{ aspectRatio: "3/4.5" }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={() => handleMouseUp(reel.video_url)}
+                >
+                  <div className="w-full h-full rounded-2xl overflow-hidden">
+                    <Image
+                      src={reel.thumbnail_url}
+                      fallback={<Shimmer width={400} height={500} />}
+                      alt={reel.title}
+                      NativeImgProps={{
+                        className: "w-full h-full object-cover",
+                      }}
                     />
-                  ) : (
-                    <div className="relative cursor-pointer overflow-hidden">
-                      <div className="w-full h-[100px] sm:h-[400px]">
-                        <Image
-                          src={reel.thumbnail_url}
-                          fallback={<Shimmer width={100} height={400} />}
-                          alt={reel.title}
-                          NativeImgProps={{
-                            className: "w-[90%] h-full object-cover rounded-xl",
-                          }}
-                        />
-                      </div>
-                      <div
-                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50"
-                        onClick={() => handlePlayPauseVideo(index)}
-                      >
-                        <img
-                          src={PlayButton}
-                          className="w-[80px] sm:w-[150px]"
-                          alt="Play Button"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-center">
+                    <img
+                      src={PlayButton}
+                      alt="Play"
+                      className="w-20 h-20 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24"
+                    />
+                  </div>
                 </div>
-
                 <div className="p-4 sm:p-6 text-center">
-                  <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
+                  <h3 className="text-xl md:text-2xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
                     {reel.title}
                   </h3>
-                  <div className="text-gray-400 text-sm sm:text-base">
-                    {/* <span>{reel.artist_name}</span> */}
-                    {/* <span className="mx-2">—</span>
-                    <span>{reel.duration_in_minutes || "--"} min</span>
-                    <span className="mx-2">—</span>
-                    <span>{reel.total_views}+ Views</span> */}
-                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <Slider {...settings}>
-            {reelsData.map((reel, index) => (
-              <div key={index} className="px-2 lg:px-4 w-full">
-                <div className="rounded-xl overflow-hidden relative">
-                  {/* {playingIndex === index ? (
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
-                      autoPlay
-                      src={reel.video_url}
-                      controls
-                      className="w-[90%] h-[100px] sm:h-[400px] object-cover rounded-xl"
-                      onEnded={() => setPlayingIndex(null)}
-                      // onClick={() => handlePlayPauseVideo(index)}
+            {filteredReels.map((reel, index) => (
+              <div key={index} className="px-3 lg:px-6">
+                <div
+                  className="relative overflow-hidden rounded-2xl cursor-pointer shadow-lg transform transition-transform duration-300 hover:scale-105"
+                  style={{ aspectRatio: "3/4.5" }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={() => handleMouseUp(reel.video_url)}
+                >
+                  <div className="w-full h-full rounded-2xl overflow-hidden">
+                    <Image
+                      src={reel.thumbnail_url}
+                      fallback={<Shimmer width={400} height={500} />}
+                      alt={reel.title}
+                      NativeImgProps={{
+                        className: "w-full h-full object-cover",
+                      }}
                     />
-                  ) : (
-                    <div className="relative cursor-pointer overflow-hidden">
-                      <div className="w-full h-[100px] sm:h-[400px]">
-                        <Image
-                          src={reel.thumbnail_url}
-                          fallback={<Shimmer width={100} height={400} />}
-                          alt={reel.title}
-                          NativeImgProps={{
-                            className: "w-[90%] h-full object-cover rounded-xl",
-                          }}
-                        />
-                      </div>
-                      <div
-                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50"
-                        onClick={() => handlePlayPauseVideo(index)}
-                      >
-                        <img
-                          src={PlayButton}
-                          className="w-[80px] sm:w-[150px]"
-                          alt="Play Button"
-                        />
-                      </div>
-                    </div>
-                  )} */}
-                  <div
-                    className="relative overflow-hidden rounded-xl cursor-pointer"
-                    style={{ aspectRatio: "3/4.5" }}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={() => handleMouseUp(reel.video_url)}
-                  >
-                    <div className="w-full h-full rounded-xl overflow-hidden">
-                      <Image
-                        src={reel.thumbnail_url}
-                        fallback={<Shimmer width={300} height={400} />}
-                        alt={reel.name}
-                        NativeImgProps={{
-                          className: "w-full h-full object-cover",
-                        }}
-                      />
-                    </div>
-
-                    {/* Play button positioned at the center */}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-center">
-                      <img
-                        src="/assets/images/playButton.png"
-                        alt="Play"
-                        className="w-16 h-16 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
-                      />
-
-                      {/* <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                                  <path d="M8 5v14l11-7z" />
-                                                </svg> */}
-                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-center">
+                    <img
+                      src={PlayButton}
+                      alt="Play"
+                      className="w-20 h-20 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24"
+                    />
                   </div>
                 </div>
-
                 <div className="p-4 sm:p-6 text-center">
-                  <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
+                  <h3 className="text-xl md:text-2xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
                     {reel.title}
                   </h3>
-                  <div className="text-gray-400 text-sm sm:text-base">
-                    {/* <span>{reel.artist_name}</span> */}
-                    {/* <span className="mx-2">—</span>
-                    <span>{reel.duration_in_minutes || "--"} min</span>
-                    <span className="mx-2">—</span>
-                    <span>{reel.total_views}+ Views</span> */}
-                  </div>
                 </div>
               </div>
             ))}
@@ -413,37 +263,28 @@ function ReelsSlider({  searchText ,title }) {
 
         {isModalOpen && (
           <div
-            className=" fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50  "
+            className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
             onClick={closeModal}
           >
             <div
-              className="relative bg-black rounded-lg shadow-lg  max-w-2xl "
+              className="relative bg-black rounded-lg shadow-2xl max-w-4xl w-full mx-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                className="absolute top-0 right-0  text-white w-12 h-12 rounded-full flex items-center justify-center text-3xl z-50 font-bold shadow-lg"
+                className="absolute top-4 right-4 text-white w-12 h-12 rounded-full bg-gray-800 bg-opacity-50 hover:bg-opacity-75 flex items-center justify-center text-4xl z-50 font-bold transition-colors duration-200"
                 onClick={closeModal}
               >
                 &times;
               </button>
-
-              <div className="relative h-auto w-auto">
+              <div className="relative w-full h-full">
                 <video
                   id="video-player"
                   src={selectedVideo}
-                  className="rounded-lg"
+                  className="rounded-lg w-full h-full"
                   autoPlay
                   playsInline
                   controls
                 />
-                {!isPlaying && (
-                  <button
-                    onClick={togglePlayPause}
-                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white text-6xl rounded-full w-20 h-20 mx-auto my-auto"
-                  >
-                    ▶
-                  </button>
-                )}
               </div>
             </div>
           </div>

@@ -1,143 +1,84 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import axiosApi from "../../../../../conf/axios";  // Your API config
-import PlayButton from "../../../../../../public/assets/images/play_button.png"; // Play Button Image
+import axiosApi from "../../../../../conf/axios";
+import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
-function SuccessSlider({ searchText ,title  }) {
+function SuccessSlider({ searchText, title }) {
   const [isDragging, setIsDragging] = useState(false);
-  // const [successData, setSuccessData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [playingIndex, setPlayingIndex] = useState(null);
   const videoRefs = useRef([]);
-const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
   const [isPlaying, setIsPlaying] = useState(true);
   const [allSuccess, setAllSuccess] = useState([]);
 
-  const successData = [
-    {
-      id: 1,
-      title: "The Rise of Indie Music",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
-      artist_name: "IndieVibes",
-      duration_in_minutes: 12,
-      views: 15400,
-      credit_name: "Hosted by Riya Mehta",
-      keywords: ["music", "indie", "trending"]
-    },
-    {
-      id: 2,
-      title: "Behind The Mic: Ep 5",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
-      artist_name: "SoundCast",
-      duration_in_minutes: 9,
-      views: 8400,
-      credit_name: "Produced by AudioVerse",
-      keywords: ["audio", "interview", "studio"]
-    },
-    {
-      id: 3,
-      title: "Music and Mindfulness",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
-      artist_name: "ZenBeats",
-      duration_in_minutes: 15,
-      views: 22100,
-      credit_name: "Curated by Priya Sharma",
-      keywords: ["wellness", "meditation", "music"]
-    },
-    {
-      id: 4,
-      title: "The Rise of Indie Music",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/maxresdefault.jpg",
-      artist_name: "IndieVibes",
-      duration_in_minutes: 12,
-      views: 15400,
-      credit_name: "Hosted by Riya Mehta",
-      keywords: ["music", "indie", "trending"]
-    },
-    {
-      id: 5,
-      title: "Behind The Mic: Ep 5",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/YbJOTdZBX1g/maxresdefault.jpg",
-      artist_name: "SoundCast",
-      duration_in_minutes: 9,
-      views: 8400,
-      credit_name: "Produced by AudioVerse",
-      keywords: ["audio", "interview", "studio"]
-    },
-    {
-      id: 6,
-      title: "Music and Mindfulness",
-      video_url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-      thumbnail_url: "https://i.ytimg.com/vi/hTWKbfoikeg/maxresdefault.jpg",
-      artist_name: "ZenBeats",
-      duration_in_minutes: 15,
-      views: 22100,
-      credit_name: "Curated by Priya Sharma",
-      keywords: ["wellness", "meditation", "music"]
+  useEffect(() => {
+    const fetchSuccessStories = async () => {
+      try {
+        const response = await axiosApi.get("/allStories");
+        const sortedData = (response.data.data || []).sort(
+          (a, b) => b.views - a.views,
+        );
+        setAllSuccess(sortedData);
+      } catch (err) {
+        console.error("Error fetching success stories:", err);
+        toast.error("Failed to load success stories.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSuccessStories();
+  }, []);
+
+  const filteredSuccess = useMemo(() => {
+    if (searchText) {
+      return allSuccess.filter((story) =>
+        story.title.toLowerCase().includes(searchText.toLowerCase()),
+      );
     }
-  ];
+    return allSuccess;
+  }, [searchText, allSuccess]);
 
-
-  // useEffect(() => {
-  //   const fetchContents = async () => {
-  //     try {
-  //       const response = await axiosApi.get("/success-stories");
-  //       setAllSuccess(response.data.data); // Save original data
-  //       setSuccessData(response.data.data); // Initially show all
-  //     } catch (error) {
-  //       console.log(error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   fetchContents();
-  // }, []);
-  
-  // useEffect(() => {
-  //   if (searchText) {
-  //     const filteredSuccess = allSuccess.filter((reel) =>
-  //       reel.title.toLowerCase().includes(searchText.toLowerCase())
-  //     );
-  //     setSuccessData(filteredSuccess);
-  //   } else {
-  //     setSuccessData(allSuccess); // Restore original list
-  //   }
-  // }, [searchText, allSuccess]);
-  
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
     setIsPlaying(true);
     setTimeout(() => {
-      document.getElementById("video-player").play();
+      const video = document.getElementById("video-player");
+      if (video) {
+        video.play().catch((error) => {
+          console.error("Autoplay failed:", error);
+        });
+      }
     }, 300);
   };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVideo("");
     setIsPlaying(false);
   };
+
   const togglePlayPause = (e) => {
     e.stopPropagation();
     const video = document.getElementById("video-player");
-    if (video.paused) {
-      video.play();
-      setIsPlaying(true);
-    } else {
-      video.pause();
-      setIsPlaying(false);
+    if (video) {
+      if (video.paused) {
+        video.play();
+        setIsPlaying(true);
+      } else {
+        video.pause();
+        setIsPlaying(false);
+      }
     }
   };
+
   const handleMouseDown = () => {
     setIsDragging(false);
   };
@@ -152,20 +93,21 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     }
   };
 
-  
   const handlePlayPauseVideo = (index) => {
-    if (isDragging) return; // Prevent playing while dragging
+    if (isDragging) return;
 
-    // Pause the currently playing video if it's different
-    if (playingIndex !== null && playingIndex !== index && videoRefs.current[playingIndex]) {
+    if (
+      playingIndex !== null &&
+      playingIndex !== index &&
+      videoRefs.current[playingIndex]
+    ) {
       videoRefs.current[playingIndex].pause();
-      videoRefs.current[playingIndex].currentTime = 0; // Reset the video to the beginning
+      videoRefs.current[playingIndex].currentTime = 0;
     }
 
-    // Toggle play/pause for the clicked video
     if (playingIndex === index) {
       videoRefs.current[index].pause();
-      videoRefs.current[index].currentTime = 0; // Reset the video to the beginning
+      videoRefs.current[index].currentTime = 0;
       setPlayingIndex(null);
     } else {
       setPlayingIndex(index);
@@ -184,36 +126,46 @@ const [isModalOpen, setIsModalOpen] = useState(false);
     setPlayingIndex(null);
   };
 
-  // Set slick slider settings based on success data count
   const settings = {
-    infinite: true,
+    infinite: filteredSuccess.length >= 3,
     speed: 500,
-    slidesToShow: successData.length >= 3 ? 3 : successData.length, // Show up to 3 slides
+    slidesToShow: filteredSuccess.length >= 3 ? 3 : filteredSuccess.length,
     slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 1000,
+    autoplay: !isModalOpen,
+    autoplaySpeed: 3000,
     dots: false,
     arrows: false,
-    centerMode: successData.length >= 3, // Enable centering for 3+ items
-    centerPadding: successData.length >= 3 ? "15%" : "0", // Adjust center padding for 3+ items
+    centerMode: filteredSuccess.length >= 3,
+    centerPadding: filteredSuccess.length >= 3 ? "15%" : "0",
     beforeChange: () => setIsDragging(true),
     afterChange: () => {
       setIsDragging(false);
-      stopAllVideos(); // Stop video when slider moves
+      stopAllVideos();
     },
     responsive: [
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: successData.length >= 3 ? 3 : successData.length,
-          centerPadding: successData.length >= 3 ? "12%" : "0",
+          slidesToShow:
+            filteredSuccess.length >= 3 ? 3 : filteredSuccess.length,
+          centerPadding: filteredSuccess.length >= 3 ? "12%" : "0",
         },
       },
       {
         breakpoint: 768,
         settings: {
-          slidesToShow: successData.length >= 3 ? 2 : successData.length,
-          centerPadding: successData.length >= 3 ? "6%" : "0",
+          slidesToShow:
+            filteredSuccess.length >= 2 ? 2 : filteredSuccess.length,
+          centerPadding: filteredSuccess.length >= 2 ? "6%" : "0",
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: 1,
+          centerPadding: "20%",
+          infinite: filteredSuccess.length >= 2,
+          centerMode: filteredSuccess.length >= 2,
         },
       },
     ],
@@ -221,6 +173,24 @@ const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  // Handle no matching content
+  if (filteredSuccess.length === 0) {
+    return (
+      <div className="bg-black text-white py-7 text-center">
+        <div className="container mx-auto px-4 lg:px-16">
+          <h2 className="text-xl lg:text-4xl font-bold uppercase mt-2">
+            No Success Stories Found
+          </h2>
+          {searchText && (
+            <p className="text-gray-400 mt-2">
+              No content found matching "{searchText}".
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -232,156 +202,116 @@ const [isModalOpen, setIsModalOpen] = useState(false);
           </h2>
         ) : (
           <h1 className="text-xl lg:text-4xl font-bold text-center mb-8 leading-tight uppercase mt-2">
-            Artist Songs
+            Success Stroies
           </h1>
         )}
       </div>
 
       <div className="success-slider w-full px-4 lg:px-16">
-        {/* If there are less than 3 items, show them without the slider */}
-        {successData.length < 3 ? (
-          <div className="flex overflow-x-auto">
-            {successData.map((success, index) => (
-              <div key={index} className="px-2 lg:px-4 w-full">
-                <div className="rounded-xl overflow-hidden relative">
-                  {playingIndex === index ? (
-                   <video
-                   ref={(el) => (videoRefs.current[index] = el)}
-                   autoPlay
-                   src={success.video_url}
-                   controls
-                   
-                   className="w-full sm:w-[90%] h-auto sm:h-[300px] lg:h-[400px] object-cover rounded-xl"
-                   onEnded={() => setPlayingIndex(null)}
-                   onClick={() => handlePlayPauseVideo(index)}
-                 />
-                  ) : (
-                    <div className="relative cursor-pointer overflow-hidden">
-                      <div className="w-full h-[100px] sm:h-[400px]">
-                        <Image
-                          src={success.thumbnail_url}
-                          fallback={<Shimmer width={100} height={400} />}
-                          alt={success.title}
-                          NativeImgProps={{
-                            className: "w-[90%] h-full object-cover rounded-xl",
-                          }}
-                        />
-                      </div>
-                      <div
-                        className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50"
-                        onClick={() => handlePlayPauseVideo(index)}
-                      >
-                        <img
-                          src={PlayButton}
-                          className="w-[80px] sm:w-[150px]"
-                          alt="Play Button"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4 sm:p-6 text-center">
-                    <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
-                      {success.title}
-                    </h3>
-                  <div className="text-gray-400 text-sm sm:text-base">
-                    {/* <span>{success.artist_name}</span> */}
-                    {/* <span className="mx-2">—</span>
-                    <span>{success.duration_in_minutes || "--"} min</span>
-                    <span className="mx-2">—</span>
-                    <span>{success.total_views}+ Views</span> */}
+        {filteredSuccess.length <= 2 ? (
+          <div className="flex justify-center flex-wrap gap-4">
+            {filteredSuccess.map((success, index) => (
+              <div
+                key={index}
+                className="px-2 lg:px-4 w-full sm:w-1/2 md:w-1/3"
+              >
+                <div
+                  className="relative overflow-hidden rounded-xl cursor-pointer"
+                  style={{ aspectRatio: "3/4.5" }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={() => handleMouseUp(success.video_url)}
+                >
+                  <div className="w-full h-full rounded-xl overflow-hidden">
+                    <Image
+                      src={success.thumbnail_url}
+                      fallback={<Shimmer width={300} height={400} />}
+                      alt={success.title}
+                      NativeImgProps={{
+                        className: "w-full h-full object-cover",
+                      }}
+                    />
                   </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-center">
+                    <img
+                      src={PlayButton}
+                      alt="Play"
+                      className="w-16 h-16 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                    />
+                  </div>
+                </div>
+                <div className="p-4 sm:p-6 text-center">
+                  <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
+                    {success.title}
+                  </h3>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <Slider {...settings}>
-            {successData.map((success, index) => (
+            {filteredSuccess.map((success, index) => (
               <div key={index} className="px-2 lg:px-4 w-full">
-                  <div
-                                    className="relative overflow-hidden rounded-xl cursor-pointer"
-                                    style={{ aspectRatio: "3/4.5" }}
-                                    onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={() => handleMouseUp(success.video_url)}
-                                  >
-                                    <div className="w-full h-full rounded-xl overflow-hidden">
-                                      <Image
-                                        src={success.thumbnail_url}
-                                        fallback={<Shimmer width={300} height={400} />}
-                                        alt={success.name}
-                                        NativeImgProps={{
-                                          className: "w-full h-full object-cover",
-                                        }}
-                                      />
-                                    </div>
-                
-                                    {/* Play button positioned at the center */}
-                
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-center">
-                                      <img
-                                        src="/assets/images/playButton.png"
-                                        alt="Play"
-                                        className="w-16 h-16 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
-                                      />
-                
-                                      {/* <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                                                  <path d="M8 5v14l11-7z" />
-                                                                </svg> */}
-                                    </div>
-                                  </div>
+                <div
+                  className="relative overflow-hidden rounded-xl cursor-pointer"
+                  style={{ aspectRatio: "3/4.5" }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={() => handleMouseUp(success.video_url)}
+                >
+                  <div className="w-full h-full rounded-xl overflow-hidden">
+                    <Image
+                      src={success.thumbnail_url}
+                      fallback={<Shimmer width={300} height={400} />}
+                      alt={success.title}
+                      NativeImgProps={{
+                        className: "w-full h-full object-cover",
+                      }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-center">
+                    <img
+                      src={PlayButton}
+                      alt="Play"
+                      className="w-16 h-16 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20"
+                    />
+                  </div>
+                </div>
 
                 <div className="p-4 sm:p-6 text-center">
-                    <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
-                      {success.title}
-                    </h3>
-                  <div className="text-gray-400 text-sm sm:text-base">
-                    {/* <span>{success.artist_name}</span> */}
-                    {/* <span className="mx-2">—</span>
-                    <span>{success.duration_in_minutes || "--"} min</span>
-                    <span className="mx-2">—</span>
-                    <span>{success.total_views}+ Views</span> */}
-                  </div>
+                  <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
+                    {success.title}
+                  </h3>
                 </div>
               </div>
             ))}
           </Slider>
         )}
-         {isModalOpen && (
+
+        {isModalOpen && (
           <div
-            className=" fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50  "
+            className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
             onClick={closeModal}
           >
             <div
-              className="relative bg-black rounded-lg shadow-lg  max-w-2xl "
+              className="relative bg-black rounded-lg shadow-lg max-w-2xl w-full mx-4"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                className="absolute top-0 right-0  text-white w-12 h-12 rounded-full flex items-center justify-center text-3xl z-50 font-bold shadow-lg"
+                className="absolute top-2 right-2 text-white w-10 h-10 rounded-full flex items-center justify-center text-3xl z-50 font-bold"
                 onClick={closeModal}
               >
                 &times;
               </button>
-
               <div className="relative h-auto w-auto">
                 <video
                   id="video-player"
                   src={selectedVideo}
-                  className="rounded-lg"
+                  className="rounded-lg w-full"
                   autoPlay
                   playsInline
                   controls
                 />
-                {!isPlaying && (
-                  <button
-                    onClick={togglePlayPause}
-                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white text-6xl rounded-full w-20 h-20 mx-auto my-auto"
-                  >
-                    ▶
-                  </button>
-                )}
               </div>
             </div>
           </div>
