@@ -23,6 +23,7 @@ import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
 import ArtistNew from "./view/dashboard/artistPortal/artistNew";
 import ArtistAll from "./view/dashboard/artistPortal/artistAll";
 import ContentNew from "./view/dashboard/artistPortal/contentNew";
+import TvIndex from "./view/dashboard/artistPortal/tvPublishing/index";
 // import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import NewSignupDetails from "./view/dashboard/New_signUp";
 import Tvpublishing from "./view/dashboard/artistPortal/tvPublishing/tv";
@@ -87,6 +88,7 @@ function App() {
           <Route path="/AllEvents" element={<Events />} />
           <Route path="/event_participants" element={<EventParticipation />} />
           <Route path="/content/tv" element={<Tvpublishing />} />
+          <Route path="/TvIndex/:ophid/:song_id" element={<TvIndex />} />
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
 

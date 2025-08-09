@@ -16,7 +16,29 @@ const getTv = async (song_id) => {
   return rows;
 };
 
+const updateTvLock = async (song_id, lock) => {
+  const [result] = await db.execute(
+    "UPDATE tvPublishing SET `lock` = ? WHERE song_id = ?",
+    [lock, song_id]
+  );
+  return result;
+};
+
+const updateTvStatus = async (song_id, status, reason) => {
+  const [result] = await db.execute(
+    `UPDATE tvPublishing 
+     SET status = ?, reason = ? 
+     WHERE song_id = ?`,
+    [status, reason, song_id]
+  );
+  return result;
+};
+
+
+
 module.exports = {
   getAllTv,
   getTv,
+  updateTvLock,
+  updateTvStatus,
 };

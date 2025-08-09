@@ -7,42 +7,42 @@ export default function TVPublishing() {
   const [loading, setLoading] = useState(false);
   const [contents, setContents] = useState([]);
   const [selectedContentId, setSelectedContentId] = useState(null);
+  const { headers, ophid } = useArtist();
   const [selectedContent, setSelectedContent] = useState(null);
   const [files, setFiles] = useState({ audio: null, video: null });
   const [agreement, setAgreement] = useState(false);
   const audioInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const [uploadProgress, setUploadProgress] = useState({ audio: 0, video: 0 });
-  const { headers } = useArtist();
-  
-  const status = {
-    0: "Locked",
-    1: "Pending Submission",
-    2: "Submitted",
-    3: "Published",
-    4: "Rejected",
-  };
+  const isSubmitted = selectedContent?.status == "Submitted";
+  // const status = {
+  //   1: "Pending",
+  //   2: "Approved",
+  //   3: "Published",
+  //   4: "Rejected",
+  // };
 
-  // useEffect(() => {
-  //   const fetchContent = async () => {
-  //     try {
-  //       const response = await axiosApi.get("/tv-publishing/content", {
-  //         headers,
-  //       });
 
-  //       setContents(response.data.data);
-  //       if (response.data.data.length > 0) {
-  //         setSelectedContentId(response.data.data[0].id);
-  //         setSelectedContent(response.data.data[0]);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching content:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchContent();
-  // }, []);
+  useEffect(() => {
+    const fetchContent = async () => {
+      if (!ophid) return;
+      try {
+        const response = await axiosApi.get(`/TvUser?OPH_ID=${ophid}`);
+
+        setContents(response.data.data);
+        if (response.data.data.length > 0) {
+          setSelectedContentId(response.data.data[0].id);
+          setSelectedContent(response.data.data[0]);
+          console.log(response);
+        }
+      } catch (error) {
+        console.error("Error fetching content:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, [ophid]);
 
   const handleFileChange = (type) => (event) => {
     const file = event.target.files[0];
@@ -78,70 +78,118 @@ export default function TVPublishing() {
     return file ? URL.createObjectURL(file) : defaultUrl;
   };
 
+  // const handleSubmit = async () => {
+  //   if (!agreement) {
+  //     alert("Please agree to the terms and conditions");
+  //     return;
+  //   }
+
+  //   if (
+  //     (!files.audio && !selectedContent.audio_file_url) ||
+  //     (!files.video && !selectedContent.video_file_url)
+  //   ) {
+  //     alert("Please provide both audio and video files");
+  //     return;
+  //   }
+
+  //   const formData = new FormData();
+  //   if (files.audio) formData.append("audio", files.audio);
+  //   if (files.video) formData.append("video", files.video);
+
+  //   try {
+  //     setLoading(true);
+  //     const response = await axiosApi.put(
+  //       `/tv-publishing/content/${selectedContent.id}`,
+  //       formData,
+  //       {
+  //         headers: {
+  //           "Content-Type": "multipart/form-data",
+  //           ...headers,
+  //         },
+  //         onUploadProgress: (e) => {
+  //           const progress = Math.round((e.loaded * 100) / e.total);
+  //           const fileType = e.target?.name;
+  //           setUploadProgress((prev) => ({
+  //             ...prev,
+  //             [fileType]: progress,
+  //           }));
+  //         },
+  //       }
+  //     );
+
+  //     if (response.data.success) {
+  //       alert("Submitted successfully!");
+  //       setFiles({ audio: null, video: null });
+  //       setAgreement(false);
+  //     } else {
+  //       throw new Error(response.data.message || "Submission failed");
+  //     }
+  //   } catch (error) {
+  //     console.error("Submit error:", error);
+  //     alert(
+  //       error.response?.data?.message ||
+  //         "Failed to submit TV publishing request"
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //     setUploadProgress({ audio: 0, video: 0 });
+  //   }
+  // };
+
   const handleSubmit = async () => {
     if (!agreement) {
       alert("Please agree to the terms and conditions");
       return;
     }
 
-    if (
-      (!files.audio && !selectedContent.audio_file_url) ||
-      (!files.video && !selectedContent.video_file_url)
-    ) {
-      alert("Please provide both audio and video files");
+    if (!files.audio || !files.video) {
+      alert("Please upload both audio and video files");
       return;
     }
 
     const formData = new FormData();
-    if (files.audio) formData.append("audio", files.audio);
-    if (files.video) formData.append("video", files.video);
+    formData.append("song_id", selectedContent.song_id); // or id depending on your data
+    formData.append("audio", files.audio);
+    formData.append("video", files.video);
 
     try {
       setLoading(true);
-      const response = await axiosApi.put(
-        `/tv-publishing/content/${selectedContent.id}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            ...headers,
-          },
-          onUploadProgress: (e) => {
-            const progress = Math.round((e.loaded * 100) / e.total);
-            const fileType = e.target?.name;
-            setUploadProgress((prev) => ({
-              ...prev,
-              [fileType]: progress,
-            }));
-          },
-        }
-      );
+
+      const response = await axiosApi.post("/content", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (e) => {
+          const progress = Math.round((e.loaded * 100) / e.total);
+          // you can show overall progress or split by files if needed
+          setUploadProgress(progress);
+        },
+      });
 
       if (response.data.success) {
-        alert("Submitted successfully!");
+        alert("Content uploaded successfully!");
         setFiles({ audio: null, video: null });
         setAgreement(false);
+        // Optionally refresh or update state to reflect changes
       } else {
-        throw new Error(response.data.message || "Submission failed");
+        alert("Upload failed: " + response.data.message);
       }
     } catch (error) {
-      console.error("Submit error:", error);
-      alert(
-        error.response?.data?.message ||
-          "Failed to submit TV publishing request"
-      );
+      console.error("Upload error:", error);
+      alert("Error uploading content");
     } finally {
       setLoading(false);
-      setUploadProgress({ audio: 0, video: 0 });
+      setUploadProgress(0);
     }
   };
 
+
   const getStatusColor = (status) => {
     const colorMap = {
-      null: "text-yellow-400 border-yellow-400/30",
-      0: "text-cyan-400 border-cyan-400/30",
-      2: "text-red-400 border-red-400/30",
-      1: "text-green-400 border-green-400/30",
+      "Open": "border-yellow-400 text-yellow-400",
+      "Submitted": "border-blue-400 text-blue-400",
+      "Approved": "border-green-400 text-green-400",
+      "Rejected": "border-red-400 text-red-400",
     };
     return colorMap[status] || "text-gray-400 border-gray-400/30";
   };
@@ -166,12 +214,11 @@ export default function TVPublishing() {
             TV PUBLISHING
           </h1>
 
-          {contents.length === 1 ? (
+          {contents.length === 0 ? (
             <p className="text-gray-300 text-xl">
               No content is unlocked for TV publishing
             </p>
-          ) : 
-          (
+          ) : (
             <div>
               <div className="space-y-2 bg-[#191D27]/35 p-4">
                 <label className="block text-gray-400">Song Name</label>
@@ -179,7 +226,10 @@ export default function TVPublishing() {
                   value={selectedContentId || ""}
                   onChange={(e) => {
                     const contentId = e.target.value;
-                    const content = contents.find((c) => c.id == contentId);
+                    const content = contents.find(
+                      (c) => c.song_id == contentId
+                    );
+                    console.log("dd", content);
                     setSelectedContentId(contentId);
                     setSelectedContent(content);
                     setFiles({ audio: null, video: null });
@@ -187,29 +237,31 @@ export default function TVPublishing() {
                   className="bg-[#191D27]/35 text-white p-2 rounded"
                 >
                   {contents.map((content) => (
-                    <option key={content.id} value={content.id}>
-                      {content.name}
+                    <option key={content.song_id} value={content.song_id}>
+                      {content.song_name}
                     </option>
                   ))}
                 </select>
                 <span
                   className={`px-4 mx-10 py-1 rounded-full text-sm border ${getStatusColor(
-                    selectedContent?.tv_publishing_status
+                    selectedContent?.status
                   )}`}
                 >
-                  {status[selectedContent?.tv_publishing_status]}
+                  {selectedContent?.status}
                 </span>
               </div>
 
-              {[1, 4].includes(selectedContent?.tv_publishing_status) && (
+              {["Open", "Submitted", "Rejected"].includes(
+                selectedContent?.status
+              ) && (
                 <div
                   className={`relative space-y-6 mt-6 p-4 border rounded-lg ${
-                    selectedContent?.tv_publishing_status === 4
+                    selectedContent?.status === "Rejected"
                       ? "pointer-events-none opacity-50"
                       : ""
                   }`}
                 >
-                  {selectedContent?.tv_publishing_status === 4 && (
+                  {selectedContent?.status === "Rejected" && (
                     <div className="absolute inset-0 bg-black/70 z-10 flex items-center justify-center rounded-lg">
                       <p className="text-red-400 text-xl font-bold">
                         This content was rejected. Please contact support.
@@ -272,6 +324,7 @@ export default function TVPublishing() {
                           accept="video/*"
                           ref={videoInputRef}
                           onChange={handleFileChange("video")}
+                          disabled={isSubmitted}
                         />
                       </div>
                     </div>
@@ -326,6 +379,7 @@ export default function TVPublishing() {
                           accept="audio/*"
                           ref={audioInputRef}
                           onChange={handleFileChange("audio")}
+                          disabled={isSubmitted}
                         />
                       </div>
                     </div>
@@ -359,12 +413,12 @@ export default function TVPublishing() {
                 </div>
               )}
 
-              {selectedContent?.tv_publishing_status === 2 && (
+              {selectedContent?.status == "Open" && (
                 <p className="text-gray-300 mt-6">
-                  Your TV publishing request is under review.
+                  Your TV publishing request is Open.
                 </p>
               )}
-              {selectedContent?.tv_publishing_status === 3 && (
+              {selectedContent?.status == "Submitted" && (
                 <p className="text-gray-300 mt-6">
                   Your content has been published on TV!
                 </p>
