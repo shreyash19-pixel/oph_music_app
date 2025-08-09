@@ -89,7 +89,9 @@ const ContentAnalysis = () => {
   const handleSave = async () => {
     try {
       const payload = {
-        song_id: songId,
+        song_id: originalMetrics.song_id,
+        OPH_ID: originalMetrics.OPH_ID,
+        song_name: originalMetrics.song_name,
         youtube_views: parseInt(metrics.youtube_views || 0),
         youtube_engagement: parseInt(metrics.youtube_engagement || 0),
         youtube_avg_view_duration:

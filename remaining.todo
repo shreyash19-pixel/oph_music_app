@@ -23,7 +23,7 @@
 ☐ NN Navpages => Event => Compelete
 ☐ SP Navpages => Artist => Fix mapping for specialist artists , retest and fix for remianing bugs.
 ☐ SP Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
-☐ NN Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike)
+✔ NN Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike) => Done => Go to Testing @done(25-08-09 12:10)
 ☐ JS Navpages => Contact => Compelete
 ☐ NN SignIn/SignUp/Login => Fix routes in Sign-in/Sign-up, route to dashboard after full accepted.
 ☐ JS Dashboard => Home => Remove Event card and only keep song card.
@@ -33,7 +33,7 @@
 ☐ JS Dashboard => Tv Publishing => Compelete
 ☐ NN Dashboard => artist spotlight => Fix icons.
 ☐ JS Dashboard => Analytics => Compelete
-✔ Dashboard => Request Tickets => Compeleted aka Done. => Go to Testing @done(25-08-07 23:22)
+✔ Dashboard => Request Tickets =>  Done. => Go to Testing @done(25-08-07 23:22)
 ✔ Dashboard => Events => Compeleted aka Done. => Go to Testing. @done(25-08-07 23:22)
 ☐ NN Dashboard => Income => Make api to get bank details and show it , as get and show Available Amount\
 ☐ JS Dashboard => KPI => Compelete
@@ -45,14 +45,15 @@
 ☐ ALL Notification => Add for all status updates.
 ☐ NN Admin => Artist Portal => New => Change query to fetch only when all forms are Completed.
 ☐ ALL Email Hits
+☐ Fix KPI and Leaderboard input values as tables have changed
 ### Admin
-☐ New Signup => Done => Go to testing.
+✔ New Signup => Done => Go to testing. @done(25-08-09 12:10)
 ☐ NN Artist Portal =>Artist => New => Update layout to show based on filled/submitted count.
 ✔ Artist Portal =>Artist => All => Done. => Go to Testing. @done(25-08-07 23:32)
 ☐ SP Artist Portal =>Content => New => Test and fix, Update based on new api.
 ☐ NN Artist Portal =>Content => Manage => Test and fix, Update based on new api.
-✔ Artist Portal =>Analytics => Artist KPI => Compeleted => Go to Testing. @done(25-08-07 23:32)
-✔ Artist Portal =>Analytics => Content analysis => Compeleted => Go to Testing. @done(25-08-07 23:32)
+✔ Artist Portal =>Analytics => Artist KPI => Done => Go to Testing. @done(25-08-07 23:32)
+✔ Artist Portal =>Analytics => Content analysis => Done => Go to Testing. @done(25-08-09 12:16)
 ☐ SP Artist Portal =>Analytics => Content Release => Complete
 ☐ JS Artist Portal =>Payment => All => Compelete.
 ☐ JS Artist Portal =>Payment => Withdraw => Fix table layout
@@ -62,10 +63,17 @@
 ☐ JS Artist Portal =>Tickets => Give table view and Redirect to Individual Page .Fix layout inside the redirect
 ☐ ALL Artist Portal =>Setting => Compelete.
 ☐ JS Website Config => Contact => Compelete
-☐ NN - Website Config => Resource => Compelete
+✔ NN - Website Config => Resource => Compelete => Done => Go to Testing. @done(25-08-09 12:09)
 ☐ ALL Website Config => Homepage => Compelete
 ☐ JS Website Config => Collab => Compelete
 ☐ JS Website Config => Leaderboard => Compelete
 ✔ Website Config => Event => Event Creation => Done => Go to Testing @done(25-08-07 23:32)
 ☐ JS Website Config => Event => Events => Add SideBar and fix table layout
 ☐ JS Website Config => Event => Event Participation => Add SideBar and fix table layout, also add working filter based on specific Event(aka eventName or event_id on the backend side)
+☐ Check all routes for specific roles and whether its is accessable or not (Aka Protected routes)
+☐ NN,JS Make Admin pages for sales and accounting team.
+
+
+Updates 
+
+Made modification to social_metrics table so tv publishing table will have to be updated too.

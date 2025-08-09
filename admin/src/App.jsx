@@ -48,6 +48,14 @@ import EventParticipation from "./view/dashboard/websiteConfig/Events/eventParti
 import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
 import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
 import CreateResource from "./view/dashboard/websiteConfig/resource";
+import CreateReels from "./view/dashboard/websiteConfig/resource/CreateReels";
+import CreateStory from "./view/dashboard/websiteConfig/resource/CreateStory";
+import ViewPodcasts from "./view/dashboard/websiteConfig/resource/ViewPodcasts";
+import UpdatePodcast from "./view/dashboard/websiteConfig/resource/UpdatePodcast";
+import ViewReels from "./view/dashboard/websiteConfig/resource/ViewReels";
+import ViewStories from "./view/dashboard/websiteConfig/resource/ViewStories";
+import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
+import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
 
 function App() {
   return (
@@ -125,6 +133,143 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/Reels"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <CreateReels />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/Stories"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <CreateStory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/allResource"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <ViewPodcasts />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/allReel"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <ViewReels />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/allStories"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <ViewStories />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/update_podcast/:podcastId"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <UpdatePodcast />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/update_reel/:reelId"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <UpdateReel />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/update_story/:storyId"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <UpdateStory />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/HomePage"
             element={
