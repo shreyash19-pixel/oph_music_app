@@ -1,9 +1,364 @@
-import React from 'react'
+import React, { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import axiosApi from "../../../../conf/axios";
+import { Lock, Unlock } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
-const tvPublishing = () => {
+const TvIndex = () => {
+  const { song_id } = useParams();
+  const [tvData, setTvData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Page-wide unlock state (backend lock)
+  const [unlocked, setUnlocked] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+
+  // Lock for audio/video editing (local)
+  const [locked, setLocked] = useState(true);
+
+  // Reject mode toggle for showing reason input
+  const [isRejecting, setIsRejecting] = useState(false);
+
+  // Local editable states
+  const [audioPreview, setAudioPreview] = useState(null);
+  const [videoPreview, setVideoPreview] = useState(null);
+  const [reason, setReason] = useState("");
+
+  // Store original URLs for revert or upload
+  const [originalAudioURL, setOriginalAudioURL] = useState(null);
+  const [originalVideoURL, setOriginalVideoURL] = useState(null);
+
+  // Refs for hidden file inputs
+  const audioInputRef = useRef();
+  const videoInputRef = useRef();
+
+  // Selected status: "Submitted" (default), "Approved", or "Rejected"
+  const [selectedStatus, setSelectedStatus] = useState("Submitted");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const res = await axiosApi.get(`/getTv?song_id=${song_id}`);
+        if (
+          res.data &&
+          Array.isArray(res.data.data) &&
+          res.data.data.length > 0
+        ) {
+          const data = res.data.data[0];
+          setTvData(data);
+          setReason(data.reason || "");
+          setAudioPreview(data.audio || null);
+          setVideoPreview(data.video || null);
+          setOriginalAudioURL(data.audio || null);
+          setOriginalVideoURL(data.video || null);
+
+          // Set page-wide unlock state from backend lock
+          setUnlocked(data.lock === 0);
+
+          // If locked (lock = 1), lock audio/video editing by default
+          setLocked(data.lock === 1);
+
+          // Set status from data if available, else Submitted
+          setSelectedStatus(data.status || "Submitted");
+        } else {
+          setTvData(null);
+        }
+      } catch (err) {
+        console.error("Error fetching TV data:", err);
+        setTvData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (song_id) {
+      fetchData();
+    }
+  }, [song_id]);
+
+  // === PAGE-LEVEL UNLOCK LOGIC ===
+  const handleUnlock = async () => {
+    try {
+      setUnlocking(true);
+      await axiosApi.post("/updateLockStatus", {
+        song_id,
+        lock: 0,
+      });
+      setUnlocked(true); // Unlock page
+      // Also unlock editing
+      setLocked(false);
+      // Update tvData.lock to 0 locally
+      setTvData((prev) => ({ ...prev, lock: 0 }));
+    } catch (err) {
+      console.error("Error unlocking:", err);
+      alert("Failed to unlock. Try again.");
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  // === AUDIO/VIDEO EDIT LOCK TOGGLE (local, independent of page lock) ===
+  const toggleLock = () => {
+    setLocked((prev) => !prev);
+    setIsRejecting(false);
+  };
+
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      const previewURL = URL.createObjectURL(file);
+      if (field === "audio") {
+        setAudioPreview(previewURL);
+      } else if (field === "video") {
+        setVideoPreview(previewURL);
+      }
+    }
+  };
+
+  const handleApprove = () => {
+    setSelectedStatus("Approved");
+    setIsRejecting(false);
+  };
+
+  const handleReject = () => {
+    setSelectedStatus("Rejected");
+    setIsRejecting(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      toast.loading("Saving changes...");
+
+      const formData = new FormData();
+      formData.append("song_id", song_id);
+      formData.append("status", selectedStatus);
+
+      if (selectedStatus === "Rejected") {
+        if (!reason.trim()) {
+          toast.dismiss();
+          toast.error("Please provide a rejection reason");
+          return;
+        }
+        formData.append("reason", reason.trim());
+      } else {
+        formData.append("reason", "");
+      }
+
+      if (!locked) {
+        if (audioInputRef.current?.files[0]) {
+          formData.append("audio", audioInputRef.current.files[0]);
+        }
+        if (videoInputRef.current?.files[0]) {
+          formData.append("video", videoInputRef.current.files[0]);
+        }
+      }
+
+      const res = await axiosApi.post("/updateTvStatus", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data.success) {
+        toast.dismiss();
+        toast.success("Content saved successfully");
+        setLocked(true);
+        setIsRejecting(false);
+        setSelectedStatus(res.data.status || "Submitted");
+      } else {
+        toast.dismiss();
+        toast.error("Failed to save content");
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error(error);
+      toast.error("Server error while saving");
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (!tvData) return <div>No data found for Song ID: {song_id}</div>;
+
+  // If page locked (lock=1) and not unlocked yet, show overlay
+  if (tvData.lock === 1 && !unlocked) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          color: "white",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ fontSize: 24, marginBottom: 20 }}>This page is locked.</p>
+        <button
+          onClick={handleUnlock}
+          disabled={unlocking}
+          style={{
+            padding: "12px 24px",
+            fontSize: 18,
+            cursor: unlocking ? "not-allowed" : "pointer",
+            backgroundColor: "#007bff",
+            border: "none",
+            borderRadius: 6,
+            color: "white",
+          }}
+        >
+          {unlocking ? "Unlocking..." : "Unlock"}
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div>tvPublishing</div>
-  )
-} 
+    <div className="min-h-screen bg-gray-50 p-6 max-w-4xl mx-auto">
+      <Toaster />
+      <h2 className="text-3xl font-bold mb-8 text-[#0d3c44]">
+        TV Publishing Details
+      </h2>
 
-export default tvPublishing
+      {/* Song & OPH IDs */}
+      <div className="mb-6">
+        <p>
+          <strong>Song ID:</strong> {tvData.song_id}
+        </p>
+        <p>
+          <strong>OPH ID:</strong> {tvData.OPH_ID}
+        </p>
+      </div>
+
+      {/* Audio and Video Section */}
+      <div className="mb-8 space-y-6">
+        {/* Audio */}
+        <div>
+          <label className="block font-semibold mb-2">Audio</label>
+          <div className="flex items-center gap-4">
+            {audioPreview ? (
+              <audio controls src={audioPreview} className="max-w-xs" />
+            ) : (
+              <div className="text-gray-400">No audio available</div>
+            )}
+            <div className="relative">
+              <button
+                onClick={toggleLock}
+                className="p-2 border rounded-md flex items-center gap-1"
+                title={locked ? "Unlock to edit" : "Lock"}
+                disabled={!unlocked} // Disable if page locked
+              >
+                {locked ? <Lock size={18} /> : <Unlock size={18} />}
+                {locked ? "Locked" : "Unlocked"}
+              </button>
+              {!locked && unlocked && (
+                <input
+                  type="file"
+                  accept="audio/*"
+                  ref={audioInputRef}
+                  onChange={(e) => handleFileChange(e, "audio")}
+                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                  title="Select audio file"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Video */}
+        <div>
+          <label className="block font-semibold mb-2">Video</label>
+          <div className="flex items-center gap-4">
+            {videoPreview ? (
+              <video
+                controls
+                src={videoPreview}
+                className="max-w-xs rounded-md border"
+              />
+            ) : (
+              <div className="text-gray-400">No video available</div>
+            )}
+            <div className="relative">
+              <button
+                onClick={toggleLock}
+                className="p-2 border rounded-md flex items-center gap-1"
+                title={locked ? "Unlock to edit" : "Lock"}
+                disabled={!unlocked} // Disable if page locked
+              >
+                {locked ? <Lock size={18} /> : <Unlock size={18} />}
+                {locked ? "Locked" : "Unlocked"}
+              </button>
+              {!locked && unlocked && (
+                <input
+                  type="file"
+                  accept="video/*"
+                  ref={videoInputRef}
+                  onChange={(e) => handleFileChange(e, "video")}
+                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                  title="Select video file"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Approve / Reject buttons */}
+      <div className="mb-6 flex gap-4">
+        <button
+          onClick={handleApprove}
+          className={`px-6 py-2 rounded-md font-semibold ${
+            selectedStatus === "Approved"
+              ? "bg-green-600 text-white"
+              : "bg-green-300 text-green-900"
+          }`}
+          disabled={locked || !unlocked}
+        >
+          Approve
+        </button>
+        <button
+          onClick={handleReject}
+          className={`px-6 py-2 rounded-md font-semibold ${
+            selectedStatus === "Rejected"
+              ? "bg-red-600 text-white"
+              : "bg-red-300 text-red-900"
+          }`}
+          disabled={locked || !unlocked}
+        >
+          Reject
+        </button>
+      </div>
+
+      {/* Show reason input if rejecting */}
+      {isRejecting && (
+        <div className="mb-6">
+          <label className="block font-semibold mb-2 text-red-700">
+            Rejection Reason
+          </label>
+          <textarea
+            className="w-full p-2 border border-red-600 rounded-md"
+            rows={4}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={locked || !unlocked}
+            placeholder="Enter reason for rejection"
+          />
+        </div>
+      )}
+
+      {/* Save button */}
+      <div className="text-right">
+        <button
+          onClick={handleSave}
+          className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
+          disabled={locked || !unlocked}
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default TvIndex;

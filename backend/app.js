@@ -33,7 +33,7 @@ const paymentRoute = require("./routes/payment");
 const incrementTrafficCounter = require("./routes/increment_traffic_counter")
 const spotlight_notes = require("./routes/spotlight_notes")
 const notification = require('./routes/notification')
-
+const tvPublishing = require('./routes/tvPublishing');
 
 
 //Admin route assignment
@@ -51,6 +51,7 @@ const AdminWithdraw = require("./admin/routes/withdraw");
 const leaderboard = require("./admin/routes/leaderboard");
 const kpi = require("./admin/routes/kpi");
 const resource = require("./admin/routes/resource");
+const TvPublishing = require("./admin/routes/tvPublishing");
 
 // ✅ Middleware order is important
 app.use(
@@ -126,6 +127,7 @@ app.use("/", withdraw);
 app.use("/", incrementTrafficCounter);
 app.use("/", spotlight_notes);
 app.use("/", notification);
+app.use("/", tvPublishing);
 
 //Admin Routes
 
@@ -143,6 +145,7 @@ app.use("/", leaderboard);
 app.use("/", kpi);
 app.use("/", resource);
 app.use("/", AdminWithdraw);
+app.use("/", TvPublishing);
 
 // ✅ Start server
 server.listen(port, () => {
