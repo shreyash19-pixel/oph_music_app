@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React,{ useEffect, useState } from "react";
 import HeroSection from "./components/HeroSection/HeroSection";
 import PreviousEventSection from "./components/PreviousEventSection/PreviousEventSection";
 import axiosApi from "../../../conf/axios";

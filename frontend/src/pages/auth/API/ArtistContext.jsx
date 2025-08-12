@@ -62,6 +62,7 @@ export const ArtistProvider = ({ children }) => {
         storedToken === "null"
       ) {
         const openRoutes = [
+          "/home",
           "/auth/login",
           "/auth/signup",
           "/auth/forgot-password",

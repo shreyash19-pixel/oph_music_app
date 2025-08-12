@@ -110,9 +110,9 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
 
       {/* <SongDetails/> */}
 
-      <SongCard
+      {Object.values(upcomingSong).length > 0 &&  (<SongCard
         releaseData = {upcomingSong}
-      />
+      />)}
 
       {/* Event Banner */}
       <div
