@@ -84,7 +84,7 @@ function Leaderboard({ leaderboardData, artist_id }) {
                 {/* <td className="py-2 px-3 lg:px-4">{artist.total_reach}</td> */}
                 <td className="py-2 px-3 lg:px-4">{artist.score}</td>
                 <td className="py-2 hidden lg:block px-3 lg:px-4">
-                  <button className="px-3 lg:px-4 py-2 bg-[#6F4FA0] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
+                  <button className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
                     View Profile
                   </button>
                 </td>
@@ -325,29 +325,27 @@ export default function ArtistSpotlight() {
   const [artist, setArtist] = useState([]);
   const { headers, ophid } = useArtist();
 
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState("No Note Provided Yet.");
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      console.log(ophid, headers, "Testing");
+  // useEffect(() => {
+  //   const fetchNotes = async () => {
+  //     try {
+  //       if (!ophid || !headers) return;
+  //       const response = await axiosApi.get(`/notes/${ophid}`, {
+  //         headers,
+  //       });
 
-      try {
-        if (!ophid || !headers) return;
-        const response = await axiosApi.get(`/notes/${ophid}`, {
-          headers,
-        });
-        console.log(response);
+  //       if (response.data) {
+  //         setNotes(response.data[0]?.Notes || "No Note Provided Yet.");
+  //         console.log(response, "data");
+  //       }
+  //     } catch (err) {
+  //       console.error("Failed to fetch notes", err);
+  //     }
+  //   };
 
-        if (response.data) {
-          setNotes(response.data[0].Notes);
-        }
-      } catch (err) {
-        console.error("Failed to fetch notes", err);
-      }
-    };
-
-    fetchNotes();
-  }, [ophid, headers]);
+  //   fetchNotes();
+  // }, [ophid, headers]);
 
   const professionOptions = [
     { id: 1, name: "Singer" },
@@ -373,6 +371,7 @@ export default function ArtistSpotlight() {
       if (response.data.success) {
         setArtist(response.data.data[0]);
         setArtistID(response.data.data[0].ophid);
+        setIsLoading(false);
       }
     } catch (err) {
       setError("Failed to Load Artist Spotlight");
@@ -391,12 +390,23 @@ export default function ArtistSpotlight() {
     return prof.name;
   }
 
+  const getArtistRank = () => {
+    if (!leaderboard || !artist || !artist.ophid) return null;
+
+    const found = leaderboard.find(
+      (entry) =>
+        entry.OPH_ID?.toString() === artist.ophid?.toString() ||
+        entry.ophid?.toString() === artist.ophid?.toString(),
+    );
+
+    return found ? found.ranks || found.rank || null : null;
+  };
+
   useEffect(() => {
     if (ophid) {
       fetchArtistSpotlight();
     }
   }, [ophid]);
-
   return (
     <>
       {isLoading && (
@@ -432,9 +442,26 @@ export default function ArtistSpotlight() {
                   className="w-32 h-32 rounded-full border-4 border-[#5DC9DE] object-cover"
                 />
                 {/* Rank Badge */}
-                <span className="absolute bottom-0 right-0 bg-[#6F4FA0] lg:w-9 w-6 h-6 lg:h-9 transform -rotate-12 flex items-center justify-center text-sm font-bold">
-                  🌟
-                </span>
+                {(() => {
+                  const rank = getArtistRank();
+
+                  const rankBgClass =
+                    rank === 1
+                      ? "bg-yellow-400"
+                      : rank === 2
+                        ? "bg-emerald-400"
+                        : rank === 3
+                          ? "bg-cyan-400"
+                          : "bg-transparent text-white";
+
+                  return (
+                    <span
+                      className={`absolute bottom-0 right-0 lg:w-9 w-6 h-6 lg:h-9 transform -rotate-12 flex items-center justify-center text-sm font-bold text-black ${rankBgClass}`}
+                    >
+                      {rank || "🌟"}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Artist Info */}

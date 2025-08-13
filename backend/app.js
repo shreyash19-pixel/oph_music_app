@@ -30,11 +30,11 @@ const artistSpotlight = require("./routes/artist-spotlight");
 const homeRoute = require("./routes/home");
 const withdraw = require("./routes/withdraw");
 const paymentRoute = require("./routes/payment");
-const incrementTrafficCounter = require("./routes/increment_traffic_counter")
-const spotlight_notes = require("./routes/spotlight_notes")
-const notification = require('./routes/notification')
-const tvPublishing = require('./routes/tvPublishing');
-
+const incrementTrafficCounter = require("./routes/increment_traffic_counter");
+const spotlight_notes = require("./routes/spotlight_notes");
+const notification = require("./routes/notification");
+const tvPublishing = require("./routes/tvPublishing");
+const increment_form = require("./utils/form_count");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -128,6 +128,7 @@ app.use("/", incrementTrafficCounter);
 app.use("/", spotlight_notes);
 app.use("/", notification);
 app.use("/", tvPublishing);
+app.use("/", increment_form);
 
 //Admin Routes
 
