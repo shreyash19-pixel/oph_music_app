@@ -18,7 +18,7 @@ const SignInForm = () => {
   useEffect(() => {
     if (location.state?.status === "cancelled") {
       toast.error(
-        "Payment is mandatory. Please complete the payment to continue."
+        "Payment is mandatory. Please complete the payment to continue.",
       );
       navigate("/auth/login", { replace: true, state: {} });
     }
@@ -31,20 +31,23 @@ const SignInForm = () => {
       const response = await loginUser(credentials.email, credentials.password);
 
       if (response.success) {
-       
-        toast.success("Login Successful");       
+        toast.success("Login Successful");
         localStorage.setItem("token", response.token);
-     
-        const path = `${response.step}`
-        navigate(path, {
-          state: {
-            from: "Registeration"
-          }
-        });
+
+        if (response.step === "/dashboard") {
+          navigate(response.step);
+        } else {
+          const path = `${response.step}`;
+          navigate(path, {
+            state: {
+              from: "Registeration",
+            },
+          });
+        }
       }
     } catch (error) {
       toast.error(
-        error?.response?.data?.message || "Login failed. Please try again."
+        error?.response?.data?.message || "Login failed. Please try again.",
       );
       console.error(error);
     } finally {

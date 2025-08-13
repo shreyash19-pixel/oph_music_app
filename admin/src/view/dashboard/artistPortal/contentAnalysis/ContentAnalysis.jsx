@@ -106,7 +106,7 @@ const ContentAnalysis = () => {
       console.log("Inserted:", res.data);
     } catch (err) {
       console.error("Insert failed", err);
-      toast.error("Failed to save analytics.");
+      toast.error(err.response.data.details);
     }
   };
 

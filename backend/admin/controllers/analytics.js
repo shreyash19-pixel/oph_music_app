@@ -62,11 +62,11 @@ const kpi = async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT
-        OPH_ID,
-        COUNT(song_id) AS song_count,
-        SUM(youtube_views) AS total_views
-      FROM song_social_metrics
-      GROUP BY OPH_ID
+              OPH_ID,
+              count(distinct song_id) AS song_count,
+              SUM(youtube_views) AS total_views
+            FROM song_social_metrics
+            GROUP BY OPH_ID
     `);
 
     res.json(rows);

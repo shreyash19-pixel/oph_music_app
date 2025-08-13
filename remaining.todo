@@ -25,7 +25,7 @@
 ☐ SP Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
 ✔ NN Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike) => Done => Go to Testing @done(25-08-09 12:10)
 ☐ JS Navpages => Contact => Compelete
-☐ NN SignIn/SignUp/Login => Fix routes in Sign-in/Sign-up, route to dashboard after full accepted.
+✔ NN SignIn/SignUp/Login => Fix routes in Sign-in/Sign-up, route to dashboard after full accepted. @done(25-08-13 04:48)
 ☐ JS Dashboard => Home => Remove Event card and only keep song card.
 ☐ JS Dashboard => Home => Get Details => Complete page
 ☐ SP Dashboard => Calender => Add Artist Profile Image
@@ -74,6 +74,6 @@
 ☐ NN,JS Make Admin pages for sales and accounting team.
 
 
-Updates 
-
+Updates
+SP In artist spotlight fix the songs sections to get the song name rather than artist name and also get total view form song_social_metrics
 Made modification to social_metrics table so tv publishing table will have to be updated too.
