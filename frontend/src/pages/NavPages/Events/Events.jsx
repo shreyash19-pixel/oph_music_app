@@ -1,4 +1,4 @@
-import React,{ useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import HeroSection from "./components/HeroSection/HeroSection";
 import PreviousEventSection from "./components/PreviousEventSection/PreviousEventSection";
 import axiosApi from "../../../conf/axios";
@@ -7,23 +7,26 @@ import { Helmet } from "react-helmet";
 
 function Events() {
   const [professions, setProfessions] = useState([]);
-  const fetchProfessions = async () => {
-    try {
-      const response = await axiosApi.get("/professions");
-      setProfessions(response.data.data);
-      console.log(professions);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  useEffect(() => {
-    fetchProfessions();
-  }, []);
+  // const fetchProfessions = async () => {
+  //   try {
+  //     const response = await axiosApi.get("/professions");
+  //     setProfessions(response.data.data);
+  //     console.log(professions);
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
+  // useEffect(() => {
+  //   fetchProfessions();
+  // }, []);
   return (
     <div className="relative ">
       <Helmet>
         <title>Music Events & Artist Competitions - OPH Community</title>
-        <meta name="description" content="Discover virtual events, power music competitions, and growth opportunities. Register now and be part of India’s fastest-growing artist collaboration platform." />
+        <meta
+          name="description"
+          content="Discover virtual events, power music competitions, and growth opportunities. Register now and be part of India’s fastest-growing artist collaboration platform."
+        />
       </Helmet>
       <HeroSection professions={professions} />
       <div className="lg:px-10 px-6 xl:px-16">

@@ -1,32 +1,37 @@
-import React,{ useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react"; // Import icons
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Bounce, toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import axiosApi from "../../../../../conf/axios";
 
 const instagramRegex =
   /^(https?:\/\/)?(www\.)?instagram\.com\/([a-zA-Z0-9._]+)\/?/;
 
-function HeroSection({ professions }) {
+export default function HeroSection({ professions = [] }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Optional: show only on home-like paths; remove this if you always want it visible
+  const showOnPaths = ["/", "/home"];
+  // if you want the hero visible everywhere, remove next line:
+  // if (!showOnPaths.includes(location.pathname)) return null;
+
   const sliderRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [id, setId] = useState(null);
-  // const [professions,setProfessions] = useState([])
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const [bookingEventId, setBookingEventId] = useState(null);
 
-  const isValidPhoneNumber = (phone) => {
-    const phoneRegex = /^\d{10}$/; // Ensures exactly 10 digits
-    return phoneRegex.test(phone);
-  };
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [timers, setTimers] = useState([]);
+
+  // Validation helpers
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidPhoneNumber = (phone) => /^\d{10}$/.test(phone);
+
   const settings = {
     dots: true,
     fade: true,
@@ -41,208 +46,214 @@ function HeroSection({ professions }) {
     afterChange: () => setIsDragging(false),
   };
 
-  const upcomingEvents = useSelector((state) => state.event.upcomingEvents);
-  const [timers, setTimers] = useState([]);
-  const loading = useSelector((state) => state.event.loading);
-
-  const handleBookSpot = (id) => {
-    debugger;
-    setIsModalOpen(true);
-    setId(id);
-  };
 
   useEffect(() => {
-    // if(isModalOpen){
-    //   setIsDragging(true);
-    // }
-    // else{
-    //   setIsDragging(false);
-    // }
-    if (upcomingEvents && upcomingEvents.length > 0) {
-      const updateTimers = () => {
-        const newTimers = upcomingEvents.map((event) => {
-          const now = new Date();
-          const eventDate = new Date(event.event_date_time);
-          const timeDiff = eventDate - now;
+    let cancelled = false;
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        
+        const res = await axiosApi.get("/events_status");
 
-          if (timeDiff <= 0) {
-            return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-          }
+        const raw = Array.isArray(res.data.data)
+          ? res.data.data
+          : (res.data?.events ?? []);
+        const mapped = raw
+          .filter((e) => e?.event_type === "upcoming")
+          .map((e) => ({
+            
+            id: e.event_id,
+            name: e.EventName,
+            event_date_time: e.dateTime, 
+            location: (e.location || "").trim(),
+            description: e.description,
+            hashtags: e.hashtags,
+            fees: Number(e.registrationFee_normal) || 0,
+            registrationFee_offer_availableFor:
+              e.registrationFee_offer_availableFor,
+            registrationFee_offer_discount: e.registrationFee_offer_discount,
+            registrationStart: e.registrationStart,
+            registrationEnd: e.registrationEnd,
+            reward_amount:
+              Number(String(e.winnerReward).replace(/,/g, "")) || 0,
+            thumbnail_url: e.image || e.thumbnail_url || "",
+            raw: e,
+          }));
 
-          const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-          const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
-          const seconds = Math.floor((timeDiff / 1000) % 60);
-
-          return { days, hours, minutes, seconds };
-        });
-
-        setTimers(newTimers);
-      };
-
-      if (!isModalOpen) {
-        updateTimers();
-        const interval = setInterval(updateTimers, 1000);
-        return () => clearInterval(interval);
+        if (!cancelled) setUpcomingEvents(mapped);
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to fetch upcoming events:", err);
+          toast.error("Unable to load upcoming events", {
+            position: "top-right",
+            theme: "dark",
+            transition: Bounce,
+          });
+          setUpcomingEvents([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
+    };
+
+    fetchEvents();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Timers: compute countdown for each listed event
+  useEffect(() => {
+    if (!upcomingEvents || upcomingEvents.length === 0) {
+      setTimers([]);
+      return;
+    }
+
+    const updateTimers = () => {
+      const now = new Date();
+      const newTimers = upcomingEvents.map((event) => {
+        // Some APIs may already provide timezone-normalized ISO; new Date(...) handles ISO Z correctly.
+        const eventDate = new Date(event.event_date_time);
+        const diff = eventDate - now;
+        if (isNaN(eventDate) || diff <= 0) {
+          return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+        }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        return { days, hours, minutes, seconds };
+      });
+      setTimers(newTimers);
+    };
+
+    if (!isModalOpen) {
+      updateTimers();
+      const id = setInterval(updateTimers, 1000);
+      return () => clearInterval(id);
     }
   }, [upcomingEvents, isModalOpen]);
 
-  const dateFormat = (date) => {
-    const eventDate = new Date(date);
-    return eventDate.toLocaleString("en-US", {
+  // Booking modal triggers
+  const handleBookSpot = (eventId) => {
+    setBookingEventId(eventId);
+    setIsModalOpen(true);
+  };
+
+  const dateFormat = (dateIso) => {
+    const dt = new Date(dateIso);
+    if (isNaN(dt)) return "";
+    return dt.toLocaleString("en-US", {
       day: "2-digit",
       month: "long",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-      timeZone: "Asia/Kolkata", // <-- Change made here
+      timeZone: "Asia/Kolkata",
     });
   };
-  
 
+  /* ===== Registration Modal Component ===== */
   const RegistrationModal = () => {
-    const [formData, setFormData] = useState({
+    const [form, setForm] = useState({
       first_name: "",
       last_name: "",
       email: "",
       instagram_handle: "",
       phone: "",
+      profession_id: "",
     });
-
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      if (isSubmitting) return; // Prevent multiple submissions
-      console.log("Form submitted:", formData);
-      if (!instagramRegex.test(formData.instagram_handle)) {
-        toast.error(
-          "Invalid Instagram URL! Please enter a valid profile link.",
-          {
-            position: "top-right",
-            autoClose: 4000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "dark",
-            transition: Bounce,
-          }
-        );
-        return; // Stop form submission
+    const onChange = (e) =>
+      setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+    const onSubmit = async (ev) => {
+      ev.preventDefault();
+      if (isSubmitting) return;
+
+      // Basic validations
+      if (!instagramRegex.test(form.instagram_handle)) {
+        toast.error("Invalid Instagram URL!", {
+          position: "top-right",
+          theme: "dark",
+          transition: Bounce,
+        });
+        return;
       }
-      if (!isValidEmail(formData.email)) {
-        toast.error("Invalid Email Address!", {
+      if (!isValidEmail(form.email)) {
+        toast.error("Invalid Email!", { position: "top-right", theme: "dark" });
+        return;
+      }
+      if (!isValidPhoneNumber(form.phone)) {
+        toast.error("Invalid Phone! Must be 10 digits.", {
           position: "top-right",
           theme: "dark",
         });
         return;
       }
 
-      if (!isValidPhoneNumber(formData.phone)) {
-        toast.error("Invalid Phone Number! Must be 10 digits.", {
-          position: "top-right",
-          theme: "dark",
-        });
-        return;
-      }
-
-      setIsSubmitting(true); // Set submitting state to true
-
+      setIsSubmitting(true);
       try {
-        const response = await axiosApi.post(
-          `/events/bookings/${id}`,
-          formData
+        const resp = await axiosApi.post(
+          `/events/bookings/${bookingEventId}`,
+          form,
         );
-        if (response.status == 201) {
-          toast.success("Registration Successfull", {
+        // handle different response shapes defensively
+        if (resp?.status === 201 || resp?.status === 200) {
+          toast.success("Registration successful", {
             position: "top-right",
-            autoClose: 4000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             theme: "dark",
             transition: Bounce,
           });
           setIsModalOpen(false);
-          console.log(response.data[0].id);
 
-          // Find the current event to get the fee
-          const currentEvent = upcomingEvents.find((event) => event.id === id);
-          console.log(currentEvent,"currentevent");
-          
-          // Navigate to payment page with required data
+          const current =
+            upcomingEvents.find((e) => e.id === bookingEventId) || {};
+          // navigate to payment (guard against missing response shapes)
           navigate("/payment", {
             state: {
-              amount: currentEvent.fees, // Event registration fee
-              returnPath: `/events/online-music-events`, // Redirect to event page after payment
-              event_id: currentEvent.id,
+              amount: current.fees ?? 0,
+              returnPath: `/events/online-music-events`,
+              event_id: current.id,
               heading: "Event Registration Fee",
-              eventId: id,
-              planIds: [currentEvent.payment_plan_id], 
-              bookingId: response.data.id, 
-              event_booking_id: response.data[0].id
+              eventId: bookingEventId,
+              planIds: [current.raw?.payment_plan_id].filter(Boolean),
+              bookingId: resp.data?.id ?? resp.data ?? null,
+              event_booking_id: Array.isArray(resp.data)
+                ? resp.data?.[0]?.id
+                : resp.data?.id,
             },
           });
         } else {
-          toast.error("Something went wrong", {
+          toast.error("Something went wrong during registration", {
             position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             theme: "dark",
-            transition: Bounce,
           });
         }
-      } catch (error) {
-        console.error("Error during registration:", error);
-        toast.error("Something went wrong", {
+      } catch (err) {
+        console.error("Registration error:", err);
+        toast.error("Registration failed", {
           position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
           theme: "dark",
-          transition: Bounce,
         });
       } finally {
-        setIsSubmitting(false); // Reset submitting state
+        setIsSubmitting(false);
       }
     };
 
-    const handleChange = (e) => {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value,
-      });
-    };
-    // useEffect(()=>{
-    //   fetchProfessions()
-    // },[])
-
     return (
-      <div className="fixed inset-0  bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
         <div className="bg-gray-800 rounded-lg max-w-md w-full mx-4">
-          <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          <form onSubmit={onSubmit} className="space-y-4 p-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">
+              <h3 className="text-white text-lg font-semibold">
                 Register for Event
-              </h2>
+              </h3>
               <button
                 type="button"
-                onClick={() => {
-                  setIsModalOpen(false);
-                }}
+                onClick={() => setIsModalOpen(false)}
                 className="text-gray-400 hover:text-white"
               >
                 ✕
@@ -250,91 +261,74 @@ function HeroSection({ professions }) {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  name="first_name"
-                  placeholder="First Name*"
-                  required
-                  className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  name="last_name"
-                  placeholder="Last Name*"
-                  required
-                  className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
               <input
-                type="email"
-                name="email"
-                placeholder="Email Address*"
+                name="first_name"
+                value={form.first_name}
+                onChange={onChange}
                 required
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.email}
-                onChange={handleChange}
+                placeholder="First name*"
+                className="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600"
+              />
+              <input
+                name="last_name"
+                value={form.last_name}
+                onChange={onChange}
+                required
+                placeholder="Last name*"
+                className="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600"
               />
             </div>
 
-            <div>
-              <input
-                type="text"
-                name="instagram_handle"
-                placeholder="Instagram Handle*"
-                required
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.instagram_handle}
-                onChange={handleChange}
-              />
-            </div>
+            <input
+              name="email"
+              value={form.email}
+              onChange={onChange}
+              required
+              type="email"
+              placeholder="Email*"
+              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+            />
+            <input
+              name="instagram_handle"
+              value={form.instagram_handle}
+              onChange={onChange}
+              required
+              placeholder="Instagram profile URL*"
+              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+            />
 
             <div className="flex gap-2">
-              <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white">
-                <option value="+1">+91</option>
+              <select className="w-16 p-2 rounded bg-gray-700 text-white border border-gray-600">
+                <option>+91</option>
               </select>
               <input
-                type="tel"
                 name="phone"
-                placeholder="Phone Number*"
+                value={form.phone}
+                onChange={onChange}
                 required
-                className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.phone}
-                onChange={handleChange}
+                placeholder="Phone*"
+                className="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600"
               />
             </div>
 
-            <div>
-              <select
-                name="profession_id"
-                required
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                onChange={handleChange}
-              >
-                {professions &&
-                  professions.map((profession, ind) => {
-                    return (
-                      <option key={ind} value={profession.id}>
-                        {profession.name}
-                      </option>
-                    );
-                  })}
-              </select>
-            </div>
+            <select
+              name="profession_id"
+              value={form.profession_id}
+              onChange={onChange}
+              required
+              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+            >
+              <option value="">Select Profession</option>
+              {professions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
 
             <button
-              type="submit"
-              className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded"
               disabled={isSubmitting}
+              className="w-full bg-cyan-400 text-black py-2 rounded font-medium"
             >
               {isSubmitting ? "Submitting..." : "Submit"}
             </button>
@@ -344,118 +338,123 @@ function HeroSection({ professions }) {
     );
   };
 
+  /* ===== Render ===== */
   return (
     <>
+      <ToastContainer />
       {loading && (
-        <div className="text-center h-[90vh] w-full py-32">
-          <div className="animate-spin rounded-full w-12 h-12 border-b-2 border-[#5DC9DE] mx-auto"></div>
-          <p className="mt-2 text-[#5DC9DE]">
-            🎵 "Hold tight! The beats are warming up..." 🎧
-          </p>
+        <div className="text-center h-[60vh] flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full w-12 h-12 border-b-2 border-[#5DC9DE] mb-4" />
+          <div className="text-[#5DC9DE]">Loading upcoming events...</div>
         </div>
       )}
-      {!loading && (
+
+      {!loading && upcomingEvents.length === 0 && (
+        <div className="text-center py-20">
+          <p className="text-gray-400">No upcoming events right now.</p>
+        </div>
+      )}
+
+      {!loading && upcomingEvents.length > 0 && (
         <div className="relative">
-          {/* Navigation Buttons */}
+          {/* Prev / Next */}
           <button
-            className="absolute top-1/2 left-5 z-50 transform -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full hidden sm:block"
-            onClick={() => sliderRef.current.slickPrev()}
+            className="absolute top-1/2 left-4 z-50 transform -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full hidden sm:block"
+            onClick={() => sliderRef.current && sliderRef.current.slickPrev()}
+            aria-label="Previous"
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
 
           <button
-            className="absolute top-1/2 right-5 z-50 transform -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full hidden sm:block"
-            onClick={() => sliderRef.current.slickNext()}
+            className="absolute top-1/2 right-4 z-50 transform -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full hidden sm:block"
+            onClick={() => sliderRef.current && sliderRef.current.slickNext()}
+            aria-label="Next"
           >
-            <ArrowRight size={24} />
+            <ArrowRight size={20} />
           </button>
 
           <Slider ref={sliderRef} {...settings}>
-            {upcomingEvents &&
-              upcomingEvents.map((event, index) => (
-                <div className="relative h-screen" key={index}>
-                  {/* Image */}
-                  <img
-                    src={event.thumbnail_url}
-                    alt={event.name}
-                    className="w-full h-full object-cover"
-                  />
+            {upcomingEvents.map((event, idx) => (
+              <div key={event.id ?? idx} className="relative h-screen">
+                <img
+                  src={event.thumbnail_url}
+                  alt={event.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/90" />
 
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/90" />
-
-                  {/* Content */}
-                  <div
-                    className="absolute inset-0 flex sm:items-end items-center sm:pb-24 pb-0 h"
-                    onClick={() => {
-                      if (!isDragging) navigate(`/events/${event.id}`);
-                    }}
-                  >
-                    <div className="container md:px-6 mx-auto w-full px-4 xl:px-16 md:pb-0 pb-10 flex flex-col lg:flex-row gap-14 sm:gap-0 justify-between items-center">
-                      <div className="flex flex-col ">
-                        <div className="text-[14px] lg:text-[20px] sm:px-0 pe-7 text-[#5DC9DE]">
-                          {dateFormat(event.event_date_time)} - {event.location}
-                        </div>
-                        <div className="uppercase font-extrabold text-[28px] lg:text-[55px] text-white">
-                          <h1
-                            className="hover:text-[#5DC9DE] hover:cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevents the parent onClick
-                              if (!isDragging) navigate(`/events/${event.id}`);
-                            }}
-                          >
-                            {event.name}
-                          </h1>
-                        </div>
-                        <div className="flex gap-2 sm:gap-5">
-                          {timers[index] && (
-                            <>
-                              <CountdownBox
-                                value={timers[index].days}
-                                label="Days"
-                              />
-                              <CountdownBox
-                                value={timers[index].hours}
-                                label="Hours"
-                              />
-                              <CountdownBox
-                                value={timers[index].minutes}
-                                label="Minutes"
-                              />
-                              <CountdownBox
-                                value={timers[index].seconds}
-                                label="Seconds"
-                              />
-                            </>
-                          )}
-                        </div>
+                <div
+                  className="absolute inset-0 flex sm:items-end items-center sm:pb-24 pb-10 cursor-pointer"
+                  onClick={() => {
+                    // prevent navigation if user was dragging the slider
+                    if (!isDragging) navigate(`/events/${event.id}`);
+                  }}
+                >
+                  <div className="container mx-auto px-4 xl:px-16 w-full flex flex-col lg:flex-row justify-between items-center">
+                    <div className="flex flex-col">
+                      <div className="text-sm lg:text-lg text-[#5DC9DE] mb-2">
+                        {dateFormat(event.event_date_time)} - {event.location}
                       </div>
 
-                      {/* Prize Box */}
-                      <div className="mt-5">
-                        <div className="flex flex-col items-center bg-gradient-to-b from-[#FFFFFF26] to-[#FFFFFF00] w-[285px] h-[118.62px] rounded-xl py-5 border-1 backdrop-blur-[12px]">
-                          <span className="text-[21px] uppercase text-white">
-                            Chance to Win
-                          </span>
-                          <span className="text-[#2DDA89] text-[48px] font-extrabold">
-                            ₹{event.reward_amount ? event.reward_amount : "0"}
-                          </span>
-                          <div
-                            className="my-8 px-6 z-40 py-3 hover:font-bold transition delay-300 bg-[#5DC9DE] rounded-3xl cursor-pointer text-black text-lg font-semibold drop-shadow-[0_0_20px_white]"
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevents navigation when clicking inside the button
-                              handleBookSpot(event.id); // Call the booking function
-                            }}
-                          >
-                            Book Your Spot Now
-                          </div>
+                      <h1
+                        className="uppercase font-extrabold text-3xl lg:text-6xl text-white hover:text-[#5DC9DE]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isDragging) navigate(`/events/${event.id}`);
+                        }}
+                      >
+                        {event.name}
+                      </h1>
+
+                      <div className="flex gap-3 mt-4">
+                        {timers[idx] && (
+                          <>
+                            <CountdownBox
+                              value={timers[idx].days}
+                              label="Days"
+                            />
+                            <CountdownBox
+                              value={timers[idx].hours}
+                              label="Hours"
+                            />
+                            <CountdownBox
+                              value={timers[idx].minutes}
+                              label="Minutes"
+                            />
+                            <CountdownBox
+                              value={timers[idx].seconds}
+                              label="Seconds"
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 lg:mt-0">
+                      <div className="flex flex-col items-center bg-gradient-to-b from-[#FFFFFF26] to-[#FFFFFF00] w-[285px] h-[118px] rounded-xl py-5 backdrop-blur-[12px]">
+                        <span className="text-[18px] uppercase text-white">
+                          Chance to Win
+                        </span>
+                        <span className="text-[#2DDA89] text-[40px] font-extrabold">
+                          ₹{event.reward_amount ?? 0}
+                        </span>
+
+                        <div
+                          className="mt-4 px-6 py-2 bg-[#5DC9DE] rounded-3xl cursor-pointer text-black text-lg font-semibold"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBookSpot(event.id);
+                          }}
+                        >
+                          Book Your Spot Now
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </Slider>
 
           {isModalOpen && <RegistrationModal />}
@@ -465,16 +464,14 @@ function HeroSection({ professions }) {
   );
 }
 
-const CountdownBox = ({ value, label }) => (
-  <div className="border-[.5px] rounded-md p-3 bg-gradient-to-b flex flex-col from-[#FFFFFF33] to-[#FFFFFF00] sm:w-[92px] w-[80px] mt-6">
-    <span className="lg:text-[40px] text-white">{value}</span>
-    <span
-      className="lg:text-[19px] text-[#9BA3B7]
-"
-    >
-      {label}
-    </span>
-  </div>
-);
-
-export default HeroSection;
+/* ===== CountdownBox subcomponent ===== */
+function CountdownBox({ value, label }) {
+  return (
+    <div className="border rounded-md p-3 bg-gradient-to-b from-[#FFFFFF33] to-[#FFFFFF00] w-[80px] sm:w-[92px]">
+      <div className="text-white text-2xl lg:text-4xl text-center">{value}</div>
+      <div className="text-[#9BA3B7] text-center text-sm lg:text-base">
+        {label}
+      </div>
+    </div>
+  );
+}
