@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./utils/roles";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // pages
 import AdminSignInForm from "./pages/AdminSignIn";
@@ -53,6 +55,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+         <ToastContainer position="top-right" autoClose={3000} />
         <Routes>
           {/* ---------- PUBLIC ---------- */}
           <Route path="/" element={<AdminSignInForm />} />
@@ -83,7 +86,6 @@ function App() {
           <Route path="/TvIndex/:ophid/:song_id" element={<TvIndex />} />
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
-
           {/* ---------- PROTECTED (SUPER_ADMIN) ---------- */}
           <Route
             path="/WebsiteConfig"

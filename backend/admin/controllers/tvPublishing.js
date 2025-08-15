@@ -66,38 +66,37 @@ const updateTvStatus = async (req, res) => {
     }
 
     // Validate status values
-    const validStatuses = ["Approved", "Rejected"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status value. Allowed: ${validStatuses.join(", ")}`,
-      });
-    }
+    const finalStatus = status === "Accepted" ? "Accepted" : "rejected";
+    const finalReason =
+      status === "Rejected" ? reason || "No reason provided" : null;
+    const rejectedStep = status === "Rejected" ? "ContentFiles" : null;
 
-    // If status is Rejected, reason is required
-    if (status === "Rejected" && (!reason || reason.trim() === "")) {
-      return res.status(400).json({
-        success: false,
-        message: "Reason is required when rejecting content",
-      });
-    }
+     if (status === "Rejected" && !reason) {
+       return res.status(400).json({
+         success: false,
+         message: "Reason is required when rejecting.",
+       });
+     }
 
-    // If status is Approved, reason can be empty
-    const reasonToSave = status === "Rejected" ? reason.trim() : "";
+     const result = await tvModel.updateTvStatus(
+       song_id,
+       finalStatus,
+       finalReason,
+       rejectedStep
+     );
 
-    const result = await tvModel.updateTvStatus(song_id, status, reasonToSave);
+     if (result.affectedRows > 0) {
+       return res.status(200).json({
+         success: true,
+         message: `TV status updated to ${finalStatus}`,
+       });
+     }
 
-    if (result.affectedRows > 0) {
-      return res.status(200).json({
-        success: true,
-        message: `Content ${status.toLowerCase()} successfully`,
-      });
-    }
+     res.status(404).json({
+       success: false,
+       message: "Song not found",
+     });
 
-    return res.status(404).json({
-      success: false,
-      message: "Content with given song_id not found",
-    });
   } catch (error) {
     console.error("Error updating status:", error);
     return res.status(500).json({
@@ -108,9 +107,37 @@ const updateTvStatus = async (req, res) => {
   }
 };
 
-module.exports = { 
+
+const updateTvFiles = async (req, res) => {
+  try {
+    const { song_id } = req.body;
+    const audio = req.body.audio || undefined;
+    const video = req.body.video || undefined;
+
+    if (!song_id) {
+      return res.status(400).json({ error: "song_id is required" });
+    }
+
+    if (!audio && !video) {
+      return res
+        .status(400)
+        .json({ error: "At least one file (audio or video) is required" });
+    }
+
+    await tvModel.updateTvFiles(song_id, audio, video);
+
+    return res.json({ message: "Files updated successfully" });
+  } catch (err) {
+    console.error("Error updating files:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+module.exports = {
   getTv,
   getAllTv,
   updateLockStatus,
   updateTvStatus,
+  updateTvFiles,
 };

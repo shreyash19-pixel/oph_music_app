@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { Lock, Unlock } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from "react-toastify";
 
 const TvIndex = () => {
   const { song_id } = useParams();
   const [tvData, setTvData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
 
   // Page-wide unlock state (backend lock)
   const [unlocked, setUnlocked] = useState(false);
@@ -32,7 +34,7 @@ const TvIndex = () => {
   const audioInputRef = useRef();
   const videoInputRef = useRef();
 
-  // Selected status: "Submitted" (default), "Approved", or "Rejected"
+  // Selected status: "Submitted" (default), "Accepted", or "Rejected"
   const [selectedStatus, setSelectedStatus] = useState("Submitted");
 
   useEffect(() => {
@@ -116,64 +118,92 @@ const TvIndex = () => {
     }
   };
 
-  const handleApprove = () => {
-    setSelectedStatus("Approved");
-    setIsRejecting(false);
-  };
 
-  const handleReject = () => {
-    setSelectedStatus("Rejected");
-    setIsRejecting(true);
-  };
+  const handleSubmitDecision = async (status) => {
+    if (status === "Accepted") {
+      setSelectedStatus("Accepted");
+      setIsRejecting(false);
+    } else if (status === "Rejected") {
+      setSelectedStatus("Rejected");
+      setIsRejecting(true);
+    }
 
-  const handleSave = async () => {
+    if (status === "Rejected" && !reason) return;
+
     try {
-      toast.loading("Saving changes...");
-
-      const formData = new FormData();
-      formData.append("song_id", song_id);
-      formData.append("status", selectedStatus);
-
-      if (selectedStatus === "Rejected") {
-        if (!reason.trim()) {
-          toast.dismiss();
-          toast.error("Please provide a rejection reason");
-          return;
-        }
-        formData.append("reason", reason.trim());
-      } else {
-        formData.append("reason", "");
-      }
-
-      if (!locked) {
-        if (audioInputRef.current?.files[0]) {
-          formData.append("audio", audioInputRef.current.files[0]);
-        }
-        if (videoInputRef.current?.files[0]) {
-          formData.append("video", videoInputRef.current.files[0]);
-        }
-      }
-
-      const res = await axiosApi.post("/updateTvStatus", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      setSubmitting(true);
+      await axiosApi.post("/updateTvStatus", {
+        song_id: tvData.song_id,
+        status,
+        reason: status === "Rejected" ? reason : null,
       });
 
-      if (res.data.success) {
-        toast.dismiss();
-        toast.success("Content saved successfully");
-        setLocked(true);
-        setIsRejecting(false);
-        setSelectedStatus(res.data.status || "Submitted");
-      } else {
-        toast.dismiss();
-        toast.error("Failed to save content");
+      setTvData((prev) => ({
+        ...prev,
+        status,
+        reason: status === "Rejected" ? reason : null,
+      }));
+
+      if (status === "Accepted") {
+      toast.success("Song has been approved successfully!");
+    } else if (status === "Rejected") {
+      toast.error("Song has been rejected.");
       }
-    } catch (error) {
-      toast.dismiss();
-      console.error(error);
-      toast.error("Server error while saving");
+      
+       if (!reason || reason.trim() === "") {
+      toast.warning("Please provide a reason for rejection.");
+      return;
+      }
+      
+      setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+
+    } catch (err) {
+      console.error("Error updating status:", err);
+       toast.error("Failed to update status. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const handleSaveChanges = async () => {
+    try {
+      setSubmitting(true);
+
+      const formData = new FormData();
+     formData.append("song_id", tvData.song_id);
+      if (audioInputRef.current?.files[0]) {
+        formData.append("audio", audioInputRef.current.files[0]);
+      }
+      if (videoInputRef.current?.files[0]) {
+        formData.append("video", videoInputRef.current.files[0]);
+      }
+
+      if (!formData.has("audio") && !formData.has("video")) {
+        toast.warning("No file selected to update.");
+        return;
+      }
+      const res = await axiosApi.post("/updateTvFiles", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      console.log(res);
+
+      if (res.data.success) {
+        toast.success("Files updated successfully.");
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast.error("Failed to update files.");
+      }
+    } catch (err) {
+      console.error("Error updating files:", err);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+
 
   if (loading) return <div>Loading...</div>;
   if (!tvData) return <div>No data found for Song ID: {song_id}</div>;
@@ -216,7 +246,6 @@ const TvIndex = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 max-w-4xl mx-auto">
-      <Toaster />
       <h2 className="text-3xl font-bold mb-8 text-[#0d3c44]">
         TV Publishing Details
       </h2>
@@ -307,9 +336,9 @@ const TvIndex = () => {
       {/* Approve / Reject buttons */}
       <div className="mb-6 flex gap-4">
         <button
-          onClick={handleApprove}
+          onClick={() => handleSubmitDecision("Accepted")}
           className={`px-6 py-2 rounded-md font-semibold ${
-            selectedStatus === "Approved"
+            selectedStatus === "Accepted"
               ? "bg-green-600 text-white"
               : "bg-green-300 text-green-900"
           }`}
@@ -318,7 +347,7 @@ const TvIndex = () => {
           Approve
         </button>
         <button
-          onClick={handleReject}
+          onClick={() => handleSubmitDecision("Rejected")}
           className={`px-6 py-2 rounded-md font-semibold ${
             selectedStatus === "Rejected"
               ? "bg-red-600 text-white"
@@ -350,7 +379,7 @@ const TvIndex = () => {
       {/* Save button */}
       <div className="text-right">
         <button
-          onClick={handleSave}
+          onClick={handleSaveChanges}
           className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
           disabled={locked || !unlocked}
         >
