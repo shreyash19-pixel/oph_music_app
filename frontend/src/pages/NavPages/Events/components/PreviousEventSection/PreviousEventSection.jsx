@@ -1,14 +1,17 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
 import Card from "../../../../../components/Card/Card";
 import { useNavigate } from "react-router-dom";
-import Elipse from "../../../../../../public/assets/images/elipse.png";
+import axiosApi from "../../../../../conf/axios";
 
 function PreviousEventSection() {
   const navigate = useNavigate();
-  const previousEvents = useSelector((state) => state.event.previousEvents);
+
+  const [previousEvents, setPreviousEvents] = useState(undefined); // undefined => loading shimmer
+  const [error, setError] = useState(null);
+
   const dateFormat = (date) => {
     const eventDate = new Date(date);
+    if (isNaN(eventDate)) return "";
     return eventDate.toLocaleString("en-US", {
       day: "2-digit",
       month: "long",
@@ -16,25 +19,62 @@ function PreviousEventSection() {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-      timeZone: "UTC", // Ensure UTC
+      timeZone: "UTC",
     });
   };
 
   const ShimmerCard = () => (
     <div className="bg-white rounded-lg overflow-hidden shadow-lg">
       <div>
-        {/* Image placeholder */}
-        <div className="w-full h-[200px] bg-gray-200 animate-shimmer"></div>
-        {/* Content placeholder */}
+        <div className="w-full h-[200px] bg-gray-200 animate-shimmer" />
         <div className="p-4">
-          {/* Title placeholder */}
-          <div className="h-6 bg-gray-200 rounded animate-shimmer mb-4"></div>
-          {/* Date placeholder */}
-          <div className="h-4 bg-gray-200 rounded animate-shimmer w-3/4"></div>
+          <div className="h-6 bg-gray-200 rounded animate-shimmer mb-4" />
+          <div className="h-4 bg-gray-200 rounded animate-shimmer w-3/4" />
         </div>
       </div>
     </div>
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchPrevious = async () => {
+      try {
+        setError(null);
+        const res = await axiosApi.get("/events_status");
+        console.log(res.data.data);
+
+        const raw = Array.isArray(res.data.data)
+          ? res.data.data
+          : (res.data?.events ?? []);
+
+        // Filter only events where event_type === "previous"
+        const mapped = raw
+          .filter((e) => e?.event_type === "previous")
+          .map((e) => ({
+            id: e.event_id ?? e.id,
+            name: e.EventName ?? e.name,
+            event_date_time: e.dateTime ?? e.event_date_time,
+            thumbnail_url: e.image ?? e.thumbnail_url ?? "",
+            raw: e,
+          }));
+
+        if (!cancelled) setPreviousEvents(mapped);
+      } catch (err) {
+        console.error("Failed to fetch previous events:", err);
+        if (!cancelled) {
+          setError("Unable to load previous events");
+          setPreviousEvents([]);
+        }
+      }
+    };
+
+    fetchPrevious();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="relative">
@@ -50,29 +90,33 @@ function PreviousEventSection() {
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite linear;
           }
-
           @keyframes shimmer {
-            0% {
-              background-position: 200% 0;
-            }
-            100% {
-              background-position: -200% 0;
-            }
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
           }
         `}
       </style>
-      
+
       <div className="px-8 py-12 md:px-10 xl:px-16 container mx-auto">
         <div className="w-full uppercase font-extrabold text-[55px] py-8">
           Previous Events
         </div>
+
         <div className="grid grid-cols-1 py-5 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {previousEvents === undefined ? (
-            [1, 2, 3].map((i) => <ShimmerCard key={i} />)
-          ) : previousEvents.length > 0 ? (
+          {previousEvents === undefined &&
+            [1, 2, 3].map((i) => <ShimmerCard key={i} />)}
+
+          {previousEvents !== undefined && previousEvents.length === 0 && (
+            <div className="col-span-full text-center text-gray-400">
+              {error ? error : "No Previous Events"}
+            </div>
+          )}
+
+          {previousEvents &&
+            previousEvents.length > 0 &&
             previousEvents.slice(0, 3).map((event, index) => (
               <div
-                key={index}
+                key={event.id ?? index}
                 onClick={() => navigate(`/events/${event.id}`)}
                 className="cursor-pointer"
               >
@@ -82,10 +126,7 @@ function PreviousEventSection() {
                   date={dateFormat(event.event_date_time)}
                 />
               </div>
-            ))
-          ) : (
-            <div className="col-span-full">No Previous Events</div>
-          )}
+            ))}
         </div>
       </div>
     </div>
