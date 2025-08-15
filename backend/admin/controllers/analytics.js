@@ -27,9 +27,19 @@ const updateMetrics = async (req, res) => {
 
 const getAllMetrics = async (req, res) => {
   try {
+    console.log("tesing all metrics");
     const data = await SongSocialMetrics.getAllMetrics();
+
+    // Check if data is null, undefined, or not an array
+    if (!data || !Array.isArray(data)) {
+      console.log("No data or invalid data returned:", data);
+      return res.status(404).json({ message: "No metrics found." });
+    }
+
+    console.log("Data fetched successfully:", data);
     res.status(200).json(data);
   } catch (err) {
+    console.error("Error fetching metrics:", err);
     res
       .status(500)
       .json({ error: "Failed to fetch metrics", details: err.message });
@@ -52,11 +62,11 @@ const kpi = async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT
-        OPH_ID,
-        COUNT(song_id) AS song_count,
-        SUM(youtube_views) AS total_views
-      FROM song_social_metrics
-      GROUP BY OPH_ID
+              OPH_ID,
+              count(distinct song_id) AS song_count,
+              SUM(youtube_views) AS total_views
+            FROM song_social_metrics
+            GROUP BY OPH_ID
     `);
 
     res.json(rows);

@@ -9,31 +9,48 @@ import { useArtist } from "../auth/API/ArtistContext";
 function Home() {
   const artistsdata = {};
   const [isLoading, setIsLoading] = useState(true);
-  const [firstEvent, setFirstEvent] = useState([]);
-  const [secondEvent, setSecondEvent] = useState(false);
+  const [upcomingSong, setUpcomingSong] = useState([]);
+  const [upcomingEvent, setUpcomingEvent] = useState(false);
   const [error, setError] = useState(null);
-  const {headers} = useArtist()
+  const { headers, ophid } = useArtist();
 
+  const fetchUpcomingSong = async () => {
+    if (!headers || !headers.Authorization) {
+      console.warn("Headers not ready yet");
+      return;
+    }
+    try {
+      const response = await axiosApi.get("/get-upcoming-event", {
+        headers: headers,
+        params: {ophid}
+      });
 
-  
+      if (response.data.success) {
+        setUpcomingSong(response.data.data);
+      }
+    } catch (err) {
+      console.log(err);
+      setError("Failed to Load Data. Try Again Later");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const fetchFirstEvent = async () => {
+  const fetchUpcomingEvent = async () => {
     setIsLoading(true);
 
-    if(!headers || !headers.Authorization)
-    {
-      console.warn("Headers are not ready yet")
-      return
+    if (!headers || !headers.Authorization) {
+      console.warn("Headers are not ready yet");
+      return;
     }
 
     try {
       const response = await axiosApi.get("/events", {
         headers: headers,
       });
-      console.log(response);
-      
+
       if (response.data.success) {
-        setSecondEvent(response.data.data[0]);
+        setUpcomingEvent(response.data.data[0]);
       }
     } catch (err) {
       console.log(err);
@@ -44,8 +61,14 @@ function Home() {
   };
 
   useEffect(() => {
-    fetchFirstEvent();
+    fetchUpcomingEvent();
   }, [headers]);
+
+  useEffect(() => {
+    if (ophid) {
+      fetchUpcomingSong();
+    }
+  }, [headers, ophid]);
 
   return (
     <div>
@@ -66,10 +89,13 @@ function Home() {
           </button>
         </div>
       )}
-      {!isLoading && !error && firstEvent && (
+      {!isLoading && !error && upcomingSong && (
         <>
-          <HeroSection firstEvent={firstEvent} secondEvent={secondEvent} />
-          <EventsNewReleases secondEvent={secondEvent} />
+          <HeroSection
+            upcomingSong={upcomingSong}
+            upcomingEvent={upcomingEvent}
+          />
+          <EventsNewReleases upcomingEvent={upcomingEvent} />
           <ArtistRankingSection data={artistsdata} selectedMonth={"January"} />
         </>
       )}

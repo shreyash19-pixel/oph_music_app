@@ -61,9 +61,6 @@ const updateTvFiles = async (song_id, audio, video) => {
 };
 
 
-
-
-
 module.exports = {
   getAllTv,
   getTv,

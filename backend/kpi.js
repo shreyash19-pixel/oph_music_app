@@ -3,15 +3,15 @@ import axios from "axios"; // used to send to your backend server (e.g. http://l
 
 console.time("totalTime");
 
-const TRAFFIC_WEIGHT = 0.20;
+const TRAFFIC_WEIGHT = 0.2;
 const SONGS_WEIGHT = 0.15;
-const VIEW_WEIGHT = 0.30;
-const EVENT_WEIGHT = 0.20;
+const VIEW_WEIGHT = 0.3;
+const EVENT_WEIGHT = 0.2;
 const AVG_VIEW_WEIGHT = 0.15;
 
 const timeToSeconds = (timeStr) => {
   const [h, m, s] = timeStr.split(":").map(Number);
-  return (h * 3600) + (m * 60) + s;
+  return h * 3600 + m * 60 + s;
 };
 
 const fetchKPIData = async () => {
@@ -34,6 +34,7 @@ const fetchKPIData = async () => {
 
 const processArtists = async () => {
   const artistArray = await fetchKPIData();
+  console.log(artistArray);
   console.timeEnd("dataFetch");
 
   // Max values
@@ -58,8 +59,11 @@ const processArtists = async () => {
       traffic: (artist.user_traffic / maxValues.user_traffic) * 100 || 0,
       songs: (artist.song_count / maxValues.song_count) * 100 || 0,
       view: (artist.total_views / maxValues.total_views) * 100 || 0,
-      event: (artist.total_accepted_events / maxValues.total_accepted_events) * 100 || 0,
-      avgView: (artist.avgViewInSeconds / maxValues.avgViewInSeconds) * 100 || 0,
+      event:
+        (artist.total_accepted_events / maxValues.total_accepted_events) *
+          100 || 0,
+      avgView:
+        (artist.avgViewInSeconds / maxValues.avgViewInSeconds) * 100 || 0,
     };
 
     const score = (

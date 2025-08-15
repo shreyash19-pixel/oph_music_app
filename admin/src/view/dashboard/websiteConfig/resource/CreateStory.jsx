@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../../frontend/src/conf/axios";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 
-const CreateResource = () => {
+const CreateStory = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -55,13 +55,13 @@ const CreateResource = () => {
     }
 
     try {
-      await axiosApi.post("/createPodcast", data, {
+      await axiosApi.post("/createStories", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      alert("Podcast created successfully!");
+      alert("Story created successfully!");
 
       setFormData({
         title: "",
@@ -76,8 +76,8 @@ const CreateResource = () => {
       setThumbnailPreview(null);
       setVideoPreview(null);
     } catch (err) {
-      console.error("Error creating podcast:", err);
-      alert("Failed to create podcast.");
+      console.error("Error creating Story:", err);
+      alert("Failed to create Story.");
     }
   };
 
@@ -98,13 +98,13 @@ const CreateResource = () => {
               className="border p-2 rounded shadow w-full"
             >
               <option value="">Go to...</option>
-              <option value="/Reels">Create Reels</option>
-              <option value="/Stories">Create Stories</option>
+              <option value="/Resource">Create Podcast</option>
+              <option value="/Reel">Create Reels</option>
             </select>
           </div>
 
           <h2 className="text-2xl font-bold text-[#0d3c44] text-center">
-            Create Podcast
+            Create Stories
           </h2>
 
           {/* Title */}
@@ -211,7 +211,7 @@ const CreateResource = () => {
             type="submit"
             className="w-full bg-[#0d3c44] text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-[#0b3239] transition-all duration-150"
           >
-            Create Podcast
+            Create Story
           </button>
         </form>
       </div>
@@ -219,4 +219,4 @@ const CreateResource = () => {
   );
 };
 
-export default CreateResource;
+export default CreateStory;

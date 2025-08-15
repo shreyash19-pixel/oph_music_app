@@ -10,18 +10,17 @@ export const ArtistProvider = ({ children }) => {
 
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [headers, setHeaders] = useState(
-    token ? { Authorization: `Bearer ${token}` } : null
+    token ? { Authorization: `Bearer ${token}` } : null,
   );
   const [ophid, setOphid] = useState(null);
   const [user, setUser] = useState(null);
-  
 
   // Decode token and extract artist ID
   useEffect(() => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        
+
         if (!decoded?.email) throw new Error("Invalid token");
 
         setUser(decoded);
@@ -44,21 +43,26 @@ export const ArtistProvider = ({ children }) => {
       setHeaders(null);
     }
   }, [token]);
-  
+
   useEffect(() => {
     console.log("👤 User state changed:", user);
   }, [user]);
-  
+
   console.log(ophid);
-  
+
   useSocketRegistration(ophid);
   // Validate token on mount and redirect if needed
   useEffect(() => {
     const verifyToken = () => {
       const storedToken = localStorage.getItem("token");
 
-      if (!storedToken || storedToken === "undefined" || storedToken === "null") {
+      if (
+        !storedToken ||
+        storedToken === "undefined" ||
+        storedToken === "null"
+      ) {
         const openRoutes = [
+          "/home",
           "/auth/login",
           "/auth/signup",
           "/auth/forgot-password",
@@ -69,14 +73,20 @@ export const ArtistProvider = ({ children }) => {
           "/resources/music-learning-education",
           "/find-your-collaborator",
           "/public-artist-detail",
+          "/content/:id",
+          "/success",
+          "/privacy-policy",
+          "/cancellation-policy",
+          "/disclaimer",
+          "/refund-policy",
+          "/terms-and-conditions",
         ];
 
         console.log(window.location.pathname);
-        
 
-        if (!openRoutes.includes(window.location.pathname)) {
-          navigate("/auth/login");
-        }
+        // if (!openRoutes.includes(window.location.pathname)) {
+        //   navigate("/auth/login");
+        // }
         return;
       }
 
@@ -157,7 +167,7 @@ export const ArtistProvider = ({ children }) => {
   };
 
   return (
-    <ArtistContext.Provider value={{ logout, login, headers, ophid, user}}>
+    <ArtistContext.Provider value={{ logout, login, headers, ophid, user }}>
       {children}
     </ArtistContext.Provider>
   );

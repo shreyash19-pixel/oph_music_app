@@ -79,8 +79,8 @@ const signup = async (req, res) => {
         userData: {
           artist: {
             id: ophId,
-            name: dbUser.full_name,
-            stage_name: dbUser.stage_name,
+            name: name,
+            stage_name: stageName,
           },
         },
       },

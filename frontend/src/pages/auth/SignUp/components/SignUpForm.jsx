@@ -50,7 +50,7 @@ const SignUpForm = () => {
     password: "",
     confirmPassword: "",
     artistType: "",
-    step: "/auth/payment"
+    step: "/auth/payment",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
@@ -61,7 +61,7 @@ const SignUpForm = () => {
   useEffect(() => {
     if (location.state?.status === "cancelled") {
       toast.error(
-        "Payment is mandatory. Please complete the payment to continue."
+        "Payment is mandatory. Please complete the payment to continue.",
       );
       navigate("/auth/login", { replace: true, state: {} });
     } else if (location.state?.status === "success") {
@@ -157,10 +157,10 @@ const SignUpForm = () => {
       const confirmPasswordError =
         name === "password"
           ? getFieldError(
-            "confirmPassword",
-            updatedFormData.confirmPassword,
-            updatedFormData
-          )
+              "confirmPassword",
+              updatedFormData.confirmPassword,
+              updatedFormData,
+            )
           : errors.confirmPassword;
 
       // Set updated errors
@@ -186,19 +186,17 @@ const SignUpForm = () => {
       const response = await signupUser(formData);
       console.log(response);
 
-
       if (response.success) {
-        
         localStorage.setItem("token", response.token);
-        navigate('/auth/payment', {
+        navigate("/auth/payment", {
           state: {
-            from: "Registeration"
-          }
-        })
+            from: "Registeration",
+          },
+        });
       }
     } catch (e) {
       console.log(e);
-      
+
       toast.error(e.response.data.message);
     }
   };

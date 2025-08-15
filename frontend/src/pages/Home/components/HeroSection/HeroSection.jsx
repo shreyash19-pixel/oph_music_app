@@ -9,7 +9,7 @@ import SongDetails from "../../../SongDetails/SongDetails";
 import SongCard from "../../../../components/SongCard";
 import Video from '../../../../assets/videos/video.mp4'
 
-const HeroSection = ({ firstEvent, secondEvent }) => {
+const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const eventID = useSelector((state) => state.event.selectedEvent);
@@ -110,9 +110,9 @@ const HeroSection = ({ firstEvent, secondEvent }) => {
 
       {/* <SongDetails/> */}
 
-      <SongCard
-        releaseData = {firstEvent}
-      />
+      {Object.values(upcomingSong).length > 0 &&  (<SongCard
+        releaseData = {upcomingSong}
+      />)}
 
       {/* Event Banner */}
       <div
@@ -121,7 +121,7 @@ const HeroSection = ({ firstEvent, secondEvent }) => {
           backgroundImage: "url('/assets/images/songUploadCardBg.png')",
         }}
       >
-        {secondEvent && (
+        {upcomingEvent && (
           <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
             {/* Left Content Section */}
             <div className="w-full md:w-2/3 space-y-4">
@@ -131,7 +131,7 @@ const HeroSection = ({ firstEvent, secondEvent }) => {
                   NEW EVENT
                 </p>
                 <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-                  {secondEvent.EventName}
+                  {upcomingEvent.EventName}
                 </h2>
               </div>
 
@@ -140,33 +140,33 @@ const HeroSection = ({ firstEvent, secondEvent }) => {
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <span>Competition Date:</span>
                   <span className="font-medium text-white">
-                    {formatDateAndAdjustMonth(secondEvent.dateTime)}
+                    {formatDateAndAdjustMonth(upcomingEvent.dateTime)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <span>Registration Date:</span>
                   <span className="font-medium text-white">
-                    {formatDateAndAdjustMonth(secondEvent.registrationStart)} -{" "}
-                    {formatDateAndAdjustMonth(secondEvent.registrationEnd)}
+                    {formatDateAndAdjustMonth(upcomingEvent.registrationStart)} -{" "}
+                    {formatDateAndAdjustMonth(upcomingEvent.registrationEnd)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <span>Registration Fee:</span>
                   <span className="font-medium text-white">
-                    {secondEvent.registrationFee_normal}/-
+                    {upcomingEvent.registrationFee_normal}/-
                   </span>
                 </div>
               </div>
 
               {/* Register Button */}
               <div>
-                {secondEvent.is_registered ? (
+                {upcomingEvent.is_registered ? (
                   <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
                     Registered
                   </button>
                 ) : (
                   <button
-                    onClick={() => handleClick(secondEvent)}
+                    onClick={() => handleClick(upcomingEvent)}
                     className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
                   >
                     Register
@@ -178,7 +178,7 @@ const HeroSection = ({ firstEvent, secondEvent }) => {
             {/* Right Image Section */}
             <div className="w-full md:w-[35%]">
               <img
-                src={secondEvent.image}
+                src={upcomingEvent.image}
                 alt="Event thumbnail"
                 className="w-full h-full max-h-[250px] object-cover rounded-lg"
               />
@@ -190,7 +190,7 @@ const HeroSection = ({ firstEvent, secondEvent }) => {
       {/* Registration Modal */}
       {isModalOpen && (
         <RegistrationModal
-          id={secondEvent?.event_id}
+          id={upcomingEvent?.event_id}
           setIsModalOpen={setIsModalOpen}
         />
       )}

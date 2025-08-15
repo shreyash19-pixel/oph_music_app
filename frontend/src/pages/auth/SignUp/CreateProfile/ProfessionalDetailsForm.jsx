@@ -23,11 +23,11 @@ const professionOptions = [
   { id: 4, name: "Composer" },
   { id: 5, name: "Instrumentalist" },
   { id: 6, name: "Lyricist" },
-  { id: 7, name: "Music Producer" }
+  { id: 7, name: "Music Producer" },
 ];
 
 const ProfessionalDetailsForm = () => {
-  const { headers,ophid } = useArtist();
+  const { headers, ophid } = useArtist();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [videoBio, setVideoBio] = useState(null);
@@ -95,9 +95,8 @@ const ProfessionalDetailsForm = () => {
   // console.log(formData,"formdata");
 
   useEffect(() => {
-    if(ophid)
-    {
-    fetchProfessionalDetails();
+    if (ophid) {
+      fetchProfessionalDetails();
     }
   }, [ophid]);
 
@@ -112,7 +111,8 @@ const ProfessionalDetailsForm = () => {
   const checkSimilarity = () => {
     let isSimilarity = false;
 
-    if (formData.profession === checkSimilarData.profession &&
+    if (
+      formData.profession === checkSimilarData.profession &&
       formData.bio === checkSimilarData.bio &&
       formData.spotifyUrl === checkSimilarData.spotifyUrl &&
       formData.instagramUrl === checkSimilarData.instagramUrl &&
@@ -123,17 +123,16 @@ const ProfessionalDetailsForm = () => {
       formData.songPlanningDuration === checkSimilarData.songPlanningDuration &&
       formData.songsPlanned === checkSimilarData.songsPlanned &&
       formData.url === checkSimilarData.url &&
-      JSON.stringify(formData.photos) === JSON.stringify(checkSimilarData.photos)
+      JSON.stringify(formData.photos) ===
+        JSON.stringify(checkSimilarData.photos)
     ) {
       toast.error("Please check rejection reason and make update");
       isSimilarity = true;
     }
     return isSimilarity;
-
-  }
+  };
 
   const fetchProfessionalDetails = async () => {
-
     console.log("hekekekfnds");
 
     try {
@@ -149,7 +148,6 @@ const ProfessionalDetailsForm = () => {
 
         const artist = data[0];
 
-
         setFormData({
           profession: artist.Profession || "",
           bio: artist.Bio || "",
@@ -163,7 +161,7 @@ const ProfessionalDetailsForm = () => {
           songPlanningDuration: artist.SongsPlanningType || 0,
           songsPlanned: artist.SongsPlanningCount || 0,
           step_status: artist.step_status,
-          url: artist.VideoURL
+          url: artist.VideoURL,
         });
 
         setcheckSimilarData({
@@ -179,13 +177,11 @@ const ProfessionalDetailsForm = () => {
           songPlanningDuration: artist.SongsPlanningType || 0,
           songsPlanned: artist.SongsPlanningCount || 0,
           step_status: artist.step_status,
-          url: artist.VideoURL
+          url: artist.VideoURL,
         });
 
-
-
         setVideoBio(artist.VideoURL || null);
-        setVideoUrl(artist.VideoURL)
+        setVideoUrl(artist.VideoURL);
 
         if (response.data[0].reject_reason != null) {
           setRejectReason(response.data[0].reject_reason);
@@ -215,13 +211,12 @@ const ProfessionalDetailsForm = () => {
     }
 
     if (formData.step_status === "rejected") {
-      const result = checkSimilarity()
+      const result = checkSimilarity();
       if (result) {
         setLoading(false);
-        return
+        return;
       }
     }
-
 
     try {
       const formDataToSend = new FormData();
@@ -234,18 +229,14 @@ const ProfessionalDetailsForm = () => {
       formDataToSend.append("InstagramLink", formData.instagramUrl);
       formDataToSend.append("FacebookLink", formData.facebookUrl);
       formDataToSend.append("AppleMusicLink", formData.appleMusicUrl);
-      let stepPath
+      let stepPath;
       console.log(formData.step_status);
       if (formData.step_status === "under review") {
-
         stepPath = "/auth/create-profile/documentation-details";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/membership-form`;
       }
-      formDataToSend.append(
-        "step",
-        stepPath
-      );
+      formDataToSend.append("step", stepPath);
 
       // Calculate and append experience in months
       const experienceMonths =
@@ -260,7 +251,7 @@ const ProfessionalDetailsForm = () => {
         formDataToSend.append("SongsPlanningCount", formData.songsPlanned);
         formDataToSend.append(
           "SongsPlanningType",
-          formData.songPlanningDuration
+          formData.songPlanningDuration,
         );
       }
 
@@ -295,13 +286,15 @@ const ProfessionalDetailsForm = () => {
       //   formDataToSend.append("video", videoBio);
       // }
       const response = await updateProfessionalDetails(formDataToSend, headers);
+      const res = await axiosApi.post(`/increment-count/${ophid}`);
       if (response.success) {
         toast.success("Professional details updated successfully");
-        navigate('/auth/create-profile/documentation-details');
+        navigate("/auth/create-profile/documentation-details");
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update professional details"
+        error.response?.data?.message ||
+          "Failed to update professional details",
       );
     } finally {
       setLoading(false);
@@ -676,7 +669,6 @@ const ProfessionalDetailsForm = () => {
       </div>
     </div>
   );
-
 };
 
 export default ProfessionalDetailsForm;

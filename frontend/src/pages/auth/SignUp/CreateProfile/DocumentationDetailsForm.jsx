@@ -79,7 +79,7 @@ const DocumentationDetailsForm = () => {
     ifscCode: "",
     agreementAccepted: false,
     step_status: "",
-    reject_reason: ""
+    reject_reason: "",
   });
 
   const [checkSimilarData, setcheckSimilarData] = useState({
@@ -94,7 +94,7 @@ const DocumentationDetailsForm = () => {
     ifscCode: "",
     agreementAccepted: false,
     step_status: "",
-    reject_reason: ""
+    reject_reason: "",
   });
   const [videoUrl, setVideoUrl] = useState(null);
 
@@ -112,15 +112,13 @@ const DocumentationDetailsForm = () => {
     }
   }, [ophid]);
 
-
   const parseString = (accept) => {
     if (accept === "false") {
-      return 0
+      return 0;
+    } else {
+      return 1;
     }
-    else {
-      return 1
-    }
-  }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -186,7 +184,8 @@ const DocumentationDetailsForm = () => {
   const checkSimilarity = () => {
     let isSimilarity = false;
 
-    if (formData.aadharFront?.file === checkSimilarData.aadharFront?.file &&
+    if (
+      formData.aadharFront?.file === checkSimilarData.aadharFront?.file &&
       formData.aadharFront?.preview === checkSimilarData.aadharFront?.preview &&
       formData.aadharBack?.file === checkSimilarData.aadharBack?.file &&
       formData.aadharBack?.preview === checkSimilarData.aadharBack?.preview &&
@@ -200,13 +199,11 @@ const DocumentationDetailsForm = () => {
       formData.ifscCode === checkSimilarData.ifscCode &&
       formData.agreementAccepted === checkSimilarData.agreementAccepted
     ) {
-
       toast.error("Please check rejection reason and make update");
       isSimilarity = true;
     }
     return isSimilarity;
-
-  }
+  };
 
   const fetchDocumentationDetails = async () => {
     try {
@@ -256,7 +253,7 @@ const DocumentationDetailsForm = () => {
           ifscCode: doc.IFSCCode || "",
           agreementAccepted: doc.AgreementAccepted,
           step_status: doc.step_status,
-          reject_reason: doc.reject_reason
+          reject_reason: doc.reject_reason,
         };
 
         setFormData(baseForm);
@@ -325,11 +322,10 @@ const DocumentationDetailsForm = () => {
     }
 
     if (formData.step_status === "rejected") {
-
-      const result = checkSimilarity()
+      const result = checkSimilarity();
       if (result) {
         setLoading(false);
-        return
+        return;
       }
     }
 
@@ -340,9 +336,8 @@ const DocumentationDetailsForm = () => {
       if (formData.signature) {
         try {
           if (typeof formData.signature === "string") {
-            // 🟢 Case 1: Drawn signature (data URL)
             const blob = await fetch(formData.signature).then((res) =>
-              res.blob()
+              res.blob(),
             );
 
             const randomString = Math.random().toString(36).substring(2, 10);
@@ -350,16 +345,13 @@ const DocumentationDetailsForm = () => {
 
             formDataToSend.append("SignatureImageURL", blob, fileName);
           } else if (formData.signature?.file instanceof File) {
-            // 🟢 Case 2: Uploaded File
             formDataToSend.append("SignatureImageURL", formData.signature.file);
           } else if (typeof formData.signature?.preview === "string") {
-            // 🟢 Case 3: URL — append URL string directly
             formDataToSend.append(
               "SignatureImageURL",
-              formData.signature.preview
+              formData.signature.preview,
             );
           }
-
         } catch (error) {
           console.error("Error appending signature to FormData:", error);
         }
@@ -373,28 +365,23 @@ const DocumentationDetailsForm = () => {
         PanBackURL: formData.panBack,
       };
 
-
-
       for (const [field, data] of Object.entries(documentFields)) {
         if (data?.file) {
-
           formDataToSend.append(field, data.file);
         } else if (
           data?.preview &&
           typeof data.preview === "string" &&
           data.preview.startsWith("http")
         ) {
-
           const response = await fetch(data.preview);
           const blob = await response.blob();
           formDataToSend.append(field, blob, `${field}.png`);
         }
       }
 
-
       // Get the selected bank's ID
       const selectedBank = banking.find(
-        (bank) => bank.bank_name === formData.bankName
+        (bank) => bank.bank_name === formData.bankName,
       );
       if (!selectedBank) {
         toast.error("Please select a valid bank");
@@ -408,7 +395,7 @@ const DocumentationDetailsForm = () => {
       formDataToSend.append("AccountNumber", formData.accountNumber);
       formDataToSend.append("IFSCCode", formData.ifscCode);
       formDataToSend.append("AgreementAccepted", formData.agreementAccepted);
-      formDataToSend.append("step", '/auth/membership-form');
+      formDataToSend.append("step", "/auth/membership-form");
 
       const formDataObj = {};
       formDataToSend.forEach((value, key) => {
@@ -417,18 +404,19 @@ const DocumentationDetailsForm = () => {
 
       const response = await updateDocumentationDetails(
         formDataToSend,
-        headers
+        headers,
       );
+      const res = await axiosApi.post(`/increment-count/${ophid}`);
 
       if (response.success) {
         toast.success("Documentation details updated successfully");
-        navigate('/auth/membership-form');
+        navigate("/auth/membership-form");
         // setShowMembershipForm(true); // Show MembershipForm
       }
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-        "Failed to update documentation details"
+          "Failed to update documentation details",
       );
     } finally {
       setLoading(false);
@@ -705,7 +693,11 @@ const DocumentationDetailsForm = () => {
                 type="checkbox"
                 id="agreement"
                 name="agreementAccepted"
-                checked={formData.agreementAccepted ? parseString(formData.agreementAccepted) : false}
+                checked={
+                  formData.agreementAccepted
+                    ? parseString(formData.agreementAccepted)
+                    : false
+                }
                 onChange={handleInputChange}
                 className="w-4 h-4 rounded border-gray-600 text-cyan-400 focus:ring-cyan-400"
                 required

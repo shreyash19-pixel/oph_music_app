@@ -17,7 +17,7 @@ const signin = async (req, res) => {
     }
 
     const dbUser = user[0];
-   
+
     const ophId = user[0].ophid;
     const isPasswordValid = await bcrypt.compare(password, dbUser.user_pass);
 
@@ -37,36 +37,34 @@ const signin = async (req, res) => {
           artist: {
             id: ophId,
             name: dbUser.full_name,
-            stage_name: dbUser.stage_name
+            stage_name: dbUser.stage_name,
           },
-        }
+        },
       },
       process.env.SECRET_KEY,
-      { expiresIn: "1h" });
-    
+      { expiresIn: "1h" },
+    );
 
     const result = await user_details.checkRejectedStep(dbUser.ophid);
 
     const checkRejectedStep = result[0];
-    
-    if (checkRejectedStep.user_details_status === "rejected") {
+
+    if (checkRejectedStep.user_status === "rejected") {
       navTo = "/auth/create-profile/personal-details";
-    } else if (checkRejectedStep.professional_details_status === "rejected") {
+    } else if (checkRejectedStep.professional_status === "rejected") {
       navTo = "/auth/create-profile/professional-details";
-    } else if (checkRejectedStep.document_details_status === "rejected") {
+    } else if (checkRejectedStep.documentation_status === "rejected") {
       navTo = "/auth/create-profile/documentation-details";
-    }
-    else if(checkRejectedStep.user_details_status === "completed" && checkRejectedStep.professional_details_status === "completed" && checkRejectedStep.document_details_status === "completed")
-    {
+    } else if (checkRejectedStep.payment_status === "rejected") {
+      navTo = "/auth/payment";
+    } else if (checkRejectedStep.overall_status === "completed") {
       navTo = "/dashboard";
-    } 
-    else {
+    } else {
       navTo = dbUser.current_step;
     }
 
     console.log(navTo);
-    
-    
+
     return res.status(200).json({
       success: true,
       message: "Login successful",

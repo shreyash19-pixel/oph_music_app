@@ -27,7 +27,7 @@ const NavRoutes = () => {
     <Provider store={artistStore}>
       <Routes>
         <Route path="/" element={<NavLayout />}>
-          <Route index element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="contact" element={<Contact />} />
           <Route path="events/online-music-events" element={<Events />} />
           <Route path="events/:id" element={<IndividualEvent />} />

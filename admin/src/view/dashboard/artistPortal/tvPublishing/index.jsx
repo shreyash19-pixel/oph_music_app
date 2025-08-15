@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { Lock, Unlock } from "lucide-react";
 import { toast } from "react-toastify";
+import toast, { Toaster } from "react-hot-toast";
 
 const TvIndex = () => {
   const { song_id } = useParams();
