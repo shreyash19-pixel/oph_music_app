@@ -44,8 +44,36 @@ const fetchAllEventsWithStatus = async (req, res) => {
   }
 };
 
+const getEventById = async (req, res) => {
+  try {
+    const idParam = req.params.id;
+    // basic validation: must be positive integer
+    const eventId = parseInt(idParam, 10);
+    if (!eventId || eventId <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event id" });
+    }
+
+    const event = await Event.getEventById(eventId);
+    if (!event) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Event not found" });
+    }
+
+    return res.json({ success: true, data: event });
+  } catch (err) {
+    console.error("Error fetching event:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   fetchAllEvents,
   createEvent,
   fetchAllEventsWithStatus,
+  getEventById,
 };
