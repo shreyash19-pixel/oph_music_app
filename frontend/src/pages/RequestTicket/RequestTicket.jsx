@@ -340,9 +340,7 @@ export default function RequestTicketForm() {
         if (!ophid) return; // wait until ophID is loaded
 
         try {
-          const response = await axios.get(
-            `/getTicket?ophID=${ophid}`
-          );
+          const response = await axios.get(`/getAllTickets?ophID=${ophid}`);
 
           const sanitized = response.data.data.map((ticket) => ({
             ...ticket,

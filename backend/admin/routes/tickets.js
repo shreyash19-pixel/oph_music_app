@@ -7,6 +7,7 @@ const {
   getAllTickets,
   getTicketSummaries,
   updateResolvedSummary,
+  getTicket,
 } = require("../controllers/tickets");
 
 router.post(
@@ -20,8 +21,10 @@ router.post(
 // routes/tickets.js
 router.post("/resolveTicket", updateResolvedSummary);
 
-router.get("/getTicket", getAllTickets);
+router.get("/getAllTickets", getAllTickets);
 
 router.get("/getTicketSummaries", getTicketSummaries);
+
+router.get("/getTicket", getTicket);
 
 module.exports = router;
