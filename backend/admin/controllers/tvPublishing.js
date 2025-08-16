@@ -1,5 +1,7 @@
 const tvModel = require("../model/tvPublishing");
 
+const { uploadToS3 } = require("../../utils");
+
 const getTv = async (req, res) => {
   const { song_id } = req.query;
   if (!song_id) {
@@ -111,18 +113,36 @@ const updateTvStatus = async (req, res) => {
 const updateTvFiles = async (req, res) => {
   try {
     const { song_id } = req.body;
-    const audio = req.body.audio || undefined;
-    const video = req.body.video || undefined;
+    const audio_file = req.files.audio?.[0];
+    const video_file = req.files.video?.[0];
 
+    console.log("Audio file:", audio_file);
+    console.log("Video file:", video_file);
+ 
     if (!song_id) {
       return res.status(400).json({ error: "song_id is required" });
     }
 
-    if (!audio && !video) {
-      return res
-        .status(400)
-        .json({ error: "At least one file (audio or video) is required" });
+    if (!audio_file && !video_file) {
+      return res.status(400).json({
+        success: false,
+        message: "Both audio and video files are required",
+      });
     }
+
+   if (audio_file) {
+     if (!audio_file.buffer) {
+       throw new Error("Audio file has no buffer");
+     }
+     audio = await uploadToS3(audio_file, `contents/${song_id}/audio`);
+   }
+
+   if (video_file) {
+     if (!video_file.buffer) {
+       throw new Error("Video file has no buffer");
+     }
+     video = await uploadToS3(video_file, `contents/${song_id}/video`);
+   }
 
     await tvModel.updateTvFiles(song_id, audio, video);
 

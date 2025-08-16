@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { Lock, Unlock } from "lucide-react";
 import { toast } from "react-toastify";
-import toast, { Toaster } from "react-hot-toast";
+// import toast, { Toaster } from "react-hot-toast";
 
 const TvIndex = () => {
   const { song_id } = useParams();
@@ -11,9 +11,8 @@ const TvIndex = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-
   // Page-wide unlock state (backend lock)
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlock, setunlock] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
 
   // Lock for audio/video editing (local)
@@ -57,7 +56,7 @@ const TvIndex = () => {
           setOriginalVideoURL(data.video || null);
 
           // Set page-wide unlock state from backend lock
-          setUnlocked(data.lock === 0);
+          setunlock(data.lock === 0);
 
           // If locked (lock = 1), lock audio/video editing by default
           setLocked(data.lock === 1);
@@ -88,7 +87,7 @@ const TvIndex = () => {
         song_id,
         lock: 0,
       });
-      setUnlocked(true); // Unlock page
+      setunlock(true); // Unlock page
       // Also unlock editing
       setLocked(false);
       // Update tvData.lock to 0 locally
@@ -119,7 +118,6 @@ const TvIndex = () => {
     }
   };
 
-
   const handleSubmitDecision = async (status) => {
     if (status === "Accepted") {
       setSelectedStatus("Accepted");
@@ -146,23 +144,22 @@ const TvIndex = () => {
       }));
 
       if (status === "Accepted") {
-      toast.success("Song has been approved successfully!");
-    } else if (status === "Rejected") {
-      toast.error("Song has been rejected.");
+        toast.success("Song has been approved successfully!");
+      } else if (status === "Rejected") {
+        toast.error("Song has been rejected.");
       }
-      
-       if (!reason || reason.trim() === "") {
-      toast.warning("Please provide a reason for rejection.");
-      return;
-      }
-      
-      setTimeout(() => {
-          window.location.reload();
-        }, 1000);
 
+      if (!reason || reason.trim() === "") {
+        toast.warning("Please provide a reason for rejection.");
+        return;
+      }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (err) {
       console.error("Error updating status:", err);
-       toast.error("Failed to update status. Please try again.");
+      toast.error("Failed to update status. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -173,7 +170,7 @@ const TvIndex = () => {
       setSubmitting(true);
 
       const formData = new FormData();
-     formData.append("song_id", tvData.song_id);
+      formData.append("song_id", tvData.song_id);
       if (audioInputRef.current?.files[0]) {
         formData.append("audio", audioInputRef.current.files[0]);
       }
@@ -190,7 +187,7 @@ const TvIndex = () => {
       });
       console.log(res);
 
-      if (res.data.success) {
+      if (res.status === 200) {
         toast.success("Files updated successfully.");
         setTimeout(() => window.location.reload(), 1000);
       } else {
@@ -204,13 +201,11 @@ const TvIndex = () => {
     }
   };
 
-
-
   if (loading) return <div>Loading...</div>;
   if (!tvData) return <div>No data found for Song ID: {song_id}</div>;
 
-  // If page locked (lock=1) and not unlocked yet, show overlay
-  if (tvData.lock === 1 && !unlocked) {
+  // If page locked (lock=1) and not unlock yet, show overlay
+  if (tvData.lock === 1 && !unlock) {
     return (
       <div
         style={{
@@ -277,12 +272,12 @@ const TvIndex = () => {
                 onClick={toggleLock}
                 className="p-2 border rounded-md flex items-center gap-1"
                 title={locked ? "Unlock to edit" : "Lock"}
-                disabled={!unlocked} // Disable if page locked
+                disabled={!unlock} // Disable if page locked
               >
                 {locked ? <Lock size={18} /> : <Unlock size={18} />}
-                {locked ? "Locked" : "Unlocked"}
+                {locked ? "Locked" : "unlock"}
               </button>
-              {!locked && unlocked && (
+              {!locked && unlock && (
                 <input
                   type="file"
                   accept="audio/*"
@@ -314,12 +309,12 @@ const TvIndex = () => {
                 onClick={toggleLock}
                 className="p-2 border rounded-md flex items-center gap-1"
                 title={locked ? "Unlock to edit" : "Lock"}
-                disabled={!unlocked} // Disable if page locked
+                disabled={!unlock} // Disable if page locked
               >
                 {locked ? <Lock size={18} /> : <Unlock size={18} />}
-                {locked ? "Locked" : "Unlocked"}
+                {locked ? "Locked" : "unlock"}
               </button>
-              {!locked && unlocked && (
+              {!locked && unlock && (
                 <input
                   type="file"
                   accept="video/*"
@@ -343,7 +338,7 @@ const TvIndex = () => {
               ? "bg-green-600 text-white"
               : "bg-green-300 text-green-900"
           }`}
-          disabled={locked || !unlocked}
+          disabled={locked || !unlock}
         >
           Approve
         </button>
@@ -354,7 +349,7 @@ const TvIndex = () => {
               ? "bg-red-600 text-white"
               : "bg-red-300 text-red-900"
           }`}
-          disabled={locked || !unlocked}
+          disabled={locked || !unlock}
         >
           Reject
         </button>
@@ -371,7 +366,7 @@ const TvIndex = () => {
             rows={4}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            disabled={locked || !unlocked}
+            disabled={locked || !unlock}
             placeholder="Enter reason for rejection"
           />
         </div>
@@ -382,7 +377,7 @@ const TvIndex = () => {
         <button
           onClick={handleSaveChanges}
           className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
-          disabled={locked || !unlocked}
+          disabled={locked || !unlock}
         >
           Save Changes
         </button>
