@@ -20,7 +20,7 @@
 
 ### Frontend (Client)
 ☐ ALL Navpages => Home => Compelete
-☐ NN Navpages => Event => Compelete => 
+✔ NN Navpages => Event => Compelete => Done => Go to Testing @done(25-08-16 02:15)
 ☐ SP Navpages => Artist => Fix mapping for specialist artists , retest and fix for remianing bugs.
 ☐ SP Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
 ✔ NN Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike) => Done => Go to Testing @done(25-08-09 12:10)

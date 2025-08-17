@@ -75,7 +75,55 @@ const DynamicTable = ({
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-  const renderValue = (value) => {
+  // === Date detection & formatting logic (only these functions changed) ===
+  const isDateField = (col) => {
+    if (!col) return false;
+    const dateFields = ["createdat", "created_at", "modified_at", "updated_at"];
+    return dateFields.includes(col.toLowerCase());
+  };
+
+  const formatDateTime = (value) => {
+    if (value === null || value === undefined || value === "") return "";
+
+    // Accept Date object, numeric timestamp, or ISO-like string
+    let dateObj;
+    if (value instanceof Date) {
+      dateObj = value;
+    } else if (typeof value === "number") {
+      dateObj = new Date(value);
+    } else {
+      // handle numeric strings that look like timestamps
+      const asNumber = Number(value);
+      if (!Number.isNaN(asNumber) && String(value).trim().length >= 10 && String(value).trim().length <= 13) {
+        dateObj = new Date(asNumber);
+      } else {
+        dateObj = new Date(String(value));
+      }
+    }
+
+    if (isNaN(dateObj.getTime())) {
+      return String(value); // fallback to original if invalid
+    }
+
+    // Keep a compact, consistent format and DO NOT include timezone text (keeps row height stable)
+    return dateObj.toLocaleString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+  // === end date logic ===
+
+  const renderValue = (value, col) => {
+    // Date fields first (only this check added)
+    if (isDateField(col)) {
+      return formatDateTime(value);
+    }
+
+    if (value === null || value === undefined) return "";
+
     if (typeof value !== "string") return String(value);
     const lowerVal = value.toLowerCase();
 
@@ -158,7 +206,7 @@ const DynamicTable = ({
               >
                 {columns.map((col) => (
                   <td key={col} className="px-4 py-3 border-b border-gray-200">
-                    {renderValue(row[col])}
+                    {renderValue(row[col], col)}
                   </td>
                 ))}
                 {showStatusIndicator && statusField && (

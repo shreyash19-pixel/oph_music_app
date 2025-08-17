@@ -26,17 +26,17 @@ const useSocketRegistration = (OPH_ID) => {
       registerIfConnected();
     }
 
-    // 🔔 Listen for ticket-updated event from backend
-    const handleTicketUpdate = () => {
-      console.log("Received ticket-updated event:", );
+    const handleTicketUpdate = (data) => {
+      console.log("Received ticket-updated event:", data);
 
-      toast.success(`Audio for your song is accepted\n`, {
+      toast.success(`${data.title}`, {
         duration: 10000,
-        icon: "",
+        position: "top-right",
+        icon: "🎶",
       });
     };
 
-    socket.on("ticket-updated", handleTicketUpdate);
+    socket.on("Music-update", handleTicketUpdate);
 
     // Cleanup on unmount
     return () => {
