@@ -34,8 +34,6 @@ const ContentManage = () => {
     video: "",
   });
 
-
-
   useEffect(() => {
     const fetchSongData = async () => {
       setLoading(true);
@@ -46,10 +44,10 @@ const ContentManage = () => {
         // Convert to yyyy-mm-dd format for input[type=date]
         const formattedReleaseDate = song.release_date
           ? new Date(song.release_date).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
           : "";
 
         if (!hasInteracted.current.Content) {
@@ -68,9 +66,15 @@ const ContentManage = () => {
             song.secondary_artist_names &&
             song.secondary_legal_names
           ) {
-            const types = song.secondary_artist_types.split(",").map((s) => s.trim());
-            const names = song.secondary_artist_names.split(",").map((s) => s.trim());
-            const legalNames = song.secondary_legal_names.split(",").map((s) => s.trim());
+            const types = song.secondary_artist_types
+              .split(",")
+              .map((s) => s.trim());
+            const names = song.secondary_artist_names
+              .split(",")
+              .map((s) => s.trim());
+            const legalNames = song.secondary_legal_names
+              .split(",")
+              .map((s) => s.trim());
 
             for (let i = 0; i < types.length; i++) {
               secondaryArtists.push({
@@ -133,7 +137,8 @@ const ContentManage = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
         <div className="mb-6 text-lg text-gray-600">
-          <strong>OphID:</strong> {ophid} &nbsp; | &nbsp; <strong>SongID:</strong> {songId}
+          <strong>OphID:</strong> {ophid} &nbsp; | &nbsp;{" "}
+          <strong>SongID:</strong> {songId}
         </div>
 
         <SectionBlock
@@ -160,12 +165,23 @@ const ContentManage = () => {
           renderExtra={() =>
             audio.secondary_artists?.length > 0 && (
               <div className="mt-4 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800">Secondary Artists</h3>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Secondary Artists
+                </h3>
                 {audio.secondary_artists.map((artist, idx) => (
-                  <div key={idx} className="p-3 border rounded bg-gray-100 text-sm space-y-1">
-                    <div><strong>Type:</strong> {artist.artist_type}</div>
-                    <div><strong>Artist Name:</strong> {artist.artist_name}</div>
-                    <div><strong>Legal Name:</strong> {artist.legal_name}</div>
+                  <div
+                    key={idx}
+                    className="p-3 border rounded bg-gray-100 text-sm space-y-1"
+                  >
+                    <div>
+                      <strong>Type:</strong> {artist.artist_type}
+                    </div>
+                    <div>
+                      <strong>Artist Name:</strong> {artist.artist_name}
+                    </div>
+                    <div>
+                      <strong>Legal Name:</strong> {artist.legal_name}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -209,44 +225,46 @@ const ContentManage = () => {
 };
 
 const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
-  const [unlockedFields, setUnlockedFields] = useState({
+  const [unlockFields, setunlockFields] = useState({
     Content: {},
     Audio: {},
     Video: {},
   });
 
   const showConfirmationToast = (onConfirm) => {
-  toast(
-    (t) => (
-      <div>
-        <div className="text-sm text-gray-900">Are you sure you want to save?</div>
-        <div className="mt-3 flex justify-center gap-4">
-          <button
-            className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
-            onClick={() => {
-              onConfirm();
-              toast.dismiss(t.id);
-            }}
-          >
-            Yes
-          </button>
-          <button
-            className="bg-gray-300 px-6 py-2 rounded-md hover:bg-gray-400 transition"
-            onClick={() => toast.dismiss(t.id)}
-          >
-            No
-          </button>
+    toast(
+      (t) => (
+        <div>
+          <div className="text-sm text-gray-900">
+            Are you sure you want to save?
+          </div>
+          <div className="mt-3 flex justify-center gap-4">
+            <button
+              className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
+              onClick={() => {
+                onConfirm();
+                toast.dismiss(t.id);
+              }}
+            >
+              Yes
+            </button>
+            <button
+              className="bg-gray-300 px-6 py-2 rounded-md hover:bg-gray-400 transition"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              No
+            </button>
+          </div>
         </div>
-      </div>
-    ),
-    { duration: 5000 }
-  );
-};
+      ),
+      { duration: 5000 }
+    );
+  };
 
   const [initialData] = useState({ ...data });
 
   const toggleLock = (field) => {
-    setUnlockedFields((prev) => ({
+    setunlockFields((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
@@ -268,30 +286,29 @@ const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
   //   console.log(`🔄 [${section}] Changes Submitted:`, changes);
   // };
 
-//   const handleSubmit = () => {
-//   console.log(`📤 [${section}] Submitted Data:`, data);
-// };
+  //   const handleSubmit = () => {
+  //   console.log(`📤 [${section}] Submitted Data:`, data);
+  // };
 
-const handleSubmit = () => {
-  let hasChanges = false;
+  const handleSubmit = () => {
+    let hasChanges = false;
 
-  for (const key of fields) {
-    if (initialData[key] !== data[key]) {
-      hasChanges = true;
-      break;
+    for (const key of fields) {
+      if (initialData[key] !== data[key]) {
+        hasChanges = true;
+        break;
+      }
     }
-  }
 
-  if (!hasChanges) {
-    console.log(`✅ [${section}] No changes to save`);
-    return;
-  }
+    if (!hasChanges) {
+      console.log(`✅ [${section}] No changes to save`);
+      return;
+    }
 
-  showConfirmationToast(() => {
-    console.log(`📤 [${section}] Submitted Data:`, data);
-  });
-};
-
+    showConfirmationToast(() => {
+      console.log(`📤 [${section}] Submitted Data:`, data);
+    });
+  };
 
   return (
     <div className="bg-gray-50 rounded-xl shadow-md p-6 space-y-4">
@@ -302,8 +319,8 @@ const handleSubmit = () => {
       {fields.map((field) => {
         const isReadOnly =
           field === "release_date" ||
-          section === "Audio" && field === "secondary_artists" ||
-          !unlockedFields?.[section]?.[field];
+          (section === "Audio" && field === "secondary_artists") ||
+          !unlockFields?.[section]?.[field];
 
         return (
           <Field key={field} label={field}>
@@ -314,7 +331,9 @@ const handleSubmit = () => {
                   value={data[field]}
                   onChange={onChange}
                   readOnly={isReadOnly}
-                  className={`w-full p-2 border rounded-md text-black bg-white ${isReadOnly ? "bg-gray-100" : ""}`}
+                  className={`w-full p-2 border rounded-md text-black bg-white ${
+                    isReadOnly ? "bg-gray-100" : ""
+                  }`}
                 />
               ) : field.includes("audio_url") ? (
                 <audio controls className="w-full max-w-xs rounded border mb-2">
@@ -328,7 +347,9 @@ const handleSubmit = () => {
                   value={data[field]}
                   onChange={onChange}
                   readOnly={isReadOnly}
-                  className={`w-full p-2 border rounded-md text-black ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+                  className={`w-full p-2 border rounded-md text-black ${
+                    isReadOnly ? "bg-gray-100" : "bg-white"
+                  }`}
                 />
               )}
 
@@ -350,17 +371,16 @@ const handleSubmit = () => {
       {renderExtra && renderExtra()}
 
       <div className="pt-4 text-right">
-  <button
-    onClick={handleSubmit}
-    className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
-  >
-    Save {section} Details
-  </button>
-</div>
+        <button
+          onClick={handleSubmit}
+          className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
+        >
+          Save {section} Details
+        </button>
+      </div>
     </div>
   );
 };
-
 
 const Field = ({ label, children }) => (
   <div>
