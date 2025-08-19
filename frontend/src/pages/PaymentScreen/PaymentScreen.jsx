@@ -16,21 +16,21 @@ const PaymentScreen = () => {
   const from = location.state.from;
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
-  const [oph_id, setoph_id] = useState("")
+  const [oph_id, setoph_id] = useState("");
 
   const {
     amount = 0,
     planIds = [],
     paymentIds = [],
-    returnPath = "/create-profile/personal-details",
+    returnPath = "/",
     heading = "Payment Required",
   } = location.state || {};
 
   useEffect(() => {
     if (ophid) {
-      setoph_id(ophid)
+      setoph_id(ophid);
     }
-  }, [ophid])
+  }, [ophid]);
 
   const handlePaymentSuccess = async (e) => {
     e.preventDefault();
@@ -45,24 +45,25 @@ const PaymentScreen = () => {
         Status: "Under Review",
         step: "/auth/create-profile/personal-details",
         from: from,
-        song_id:song_id,
-        event_id:event_id
+        song_id: song_id,
+        event_id: event_id,
       };
       console.log(JSON.stringify(formData));
-      
 
       const response = await axiosApi.post("/auth/payment", formData);
-
 
       if (response.data.success && from == "Date booking") {
         {
           const CalenderRes = await axiosApi.post(
             "/booking",
-            { oph_id: ophid, booking_date: location.state.date, song_name: null, project_type: null},
-            { headers: headers }
+            {
+              oph_id: ophid,
+              booking_date: location.state.date,
+              song_name: null,
+              project_type: null,
+            },
+            { headers: headers },
           );
-
-
 
           if (CalenderRes.data.success) {
             navigate("/dashboard/success", {
@@ -74,13 +75,16 @@ const PaymentScreen = () => {
             });
           }
         }
-      }
-      else if (response.data.success && from == "Release date change") {
+      } else if (response.data.success && from == "Release date change") {
         {
           const CalenderRes = await axiosApi.post(
             "/change-release-date",
-            { oph_id: ophid, old_booking_date: location.state.old_booking_date, new_booking_date: location.state.new_booking_date },
-            { headers: headers }
+            {
+              oph_id: ophid,
+              old_booking_date: location.state.old_booking_date,
+              new_booking_date: location.state.new_booking_date,
+            },
+            { headers: headers },
           );
 
           if (CalenderRes.data.success) {
@@ -93,14 +97,17 @@ const PaymentScreen = () => {
             });
           }
         }
-      }
-
-      else if (response.data.success && from == "Song Registration") {
-        { 
+      } else if (response.data.success && from == "Song Registration") {
+        {
           const CalenderRes = await axiosApi.post(
             "/booking",
-            { oph_id: ophid, booking_date: location.state.booking_date, song_name: location.state.songName, project_type: location.state.project_type },
-            { headers: headers }
+            {
+              oph_id: ophid,
+              booking_date: location.state.booking_date,
+              song_name: location.state.songName,
+              project_type: location.state.project_type,
+            },
+            { headers: headers },
           );
 
           if (CalenderRes.data.success) {
@@ -113,22 +120,20 @@ const PaymentScreen = () => {
             });
           }
         }
-      }
-
-      else if (response.data.success && from === "Event Registeration") {
+      } else if (response.data.success && from === "Event Registeration") {
         {
-
-          const eventResponse = await axiosApi.post("/event_part", { OPH_ID: oph_id, event_id: location.state.event_id },
+          const eventResponse = await axiosApi.post(
+            "/event_part",
+            { OPH_ID: oph_id, event_id: location.state.event_id },
             {
               headers: {
                 "Content-Type": "application/json",
-                ...headers
-              }
-            }
-          )
+                ...headers,
+              },
+            },
+          );
 
           if (eventResponse.status === 201) {
-
             navigate("/dashboard/success", {
               state: {
                 heading: "Your Event Spot has been booked Successfully.",
@@ -138,9 +143,7 @@ const PaymentScreen = () => {
             });
           }
         }
-      }
-
-      else if (response.data.success) {
+      } else if (response.data.success) {
         const path = `/auth/create-profile/personal-details`;
         navigate(path);
       }
@@ -227,10 +230,8 @@ const PaymentScreen = () => {
 
 export default PaymentScreen;
 
+("trg_video_status_change");
+("trg_payment_status_change_update_only");
 
-
-'trg_video_status_change'
-'trg_payment_status_change_update_only'
-
-'trg_update_status_payment_after_insert'
-'trg_update_status_payment_after_update'
+("trg_update_status_payment_after_insert");
+("trg_update_status_payment_after_update");

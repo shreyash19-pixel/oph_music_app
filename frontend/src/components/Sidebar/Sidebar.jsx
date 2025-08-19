@@ -21,12 +21,12 @@ import axiosApi from "../../conf/axios";
 
 const SidebarNav = ({ onClose }) => {
   const navigate = useNavigate();
-  const { logout} = useArtist();
+  const { logout } = useArtist();
   const [userData, setUserData] = useState(null);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(false); // State to check if screen width is narrow
   const [data, setData] = useState([]);
-  
+
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
     if (storedData) {
@@ -50,7 +50,6 @@ const SidebarNav = ({ onClose }) => {
     };
   }, []);
 
-
   const handleLogout = async () => {
     await logout();
     toast.success("Logged Out Successfully!");
@@ -59,15 +58,14 @@ const SidebarNav = ({ onClose }) => {
   };
 
   const handleNavigation = (path) => {
-    if(path.includes("metadata"))
-    {
+    if (path.includes("metadata")) {
       navigate(path, {
-        state:{
-          songName : data.Song_name
-        }
-      })
+        state: {
+          songName: data.Song_name,
+        },
+      });
 
-      return
+      return;
     }
     navigate(path);
     onClose?.();
@@ -83,7 +81,7 @@ const SidebarNav = ({ onClose }) => {
     {
       icon: <img src={SongUp} className="w-[24px] h-[24px]" />,
       label: "Songs Registration",
-      to: '/dashboard/upload-song',
+      to: "/dashboard/upload-song",
     },
     {
       icon: <img src={Tv} className="w-[24px] h-[24px]" />,
@@ -155,10 +153,11 @@ const SidebarNav = ({ onClose }) => {
           {menuItems.map((item, index) => (
             <li key={index}>
               <button
-                className={`w-full flex items-center px-4 py-2 hover:bg-gray-800 hover:text-cyan-400 transition-colors duration-200 justify-start text-[#666B76] ${location.pathname === item.to
+                className={`w-full flex items-center px-4 py-2 hover:bg-gray-800 hover:text-cyan-400 transition-colors duration-200 justify-start text-[#666B76] ${
+                  location.pathname === item.to
                     ? "bg-gray-800 text-cyan-400"
                     : ""
-                  }`}
+                }`}
                 onClick={() => handleNavigation(item.to)}
               >
                 <span className="inline-flex items-center justify-center w-6 mr-3">
@@ -171,7 +170,7 @@ const SidebarNav = ({ onClose }) => {
         </ul>
       </nav>
 
-      {userData && (
+      {
         <div className="p-4 border-t border-gray-800 w-full">
           <Link
             onClick={handleLogout}
@@ -181,7 +180,7 @@ const SidebarNav = ({ onClose }) => {
             <span className="ms-3">Log Out</span>
           </Link>
         </div>
-      )}
+      }
     </div>
   );
 };

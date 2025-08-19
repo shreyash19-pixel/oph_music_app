@@ -50,10 +50,19 @@ const updateResolvedSummary = async (ticketNumber, notes) => {
   return rows;
 };
 
+const getTicket = async (ticketNumber) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM tickets WHERE ticketNumber = ?",
+    [ticketNumber]
+  );
+  return rows;
+};
+
 
 module.exports = {
   createTicket,
   getAllTickets,
   getTicketSummaries,
   updateResolvedSummary,
+  getTicket
 };

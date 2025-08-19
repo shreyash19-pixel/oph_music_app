@@ -55,7 +55,7 @@ const CreateResource = () => {
     }
 
     try {
-      await axiosApi.post("/music-podcast", data, {
+      await axiosApi.post("/createPodcast", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -104,7 +104,7 @@ const CreateResource = () => {
           </div>
 
           <h2 className="text-2xl font-bold text-[#0d3c44] text-center">
-            Create Music Podcast
+            Create Podcast
           </h2>
 
           {/* Title */}

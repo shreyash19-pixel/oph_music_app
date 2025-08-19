@@ -99,8 +99,7 @@ const PersonalDetailsForm = () => {
   });
 
   useEffect(() => {
-    if(ophid)
-    {
+    if (ophid) {
       fetchPersonalDetails();
     }
   }, [ophid]);
@@ -145,7 +144,7 @@ const PersonalDetailsForm = () => {
           email: response.data.email || "",
           location: response.data.location || "",
           step_status: response.data.step_status || "",
-          current_step: response.data.current_step || ""
+          current_step: response.data.current_step || "",
         });
 
         setcheckSimilarData({
@@ -158,7 +157,7 @@ const PersonalDetailsForm = () => {
           email: response.data.email || "",
           location: response.data.location || "",
           step_status: response.data.step_status || "",
-          current_step: response.data.current_step || ""
+          current_step: response.data.current_step || "",
         });
 
         if (response.data.reject_reason != null) {
@@ -203,26 +202,23 @@ const PersonalDetailsForm = () => {
   const checkSimilarity = () => {
     let isSimilarity = false;
 
-    if(formData.legalName === checkSimilarData.legalName &&
+    if (
+      formData.legalName === checkSimilarData.legalName &&
       formData.stageName === checkSimilarData.stageName &&
       formData.contactNumber === checkSimilarData.contactNumber &&
-      formData.location === checkSimilarData.location &&  
+      formData.location === checkSimilarData.location &&
       formData.email === checkSimilarData.email &&
-      formData.profileImage === checkSimilarData.profileImage 
-      )
-      {
-        toast.error("Please check rejection reason and make update");
-        isSimilarity = true;
-      }
-      return isSimilarity;
-      
-  }
-
+      formData.profileImage === checkSimilarData.profileImage
+    ) {
+      toast.error("Please check rejection reason and make update");
+      isSimilarity = true;
+    }
+    return isSimilarity;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
 
     // Validation checks
     if (!formData.legalName) {
@@ -260,13 +256,11 @@ const PersonalDetailsForm = () => {
       return;
     }
 
-    if(formData.step_status === "rejected")
-    {
-      const result = checkSimilarity()
-      if(result)
-      {
+    if (formData.step_status === "rejected") {
+      const result = checkSimilarity();
+      if (result) {
         setLoading(false);
-        return
+        return;
       }
     }
 
@@ -284,22 +278,20 @@ const PersonalDetailsForm = () => {
       let stepPath;
 
       if (formData.step_status === "under review") {
-
         stepPath = "/auth/create-profile/professional-details";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/membership-form`;
       } else {
-        stepPath = "/auth/create-profile/professional-details" ;
+        stepPath = "/auth/create-profile/professional-details";
       }
-      formDataToSend.append(
-        "step",
-        stepPath
-      );
+      formDataToSend.append("step", stepPath);
 
       // Append profile image if it exists
       if (formData.profileImage?.file) {
         formDataToSend.append("profile_image", formData.profileImage.file);
       }
+
+      formDataToSend.append("form_fill_count", 1);
 
       const debugData = {};
       formDataToSend.forEach((value, key) => {
@@ -307,7 +299,7 @@ const PersonalDetailsForm = () => {
       });
 
       const response = await updatePersonalDetails(formDataToSend, headers);
-
+      const res = await axiosApi.post(`/increment-count/${ophid}`);
       if (response.success) {
         toast.success("Personal details updated successfully");
         const path = `${response.step}`;
@@ -315,7 +307,7 @@ const PersonalDetailsForm = () => {
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update personal details"
+        error.response?.data?.message || "Failed to update personal details",
       );
     } finally {
       setLoading(false);

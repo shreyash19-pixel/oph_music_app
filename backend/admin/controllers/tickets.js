@@ -82,28 +82,6 @@ const getAllTickets = async (req, res) => {
   }
 };
 
-// controller/ticketsController.js
-// const updateResolvedSummary = async (req, res) => {
-//   const { ticketNumber, notes } = req.body;
-
-//   if (!ticketNumber || !notes) {
-//     return res.status(400).json({ message: "Missing required fields" });
-//   }
-
-//   try {
-//     const summary = await ticketModel.updateResolvedSummary(
-//       ticketNumber,
-//       notes
-//     );
-//     return res.status(200).json({ uccess: true, data: summary });
-//   } catch (error) {
-//     console.error("Error updating ticket:", error.message);
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal Server Error" });
-//   }
-// };
-
 const updateResolvedSummary = async (req, res) => {
   const { ticketNumber, notes, ophid } = req.body;
 
@@ -143,10 +121,33 @@ const getTicketSummaries = async (req, res) => {
   }
 };
 
+const getTicket = async (req, res) => {
+  const { ticketNumber } = req.query;
+  if (!ticketNumber) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing ticketNumber in query" });
+  } else {
+    try {
+      const tv = await ticketModel.getTicket(ticketNumber);
+      res.status(200).json({ success: true, data: tv });
+      console.log("req.query:", tv);
+      console.log("Controller - ticketNumber:", ticketNumber);
+    } catch (error) {
+      console.error("Error fetching tv based on ticketNumber:", error);
+      console.log("Controller - ticketNumber:", ticketNumber);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  }
+};
+
 
 module.exports = {
   createTicket,
   getAllTickets,
   getTicketSummaries,
   updateResolvedSummary,
+  getTicket,
 };

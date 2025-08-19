@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../../../../../frontend/src/conf/axios";
+import { useParams } from "react-router-dom";
 
 export default function AdminTicketList() {
   const [tickets, setTickets] = useState([]);
+   const { ticketNumber } = useParams();
   const [loading, setLoading] = useState(true);
   const [summaryMap, setSummaryMap] = useState({});
 
   useEffect(() => {
     axiosApi
-      .get("/getTicketSummaries")
+      .get(`/getTicket?ticketNumber=${ticketNumber}`)
       .then((res) => {
         if (res.data && Array.isArray(res.data.data)) {
           setTickets(res.data.data);

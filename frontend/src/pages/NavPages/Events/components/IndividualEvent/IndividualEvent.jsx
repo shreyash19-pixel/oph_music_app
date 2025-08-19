@@ -6,36 +6,168 @@ import { Bounce, toast, ToastContainer } from "react-toastify";
 
 const instagramRegex =
   /^(https?:\/\/)?(www\.)?instagram\.com\/([a-zA-Z0-9._]+)\/?/;
+
 const IndividualEvent = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [singleEvent, setSingleEvent] = useState(null);
-  const [timers, setTimers] = useState({});
+  const [timers, setTimers] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
   const [professions, setProfessions] = useState([]);
   const [isEventInFuture, setIsEventInFuture] = useState(false);
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
+
+  // fetch single event by id: /events/:id
   const fetchSingleEvent = async () => {
     setLoading(true);
     try {
-      const response = await axiosApi.get(`/events/events/${id}`);
-      setSingleEvent(response.data);
+      const response = await axiosApi.get(`/event/${id}`);
+      console.log(response.data);
+      // Normalize response to the shape used by the component.
+      // API might return event object at response.data or response.data.data
+      const raw = response?.data?.data ?? response?.data ?? null;
+      if (!raw) {
+        throw new Error("Invalid event response");
+      }
+
+      // Map API fields to the keys the component expects.
+      const mapped = {
+        id: raw.id ?? raw.event_id ?? id,
+        name: raw.name ?? raw.title ?? raw.EventName ?? "Untitled Event",
+        event_date_time:
+          raw.event_date_time ??
+          raw.dateTime ??
+          raw.eventDateTime ??
+          raw.event_date ??
+          null,
+        location: raw.location ?? raw.venue ?? "",
+        short_desc:
+          raw.short_desc ?? raw.description ?? raw.desc ?? raw.summary ?? "",
+        long_desc:
+          raw.long_desc ??
+          raw.long_desciption ??
+          raw.long_description ??
+          raw.description_long ??
+          "",
+        hashtags: Array.isArray(raw.hashtags)
+          ? raw.hashtags
+          : typeof raw.hashtags === "string"
+            ? // split string hashtags by spaces or commas
+              raw.hashtags.split(/[\s,]+/).filter(Boolean)
+            : [],
+        fees:
+          raw.fees ?? raw.registrationFee_normal ?? raw.registration_fee ?? 0,
+        registrationStart:
+          raw.registrationStart ??
+          raw.regn_start ??
+          raw.registration_start ??
+          raw.regnStart ??
+          null,
+        registrationEnd:
+          raw.registrationEnd ??
+          raw.regn_end ??
+          raw.registration_end ??
+          raw.regnEnd ??
+          null,
+        regn_start:
+          raw.registrationStart ??
+          raw.regn_start ??
+          raw.registration_start ??
+          raw.regnStart ??
+          null,
+        regn_end:
+          raw.registrationEnd ??
+          raw.regn_end ??
+          raw.registration_end ??
+          raw.regnEnd ??
+          null,
+        reward_amount: raw.reward_amount ?? raw.winnerReward ?? raw.reward ?? 0,
+        thumbnail_url: raw.thumbnail_url ?? raw.image ?? raw.thumbnail ?? "",
+        total_bookings:
+          raw.total_bookings ?? raw.participants ?? raw.booking_count ?? 0,
+        status: raw.status ?? raw.state ?? "upcoming",
+        payment_plan_id: raw.payment_plan_id ?? null,
+      };
+
+      setSingleEvent(mapped);
     } catch (err) {
-      console.log(err);
+      console.error("Failed to fetch event:", err);
+      toast.error("Failed to load event. Try refreshing.", {
+        position: "top-right",
+        theme: "dark",
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchProfessions = async () => {
+    try {
+      const response = await axiosApi.get("/professions");
+      const data = response?.data?.data ?? response?.data ?? [];
+      setProfessions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch professions:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSingleEvent();
+    fetchProfessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  console.log(JSON.stringify(singleEvent), "Event");
+
+  // Timer update
+  useEffect(() => {
+    if (!singleEvent?.event_date_time) return;
+
+    let mounted = true;
+    const updateTimers = () => {
+      if (!mounted) return;
+      const now = new Date();
+      const eventDate = new Date(singleEvent.event_date_time);
+      const timeDiff = eventDate - now;
+      if (timeDiff <= 0) {
+        setTimers({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        setIsEventInFuture(false);
+        return;
+      }
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+      const seconds = Math.floor((timeDiff / 1000) % 60);
+      setTimers({ days, hours, minutes, seconds });
+      setIsEventInFuture(eventDate > now);
+    };
+
+    updateTimers();
+    const interval = setInterval(updateTimers, 1000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [singleEvent]);
+
+  // Utility validators
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   const isValidPhoneNumber = (phone) => {
-    const phoneRegex = /^\d{10}$/; // Ensures exactly 10 digits
+    const phoneRegex = /^\d{10}$/;
     return phoneRegex.test(phone);
   };
+
   const dateFormat = (date) => {
+    if (!date) return "-";
     const eventDate = new Date(date);
     return eventDate.toLocaleString("en-US", {
       day: "2-digit",
@@ -44,57 +176,9 @@ const IndividualEvent = () => {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-      timeZone: "Asia/Kolkata", // Ensure UTC
+      timeZone: "Asia/Kolkata",
     });
   };
-  const fetchProfessions = async () => {
-    try {
-      const response = await axiosApi.get("/professions");
-      setProfessions(response.data.data);
-      console.log(professions);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  useEffect(() => {
-    fetchSingleEvent();
-    fetchProfessions();
-  }, []);
-  useEffect(() => {
-    if (singleEvent) {
-      const updateTimers = () => {
-        const now = new Date();
-        const eventDate = new Date(singleEvent.event_date_time);
-        const timeDiff = eventDate - now;
-        let newTimers;
-        if (timeDiff <= 0) {
-          newTimers = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-        } else {
-          const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-          const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
-          const seconds = Math.floor((timeDiff / 1000) % 60);
-          newTimers = { days, hours, minutes, seconds };
-        }
-        setTimers(newTimers);
-      };
-
-      // Only set interval if modal is not open
-      if (!isModalOpen) {
-        updateTimers();
-        const interval = setInterval(updateTimers, 1000);
-        return () => clearInterval(interval);
-      }
-    }
-  }, [singleEvent, isModalOpen]); // Add isModalOpen to dependency array
-
-  useEffect(() => {
-    if (singleEvent) {
-      const now = new Date();
-      const eventDate = new Date(singleEvent.event_date_time);
-      setIsEventInFuture(eventDate > now);
-    }
-  }, [singleEvent]);
 
   // Registration Modal Component
   const RegistrationModal = () => {
@@ -104,30 +188,58 @@ const IndividualEvent = () => {
       email: "",
       instagram_handle: "",
       phone: "",
+      profession_id: professions?.[0]?.id ?? "",
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    useEffect(() => {
+      // set default profession_id once professions load
+      if (professions && professions.length && !formData.profession_id) {
+        setFormData((f) => ({ ...f, profession_id: professions[0].id }));
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [professions]);
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const isRegistrationOpen = () => {
+      // determine if registration period is open
+      try {
+        const start = singleEvent?.regn_start
+          ? new Date(singleEvent.regn_start)
+          : null;
+        const end = singleEvent?.regn_end
+          ? new Date(singleEvent.regn_end)
+          : null;
+        const now = new Date();
+        if (start && end) return now >= start && now <= end;
+        // fallback: if status is "upcoming" and event is in future allow
+        return singleEvent?.status === "upcoming" && isEventInFuture;
+      } catch {
+        return false;
+      }
+    };
+
     const handleSubmit = async (e) => {
       e.preventDefault();
-      if (isSubmitting) return; // Prevent multiple submissions
-      console.log("Form submitted:", formData);
+      if (isSubmitting) return;
+
+      // validations
       if (!instagramRegex.test(formData.instagram_handle)) {
         toast.error(
           "Invalid Instagram URL! Please enter a valid profile link.",
           {
             position: "top-right",
             autoClose: 4000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             theme: "dark",
             transition: Bounce,
-          }
+          },
         );
-        return; // Stop form submission
+        return;
       }
       if (!isValidEmail(formData.email)) {
         toast.error("Invalid Email Address!", {
@@ -136,7 +248,6 @@ const IndividualEvent = () => {
         });
         return;
       }
-
       if (!isValidPhoneNumber(formData.phone)) {
         toast.error("Invalid Phone Number! Must be 10 digits.", {
           position: "top-right",
@@ -144,74 +255,59 @@ const IndividualEvent = () => {
         });
         return;
       }
-      setIsSubmitting(true); // Set submitting state
 
+      if (!isRegistrationOpen()) {
+        toast.error("Registration is closed for this event.", {
+          position: "top-right",
+          theme: "dark",
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
       try {
-        const response = await axiosApi.post(
-          `/events/bookings/${id}`,
-          formData
-        );
-        if (response.status == 201) {
-          toast.success("Registration Successfull", {
+        const payload = {
+          ...formData,
+          profession_id: formData.profession_id,
+        };
+
+        const response = await axiosApi.post(`/events/bookings/${id}`, payload);
+
+        if (response?.status === 201 || response?.status === 200) {
+          toast.success("Registration Successful", {
             position: "top-right",
             autoClose: 4000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             theme: "dark",
             transition: Bounce,
           });
           setIsModalOpen(false);
-          // Navigate to payment page with required data
+
           navigate("/payment", {
             state: {
-              amount: singleEvent.fees, // Event registration fee
-              returnPath: `/events/online-music-events`,
+              amount: singleEvent.fees,
+              returnPath: `/events/${singleEvent.id}`,
               heading: "Event Registration Fee",
-              // Add any other required parameters
-              planIds:[3],
+              planIds: [singleEvent.payment_plan_id].filter(Boolean),
               event_id: id,
-              bookingId: response.data.id, // If your API returns the booking ID
+              bookingId:
+                response?.data?.id ?? response?.data?.bookingId ?? null,
             },
           });
         } else {
-          toast.error("Something went wrong", {
+          toast.error("Something went wrong with registration.", {
             position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             theme: "dark",
-            transition: Bounce,
           });
         }
       } catch (err) {
-        console.log(err);
+        console.error("Booking error:", err);
         toast.error("Something went wrong", {
           position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
           theme: "dark",
-          transition: Bounce,
         });
       } finally {
-        setIsSubmitting(false); // Reset submitting state
+        setIsSubmitting(false);
       }
-    };
-
-    const handleChange = (e) => {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value,
-      });
     };
 
     return (
@@ -282,7 +378,7 @@ const IndividualEvent = () => {
 
             <div className="flex gap-2">
               <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white">
-                <option value="+1">+91</option>
+                <option value="+91">+91</option>
               </select>
               <input
                 type="tel"
@@ -300,6 +396,7 @@ const IndividualEvent = () => {
                 name="profession_id"
                 required
                 className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+                value={formData.profession_id}
                 onChange={handleChange}
               >
                 {professions &&
@@ -313,7 +410,7 @@ const IndividualEvent = () => {
               </select>
             </div>
 
-            {singleEvent.status == 1 ? (
+            {isRegistrationOpen() ? (
               <button
                 type="submit"
                 className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded"
@@ -325,7 +422,7 @@ const IndividualEvent = () => {
               <button
                 type="submit"
                 disabled
-                className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded"
+                className="w-full bg-cyan-400 text-black font-medium py-2 px-4 rounded opacity-50 cursor-not-allowed"
               >
                 Registration Expired
               </button>
@@ -346,6 +443,7 @@ const IndividualEvent = () => {
           </p>
         </div>
       )}
+
       {!loading && singleEvent && (
         <div className="relative px-4 md:px-10 xl:px-16  text-white h-auto min-h-screen overflow-hidden">
           {/* Background with gradient */}
@@ -379,10 +477,7 @@ const IndividualEvent = () => {
                   <div className="text-3xl font-bold">{timers.hours}</div>
                   <div className="text-sm text-gray-300">Hours</div>
                 </div>
-                <div
-                  className="bg-white/5 backdrop-blur-none border
- p-4 rounded-lg text-center"
-                >
+                <div className="bg-white/5 backdrop-blur-none border p-4 rounded-lg text-center">
                   <div className="text-3xl  font-bold">{timers.minutes}</div>
                   <div className="text-sm text-gray-300">Minute</div>
                 </div>
@@ -398,16 +493,13 @@ const IndividualEvent = () => {
                   CHANCE TO WIN
                 </span>
                 <span className="text-2xl ms-4 font-bold text-emerald-400">
-                  ₹{singleEvent.reward_amount ? singleEvent.reward_amount : "0"}
+                  ₹{singleEvent.reward_amount ?? "0"}
                 </span>
               </div>
             </div>
 
             {/* Tags */}
             <div className="flex gap-2 mb-4">
-              {/* <span className="text-gray-400">#Competition</span>
-              <span className="text-gray-400">#Music</span>
-              <span className="text-gray-400">#Winners</span> */}
               {singleEvent.hashtags?.map((tag, index) => (
                 <span key={index} className="text-gray-400">
                   {tag}
