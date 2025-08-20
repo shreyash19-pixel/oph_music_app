@@ -104,9 +104,9 @@ export default function Chart({
               vertical={false}
             />
             <XAxis dataKey="name" {...commonAxisProps} />
-            <YAxis 
+            <YAxis
               {...commonAxisProps}
-              domain={[minValue , maxValue ]}
+              // domain={[minValue - yAxisPadding, maxValue + yAxisPadding]}
             />
             <Tooltip content={<CustomTooltip />} />
             {stacked ? (
