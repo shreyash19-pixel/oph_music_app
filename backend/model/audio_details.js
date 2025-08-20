@@ -15,8 +15,8 @@ const insertSongDetails = async (
   const [result] = await db.execute(
     `INSERT INTO audio_details (
       OPH_ID, Song_name, language, genre, sub_genre, mood,
-      lyrics, primary_artist, audio_url, song_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      lyrics, primary_artist, audio_url, song_id, reject_reason, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       Song_name = VALUES(Song_name),
       language = VALUES(language),
@@ -25,7 +25,11 @@ const insertSongDetails = async (
       mood = VALUES(mood),
       lyrics = VALUES(lyrics),
       primary_artist = VALUES(primary_artist),
-      audio_url = VALUES(audio_url)`,
+      audio_url = VALUES(audio_url),
+      reject_reason = null,
+      status = 'under review'
+      `,
+      
     [
       OPH_ID,
       Song_name,
@@ -36,13 +40,33 @@ const insertSongDetails = async (
       lyrics,
       primary_artist,
       audioPath,
-      song_id
+      song_id,
+      null,
+      'under review'
     ]
   );
 
   return result;
 };
 
+
+const checkVideoDetailsStatus = async (song_id) => {
+
+  const [rows] = await db.execute("SELECT vd.status FROM songs_register sr LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE sr.song_id = ?", [song_id]);
+  
+  let nextPagePath = ''
+
+  if(rows[0].status === null || rows[0].status === 'rejected')
+  {
+    nextPagePath = 'video'
+  }
+  else{
+    nextPagePath = 'pending'
+  }
+
+  return nextPagePath
+
+}
 
 
 const setNextPage = async (next_step, ophid, song_id) => {
@@ -71,4 +95,4 @@ const getSecondaryArtist = async (song_id) => {
 
 }
 
-module.exports = { insertSongDetails, getAudioMeta, getSecondaryArtist, setNextPage };
+module.exports = { insertSongDetails, getAudioMeta, getSecondaryArtist, setNextPage, checkVideoDetailsStatus };

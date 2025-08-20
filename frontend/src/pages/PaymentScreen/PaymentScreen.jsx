@@ -17,7 +17,7 @@ const PaymentScreen = () => {
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
   const [oph_id, setoph_id] = useState("");
-
+  console.log(location);
   const {
     amount = 0,
     planIds = [],
@@ -42,15 +42,18 @@ const PaymentScreen = () => {
         OPH_ID: ophid,
         Transaction_ID: trans,
         Review: 0,
-        Status: "Under Review",
+        Status: "under Review",
         step: "/auth/create-profile/personal-details",
         from: from,
         song_id: song_id,
         event_id: event_id,
       };
-      console.log(JSON.stringify(formData));
+      console.log(from);
 
-      const response = await axiosApi.post("/auth/payment", formData);
+      const apiPath =
+        from === "Song Repayment" ? "/song-payment" : "/auth/payment";
+
+      const response = await axiosApi.post(apiPath, formData);
 
       if (response.data.success && from == "Date booking") {
         {
@@ -62,7 +65,7 @@ const PaymentScreen = () => {
               song_name: null,
               project_type: null,
             },
-            { headers: headers },
+            { headers: headers }
           );
 
           if (CalenderRes.data.success) {
@@ -84,7 +87,7 @@ const PaymentScreen = () => {
               old_booking_date: location.state.old_booking_date,
               new_booking_date: location.state.new_booking_date,
             },
-            { headers: headers },
+            { headers: headers }
           );
 
           if (CalenderRes.data.success) {
@@ -107,7 +110,7 @@ const PaymentScreen = () => {
               song_name: location.state.songName,
               project_type: location.state.project_type,
             },
-            { headers: headers },
+            { headers: headers }
           );
 
           if (CalenderRes.data.success) {
@@ -120,6 +123,14 @@ const PaymentScreen = () => {
             });
           }
         }
+      } else if (response.data.success && from === "Song Repayment") {
+        navigate("/dashboard/success", {
+          state: {
+            heading: "Your date blocked successfully!",
+            btnText: "View Calendar",
+            redirectTo: "/dashboard/time-calendar",
+          },
+        });
       } else if (response.data.success && from === "Event Registeration") {
         {
           const eventResponse = await axiosApi.post(
@@ -130,7 +141,7 @@ const PaymentScreen = () => {
                 "Content-Type": "application/json",
                 ...headers,
               },
-            },
+            }
           );
 
           if (eventResponse.status === 201) {

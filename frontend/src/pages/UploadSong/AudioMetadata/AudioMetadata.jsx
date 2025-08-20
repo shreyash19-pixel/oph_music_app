@@ -20,7 +20,8 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
   const [uploading, setUploading] = useState(false);
   const { contentId } = useParams();
   const { headers } = useArtist();
-
+  console.log(location);
+  
   const handleSubmitSecondary = async (e) => {
     e.preventDefault();
 
@@ -273,6 +274,7 @@ export default function AudioMetadataForm() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
+  const [nextPage, setNextPage] = useState(false)
 
   // const [subgenre, setSubgenre] = useState("");
 
@@ -404,6 +406,27 @@ export default function AudioMetadataForm() {
     setShowSecondaryForm(false);
   };
 
+
+  const checkVideoStaus = async () => {
+
+    try{
+      const response = await axiosApi.get("/check-video-status", {
+        headers: headers,
+        params : {contentId}
+      })
+
+      if(response.data.success)
+      {
+        setNextPage(response.data.data)
+      }
+    }
+    catch(err)
+    {
+      console.error(err.message)
+    }
+
+  }
+
   const handleArtistRemove = async (
     artistType,
     index,
@@ -532,7 +555,7 @@ export default function AudioMetadataForm() {
 
       if (response.status === 201) {
         setIsLoading(false);
-        navigate(
+        nextPage === 'video' ?  navigate(
           `/dashboard/upload-song/video-metadata/${response.data.song_id}`,
           {
             state: {
@@ -541,7 +564,13 @@ export default function AudioMetadataForm() {
               project_type: location.state.project_type,
             },
           }
-        );
+        ) : navigate('/dashboard/pending', {
+          state:{
+            heading: "Your audio details are under review",
+            btnText: "Upload a new song",
+            redirectTo: "/dashboard/upload-song"
+          }
+        })
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
@@ -692,6 +721,7 @@ export default function AudioMetadataForm() {
   useEffect(() => {
     checkAlreadyBookedDate();
     fetchAudioMetadata();
+    checkVideoStaus()
   }, [contentId, headers]);
 
   async function getAudioAsBlob(url) {

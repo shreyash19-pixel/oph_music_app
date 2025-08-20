@@ -1,4 +1,4 @@
-const { insertSongDetails, getAudioMeta, getSecondaryArtist, setNextPage } = require("../model/audio_details");
+const { insertSongDetails, getAudioMeta, getSecondaryArtist, setNextPage, checkVideoDetailsStatus } = require("../model/audio_details");
 const { uploadToS3 } = require("../utils");
 const bucket = require("../utils.js");
 
@@ -100,4 +100,45 @@ const getSongDetailsController = async (req, res) => {
 
 }
 
-module.exports = { insertSongDetailsController, getSongDetailsController };
+
+const checkVideoDetailsStatusController = async (req, res) => {
+
+  try{
+
+      const {contentId} = req.query
+
+      console.log(contentId);
+      
+
+      if(!contentId)
+      {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required field"
+        })
+      }
+
+
+      const response = await checkVideoDetailsStatus(contentId)
+
+      if(response)
+      {
+        return res.status(200).json({
+          success: true,
+          message: "Data fetched successfully",
+          data: response
+        })
+      }
+  }
+
+  catch(err)
+  {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+module.exports = { insertSongDetailsController, getSongDetailsController, checkVideoDetailsStatusController };

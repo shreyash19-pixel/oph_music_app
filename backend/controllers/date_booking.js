@@ -3,7 +3,8 @@ const bookingModel = require("../model/date_booking");
 exports.createBooking = async (req, res) => {
   try {
     const { oph_id, booking_date, song_name, project_type } = req.body;
-
+    console.log(oph_id, booking_date, song_name, project_type, "calendar booking");
+    
     if (!oph_id) {
       return res.status(400).json({ error: "oph_id is required" });
     }

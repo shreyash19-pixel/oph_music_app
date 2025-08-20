@@ -12,6 +12,7 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const location = useLocation();
+  const [nextPage, setNextPage] = useState("");
   console.log(location);
 
   const [songName, setSongName] = useState(location.state.songName);
@@ -23,7 +24,10 @@ export default function VideoMetadataForm() {
     video_file: null,
     existing_thumbnails: [],
     existing_video_url: null,
+    reject_reason : ""
   });
+  
+
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,6 +86,21 @@ export default function VideoMetadataForm() {
         ...prev,
         video_file: file,
       }));
+    }
+  };
+
+  const checkPaymentStaus = async () => {
+    try {
+      const response = await axiosApi.get("/check-payment-status", {
+        headers: headers,
+        params: { contentId },
+      });
+
+      if (response.data.success) {
+        setNextPage(response.data.data);
+      }
+    } catch (err) {
+      console.error(err.message);
     }
   };
 
@@ -150,7 +169,7 @@ export default function VideoMetadataForm() {
         if (response.data.success) {
           const paymentUpdateResponse = await axiosApi.post(
             "/insert-songid-payment",
-            {ophid: ophid ,song_id: contentId },
+            { ophid: ophid, song_id: contentId },
             {
               headers: {
                 "Content-Type": "application/json",
@@ -172,15 +191,23 @@ export default function VideoMetadataForm() {
       }
 
       if (response.data.success) {
-        navigate("/auth/payment", {
-          state: {
-            from: "Song Registration",
-            booking_date: location.state.release_date,
-            song_id: contentId,
-            songName: location.state.songName,
-            project_type: location.state.project_type,
-          },
-        });
+        nextPage === "payment"
+          ? navigate("/auth/payment", {
+              state: {
+                from: "Song Registration",
+                booking_date: location.state.release_date,
+                song_id: contentId,
+                songName: location.state.songName,
+                project_type: location.state.project_type,
+              },
+            })
+          : navigate("/dashboard/pending", {
+              state: {
+                heading: "Your video details are under review",
+                btnText: "Upload a new song",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
       }
     } catch (error) {
       console.error("Error uploading video metadata:", error);
@@ -307,6 +334,7 @@ export default function VideoMetadataForm() {
   useEffect(() => {
     checkAlreadyBookedDate();
     fetchVideoMetadata();
+    checkPaymentStaus();
   }, [contentId, headers]);
 
   if (navigateToSongReg) {
@@ -481,13 +509,28 @@ export default function VideoMetadataForm() {
           )}
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
-          >
-            {isLoading ? "Loading..." : "Submit"}
-          </button>
+          {formData.reject_reason === null && nextPage === "payment" ? (
+            <div
+              onClick={() => navigate("/auth/payment", {
+                state: {
+                  from: "Song Repayment",
+                  booking_date: location.state.release_date,
+                  song_id: contentId,
+                  songName: location.state.songName,
+                  project_type: projectType,
+                },
+              })}
+              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400 text-center"
+            >Pay now</div>
+          ) : (
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
+            >
+              {isLoading ? "Loading..." : "Submit"}
+            </button>
+          )}
         </form>
       </div>
       <ToastContainer />

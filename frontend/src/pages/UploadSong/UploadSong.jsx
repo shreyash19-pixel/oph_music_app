@@ -63,7 +63,7 @@ export default function UploadSongs() {
   // Get status color based on status
   const getStatusColor = (status) => {
     const colorMap = {
-      'Draft': 'text-yellow-400 border-yellow-400/30',
+      'draft': 'text-yellow-400 border-yellow-400/30',
       'under review': 'text-cyan-400 border-cyan-400/30',
       'rejected': 'text-red-400 border-red-400/30',
       'approved (pending)': 'text-green-400 border-green-400/30',
@@ -123,7 +123,7 @@ export default function UploadSongs() {
             className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
             
             onClick={(e) => {
-              ['pending', 'rejected'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
+              ['draft', 'rejected'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
                 state: {
                   songName: song.name,
                   release_date: song.release_date
@@ -154,9 +154,6 @@ export default function UploadSongs() {
               (
                 <p className="text-red-400 mt-2">{song.firstRejectedStep}</p>
               )}
-            {song.status === 'rejected' && (
-              <p className="text-red-400 mt-2">Reason: {song.reject_reason}</p>
-            )}
           </div>
 
         ))}

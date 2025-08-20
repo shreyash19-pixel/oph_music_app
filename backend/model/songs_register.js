@@ -127,6 +127,15 @@ const getPendingSongsList = async (ophid) => {
         firstRejectedStepReason = "";
         firstRejectedStep = "";
         currentStep = "";
+      } else if (
+        row.audio_status === "under review" ||
+        row.video_status === "under review" ||
+        row.payment_status === "under review"
+      ) {
+        status = "under review";
+        firstRejectedStepReason = "";
+        firstRejectedStep = "";
+        currentStep = "";
       }
 
       songDetails[songId] = {

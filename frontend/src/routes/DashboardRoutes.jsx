@@ -28,6 +28,7 @@ import React from "react";
 import MembershipForm from "../pages/auth/SignUp/MembershipFrom.jsx";
 import ErrorScreen from "../pages/ErrorScreen/ErrorScreen.jsx";
 import ArtistDetail from "../pages/ArtistDetail/ArtistDetail.jsx";
+import PendingScreen from "../pages/PendingScreen/PendingScreen.jsx";
 const ArtistRoutes = () => {
   return (
     <Provider store={artistStore}>
@@ -43,6 +44,7 @@ const ArtistRoutes = () => {
 
           <Route path="success" element={<SuccessScreen />} />
           <Route path="error" element={<ErrorScreen />} />
+          <Route path="pending" element={<PendingScreen />} />
           <Route path="payment" element={<PaymentScreen />} />
 
           <Route path="upload-song" element={<UploadSongs />} />
