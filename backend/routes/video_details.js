@@ -20,5 +20,6 @@ router.post(
 );
 
 router.get("/video-details", controller.getVideoDetails);
+router.get("/check-payment-status", controller.checkPaymentStatusController);
 
 module.exports = router;

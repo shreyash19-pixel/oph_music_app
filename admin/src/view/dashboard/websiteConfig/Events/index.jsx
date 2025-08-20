@@ -10,6 +10,7 @@ const EventAdminForm = () => {
     dateTime: null,
     location: "",
     description: "",
+    long_desc: "",
     hashtags: "",
     registrationFee_normal: "",
     registrationStart: null,
@@ -57,22 +58,21 @@ const EventAdminForm = () => {
     }
   };
 
-  const CustomDateInput = React.forwardRef(({ value, onClick, placeholder }, ref) => (
-    <button
-      onClick={onClick}
-      ref={ref}
-      className="w-full text-left px-4 py-2 border rounded-xl bg-white text-[#0d3c44] pr-10"
-    >
-      {value || placeholder}
-    </button>
-  ));
+  const CustomDateInput = React.forwardRef(
+    ({ value, onClick, placeholder }, ref) => (
+      <button
+        onClick={onClick}
+        ref={ref}
+        className="w-full text-left px-4 py-2 border rounded-xl bg-white text-[#0d3c44] pr-10"
+      >
+        {value || placeholder}
+      </button>
+    ),
+  );
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      
-      
-        <WebsiteConfig />
-
+      <WebsiteConfig />
 
       {/* Main Content */}
       <div className="flex-1 p-10 overflow-y-auto">
@@ -80,7 +80,9 @@ const EventAdminForm = () => {
           onSubmit={handleSubmit}
           className="bg-white shadow-xl rounded-2xl p-10 w-full max-w-4xl mx-auto space-y-6 border border-gray-200"
         >
-          <h2 className="text-2xl font-bold text-[#0d3c44]">Create New Event</h2>
+          <h2 className="text-2xl font-bold text-[#0d3c44]">
+            Create New Event
+          </h2>
 
           <input
             name="EventName"
@@ -92,7 +94,9 @@ const EventAdminForm = () => {
           />
 
           <div className="w-full">
-            <label className="block text-[#0d3c44] font-medium mb-1">Event Date & Time</label>
+            <label className="block text-[#0d3c44] font-medium mb-1">
+              Event Date & Time
+            </label>
             <DatePicker
               selected={formData.dateTime}
               onChange={(date) =>
@@ -124,7 +128,15 @@ const EventAdminForm = () => {
             placeholder="Event Description"
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
-            rows={3}
+            rows={2}
+          />
+
+          <textarea
+            name="long_desc"
+            placeholder="Long Event Description"
+            onChange={handleChange}
+            className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
+            rows={6}
           />
 
           <input
