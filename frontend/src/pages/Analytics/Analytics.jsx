@@ -1,15 +1,16 @@
-import { ChevronDown } from "lucide-react";
+import { ChartArea, ChevronDown } from "lucide-react";
 import Chart from "../../components/Chart/Chart";
 import React,{ useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 
 export default function AnalyticsDashboard() {
-  const { artist, headers } = useArtist();
+  const { ophid, headers } = useArtist();
+  const [selectedContentId, setSelectedContentId] = useState(null);
   const [contents, setContents] = useState([]);
-  const [selectedContent, setSelectedContent] = useState(null);
+  const [selectedContent, setSelectedContent] = useState("");
   const [streams, setStreams] = useState([]);
-  const [selectedStream, setSelectedStream] = useState(null);
+  const [selectedStream, setSelectedStream] = useState("");
   const [totalViews, setTotalViews] = useState(0);
   const [totalEngagement, setTotalEngagement] = useState(0);
   const [avgDuration, setAvgDuration] = useState(0);
@@ -34,142 +35,123 @@ export default function AnalyticsDashboard() {
   ]);
   const [selectedDuration, setSelectedDuration] = useState(7);
 
-  // Update the initial useEffect to handle both content and analytics loading
   useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
+    const fetchContent = async () => {
+      if (!ophid) return;
       try {
-        // Fetch contents
-        const contentsResponse = await axiosApi.get(
-          `/content/search?artist_id=${artist.id}&lastNDays=${selectedDuration}`,
-          headers
-        );
-        const fetchedContents = contentsResponse.data.data;
-        setContents(fetchedContents);
+        const response = await axiosApi.get(`/getMetricByOph?OPH_ID=${ophid}`);
 
-        if (fetchedContents.length > 0) {
-          const firstContent = fetchedContents[0];
-          setSelectedContent(firstContent);
-
-          // Fetch streams for the first content
-          const streamsResponse = await axiosApi.get(
-            `/analytics/content/${firstContent.id}/streams?lastNDays=${selectedDuration}`,
-            headers
-          );
-    
-          
-          setStreams(streamsResponse.data.data);
-
-          if (streamsResponse.data.data.length > 0) {
-            // Fetch analytics for the first stream
-            await handleStreamChange(
-              streamsResponse.data.data[0].content_stream_id
-            );
-          }
+        setContents(response.data.data);
+        if (response.data.data.length > 0) {
+          setSelectedContentId(null);
+          setSelectedContent(null);
+          console.log("RES", response.data.data);
         }
       } catch (error) {
-        setError("Failed to fetch Analytics. Try again later.");
-        console.error("Error fetching initial data:", error);
+        console.error("Error fetching content:", error);
       } finally {
         setIsLoading(false);
       }
     };
+    fetchContent();
+  }, [ophid]);
 
-    fetchInitialData();
-  }, [selectedDuration]); // Add selectedDuration as dependency
+  const submittedMetric =
+    contents.length > 0
+      ? contents.map((metric) => ({
+          name: metric.song_name,
+          date: metric.date,
+          Id: metric.Id,
+          song_id: metric.song_id,
+          youtube_views: metric.youtube_views,
+          youtube_engagement: metric.youtube_engagement,
+          youtube_avg_view_duration: metric.youtube_avg_view_duration,
+          youtube_revenue: metric.youtube_revenue,
+          insta_engagement: metric.insta_engagement,
+          Notes: metric.Notes,
+        }))
+      : null;
 
-  // Fetch streams when content changes
-  const handleContentChange = async (contentId) => {
-    try {
-      // First fetch the streams
-      const response = await axiosApi.get(
-        `/analytics/content/${contentId}/streams?lastNDays=${selectedDuration}`,
-        headers
-      );
+  console.log("s", submittedMetric);
 
-      // Then fetch the contents if not already available
-      if (contents.length === 0) {
-        const contentsResponse = await axiosApi.get(
-          `/content/search?artist_id=${artist.artist.id}&lastNDays=${selectedDuration}`,
-          headers
-        );
-        setContents(contentsResponse.data.data);
-      }
+  const inrToUsd = (inr, rate = 0.011) => inr * rate;
 
-      setStreams(response.data.data);
-      if (response.data.data.length > 0) {
-        handleStreamChange(response.data.data[0].content_stream_id);
-      }
-    } catch (error) {
-      console.error("Error fetching streams:", error);
-    }
+  const rows = Array.isArray(selectedContent)
+    ? selectedContent
+    : selectedContent
+    ? [selectedContent]
+    : [];
+
+  const parseDuration = (durationStr) => {
+    if (!durationStr) return 0;
+    const parts = durationStr.split(":").map(Number);
+    const [h = 0, m = 0, s = 0] = parts;
+    return h * 3600 + m * 60 + s; // total seconds
   };
 
-  // Fetch analytics when stream changes
-  const handleStreamChange = async (contentStreamId) => {
-    try {
-      const response = await axiosApi.get(
-        `/analytics/content-stream/${contentStreamId}?lastNDays=${selectedDuration}`,
-        headers
-      );
-      const data = response.data.data;
+  const chartData = Array.isArray(selectedContent)
+    ? selectedContent.map((c) => ({
+        name: c.date ? new Date(c.date).toLocaleDateString() : "Unknown Date",
+        value: c.youtube_views,
+        valueEngagement: c.youtube_engagement,
+        valueDuration: parseDuration(c.youtube_avg_view_duration),
+        valueInstagram: c.insta_engagement
+      }))
+    : selectedContent
+    ? [
+        {
+          name: selectedContent.date
+            ? new Date(selectedContent.date).toLocaleDateString()
+            : "Unknown Date",
+          value: selectedContent.youtube_views,
+          valueEngagement: selectedContent.youtube_engagement,
+          valueInstagram: selectedContent.insta_engagement,
+          valueDuration: parseDuration(
+          selectedContent.youtube_avg_view_duration
+          ),
+        },
+      ]
+    : [];
 
-      // Transform API data to match chart format
-      const viewsData =
-        data.streams?.map((item) => ({
-          name: new Date(item.date).toLocaleDateString(),
-          value: item.value,
-        })) || [];
+const totalDurationSeconds = chartData.reduce(
+  (sum, d) => sum + (d.valueDuration || 0),
+  0
+);
 
-      const engagementData =
-        data.likes?.map((item) => ({
-          name: new Date(item.date).toLocaleDateString(),
-          value: item.value,
-        })) || [];
+  const engagementMetric = Array.isArray(selectedContent)
+    ? selectedContent.reduce((sum, c) => sum + (c.youtube_engagement || 0), 0)
+    : selectedContent?.youtube_engagement || 0;
 
-      const durationData =
-        data.avg_view_duration?.map((item) => ({
-          name: new Date(item.date).toLocaleDateString(),
-          value: item.value,
-        })) || [];
+  const InstagramMetric = Array.isArray(selectedContent)
+    ? selectedContent.reduce((sum, c) => sum + (c.insta_engagement || 0), 0)
+    : selectedContent?.insta_engagement || 0;
+  
+  const uniqueSongs = Array.from(
+    new Map(contents.map((c) => [c.song_id, c])).values()
+  );
 
-      const incomeData =
-        data.income?.map((item) => ({
-          name: new Date(item.date).toLocaleDateString(),
-          value: item.value,
-        })) || [];
+  // normalize to rows (array) and compute totals
 
-      // Calculate total income
-      const totalViews = viewsData.reduce((sum, item) => sum + item.value, 0);
-      const totalEngagement = engagementData.reduce(
-        (sum, item) => sum + item.value,
-        0
-      );
-      const avgDuration =
-        durationData.reduce((sum, item) => sum + item.value, 0) /
-        (durationData.length || 1);
-      const totalIncome = incomeData.reduce((sum, item) => sum + item.value, 0);
-      setTotalViews(totalViews);
-      setTotalEngagement(totalEngagement);
-      setAvgDuration(avgDuration);
-      setTotalIncome(totalIncome);
-      // Update revenue calculation
-      const usdIncome = totalIncome / 85; // Assuming 1 USD = 85 INR
-      setRevenue({
-        usd: usdIncome,
-        inr: totalIncome,
-      });
+  const totalRevenueINR = rows.reduce(
+    (sum, r) => sum + Number(r.youtube_revenue ?? 0),
+    0
+  );
 
-      setAnalyticsData({
-        viewsData,
-        engagementData,
-        durationData,
-        incomeData,
-      });
-    } catch (error) {
-      console.error("Error fetching analytics:", error);
-    }
-  };
+  console.log("DEBUG selectedContent:", selectedContent);
+
+  // console.log("testline", chartData.name, chartData.value);
+
+  console.log(
+    "testLine",
+    chartData.map((d) => ({ name: d.name, value: d.value }))
+  );
+
+  console.log(
+    "test",
+    chartData.map((d) => ({ name: d.name, value: d.valueDuration }))
+  );
+
+  console.log(chartData);
 
   return (
     <>
@@ -195,13 +177,16 @@ export default function AnalyticsDashboard() {
           <div className="space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
-              <h1 className="text-cyan-400 text-xl font-extrabold mb-2 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">ANALYTICS</h1>
-                           <div className="relative">
+              <h1 className="text-cyan-400 text-xl font-extrabold mb-2 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+                ANALYTICS
+              </h1>
+              <div className="relative">
                 <button
                   className="flex items-center px-4 py-2 w-[150px] bg-white/10 border border-white/30 border-cyan-200 rounded-full text-sm text-white-400 appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50 shadow-lg shadow-white/20"
                   onClick={(e) => {
                     e.preventDefault();
-                    const selectElement = e.currentTarget.querySelector('select');
+                    const selectElement =
+                      e.currentTarget.querySelector("select");
                     if (selectElement) {
                       selectElement.focus();
                       selectElement.click();
@@ -230,80 +215,76 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* Song Selection and Platform */}
-                                <div className="flex gap-4">
-                          <div className="flex-1 relative">
-                            <select
-                              className="w-full appearance-none bg-gray-800/50 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-cyan-400 truncate"
-                              value={selectedContent?.id || ""}
-                              onChange={async (e) => {
-                                const contentId = e.target.value;
-                                                      
-                                // Find the selected content in the current contents array
-                                const selected = contents.find(
-                                  (content) => content.id == contentId
-                                );
-                                console.log("Selected Content:", selected);
-                        
-                                if (!selected) {
-                                  console.error(
-                                    "Selected content not found in contents array"
-                                  );
-                                  return;
-                                }
-                        
-                                // Update the selected content immediately
-                                setSelectedContent(selected);
-                        
-                                // Then fetch the streams and analytics
-                                try {
-                                  const streamsResponse = await axiosApi.get(
-                                    `/analytics/content/${contentId}/streams?lastNDays=${selectedDuration}`,
-                                    headers
-                                  );
-                                  setStreams(streamsResponse.data.data);
-                                  if (streamsResponse.data.data.length > 0) {
-                                    await handleStreamChange(
-                                      streamsResponse.data.data[0].content_stream_id
-                                    );
-                                  }
-                                } catch (error) {
-                                  console.error("Error fetching streams:", error);
-                                }
-                              }}
-                            >
-                              {contents.map((content) => (
-                                <option key={content.id} value={content.id}>
-                                  {content.name}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-200 pointer-events-none" />
-                          </div>
-                          <div className="relative">
-                            <select
-                              className="w-full appearance-none bg-cyan-400 border border-gray-700 rounded-lg p-3 pr-10 text-black font-bold focus:outline-none focus:border-cyan-400 truncate"
-                              onChange={(e) => handleStreamChange(e.target.value)}
-                            >
-                              {streams.map((stream) => (
-                                <option
-                                  key={stream.content_stream_id}
-                                  value={stream.content_stream_id}
-                                >
-                                  {stream.stream_name}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black pointer-events-none" />
-                          </div>
-                        </div>
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <select
+                  className="w-full appearance-none bg-gray-800/50 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-cyan-400 truncate"
+                  value={selectedContent?.[0]?.song_id?.toString() ?? ""} // ✅ use id
+                  onChange={(e) => {
+                    const songId = parseInt(e.target.value, 10);
+
+                    const selectedRows = contents.filter(
+                      (content) => content.song_id === songId
+                    );
+                    if (selectedRows.length === 0) {
+                      console.error(
+                        "Selected content not found in contents array"
+                      );
+                      return;
+                    }
+
+                    setSelectedContent(selectedRows); // ✅ update displayed data immediately
+                  }}
+                >
+                  <option value="" disabled>
+                    Select a Song
+                  </option>
+                  {uniqueSongs.map((uniqueContent) => (
+                    <option
+                      key={uniqueContent.song_id}
+                      value={uniqueContent.song_id.toString()}
+                    >
+                      {uniqueContent.song_name || uniqueContent.name}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-200 pointer-events-none" />
+              </div>
+
+              <div className="relative">
+                <select
+                  className="w-full appearance-none border border-gray-700 rounded-lg p-3 pr-10 text-black font-bold focus:outline-none focus:border-[#5dc9de] truncate"
+                  style={{ backgroundColor: "#5dc9de" }}
+                  value={selectedStream || ""}
+                  onChange={(e) => setSelectedStream(e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select Platform
+                  </option>
+                  {[
+                    { key: 1, value: "YouTube" },
+                    { key: 2, value: "Instagram" },
+                    { key: 3, value: "Audio Platform" },
+                  ].map((platform) => (
+                    <option key={platform.key} value={platform.value}>
+                      {platform.value}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black pointer-events-none" />
+              </div>
+            </div>
 
             {/* Video Preview */}
             <div className="overflow-hidden flex items-stretch justify-start">
               <div className="relative">
                 <img
                   src={
-                    selectedContent?.thumbnails ? selectedContent?.thumbnails[0] :
-                    "/assets/images/ytVideoBg.png"
+                    selectedContent?.thumbnails
+                      ? selectedContent?.thumbnails[0]
+                      : "/assets/images/ytVideoBg.png"
                   }
                   alt="Video thumbnail"
                   className="w-[400px] h-[200px] object-cover rounded-lg"
@@ -311,16 +292,22 @@ export default function AnalyticsDashboard() {
               </div>
               <div className="px-4 py-1">
                 <h3 className="text-lg font-semibold">
-                  {selectedContent?.name || "No content selected"}
+                  {selectedContent?.[0]?.song_name ||
+                    selectedContent?.[0]?.name ||
+                    "No content selected"}
                 </h3>
                 <p className="text-sm text-cyan-400">
-                  {totalViews >= 1000000
-                    ? `${(totalViews / 1000000).toFixed(2)}M`
-                    : totalViews >= 1000
-                    ? `${Math.round(totalViews / 1000)}T`
-                    : totalViews}{" "}
-                  Views
+                  {selectedContent
+                    ? Array.isArray(selectedContent)
+                      ? selectedContent.reduce(
+                          (sum, c) => sum + (Number(c.youtube_views) || 0),
+                          0
+                        )
+                      : Number(selectedContent?.youtube_views || 0)
+                    : "--"}{" "}
+                  {selectedContent ? "Views" : ""}
                 </p>
+
                 <p className="text-gray-400 text-sm">
                   {selectedContent?.bio || "No description available"}
                 </p>
@@ -333,12 +320,13 @@ export default function AnalyticsDashboard() {
                 <div className="flex flex-col">
                   <p className="text-sm text-gray-400">Generated Revenue:</p>
                   <p className="text-xl font-bold text-cyan-400">
-                    ${revenue.usd.toFixed(2)}
+                    ${inrToUsd(totalRevenueINR).toFixed(2)}
                   </p>
                 </div>
+
                 <div className="flex flex-col items-end justify-center">
                   <p className="text-xl font-bold text-cyan-400">
-                    INR {revenue.inr.toLocaleString()}
+                    INR {totalRevenueINR.toFixed(0)}
                   </p>
                 </div>
               </div>
@@ -346,57 +334,92 @@ export default function AnalyticsDashboard() {
 
             {/* Charts */}
             <div className="space-y-6">
-              <Chart
-                type="line"
-                data={analyticsData.viewsData}
-                title="Views"
-                subtitle="Count"
-                metric={
-                  totalViews >= 1000000
-                    ? `${(totalViews / 1000000).toFixed(2)}M`
-                    : totalViews >= 1000
-                    ? `${totalViews / 1000}K`
-                    : totalViews
-                }
-                colors={["#22d3ee"]}
-              />
+              {/* Views chart */}
+              {selectedStream === "YouTube" && (
+                <Chart
+                  type="line"
+                  data={chartData.map((d) => ({
+                    name: d.name,
+                    value: d.value,
+                  }))}
+                  title="Views"
+                  subtitle="Count in Millions"
+                  metric={rows.reduce(
+                    (sum, r) => sum + (r.youtube_views || 0),
+                    0
+                  )}
+                  colors={["#22d3ee"]}
+                />
+              )}
 
-              <Chart
-                type="bar"
-                data={analyticsData.engagementData}
-                title="Engagement"
-                subtitle="Count"
-                metric={
-                  totalEngagement >= 1000000
-                    ? `${(totalEngagement / 1000000).toFixed(2)}M`
-                    : totalEngagement >= 1000
-                    ? `${totalEngagement / 1000}K`
-                    : totalEngagement
-                }
-                colors={["#a855f7"]}
-              />
+              {selectedStream === "YouTube" && (
+                <Chart
+                  type="bar"
+                  data={chartData.map((d) => ({
+                    name: d.name,
+                    value: d.valueEngagement,
+                  }))}
+                  title="Engagement"
+                  subtitle="Count in Millions"
+                  metric={engagementMetric}
+                  colors={["#8959D3"]}
+                />
+              )}
 
-              <Chart
-                type="area"
-                data={analyticsData.durationData}
-                title="Average View Durations"
-                subtitle="In Seconds"
-                metric={`${avgDuration.toFixed(0)} Seconds`}
-                colors={["#22c55e"]}
-              />
+              {selectedStream === "YouTube" && (
+                <Chart
+                  type="area"
+                  data={chartData.map((d) => ({
+                    ...d,
+                    value: d.valueDuration, // numeric for chart
+                  }))}
+                  title="Average View Duration"
+                  subtitle="Total Seconds"
+                  metric={totalDurationSeconds} // <-- plain number (e.g., 324000)
+                  colors={["#34a853"]}
+                />
+              )}
 
-              <Chart
+              {selectedStream === "Instagram" && (
+                <Chart
+                  type="bar"
+                  data={chartData.map((d) => ({
+                    name: d.name,
+                    value: d.valueInstagram,
+                  }))}
+                  title="Instagram"
+                  subtitle="Count in Millions"
+                  metric={InstagramMetric}
+                  colors={["#22d3ee"]}
+                />
+              )}
+
+              {selectedStream === "Audio Platform" && (
+                <Chart
+                  type="bar"
+                  data={chartData.map((d) => ({
+                    name: d.name,
+                    value: d.valueInstagram,
+                  }))}
+                  title="Instagram"
+                  subtitle="Count in Millions"
+                  metric={InstagramMetric}
+                  colors={["#22d3ee"]}
+                />
+              )}
+
+              {/* <Chart
                 type="area"
                 data={analyticsData.incomeData}
                 title="Income"
                 subtitle="In Rupees"
                 metric={`₹${totalIncome.toLocaleString()}`}
                 colors={["#22c55e"]}
-              />
+              /> */}
             </div>
           </div>
         </div>
       )}
     </>
   );
-}
+} 
