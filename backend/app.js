@@ -35,6 +35,7 @@ const spotlight_notes = require("./routes/spotlight_notes");
 const notification = require("./routes/notification");
 const tvPublishing = require("./routes/tvPublishing");
 const increment_form = require("./utils/form_count");
+const my_epk = require("./routes/my-epk");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -129,6 +130,7 @@ app.use("/", spotlight_notes);
 app.use("/", notification);
 app.use("/", tvPublishing);
 app.use("/", increment_form);
+app.use("/", my_epk);
 
 //Admin Routes
 
