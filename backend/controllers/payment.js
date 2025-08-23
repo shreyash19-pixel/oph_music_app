@@ -88,4 +88,40 @@ const insertSongIDController = async (req, res) => {
 
 }
 
-module.exports = { payment, insertSongIDController };
+const songRepaymentController = async (req, res) => {
+
+  try{
+
+    const {song_id, Transaction_ID, Status} = req.body
+
+    if(!song_id || !Transaction_ID || !Status)
+    {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+
+    const response = await paymentInfo.songRepayment(song_id, Transaction_ID,Status)
+
+    if(response)
+    {
+      return res.status(201).json({
+        success: true,
+        message: "Data updated successfully"
+      })
+    }
+
+  }
+  catch(err)
+  {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
+
+module.exports = { payment, insertSongIDController,songRepaymentController };

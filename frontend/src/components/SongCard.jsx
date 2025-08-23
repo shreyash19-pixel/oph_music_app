@@ -11,17 +11,23 @@ const SongCard = ({releaseData}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-
+  console.log(releaseData?.dateTime);
+  
   const releaseDate = formatDateAndAdjustMonth(releaseData?.dateTime);
   const title = releaseData?.EventName;
   const thumbnailUrl = releaseData?.image; // or from API if available
   const thumbnailAlt = `${releaseData?.EventName} Thumbnail`;
 
-  const daysUntilRelease = differenceInDays(
-    new Date(releaseDate).setHours(0, 0, 0, 0), // Normalize releaseDate to midnight
-    new Date().setHours(0, 0, 0, 0) // Normalize current date to midnight
-  );
-  
+  const currentDate = new Date()
+  const songReleaseDate = new Date(releaseData?.dateTime)
+
+  const getCurrentTime = currentDate.getTime()
+  const getUpcomingSongTime = songReleaseDate.getTime()
+
+  const diffInMins = getUpcomingSongTime - getCurrentTime
+
+  const daysUntilRelease = Math.ceil(diffInMins / (1000 * 60 * 60 * 24))
+
   const isReleaseTomorrow = daysUntilRelease === 1;
   const bannerMessage = isReleaseTomorrow
     ? "Your Song Is Gonna Release Tomorrow"
@@ -29,7 +35,11 @@ const SongCard = ({releaseData}) => {
 
   return (
     <div
-      onClick={() => navigate("/dashboard/events")}
+      onClick={() => navigate("/dashboard/song-details", {
+        state: {
+          song_id : releaseData?.song_id
+        }
+      })}
       style={{
         backgroundImage: "url('/assets/images/songUploadCardBg.png')",
       }}
@@ -49,7 +59,8 @@ const SongCard = ({releaseData}) => {
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">Release Date:</span>
             <span className="font-medium text-white">
-              {new Date(releaseDate).toLocaleDateString('en-GB')} {/* Format as dd/MM/yyyy */}
+              {/* {new Date(releaseDate).toLocaleDateString('en-GB')}    */}
+              {new Date(releaseData?.dateTime).toLocaleDateString('en-GB')}   
             </span>
           </div>
         </div>

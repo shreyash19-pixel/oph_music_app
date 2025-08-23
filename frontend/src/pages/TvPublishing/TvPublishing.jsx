@@ -22,7 +22,6 @@ export default function TVPublishing() {
   //   4: "Rejected",
   // };
 
-
   useEffect(() => {
     const fetchContent = async () => {
       if (!ophid) return;
@@ -183,13 +182,12 @@ export default function TVPublishing() {
     }
   };
 
-
   const getStatusColor = (status) => {
     const colorMap = {
-      "Open": "border-yellow-400 text-yellow-400",
-      "Submitted": "border-blue-400 text-blue-400",
-      "Approved": "border-green-400 text-green-400",
-      "Rejected": "border-red-400 text-red-400",
+      Open: "border-yellow-400 text-yellow-400",
+      Submitted: "border-blue-400 text-blue-400",
+      Approved: "border-green-400 text-green-400",
+      Rejected: "border-red-400 text-red-400",
     };
     return colorMap[status] || "text-gray-400 border-gray-400/30";
   };
@@ -216,7 +214,7 @@ export default function TVPublishing() {
 
           {contents.length === 0 ? (
             <p className="text-gray-300 text-xl">
-              No content is unlocked for TV publishing
+              No content is unlock for TV publishing
             </p>
           ) : (
             <div>

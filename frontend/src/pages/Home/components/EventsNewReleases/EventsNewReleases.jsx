@@ -9,7 +9,7 @@ import getToken from "../../../../utils/getToken";
 import axiosApi from "../../../../conf/axios";
 import ReleaseBlur from "../../../../../public/assets/images/release_blur.png";
 
-const EventsNewReleases = ({ secondEvent }) => {
+const EventsNewReleases = ({ upcomingEvent }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [audio, setAudio] = useState(null); // State for audio object
   const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
@@ -21,6 +21,9 @@ const EventsNewReleases = ({ secondEvent }) => {
   const openModal = () => {
     setIsModalOpen(true);
   };
+
+  console.log(upcomingEvent);
+  
 
   const newReleases = useSelector((state) => state.newRelease.newRelease);
 
@@ -125,7 +128,7 @@ const EventsNewReleases = ({ secondEvent }) => {
           <h2 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             EVENTS
           </h2>
-          {secondEvent && (
+          {upcomingEvent && (
             <div
               className="relative flex-grow h-[300px] rounded-md shadow-lg before:content-['']
                 before:absolute
@@ -138,19 +141,19 @@ const EventsNewReleases = ({ secondEvent }) => {
                 before:z-5"
             >
               <img
-                src={secondEvent.image}
+                src={upcomingEvent.image}
                 alt="Live event"
                 className="rounded-lg w-full h-full object-cover"
               />
               <div className="absolute bottom-0 left-0 p-4">
                 <div className="text-xs text-cyan-400 mb-2">
-                  {formatDateTime(secondEvent.dateTime)} -{" "}
-                  {secondEvent.location}
+                  {formatDateTime(upcomingEvent.dateTime)} -{" "}
+                  {upcomingEvent.location}
                 </div>
                 <h3 className="text-2xl font-bold mb-2">
-                  {secondEvent.EventName}
+                  {upcomingEvent.EventName}
                 </h3>
-                {secondEvent.is_registered ? (
+                {upcomingEvent.is_registered ? (
                   <button
                     disabled={true}
                     className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm"
@@ -159,7 +162,7 @@ const EventsNewReleases = ({ secondEvent }) => {
                   </button>
                 ) : (
                   <button
-                    onClick={() => handleClick(secondEvent)} // Navigate to payment page
+                    onClick={() => handleClick(upcomingEvent)} // Navigate to payment page
                     className="bg-[#6F4FA0] text-white px-4 py-2 rounded-full text-sm font-extrabold"
                   >
                     Book Your Spot Now
@@ -273,7 +276,7 @@ const EventsNewReleases = ({ secondEvent }) => {
       </div>
       {isModalOpen && (
         <RegistrationModal
-          id={secondEvent.id}
+          id={upcomingEvent.id}
           setIsModalOpen={setIsModalOpen}
         />
       )}

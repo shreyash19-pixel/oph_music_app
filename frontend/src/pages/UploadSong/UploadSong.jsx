@@ -36,17 +36,17 @@ export default function UploadSongs() {
     }
   }, [ophid, headers]);
 
-
   // Get the most recently updated pending content
-  const submittedSongs = pendingContent.length > 0 ? pendingContent.map(song => ({
+  const submittedSongs = Object.values(pendingContent).length > 0 ? Object.values(pendingContent).map(song => ({
     name: song.Song_name,
     status: song.status,
     id: song.song_id,
     reject_reason: song.reject_reason,
-    next_page: song.current_page,
+    next_page: song.next_page,
     projectType: song.project_type,
     release_date: song.release_date
   })) : null;
+
 
   const handleProjectClick = (projectType) => {
     ;
@@ -63,10 +63,10 @@ export default function UploadSongs() {
   // Get status color based on status
   const getStatusColor = (status) => {
     const colorMap = {
-      'Draft': 'text-yellow-400 border-yellow-400/30',
-      'Under Review': 'text-cyan-400 border-cyan-400/30',
-      'Rejected': 'text-red-400 border-red-400/30',
-      'Approved (pending)': 'text-green-400 border-green-400/30',
+      'draft': 'text-yellow-400 border-yellow-400/30',
+      'under review': 'text-cyan-400 border-cyan-400/30',
+      'rejected': 'text-red-400 border-red-400/30',
+      'approved (pending)': 'text-green-400 border-green-400/30',
       'Published': 'text-green-400 border-green-400/30'
     };
     return colorMap[status] || 'text-gray-400 border-gray-400/30';
@@ -121,13 +121,14 @@ export default function UploadSongs() {
           <div
             key={song.id} // Add key prop here
             className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
-            onClick={() => {
-              ['Draft', 'Approved', 'Pending'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
+            
+            onClick={(e) => {
+              ['draft', 'rejected'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
                 state: {
                   songName: song.name,
                   release_date: song.release_date
                 }
-              }) : ['Rejected'].includes(song.status) ? navigate(`/dashboard/upload-song/register-song`) : null
+              }) : e.preventDefault()
               localStorage.setItem("projectType", song.projectType)
             }}
           >
@@ -148,14 +149,11 @@ export default function UploadSongs() {
 
             </div>
             {/* Show rejection reason if status is Rejected */}
-            {song.status === "Approved (pending)" &&
+            {song.status === "rejected" &&
               // song.status_text === "Audio/Video Meta Data Rejected" && 
               (
-                <p className="text-red-400 mt-2">Audio/Video Meta Data Rejected</p>
+                <p className="text-red-400 mt-2">{song.firstRejectedStep}</p>
               )}
-            {song.status === 'Rejected' && (
-              <p className="text-red-400 mt-2">Reason: {song.reject_reason}</p>
-            )}
           </div>
 
         ))}

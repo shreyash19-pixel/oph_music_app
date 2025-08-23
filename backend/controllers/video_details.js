@@ -99,3 +99,40 @@ exports.getVideoDetails = async (req, res) => {
   }
 
 }
+
+exports.checkPaymentStatusController = async (req, res) => {
+
+  try{
+
+      const {contentId} = req.query
+
+      if(!contentId)
+      {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required field"
+        })
+      }
+
+
+      const response = await videoDetails.checkPaymentStatus(contentId)
+
+      if(response)
+      {
+        return res.status(200).json({
+          success: true,
+          message: "Data fetched successfully",
+          data: response
+        })
+      }
+  }
+
+  catch(err)
+  {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}

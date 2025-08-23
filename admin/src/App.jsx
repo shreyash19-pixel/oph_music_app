@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./utils/roles";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // pages
 import AdminSignInForm from "./pages/AdminSignIn";
@@ -36,6 +38,7 @@ import PaymentAll from "./view/dashboard/artistPortal/paymentAll";
 import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/Payment";
 import Settings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
+import TicketMain from "./view/dashboard/artistPortal/Tickets/tickets";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
 import Artist_All from "./view/dashboard/artistPortal/artistAll/Artist_All";
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
@@ -63,6 +66,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ToastContainer position="top-right" autoClose={3000} />
         <Routes>
           {/* ---------- PUBLIC ---------- */}
           <Route path="/" element={<AdminSignInForm />} />
@@ -95,9 +99,10 @@ function App() {
           <Route path="/event_participants" element={<EventParticipation />} />
           <Route path="/content/tv" element={<Tvpublishing />} />
           <Route path="/TvIndex/:ophid/:song_id" element={<TvIndex />} />
+          <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
+          <Route path="/tickets" element={<TicketMain />} />
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
-
           {/* ---------- PROTECTED (SUPER_ADMIN) ---------- */}
           <Route
             path="/WebsiteConfig"
@@ -427,7 +432,7 @@ function App() {
             path="/tvpublishing"
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-                <tvPublishing />
+                <Tvpublishing />
               </ProtectedRoute>
             }
           />
@@ -526,7 +531,7 @@ function App() {
             }
           />
           <Route
-            path="/Tickets"
+            path="/tickets"
             element={
               <ProtectedRoute
                 allowedRoles={[
@@ -537,7 +542,7 @@ function App() {
                   ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
-                <Tickets />
+                <TicketMain />
               </ProtectedRoute>
             }
           />

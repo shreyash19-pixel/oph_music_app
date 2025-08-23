@@ -53,6 +53,20 @@ const updateStatus = async (req, res) => {
 
       await userDetailsModel.updateUserDetailsStatus(ophid, status, reason, rejectedStep);
     }
+    if (Personal) {
+      const status = Personal.status === "Accepted" ? "completed" : "rejected";
+      const reason = Personal.status === "Rejected" ? Personal.reason : null;
+      const rejectedStep = Personal.status === "Rejected" ? "Personal" : null;
+
+      await userDetailsModel.updateUserDetailsStatus(ophid, status, reason, rejectedStep);
+    }
+    if (Personal) {
+      const status = Personal.status === "Accepted" ? "completed" : "rejected";
+      const reason = Personal.status === "Rejected" ? Personal.reason : null;
+      const rejectedStep = Personal.status === "Rejected" ? "Personal" : null;
+
+      await userDetailsModel.updateUserDetailsStatus(ophid, status, reason, rejectedStep);
+    }
 
     if (Professional) {
       const status = Professional.status === "Accepted" ? "completed" : "rejected";

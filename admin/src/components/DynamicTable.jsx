@@ -226,25 +226,30 @@ const DynamicTable = ({
               <tr
                 key={idx}
                 className="hover:bg-gray-100 transition cursor-pointer"
+                // ... existing code ...
                 onClick={() => {
-                  if (!detailsUrl) return;
+                  if (detailsUrl) {
+                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;  
+                    const songIdValue = row.song_id || row.songId;
+                    const ticketIdValue = row.ticketNumber || row.ticketNumber;
 
-                  const ophidValue = row.ophid || row.OPH_ID || row.ophID;
-                  const songIdValue = row.song_id || row.songId;
-
-                  if (ophidValue && songIdValue) {
-                    console.log(detailsPrefer)
-                    if (detailsPrefer === "ophid") {
+                    if (ophidValue && songIdValue) {
+                      console.log(detailsPrefer)
+                      if (detailsPrefer === "ophid") {
+                        navigate(`${detailsUrl}/${ophidValue}`);
+                      } else if (detailsPrefer === "song") {
+                        navigate(`${detailsUrl}/${songIdValue}`);
+                      } else {
+                        navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
+                      }
+                    } else if (ophidValue && ticketIdValue) {
+                      navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
+                    } else if (ophidValue) {
                       navigate(`${detailsUrl}/${ophidValue}`);
-                    } else if (detailsPrefer === "song") {
+                    } else if (songIdValue) {
                       navigate(`${detailsUrl}/${songIdValue}`);
-                    } else {
-                      navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
                     }
-                  } else if (ophidValue) {
-                    navigate(`${detailsUrl}/${ophidValue}`);
-                  } else if (songIdValue) {
-                    navigate(`${detailsUrl}/${songIdValue}`);
+                  
                   }
                 }}
               >

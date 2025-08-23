@@ -8,45 +8,93 @@ import {
 } from "react-icons/fa";
 import { format, isTomorrow, differenceInDays } from "date-fns";
 import toast from "react-hot-toast";
+import { useLocation } from "react-router-dom";
+import { useArtist } from "../auth/API/ArtistContext";
 
 const SongDetails = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const userData = localStorage.getItem("userData");
+  const location = useLocation();
+  const song_id = location.state.song_id;
+  const { headers, ophid } = useArtist();
 
-  const parsedData = JSON.parse(userData);
+  const fetchSongDetails = async () => {
+
+    if(!headers || !headers.Authorization)
+    {
+      console.warn("Headers are not ready yet")
+      return
+    }
+
+    try {
+      const response = await axiosApi.get("/get-artist-song", {
+        headers: headers,
+        params: { ophid, song_id },
+      });
+
+      if (response.data.success) {
+        setData(response.data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+
+    if(ophid)
+    {
+      fetchSongDetails()
+    }
+
+  },[ophid, headers])
 
   // Fetch data from API
-  useEffect(() => {
-    axiosApi
-      .get("/content/upcoming-release-details", {
-        headers: {
-          Authorization: `Bearer ${parsedData.token}`,
-        },
-      })
-      .then((res) => {
-        if (res.data.success) {
-          setData(res.data.data);
-        } else {
-          setError("No data found");
-        }
-      })
-      .catch((err) => {
-        setError("Something went wrong!");
-        console.error(err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // useEffect(() => {
+  //   axiosApi
+  //     .get("/content/upcoming-release-details", {
+  //       headers: headers,
+  //       params: { ophid, song_id },
+  //     })
+  //     .then((res) => {
+  //       if (res.data.success) {
+  //         setData(res.data.data);
+  //       } else {
+  //         setError("No data found");
+  //       }
+  //     })
+  //     .catch((err) => {
+  //       setError("Something went wrong!");
+  //       console.error(err);
+  //     })
+  //     .finally(() => setLoading(false));
+  // }, []);
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 0:
-        return <span className="flex items-center gap-2 ms-2"> <FaSpinner className="text-yellow-500 animate-spin" />Pending</span> ;
+        return (
+          <span className="flex items-center gap-2 ms-2">
+            {" "}
+            <FaSpinner className="text-yellow-500 animate-spin" />
+            Pending
+          </span>
+        );
       case 1:
-        return <span className="flex items-center gap-2 ms-2"> <FaCheckCircle className="text-green-500" /> In Progress</span>
+        return (
+          <span className="flex items-center gap-2 ms-2">
+            {" "}
+            <FaCheckCircle className="text-green-500" /> In Progress
+          </span>
+        );
       case 2:
-        return <span className="flex items-center gap-2 ms-2"> <FaTimesCircle className="text-red-500" /></span>;
+        return (
+          <span className="flex items-center gap-2 ms-2">
+            {" "}
+            <FaTimesCircle className="text-red-500" />
+          </span>
+        );
       default:
         return <span className="text-gray-400">No Status</span>;
     }
@@ -62,11 +110,11 @@ const SongDetails = () => {
 
   function formatTime(timeString) {
     if (!timeString) return "TBD";
-  
+
     const [hours, minutes] = timeString.split(":");
     const date = new Date();
     date.setHours(parseInt(hours), parseInt(minutes), 0);
-  
+
     return date.toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
@@ -74,7 +122,6 @@ const SongDetails = () => {
       timeZone: "Asia/Kolkata", // This ensures the time is in IST
     });
   }
-  
 
   if (loading) {
     return (
@@ -101,11 +148,11 @@ const SongDetails = () => {
 
   const releaseDate = new Date(content.release_date);
   const isReleaseTomorrow = isTomorrow(releaseDate);
-   const daysUntilRelease = differenceInDays(
+  const daysUntilRelease = differenceInDays(
     new Date(releaseDate).setHours(0, 0, 0, 0), // Normalize releaseDate to midnight
     new Date().setHours(0, 0, 0, 0) // Normalize current date to midnight
   );
-  
+
   const bannerMessage = isReleaseTomorrow
     ? "Your Song Is Gonna Release Tomorrow"
     : `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
@@ -259,7 +306,11 @@ const SongDetails = () => {
                 }}
                 disabled={!detail.link}
                 className={`px-4 py-2 rounded-md text-sm flex items-center justify-center mx-auto transition-all duration-300
-                  ${detail.link ? "bg-[#00B8D9] hover:bg-[#008C91] text-white" : "bg-gray-600 text-gray-400 cursor-not-allowed"}`}
+                  ${
+                    detail.link
+                      ? "bg-[#00B8D9] hover:bg-[#008C91] text-white"
+                      : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  }`}
               >
                 <FaShareAlt className="mr-2 sm:hidden" />
                 <span className="hidden sm:inline-block">Copy Link</span>
