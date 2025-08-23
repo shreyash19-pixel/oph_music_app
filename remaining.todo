@@ -31,7 +31,7 @@
 ☐ SP Dashboard => Calender => Add Artist Profile Image
 ✔ Dashboard => Song Registration => In-Progess(Will update task after testing ) => Compeleted => Go to Testing @done(25-08-07 23:33)
 ☐ JS Dashboard => Tv Publishing => Compelete
-✔ NN Dashboard => artist spotlight => Fix icons. @done(25-08-14 04:10)
+✔ NN Dashboard => artist spotlight => Fix icons => Done => Go to Testing. @done(25-08-14 04:10)
 ☐ JS Dashboard => Analytics => Compelete
 ✔ Dashboard => Request Tickets =>  Done. => Go to Testing @done(25-08-07 23:22)
 ✔ Dashboard => Events => Compeleted aka Done. => Go to Testing. @done(25-08-07 23:22)
@@ -54,6 +54,7 @@
 ☐ NN Artist Portal =>Content => Manage => Test and fix, Update based on new api.
 ✔ Artist Portal =>Analytics => Artist KPI => Done => Go to Testing. @done(25-08-07 23:32)
 ✔ Artist Portal =>Analytics => Content analysis => Done => Go to Testing. @done(25-08-09 12:16)
+✔ NN Artist Portal => Analytics => Artist KPI => Done => Go to Testing. @done(25-08-23 09:00)
 ☐ SP Artist Portal =>Analytics => Content Release => Complete
 ☐ JS Artist Portal =>Payment => All => Compelete.
 ☐ JS Artist Portal =>Payment => Withdraw => Fix table layout
@@ -77,3 +78,8 @@
 Updates
 ☐ SP In artist spotlight fix the songs sections to get the song name rather than artist name and also get total view form song_social_metrics
 ☐ Made modification to social_metrics table so tv publishing table will have to be updated too.
+☐ Remove status from tv publish page in admin and add it to the internal page.
+
+
+setting page update (Optional)
+☐ Include Song/Date costing editable variables for admin side also fetch this amounts on the frontend

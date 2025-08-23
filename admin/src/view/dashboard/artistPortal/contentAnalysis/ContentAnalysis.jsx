@@ -119,25 +119,8 @@ const ContentAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <div className="bg-white shadow px-6 py-4 flex justify-between items-center w-full border-b">
-        <h1 className="text-xl font-semibold text-[#0d3c44]">
-          Content Analysis
-        </h1>
-        <select
-          onChange={handlePageChange}
-          defaultValue=""
-          className="border px-4 py-2 rounded-md bg-white text-gray-700"
-        >
-          <option value="" disabled>
-            Go to Page...
-          </option>
-          <option value={`/ArtistNew/${ophid}`}>Content Manage</option>
-          <option value={`/content-analysis/${ophid}/${songId}`}>
-            Content Analysis
-          </option>
-        </select>
-      </div>
+      
+      
 
       {/* Main Form Content */}
       <div className="w-full px-8 py-10">

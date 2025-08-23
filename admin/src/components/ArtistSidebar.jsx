@@ -57,6 +57,7 @@ const artistLinks = [
     children: [
       { label: "Artist KPI", route: "/ArtistKPI" },
       { label: "Content Analysis", route: "/ContentAnalysis" },
+      { label: "Audio Platform", route: "/platform" },
       { label: "Content Release", route: "/analytics/release" },
     ],
   },
