@@ -4,8 +4,6 @@ import axiosApi from "../../../../conf/axios"; // your axios instance
 import toast from "react-hot-toast";
 
 export default function Audio_Metrics() {
-  console.count("Audio_Metrics render");
-
   const { songId } = useParams();
   const navigate = useNavigate();
 
@@ -24,7 +22,9 @@ export default function Audio_Metrics() {
 
   const ReadOnlyField = ({ label, value }) => (
     <div>
-      <label className="block text-gray-700 text-sm font-semibold mb-1">{label}</label>
+      <label className="block text-gray-700 text-sm font-semibold mb-1">
+        {label}
+      </label>
       <input
         type="text"
         readOnly
@@ -37,7 +37,9 @@ export default function Audio_Metrics() {
   const MetricCard = ({ label, value }) => (
     <div className="p-4 border rounded-lg bg-gray-50">
       <div className="text-sm text-gray-500">{label}</div>
-      <div className="text-xl font-semibold text-[#0d3c44] mt-2">{value ?? "-"}</div>
+      <div className="text-xl font-semibold text-[#0d3c44] mt-2">
+        {value ?? "-"}
+      </div>
     </div>
   );
 
@@ -75,7 +77,9 @@ export default function Audio_Metrics() {
         setPlatformsLoading(true);
         const res = await axiosApi.get("/get_audio_platforms");
         if (res.data && res.data.data) {
-          const platformNames = res.data.data.map(platform => platform.name || platform).filter(Boolean);
+          const platformNames = res.data.data
+            .map((platform) => platform.name || platform)
+            .filter(Boolean);
           setPlatforms(platformNames);
           if (platformNames.length > 0 && !selectedPlatform) {
             setSelectedPlatform(platformNames[0]);
@@ -110,9 +114,15 @@ export default function Audio_Metrics() {
   // exact match -> unnamed (empty) -> first -> null
   const pickRecordForPlatform = (arr, platform) => {
     if (!Array.isArray(arr) || arr.length === 0) return null;
-    const exact = arr.find((r) => r && String(r.audio_platform_name) === String(platform));
+    const exact = arr.find(
+      (r) => r && String(r.audio_platform_name) === String(platform),
+    );
     if (exact) return exact;
-    const unnamed = arr.find((r) => r && (!r.audio_platform_name || String(r.audio_platform_name).trim() === ""));
+    const unnamed = arr.find(
+      (r) =>
+        r &&
+        (!r.audio_platform_name || String(r.audio_platform_name).trim() === ""),
+    );
     if (unnamed) return unnamed;
     return arr[0] || null;
   };
@@ -162,18 +172,25 @@ export default function Audio_Metrics() {
             OPH_ID: picked.OPH_ID ?? "",
             song_name: picked.song_name ?? "",
             audio_platform_name:
-              typeof picked.audio_platform_name !== "undefined" && picked.audio_platform_name !== ""
+              typeof picked.audio_platform_name !== "undefined" &&
+              picked.audio_platform_name !== ""
                 ? picked.audio_platform_name
                 : null,
-            audio_platform_streams: parseInt(picked.audio_platform_streams || 0) || 0,
+            audio_platform_streams:
+              parseInt(picked.audio_platform_streams || 0) || 0,
             audio_platform_revenue:
-              typeof picked.audio_platform_revenue !== "undefined" ? String(picked.audio_platform_revenue) : "0.00",
+              typeof picked.audio_platform_revenue !== "undefined"
+                ? String(picked.audio_platform_revenue)
+                : "0.00",
             created_at: picked.created_at ?? null,
             updated_at: picked.updated_at ?? null,
           });
 
           // sync dropdown if needed
-          if (picked.audio_platform_name && picked.audio_platform_name !== selectedPlatform) {
+          if (
+            picked.audio_platform_name &&
+            picked.audio_platform_name !== selectedPlatform
+          ) {
             setSelectedPlatform(picked.audio_platform_name);
           }
         }
@@ -218,11 +235,15 @@ export default function Audio_Metrics() {
       OPH_ID: picked.OPH_ID ?? "",
       song_name: picked.song_name ?? "",
       audio_platform_name:
-        typeof picked.audio_platform_name !== "undefined" && picked.audio_platform_name !== ""
+        typeof picked.audio_platform_name !== "undefined" &&
+        picked.audio_platform_name !== ""
           ? picked.audio_platform_name
           : null,
       audio_platform_streams: parseInt(picked.audio_platform_streams || 0) || 0,
-      audio_platform_revenue: typeof picked.audio_platform_revenue !== "undefined" ? String(picked.audio_platform_revenue) : "0.00",
+      audio_platform_revenue:
+        typeof picked.audio_platform_revenue !== "undefined"
+          ? String(picked.audio_platform_revenue)
+          : "0.00",
       created_at: picked.created_at ?? null,
       updated_at: picked.updated_at ?? null,
     });
@@ -273,9 +294,12 @@ export default function Audio_Metrics() {
         OPH_ID: created.OPH_ID ?? originalMetrics.OPH_ID ?? "",
         song_name: created.song_name ?? originalMetrics.song_name ?? "",
         audio_platform_name: created.audio_platform_name ?? platformToCreate,
-        audio_platform_streams: parseInt(created.audio_platform_streams || 0) || 0,
+        audio_platform_streams:
+          parseInt(created.audio_platform_streams || 0) || 0,
         audio_platform_revenue:
-          typeof created.audio_platform_revenue !== "undefined" ? String(created.audio_platform_revenue) : "0.00",
+          typeof created.audio_platform_revenue !== "undefined"
+            ? String(created.audio_platform_revenue)
+            : "0.00",
         created_at: created.created_at ?? new Date().toISOString(),
         updated_at: created.updated_at ?? new Date().toISOString(),
       };
@@ -285,11 +309,14 @@ export default function Audio_Metrics() {
       setOriginalMetrics(createdRec);
 
       // add to platforms and select it
-      setPlatforms((p) => Array.from(new Set([...(p || []), platformToCreate])));
+      setPlatforms((p) =>
+        Array.from(new Set([...(p || []), platformToCreate])),
+      );
       setSelectedPlatform(platformToCreate);
     } catch (err) {
       console.error("Create failed", err);
-      const msg = err?.response?.data?.details || "Failed to create platform record";
+      const msg =
+        err?.response?.data?.details || "Failed to create platform record";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -305,15 +332,19 @@ export default function Audio_Metrics() {
       const addStreams = parseInt(streamsVal || 0) || 0;
       const addRevenue = parseFloat(revenueVal || 0) || 0;
 
-      const newStreams = (originalMetrics.audio_platform_streams || 0) + addStreams;
-      const newRevenue = (parseFloat(originalMetrics.audio_platform_revenue || 0) || 0) + addRevenue;
+      const newStreams =
+        (originalMetrics.audio_platform_streams || 0) + addStreams;
+      const newRevenue =
+        (parseFloat(originalMetrics.audio_platform_revenue || 0) || 0) +
+        addRevenue;
 
       const payload = sanitize({
         id: originalMetrics.id,
         song_id: originalMetrics.song_id || Number(songId),
         OPH_ID: originalMetrics.OPH_ID || "",
         song_name: originalMetrics.song_name || "",
-        audio_platform_name: originalMetrics.audio_platform_name || selectedPlatform,
+        audio_platform_name:
+          originalMetrics.audio_platform_name || selectedPlatform,
         audio_platform_streams: newStreams,
         audio_platform_revenue: Number(newRevenue).toFixed(2),
       });
@@ -330,8 +361,10 @@ export default function Audio_Metrics() {
         song_id: returned.song_id ?? payload.song_id,
         OPH_ID: returned.OPH_ID ?? payload.OPH_ID,
         song_name: returned.song_name ?? payload.song_name,
-        audio_platform_name: returned.audio_platform_name ?? payload.audio_platform_name,
-        audio_platform_streams: returned.audio_platform_streams ?? payload.audio_platform_streams,
+        audio_platform_name:
+          returned.audio_platform_name ?? payload.audio_platform_name,
+        audio_platform_streams:
+          returned.audio_platform_streams ?? payload.audio_platform_streams,
         audio_platform_revenue:
           typeof returned.audio_platform_revenue !== "undefined"
             ? String(returned.audio_platform_revenue)
@@ -355,7 +388,8 @@ export default function Audio_Metrics() {
       if (revenueRef.current) revenueRef.current.value = "";
     } catch (err) {
       console.error("Save failed", err);
-      const message = err?.response?.data?.details || "Failed to save audio metrics";
+      const message =
+        err?.response?.data?.details || "Failed to save audio metrics";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -376,12 +410,12 @@ export default function Audio_Metrics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-     
-
       {/* Platform Selector / Create */}
       <div className="w-full px-8 py-8">
         <div className="bg-white rounded-2xl shadow-md p-8 w-full">
-          <label className="block text-gray-700 text-sm font-semibold mb-2">Select Audio Platform</label>
+          <label className="block text-gray-700 text-sm font-semibold mb-2">
+            Select Audio Platform
+          </label>
 
           <div className="flex gap-4 items-center">
             <select
@@ -394,7 +428,9 @@ export default function Audio_Metrics() {
                 <option>Loading platforms...</option>
               ) : (
                 platforms.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))
               )}
             </select>
@@ -413,7 +449,9 @@ export default function Audio_Metrics() {
 
           {recordMissing && (
             <div className="mt-4 p-4 border rounded-md bg-gray-50">
-              <div className="text-sm text-gray-700 font-semibold mb-2">No platform record found — create one</div>
+              <div className="text-sm text-gray-700 font-semibold mb-2">
+                No platform record found — create one
+              </div>
 
               <div className="flex gap-2 items-center">
                 <select
@@ -426,17 +464,23 @@ export default function Audio_Metrics() {
                     <option>Loading platforms...</option>
                   ) : (
                     platforms.map((p) => (
-                      <option key={p} value={p}>{p}</option>
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
                     ))
                   )}
                 </select>
-                <button onClick={createPlatformRecord} className="bg-[#0d3c44] text-white px-4 py-2 rounded-md hover:bg-[#0a2d33] transition">
+                <button
+                  onClick={createPlatformRecord}
+                  className="bg-[#0d3c44] text-white px-4 py-2 rounded-md hover:bg-[#0a2d33] transition"
+                >
                   Create Platform Record
                 </button>
               </div>
 
               <p className="text-xs text-gray-500 mt-2">
-                Select a platform from the dropdown above to create a record for.
+                Select a platform from the dropdown above to create a record
+                for.
               </p>
             </div>
           )}
@@ -447,15 +491,23 @@ export default function Audio_Metrics() {
       <div className="w-full px-8 pb-10">
         <div className="bg-white rounded-2xl shadow-md p-8 space-y-6 w-full">
           <div className="text-lg text-gray-600">
-            <strong>OphID:</strong> {originalMetrics.OPH_ID} &nbsp; | &nbsp; <strong>SongID:</strong> {songId} &nbsp; | &nbsp;{" "}
-            <strong>Platform:</strong> {originalMetrics.audio_platform_name || selectedPlatform}
+            <strong>OphID:</strong> {originalMetrics.OPH_ID} &nbsp; | &nbsp;{" "}
+            <strong>SongID:</strong> {songId} &nbsp; | &nbsp;{" "}
+            <strong>Platform:</strong>{" "}
+            {originalMetrics.audio_platform_name || selectedPlatform}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ReadOnlyField label="Song ID" value={originalMetrics.song_id} />
             <ReadOnlyField label="OPH ID" value={originalMetrics.OPH_ID} />
-            <ReadOnlyField label="Song Name" value={originalMetrics.song_name} />
-            <ReadOnlyField label="Audio Platform Name" value={originalMetrics.audio_platform_name ?? "-"} />
+            <ReadOnlyField
+              label="Song Name"
+              value={originalMetrics.song_name}
+            />
+            <ReadOnlyField
+              label="Audio Platform Name"
+              value={originalMetrics.audio_platform_name ?? "-"}
+            />
 
             {/* Uncontrolled inputs: use refs so DOM node is stable while typing */}
             <div>
@@ -490,7 +542,10 @@ export default function Audio_Metrics() {
           </div>
 
           <div className="pt-4 text-right">
-            <button onClick={handleSave} className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition">
+            <button
+              onClick={handleSave}
+              className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
+            >
               Save Audio Metrics
             </button>
           </div>
@@ -498,12 +553,26 @@ export default function Audio_Metrics() {
 
         {/* Current Stored Metrics */}
         <div className="mt-6 bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-3">Current Stored Metrics (Selected Platform)</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">
+            Current Stored Metrics (Selected Platform)
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <MetricCard label="Audio Platform Streams" value={originalMetrics.audio_platform_streams} />
-            <MetricCard label="Audio Platform Revenue" value={originalMetrics.audio_platform_revenue} />
-            <MetricCard label="Created At" value={formatDate(originalMetrics.created_at)} />
-            <MetricCard label="Updated At" value={formatDate(originalMetrics.updated_at)} />
+            <MetricCard
+              label="Audio Platform Streams"
+              value={originalMetrics.audio_platform_streams}
+            />
+            <MetricCard
+              label="Audio Platform Revenue"
+              value={originalMetrics.audio_platform_revenue}
+            />
+            <MetricCard
+              label="Created At"
+              value={formatDate(originalMetrics.created_at)}
+            />
+            <MetricCard
+              label="Updated At"
+              value={formatDate(originalMetrics.updated_at)}
+            />
           </div>
 
           {/* Optionally show other platforms quick list (read-only) */}
@@ -511,7 +580,13 @@ export default function Audio_Metrics() {
             <div className="mt-4 text-sm text-gray-600">
               <strong>Other platform records:</strong>{" "}
               {records
-                .filter((r) => r && r.audio_platform_name && r.audio_platform_name !== originalMetrics.audio_platform_name)
+                .filter(
+                  (r) =>
+                    r &&
+                    r.audio_platform_name &&
+                    r.audio_platform_name !==
+                      originalMetrics.audio_platform_name,
+                )
                 .map((r) => r.audio_platform_name || "Unnamed")
                 .join(", ") || "-"}
             </div>
