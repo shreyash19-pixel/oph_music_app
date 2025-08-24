@@ -2,8 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./utils/roles";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+// import { ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
 
 // pages
 import AdminSignInForm from "./pages/AdminSignIn";
@@ -20,7 +20,7 @@ import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import Collab from "./view/dashboard/websiteConfig/collab";
 import EventAdminForm from "./view/dashboard/websiteConfig/Events";
-import Events from "./view/dashboard/websiteConfig/Events/events";
+import Events from "./view/dashboard/websiteConfig/Events/Events";
 import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
 import ArtistNew from "./view/dashboard/artistPortal/artistNew";
 import ArtistAll from "./view/dashboard/artistPortal/artistAll";
@@ -66,7 +66,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <ToastContainer position="top-right" autoClose={3000} />
+        {/* <ToastContainer position="top-right" autoClose={3000} /> */}
         <Routes>
           {/* ---------- PUBLIC ---------- */}
           <Route path="/" element={<AdminSignInForm />} />
