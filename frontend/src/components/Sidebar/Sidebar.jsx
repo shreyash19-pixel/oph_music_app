@@ -7,6 +7,7 @@ import Elp from "../../../public/assets/images/Ellipse4.png";
 import Logo from "../../../public/assets/images/logo.png";
 import { TiHome } from "react-icons/ti";
 import Calender from "../../../public/assets/images/calender.png";
+import EPK from "../../../public/assets/images/my-epk.png";
 import SongUp from "../../../public/assets/images/song.png";
 import Tv from "../../../public/assets/images/tv.png";
 import Spot from "../../../public/assets/images/spotlight.png";
@@ -73,6 +74,11 @@ const SidebarNav = ({ onClose }) => {
 
   const menuItems = [
     { icon: <TiHome />, label: "Home", to: "/dashboard" },
+    {
+      icon: <img src = {EPK} className="w-[24px] h-[24px]" />,
+      label: "MY EPK",
+      to: "/dashboard/my-epk"
+    },
     {
       icon: <img src={Calender} className="w-[24px] h-[24px]" />,
       label: "Time Calendar",
