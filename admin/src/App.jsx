@@ -43,7 +43,7 @@ import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
 import Artist_All from "./view/dashboard/artistPortal/artistAll/Artist_All";
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
 import Content_New from "./view/dashboard/artistPortal/contentNew/Content_New";
-import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_manage";
+import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_Manage";
 import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
