@@ -27,6 +27,8 @@ const SidebarNav = ({ onClose }) => {
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(false); // State to check if screen width is narrow
   const [data, setData] = useState([]);
+  const {ophid, headers} = useArtist()
+  const [artistType, setArtistType] = useState('')
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
@@ -51,6 +53,35 @@ const SidebarNav = ({ onClose }) => {
     };
   }, []);
 
+  const getArtistType = async () => {
+
+    if(!headers || !headers.Authorization)
+    {
+      console.warn("Headers are not ready yet");
+      return
+    }
+    try{
+      const response = await axiosApi.get("/get-artist-type", {
+        headers: headers,
+        params: {ophid}
+      })
+
+      if(response.data.success)
+      {
+        setArtistType(response.data.data[0].artist_type)
+      }
+    }
+    catch(err)
+    {
+      console.error(err.data.message);
+    }
+
+  }
+
+  useEffect(() => {
+      getArtistType()
+  }, [headers, ophid])
+
   const handleLogout = async () => {
     await logout();
     toast.success("Logged Out Successfully!");
@@ -73,56 +104,66 @@ const SidebarNav = ({ onClose }) => {
   };
 
   const menuItems = [
-    { icon: <TiHome />, label: "Home", to: "/dashboard" },
+    { icon: <TiHome />, label: "Home", to: "/dashboard", type : "Independent artist, Special artist"},
     {
       icon: <img src = {EPK} className="w-[24px] h-[24px]" />,
       label: "MY EPK",
-      to: "/dashboard/my-epk"
+      to: "/dashboard/my-epk",
+      type : "Special artist"
     },
     {
       icon: <img src={Calender} className="w-[24px] h-[24px]" />,
       label: "Time Calendar",
       to: "/dashboard/time-calendar",
+      type : "Independent artist"
     },
     {
       icon: <img src={SongUp} className="w-[24px] h-[24px]" />,
       label: "Songs Registration",
       to: "/dashboard/upload-song",
+      type : "Independent artist"
     },
     {
       icon: <img src={Tv} className="w-[24px] h-[24px]" />,
       label: "TV Publishing",
       to: "/dashboard/tv-publishing",
+      type : "Independent artist"
     },
     {
       icon: <img src={Spot} className="w-[24px] h-[24px]" />,
       label: "Artist Spotlight",
       to: "/dashboard/artist-spotlight",
+      type : "Independent artist"
     },
     {
       icon: <img src={Anal} className="w-[24px] h-[24px]" />,
       label: "Analytics",
       to: "/dashboard/analytics",
+      type : "Independent artist"
     },
     {
       icon: <img src={Ticket} className="w-[24px] h-[24px]" />,
       label: "Request Ticket",
       to: "/dashboard/request-ticket",
+      type : "Independent artist, Special artist"
     },
     {
       icon: <img src={Event} className="w-[24px] h-[24px]" />,
       label: "Event",
       to: "/dashboard/events",
+      type : "Independent artist, Special artist"
     },
     {
       icon: <img src={Income} className="w-[24px] h-[24px]" />,
       label: "Income",
       to: "/dashboard/income",
+      type : "Independent artist, Special artist"
     },
     {
       icon: <img src={Key} className="w-[24px] h-[24px]" />,
       label: "Key Performance Indicators",
       to: "/dashboard/key-performance-indicators",
+      type : "Independent artist"
     },
   ];
 
@@ -156,7 +197,7 @@ const SidebarNav = ({ onClose }) => {
 
       <nav className="flex-1 z-50 w-full">
         <ul className="space-y-1 w-full">
-          {menuItems.map((item, index) => (
+          {artistType !== '' && menuItems.filter((item) => item.type.includes(artistType)).map((item, index) => (
             <li key={index}>
               <button
                 className={`w-full flex items-center px-4 py-2 hover:bg-gray-800 hover:text-cyan-400 transition-colors duration-200 justify-start text-[#666B76] ${
