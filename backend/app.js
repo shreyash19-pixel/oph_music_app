@@ -36,6 +36,7 @@ const notification = require("./routes/notification");
 const tvPublishing = require("./routes/tvPublishing");
 const increment_form = require("./utils/form_count");
 const my_epk = require("./routes/my-epk");
+const artist_type = require("./routes/sidebar");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -131,6 +132,7 @@ app.use("/", notification);
 app.use("/", tvPublishing);
 app.use("/", increment_form);
 app.use("/", my_epk);
+app.use("/", artist_type);
 
 //Admin Routes
 
