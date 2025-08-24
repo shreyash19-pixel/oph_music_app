@@ -58,6 +58,26 @@ const getMetricById = async (req, res) => {
   }
 };
 
+const getMetricByOph = async (req, res) => {
+  const { OPH_ID } = req.query;
+  if (!OPH_ID) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing OPH ID in query" });
+  } else {
+    try {
+      const Metric = await SongSocialMetrics.getMetricByOph(OPH_ID);
+      res.status(200).json({ success: true, data: Metric });
+    } catch (error) {
+      console.error("Error fetching Metric:", error);
+      console.log("Controller - ophID:", OPH_ID);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  }
+};
+
 const kpi = async (req, res) => {
   try {
     const [rows] = await db.execute(`
@@ -81,5 +101,6 @@ module.exports = {
   updateMetrics,
   getAllMetrics,
   getMetricById,
+  getMetricByOph,
   kpi,
 };

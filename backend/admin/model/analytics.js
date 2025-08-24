@@ -72,6 +72,14 @@ const SongSocialMetrics = {
     );
     return rows[0];
   },
+
+ getMetricByOph: async (OPH_ID) => {
+    const [rows] = await db.query(
+      `SELECT * FROM song_social_metrics WHERE OPH_ID = ?`,
+      [OPH_ID],
+    );
+    return rows;
+  },
 };
 
 module.exports = SongSocialMetrics;
