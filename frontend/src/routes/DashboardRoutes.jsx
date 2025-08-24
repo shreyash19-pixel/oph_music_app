@@ -30,6 +30,8 @@ import ErrorScreen from "../pages/ErrorScreen/ErrorScreen.jsx";
 import ArtistDetail from "../pages/ArtistDetail/ArtistDetail.jsx";
 import PendingScreen from "../pages/PendingScreen/PendingScreen.jsx";
 import MYEPK from "../pages/MYEPK/MYEPK.jsx";
+import EPKManagement from "../pages/EPKManagement/EPKManagement.jsx";
+import AddNewSong from "../pages/AddNewSong/AddNewSong.jsx";
 const ArtistRoutes = () => {
   return (
     <Provider store={artistStore}>
@@ -41,6 +43,8 @@ const ArtistRoutes = () => {
           <Route path="learnings" element={<Learnings />} />
           <Route path="time-calendar" element={<TimeCalendar />}></Route>
           <Route path="my-epk" element={<MYEPK />}></Route>
+          <Route path="epk-management" element={<EPKManagement />}></Route>
+          <Route path="add-new-song" element={<AddNewSong />}></Route>
           <Route path="block-date" element={<BlockDateForm />}></Route>
           <Route path="date-change" element={<DateChange />} />
 
