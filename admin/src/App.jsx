@@ -2,8 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROLES } from "./utils/roles";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+// import { ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
 
 // pages
 import AdminSignInForm from "./pages/AdminSignIn";
@@ -20,7 +20,7 @@ import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import Collab from "./view/dashboard/websiteConfig/collab";
 import EventAdminForm from "./view/dashboard/websiteConfig/Events";
-import Events from "./view/dashboard/websiteConfig/Events/events";
+import Events from "./view/dashboard/websiteConfig/Events/Events";
 import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
 import ArtistNew from "./view/dashboard/artistPortal/artistNew";
 import ArtistAll from "./view/dashboard/artistPortal/artistAll";
@@ -59,12 +59,14 @@ import ViewReels from "./view/dashboard/websiteConfig/resource/ViewReels";
 import ViewStories from "./view/dashboard/websiteConfig/resource/ViewStories";
 import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
+import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
+import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <ToastContainer position="top-right" autoClose={3000} />
+        {/* <ToastContainer position="top-right" autoClose={3000} /> */}
         <Routes>
           {/* ---------- PUBLIC ---------- */}
           <Route path="/" element={<AdminSignInForm />} />
@@ -88,6 +90,10 @@ function App() {
           <Route
             path="/Content_Analysis/:ophid/:songId"
             element={<ContentAnalysis />}
+          />
+          <Route
+            path="/Audio_metrics/:songId"
+            element={<Audio_Metrics />} // Adjusted to match the new export
           />
           <Route path="/AllEvents" element={<Events />} />
           <Route path="/event_participants" element={<EventParticipation />} />
@@ -480,6 +486,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
                 <ContentRelease />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/platform"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+                <AudioPlatform />
               </ProtectedRoute>
             }
           />

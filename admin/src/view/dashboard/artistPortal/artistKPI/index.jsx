@@ -25,7 +25,7 @@ const Artist_Kpi = () => {
         title="Artist KPI"
         data={tableData}
         showStatusIndicator={false}
-        excludeColumns = {"createdAt,updatedAt,user_pass,step_status,reject_reason,personal_photo,location,current_step,rejected_step"}
+        excludeColumns = {"createdAt,updatedAt,user_pass,step_status,reject_reason,personal_photo,location,current_step,rejected_step, "}
         pageSize={10}
         detailsUrl="/AddNote"
       />
