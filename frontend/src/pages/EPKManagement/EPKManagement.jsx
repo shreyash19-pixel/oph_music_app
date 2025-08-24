@@ -379,7 +379,7 @@ hover:bg-[#5A3F85] "
       </form>
 
       {status.length > 0 &&
-        (<section>
+        (<section className="mb-[20px]">
           <h1 className="font-extrabold text-[55px] mt-[55px]">Status</h1>
 
           <table className="w-full border-collapse mt-[41px]">
