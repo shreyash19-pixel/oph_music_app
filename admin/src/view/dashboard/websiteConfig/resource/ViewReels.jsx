@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosApi from "../../../../../../frontend/src/conf/axios";
+import axiosApi from "../../../../conf/axios";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import toast from "react-hot-toast";
 

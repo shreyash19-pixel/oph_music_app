@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axiosApi from "../../../../../../frontend/src/conf/axios";
+import axiosApi from "../../../../conf/axios";
 import { useParams } from "react-router-dom";
 
 export default function AdminTicketList() {
