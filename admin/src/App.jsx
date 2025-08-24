@@ -59,6 +59,8 @@ import ViewReels from "./view/dashboard/websiteConfig/resource/ViewReels";
 import ViewStories from "./view/dashboard/websiteConfig/resource/ViewStories";
 import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
+import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
+import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
 
 function App() {
   return (
@@ -88,6 +90,10 @@ function App() {
           <Route
             path="/Content_Analysis/:ophid/:songId"
             element={<ContentAnalysis />}
+          />
+          <Route
+            path="/Audio_metrics/:songId"
+            element={<Audio_Metrics />} // Adjusted to match the new export
           />
           <Route path="/AllEvents" element={<Events />} />
           <Route path="/event_participants" element={<EventParticipation />} />
@@ -480,6 +486,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
                 <ContentRelease />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/platform"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+                <AudioPlatform />
               </ProtectedRoute>
             }
           />

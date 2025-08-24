@@ -92,10 +92,11 @@ const updateSongSectionStatus = async (req, res) => {
     console.log(req.body);
     console.log("from Content");
 
+    // Validate section (your client appears to send "Audio"/"Video")
     if (!["Audio", "Video"].includes(section)) {
       return res
         .status(400)
-        .json({ error: "Invalid section. Must be 'audio' or 'video'." });
+        .json({ error: "Invalid section. Must be 'Audio' or 'Video'." });
     }
 
     const table = section === "Audio" ? "audio_details" : "video_details";
@@ -110,32 +111,60 @@ const updateSongSectionStatus = async (req, res) => {
       section === "Audio" ? ophid : null,
     );
 
+    if (section === "Audio" && status === "rejected") {
+      console.log("Audio Reject Api ");
+    } else if (section === "Video" && status === "rejected") {
+      console.log("Video Reject Api ");
+    }
+
     console.log(result);
     console.log("test");
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "No matching record found." });
     }
 
-    //  Build notification message
-    const statusText =
-      status === "accepted"
-        ? "approved"
-        : status === "rejected"
-          ? "rejected"
-          : "updated";
-    const message = `${section} for your song was ${statusText}.`;
-    const title = `${section} ${status}`;
-    const link = `upload-song/audio-metadata/${songId}`;
+    const data = await songsModel.getSongsByOphIdUnderReview(ophid, songId);
+    const songName = data?.[0]?.audio_song_name || "your song";
 
-    //  Save to DB
-    const notification = await saveNotification({
+    // Normalize/derive status text
+    const statusLower = String(status || "").toLowerCase();
+    const isAccepted = statusLower === "accepted" || statusLower === "approved";
+    const isRejected = statusLower === "rejected";
+
+    const title = isAccepted
+      ? `${section} has been approved for ${songName}`
+      : isRejected
+        ? `${section} has been rejected for ${songName}`
+        : ``;
+
+    // Build message and (optional) link based on status
+    let message;
+    let link; // only set for rejected
+
+    if (isAccepted) {
+      message = `${section} for your song ${songName} was ${statusLower}.`;
+      // No link when accepted/approved
+    } else if (isRejected) {
+      const reasonText = reason ? ` Reason: ${reason}` : "";
+      message = `${section} for your song ${songName} was rejected.${reasonText}`;
+      link = "/dashboard/upload-song"; // include link when rejected
+    } else {
+      message = `${section} for your song ${songName} was ${statusLower}.`;
+      // No link by default for other statuses
+    }
+
+    // Prepare notification payload; include link only when present
+    const notificationPayload = {
       ophid,
       message,
       title,
-      link,
-    });
+      ...(link ? { link } : {}),
+    };
 
-    //  Emit via Socket.IO if user is online
+    // Save to DB
+    const notification = await saveNotification(notificationPayload);
+
+    // Emit via Socket.IO if user is online
     const io = req.app.get("io");
     const onlineUsers = req.app.get("onlineUsers");
 
@@ -146,9 +175,9 @@ const updateSongSectionStatus = async (req, res) => {
       const userSocketId = onlineUsers.get(ophid);
 
       if (userSocketId) {
-        io.to(userSocketId).emit("ticket-updated", notification);
+        io.to(userSocketId).emit("Music-update", notification);
         console.log(
-          `Emitted 'ticket-updated' to ophid ${ophid}, socket ID: ${userSocketId}`,
+          `Emitted 'Music-update' to ophid ${ophid}, socket ID: ${userSocketId}`,
         );
       } else {
         console.log(`No active socket found for ophid: ${ophid}`);

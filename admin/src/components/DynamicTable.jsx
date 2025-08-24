@@ -10,6 +10,8 @@ const DynamicTable = ({
   showStatusIndicator = false,
   statusField = "",
   statusData = [],
+  detailsPrefer = null, // NEW prop: "ophid" | "song" | null
+  hideIdColumns = ["id"], // NEW prop: array of ID column names to hide
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumns, setSortColumns] = useState([]);
@@ -25,6 +27,11 @@ const DynamicTable = ({
     columns = columns.filter((col) => includeColumns.includes(col));
   } else if (excludeColumns && excludeColumns.length > 0) {
     columns = columns.filter((col) => !excludeColumns.includes(col));
+  }
+
+  // Filter out ID columns that should be hidden
+  if (hideIdColumns && hideIdColumns.length > 0) {
+    columns = columns.filter((col) => !hideIdColumns.includes(col));
   }
 
   const handleSort = (col) => {
@@ -75,7 +82,77 @@ const DynamicTable = ({
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-  const renderValue = (value) => {
+  // === Date detection & formatting logic ===
+  const isDateField = (col) => {
+    if (!col) return false;
+    const dateFields = ["createdat", "created_at", "modified_at", "updated_at"];
+    return dateFields.includes(col.toLowerCase());
+  };
+
+  const formatDateTime = (value) => {
+    if (value === null || value === undefined || value === "") return "";
+
+    // Accept Date object, numeric timestamp, or ISO-like string
+    let dateObj;
+    if (value instanceof Date) {
+      dateObj = value;
+    } else if (typeof value === "number") {
+      dateObj = new Date(value);
+    } else {
+      // handle numeric strings that look like timestamps
+      const asNumber = Number(value);
+      if (!Number.isNaN(asNumber) && String(value).trim().length >= 10 && String(value).trim().length <= 13) {
+        dateObj = new Date(asNumber);
+      } else {
+        dateObj = new Date(String(value));
+      }
+    }
+
+    if (isNaN(dateObj.getTime())) {
+      return String(value); // fallback to original if invalid
+    }
+
+    // Keep a compact, consistent format and DO NOT include timezone text
+    return dateObj.toLocaleString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+  // === end date logic ===
+
+  const renderValue = (value, col) => {
+    // Check if this is a lock column
+    if (col === "Lock" || col === "lock") {
+      if (value === 1 || value === "1") {
+        return (
+          <div className="flex items-center justify-center">
+            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        );
+      } else if (value === 0 || value === "0") {
+        return (
+          <div className="flex items-center justify-center">
+            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5zM8 7v2h4V7a2 2 0 00-4 0z" />
+              <path d="M8 12a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+            </svg>
+          </div>
+        );
+      }
+    }
+
+    // Date fields first
+    if (isDateField(col)) {
+      return formatDateTime(value);
+    }
+
+    if (value === null || value === undefined) return "";
+
     if (typeof value !== "string") return String(value);
     const lowerVal = value.toLowerCase();
 
@@ -106,6 +183,12 @@ const DynamicTable = ({
     );
 
     return matched ? matched[statusField] : "";
+  };
+
+  // Helper to navigate with cleaned path to avoid double slashes
+  const navigateTo = (path) => {
+    const cleaned = path.replace(/\/+/g, "/");
+    navigate(cleaned);
   };
 
   return (
@@ -143,6 +226,7 @@ const DynamicTable = ({
               <tr
                 key={idx}
                 className="hover:bg-gray-100 transition cursor-pointer"
+                // ... existing code ...
                 onClick={() => {
                   if (detailsUrl) {
                     const ophidValue = row.ophid || row.OPH_ID || row.ophID;  
@@ -150,28 +234,38 @@ const DynamicTable = ({
                     const ticketIdValue = row.ticketNumber || row.ticketNumber;
 
                     if (ophidValue && songIdValue) {
-                      navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
+                      console.log(detailsPrefer)
+                      if (detailsPrefer === "ophid") {
+                        navigate(`${detailsUrl}/${ophidValue}`);
+                      } else if (detailsPrefer === "song") {
+                        navigate(`${detailsUrl}/${songIdValue}`);
+                      } else {
+                        navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
+                      }
                     } else if (ophidValue && ticketIdValue) {
                       navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
                     } else if (ophidValue) {
                       navigate(`${detailsUrl}/${ophidValue}`);
+                    } else if (songIdValue) {
+                      navigate(`${detailsUrl}/${songIdValue}`);
                     }
+                  
                   }
                 }}
               >
                 {columns.map((col) => (
                   <td key={col} className="px-4 py-3 border-b border-gray-200">
-                    {renderValue(row[col])}
+                    {renderValue(row[col], col)}
                   </td>
                 ))}
                 {showStatusIndicator && statusField && (
                   <td className="px-4 py-3 border-b border-gray-200">
                     <span
                       className={`inline-block w-3 h-3 rounded-full ${getStatusForRow(row)?.toLowerCase() === "approved"
-                          ? "bg-green-500"
-                          : getStatusForRow(row)?.toLowerCase() === "rejected"
-                            ? "bg-red-500"
-                            : "bg-gray-500"
+                        ? "bg-green-500"
+                        : getStatusForRow(row)?.toLowerCase() === "rejected"
+                          ? "bg-red-500"
+                          : "bg-gray-500"
                         }`}
                     ></span>
                   </td>
