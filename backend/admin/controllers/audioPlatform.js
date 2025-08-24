@@ -48,6 +48,16 @@ const deleteAudioPlatform = async (req, res) => {
   }
 };
 
+const getallSongMetrics = async (req, res) => {
+  try {
+    const songs = await audioPlatform.getSongAudioMetrics();
+    res.status(200).json({ success: true, data: songs });
+  } catch (error) {
+    console.error("Error fetching participant:", error.message);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 const getSongMetrics = async (req, res) => {
   try {
     const songs = await audioPlatform.getAllSongAudioMetrics();
@@ -181,4 +191,5 @@ module.exports = {
   getAllAudioPlatforms,
   addAudioPlatform,
   deleteAudioPlatform,
+  getallSongMetrics,
 };
