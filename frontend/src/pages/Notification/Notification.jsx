@@ -5,10 +5,9 @@ import { useNavigate } from "react-router-dom";
 import Noti from "../../../public/assets/images/noti.png";
 
 const Notification = () => {
-  const { headers, ophid } = useArtist(); // ✅ Assume ophid comes from context
+  const { headers, ophid } = useArtist();
   const [notifications, setNotifications] = useState([]);
 
-  // ✅ Fetch notifications on mount
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!ophid) return;
@@ -25,7 +24,6 @@ const Notification = () => {
     fetchNotifications();
   }, [ophid]);
 
-  // ✅ Mark as read + open link
   const handleNotificationClick = async (note) => {
     if (note.read_status) {
       if (note.link) window.open(note.link, "_blank");
@@ -45,21 +43,18 @@ const Notification = () => {
     }
   };
 
-  // ✅ Render single notification item
   const NotificationItem = ({ note }) => {
-    // const navigate = useNavigate();
+    const navigate = useNavigate();
 
-    // const handleClick = (e) => {
-    //   e.stopPropagation();
-    //   if (!note.link) return;
+    const handleClick = (e) => {
+      e.stopPropagation();
+      if (!note.link) return;
 
-    //   // Ensure link starts with /dashboard
-    //   const linkTo = note.link.startsWith("/dashboard")
-    //     ? note.link
-    //     : `/dashboard/${note.link}`;
+      // Ensure link starts with /dashboard
+      // const linkTo = note.link.startsWith("/dashboard") ? note.link : note.link;
 
-    //   navigate(linkTo);
-    // };
+      navigate(`${note.link}`);
+    };
 
     return (
       <div
@@ -77,14 +72,14 @@ const Notification = () => {
           <h3 className="text-white font-medium mb-1">{note.title}</h3>
           <p className="text-gray-400 text-sm">{note.message}</p>
 
-          {/* {note.link && (
+          {note.link && (
             <span
               onClick={handleClick}
               className="text-cyan-400 text-xs mt-2 hover:text-cyan-300 underline inline-block"
             >
               {note.link}
             </span>
-          )}*/}
+          )}
         </div>
       </div>
     );

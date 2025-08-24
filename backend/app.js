@@ -35,6 +35,7 @@ const spotlight_notes = require("./routes/spotlight_notes");
 const notification = require("./routes/notification");
 const tvPublishing = require("./routes/tvPublishing");
 const increment_form = require("./utils/form_count");
+const professions = require("./routes/professions");
 const my_epk = require("./routes/my-epk");
 const artist_type = require("./routes/sidebar");
 
@@ -54,6 +55,7 @@ const leaderboard = require("./admin/routes/leaderboard");
 const kpi = require("./admin/routes/kpi");
 const resource = require("./admin/routes/resource");
 const TvPublishing = require("./admin/routes/tvPublishing");
+const audioPlatform = require("./admin/routes/audioPlatform");
 
 // ✅ Middleware order is important
 app.use(
@@ -131,6 +133,7 @@ app.use("/", spotlight_notes);
 app.use("/", notification);
 app.use("/", tvPublishing);
 app.use("/", increment_form);
+app.use("/", professions);
 app.use("/", my_epk);
 app.use("/", artist_type);
 
@@ -151,6 +154,7 @@ app.use("/", kpi);
 app.use("/", resource);
 app.use("/", AdminWithdraw);
 app.use("/", TvPublishing);
+app.use("/", audioPlatform);
 
 // ✅ Start server
 server.listen(port, () => {

@@ -10,6 +10,7 @@ const SearchableDynamicTable = ({
   showStatusIndicator = false,
   statusField = "",
   statusData = [],
+  detailsPrefer = null,
   title = "New SignUp"
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,6 +79,7 @@ const SearchableDynamicTable = ({
         showStatusIndicator={showStatusIndicator}
         statusField={statusField}
         statusData={statusData}
+        detailsPrefer={detailsPrefer}
       />
     </div>
   );
