@@ -17,15 +17,17 @@ const Events = () => {
     fetchData();
   }, []);
   return (
-    <div>
-         <SearchableDynamicTable
-        title="Events"
-        data={tableData}
-        showStatusIndicator={false}
-        pageSize={10}
-      />
-      
-      
+    <div className="flex h-screen bg-gray-50">
+        <WebConfigSidebar />
+        <div className="flex-1 ml-10 overflow-auto">
+          <SearchableDynamicTable
+            title="Events"
+            data={tableData}
+            includeColumns={["EventName","dateTime","location","description","long_desc","registrationStart","registrationEnd","winnerReward","image"]}
+            showStatusIndicator={false}
+            pageSize={10}
+          />
+        </div>
     </div>
   )
   
