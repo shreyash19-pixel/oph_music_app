@@ -38,6 +38,8 @@ const increment_form = require("./utils/form_count");
 const professions = require("./routes/professions");
 const my_epk = require("./routes/my-epk");
 const artist_type = require("./routes/sidebar");
+const special_artist = require("./routes/special-artist")
+const special_artist_song = require("./routes/special-artist-songs")
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -136,6 +138,8 @@ app.use("/", increment_form);
 app.use("/", professions);
 app.use("/", my_epk);
 app.use("/", artist_type);
+app.use("/", special_artist);
+app.use("/", special_artist_song);
 
 //Admin Routes
 
