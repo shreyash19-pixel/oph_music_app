@@ -284,8 +284,8 @@ const MYEPK = () => {
                 {artist.total_content > 0 && (
                   <p className="text-primary mb-2 font-bold">
                     {artist.total_content}{" "}
-                    {artist.total_content > 1 ? "Songs" : "Song"} —{" "}
-                    {formatListeners(artist.total_views)}
+                    {artist.total_content > 1 ? "Songs" : "Song"} 
+                    {artist.total_views > 0 && "— " + formatListeners(artist.total_views)}
                   </p>
                 )}
                 <p className="text-gray-400 mb-6">{artist.bio}</p>
@@ -395,7 +395,9 @@ const MYEPK = () => {
                 className="absolute right-0 bottom-0 cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate("/dashboard/epk-management");
+                  navigate("/dashboard/epk-management", {state: {
+                    photo: artist.photos[0]
+                  }});
                 }}
               >
                 <img src={Edit} className="w-[55px] h-[55px]" />
@@ -447,7 +449,7 @@ const MYEPK = () => {
                       {/* Plays */}
                       <td className="py-3 px-1 text-center">
                         <div className="flex justify-center items-center h-full w-full">
-                          {song.total_song_views}
+                          {song.total_song_views >0 ?  song.total_song_views : "—"}
                         </div>
                       </td>
 
