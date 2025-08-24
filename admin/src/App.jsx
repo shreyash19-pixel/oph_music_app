@@ -47,7 +47,7 @@ import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_
 import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
-import EventParticipation from "./view/dashboard/websiteConfig/Events/eventParticipation";
+import EventParticipation from "./view/dashboard/websiteConfig/Events/EventParticipation";
 import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
 import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
 import CreateResource from "./view/dashboard/websiteConfig/resource";
