@@ -24,7 +24,7 @@ export default function VideoMetadataForm() {
     video_file: null,
     existing_thumbnails: [],
     existing_video_url: null,
-    reject_reason : ""
+    reject_reason : null
   });
   
 
