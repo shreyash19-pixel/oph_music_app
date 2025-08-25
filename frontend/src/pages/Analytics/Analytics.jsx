@@ -102,6 +102,9 @@ export default function AnalyticsDashboard() {
       date: metric.date || null,
       Id: metric.Id || metric.id,
       song_id: metric.song_id,
+      video_url: metric.video_url,
+      image_url: metric.image_url,
+      credits: metric.credits,
       youtube_views: metric.youtube_views ?? metric.audio_platform_streams ?? 0,
       youtube_engagement: metric.youtube_engagement ?? 0,
       youtube_avg_view_duration: metric.youtube_avg_view_duration ?? "00:00:00",
@@ -382,22 +385,37 @@ console.log(
             {selectedStream !== "Audio Platform" && (
               <div className="overflow-hidden flex items-stretch justify-start">
                 <div className="relative">
-                  <img
-                    src={
-                      selectedContent?.thumbnails
-                        ? selectedContent?.thumbnails[0]
-                        : "/assets/images/ytVideoBg.png"
-                    }
-                    alt="Video thumbnail"
-                    className="w-[400px] h-[200px] object-cover rounded-lg"
-                  />
+                  {selectedContent?.[0]?.video_url ? (
+                    <video
+                      src={selectedContent[0].video_url}
+                      poster={
+                        selectedContent?.[0]?.image_url ||
+                        "/assets/images/ytVideoBg.png"
+                      }
+                      controls
+                      className="w-[400px] h-[200px] object-cover rounded-lg"
+                    >
+                      Sorry, your browser doesn’t support embedded videos.
+                    </video>
+                  ) : (
+                    <img
+                      src={
+                        selectedContent?.[0]?.image_url ||
+                        "/assets/images/ytVideoBg.png"
+                      }
+                      alt="Video thumbnail"
+                      className="w-[400px] h-[200px] object-cover rounded-lg"
+                    />
+                  )}
                 </div>
+
                 <div className="px-4 py-1">
                   <h3 className="text-lg font-semibold">
                     {selectedContent?.[0]?.song_name ||
                       selectedContent?.[0]?.name ||
                       "No content selected"}
                   </h3>
+
                   <p className="text-sm text-cyan-400">
                     {selectedContent
                       ? Array.isArray(selectedContent)
@@ -411,7 +429,7 @@ console.log(
                   </p>
 
                   <p className="text-gray-400 text-sm">
-                    {selectedContent?.bio || "No description available"}
+                    {selectedContent?.[0]?.credits || "No description available"}
                   </p>
                 </div>
               </div>
