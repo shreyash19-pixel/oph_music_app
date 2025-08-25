@@ -8,11 +8,13 @@ const controller = require("../controllers/analytics");
 // PUT update existing metrics by id
 router.post("/update_analytics", controller.updateMetrics);
 
-// GET all metrics
+// GET all metrics  
 router.get("/allanalytics", controller.getAllMetrics);
 
 // GET single metric by id
 router.get("/analytics/:id", controller.getMetricById);
+
+router.get("/getMetricByOph", controller.getMetricByOph);
 
 router.get("/leaderboard_data", controller.kpi);
 

@@ -17,6 +17,9 @@ export default function AnalyticsDashboard() {
   const [totalIncome, setTotalIncome] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const chartsPerPage = 3;
+  
   const [analyticsData, setAnalyticsData] = useState({
     viewsData: [],
     engagementData: [],
@@ -45,7 +48,7 @@ export default function AnalyticsDashboard() {
         if (response.data.data.length > 0) {
           setSelectedContentId(null);
           setSelectedContent(null);
-          console.log("RES", response.data.data);
+          console.log("RES", response.data);
         }
       } catch (error) {
         console.error("Error fetching content:", error);
@@ -56,23 +59,66 @@ export default function AnalyticsDashboard() {
     fetchContent();
   }, [ophid]);
 
-  const submittedMetric =
-    contents.length > 0
-      ? contents.map((metric) => ({
-          name: metric.song_name,
-          date: metric.date,
-          Id: metric.Id,
-          song_id: metric.song_id,
-          youtube_views: metric.youtube_views,
-          youtube_engagement: metric.youtube_engagement,
-          youtube_avg_view_duration: metric.youtube_avg_view_duration,
-          youtube_revenue: metric.youtube_revenue,
-          insta_engagement: metric.insta_engagement,
-          Notes: metric.Notes,
-        }))
-      : null;
+  useEffect(() => {
+    const fetchContent = async () => {
+      if (!ophid) return;
+      setIsLoading(true);
 
-  console.log("s", submittedMetric);
+      try {
+        const response = await axiosApi.get(`/getMetricByOph?OPH_ID=${ophid}`);
+
+        if (response.data.success) {
+          // Store both DB and S3 metrics in state
+          setContents({
+            dbMetrics: response.data.data || [],
+            s3Metrics: response.data.s3Metrics || [],
+          });
+
+          // Optionally reset selection
+          setSelectedContentId(null);
+          setSelectedContent(null);
+
+          console.log("Fetched content:", response.data);
+        } else {
+          console.warn("No metrics found for OPH_ID:", ophid);
+          setContents({ dbMetrics: [], s3Metrics: [] });
+        }
+      } catch (error) {
+        console.error("Error fetching content:", error);
+        setContents({ dbMetrics: [], s3Metrics: [] });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchContent();
+  }, [ophid]);
+
+
+  const submitMetric = (contents.dbMetrics || [])
+    .concat(contents.s3Metrics || [])
+    .map((metric) => ({
+      name: metric.song_name,
+      date: metric.date || null,
+      Id: metric.Id || metric.id,
+      song_id: metric.song_id,
+      video_url: metric.video_url,
+      image_url: metric.image_url,
+      credits: metric.credits,
+      youtube_views: metric.youtube_views ?? metric.audio_platform_streams ?? 0,
+      youtube_engagement: metric.youtube_engagement ?? 0,
+      youtube_avg_view_duration: metric.youtube_avg_view_duration ?? "00:00:00",
+      youtube_revenue:
+        metric.youtube_revenue ?? metric.audio_platform_revenue ?? "0.00",
+      insta_engagement: metric.insta_engagement ?? 0,
+      Notes: metric.Notes ?? "",
+      audio_platform_name: metric.audio_platform_name ?? null,
+      audio_platform_streams: metric.audio_platform_streams ?? null,
+      audio_platform_revenue: metric.audio_platform_revenue ?? null,
+      audioDate: metric.audioDate ?? metric.updated_at ?? null,
+    }));
+
+  console.log("Combined metrics:", submitMetric);
 
   const inrToUsd = (inr, rate = 0.011) => inr * rate;
 
@@ -111,12 +157,32 @@ export default function AnalyticsDashboard() {
           ),
         },
       ]
-    : [];
+      : [];
+  
+   const AudiochartData = Array.isArray(selectedContent)
+     ? selectedContent.map((c) => ({
+        name: c.audio_platform_name,
+         date: c.audioDate
+           ? new Date(c.audioDate).toLocaleDateString()
+           : "Unknown Date",
+         value: c.audio_platform_streams,
+       }))
+     : selectedContent
+     ? [
+         {
+           name:selectedContent.audio_platform_name,
+           date: selectedContent.audioDate
+             ? new Date(selectedContent.audioDate).toLocaleDateString()
+             : "Unknown Date",
+           value: selectedContent.audio_platform_streams,
+         },
+       ]
+     : [];
 
 const totalDurationSeconds = chartData.reduce(
   (sum, d) => sum + (d.valueDuration || 0),
   0
-);
+  );
 
   const engagementMetric = Array.isArray(selectedContent)
     ? selectedContent.reduce((sum, c) => sum + (c.youtube_engagement || 0), 0)
@@ -126,25 +192,62 @@ const totalDurationSeconds = chartData.reduce(
     ? selectedContent.reduce((sum, c) => sum + (c.insta_engagement || 0), 0)
     : selectedContent?.insta_engagement || 0;
   
+  const AudioMetric = Array.isArray(selectedContent)
+    ? selectedContent.reduce(
+        (sum, c) => sum + (c.audio_platform_streams || 0),
+        0
+      )
+    : selectedContent?.audio_platform_streams || 0;
+  
   const uniqueSongs = Array.from(
-    new Map(contents.map((c) => [c.song_id, c])).values()
+    new Map(submitMetric.map((c) => [c.song_id, c])).values()
   );
 
   // normalize to rows (array) and compute totals
 
-  const totalRevenueINR = rows.reduce(
-    (sum, r) => sum + Number(r.youtube_revenue ?? 0),
-    0
-  );
+  const totalRevenueINR = rows.reduce((sum, r) => {
+    if (selectedStream === "Audio Platform") {
+      return sum + Number(r.audio_platform_revenue ?? 0);
+    } else if (selectedStream === "YouTube") {
+      return sum + Number(r.youtube_revenue ?? 0);
+    }
+    // you can add Instagram revenue if needed
+    return sum;
+  }, 0);
+
+    const filterByDuration = (data, dateField) => {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - selectedDuration);
+      return data.filter(
+        (d) => d[dateField] && new Date(d[dateField]) >= cutoff
+      );
+  };
+  
+   const filteredChartData = filterByDuration(chartData, "name");
+  const filteredAudioChartData = filterByDuration(AudiochartData, "date");
+  
+  const getPaginatedCharts = (charts) => {
+    const start = currentPage * chartsPerPage;
+    return charts.slice(start, start + chartsPerPage);
+  };
+
+  const totalPages = (charts) => Math.ceil(charts.length / chartsPerPage);
+
+
+
 
   console.log("DEBUG selectedContent:", selectedContent);
 
   // console.log("testline", chartData.name, chartData.value);
 
-  console.log(
-    "testLine",
-    chartData.map((d) => ({ name: d.name, value: d.value }))
-  );
+console.log(
+  "testLine",
+  AudiochartData.map((d) => ({
+    date: d.date,
+    value: d.value,
+  }))
+);
+
 
   console.log(
     "test",
@@ -223,9 +326,10 @@ const totalDurationSeconds = chartData.reduce(
                   onChange={(e) => {
                     const songId = parseInt(e.target.value, 10);
 
-                    const selectedRows = contents.filter(
-                      (content) => content.song_id === songId
+                    const selectedRows = submitMetric.filter(
+                      (metric) => metric.song_id === songId
                     );
+
                     if (selectedRows.length === 0) {
                       console.error(
                         "Selected content not found in contents array"
@@ -278,144 +382,202 @@ const totalDurationSeconds = chartData.reduce(
             </div>
 
             {/* Video Preview */}
-            <div className="overflow-hidden flex items-stretch justify-start">
-              <div className="relative">
-                <img
-                  src={
-                    selectedContent?.thumbnails
-                      ? selectedContent?.thumbnails[0]
-                      : "/assets/images/ytVideoBg.png"
-                  }
-                  alt="Video thumbnail"
-                  className="w-[400px] h-[200px] object-cover rounded-lg"
-                />
-              </div>
-              <div className="px-4 py-1">
-                <h3 className="text-lg font-semibold">
-                  {selectedContent?.[0]?.song_name ||
-                    selectedContent?.[0]?.name ||
-                    "No content selected"}
-                </h3>
-                <p className="text-sm text-cyan-400">
-                  {selectedContent
-                    ? Array.isArray(selectedContent)
-                      ? selectedContent.reduce(
-                          (sum, c) => sum + (Number(c.youtube_views) || 0),
-                          0
-                        )
-                      : Number(selectedContent?.youtube_views || 0)
-                    : "--"}{" "}
-                  {selectedContent ? "Views" : ""}
-                </p>
+            {selectedStream !== "Audio Platform" && (
+              <div className="overflow-hidden flex items-stretch justify-start">
+                <div className="relative">
+                  {selectedContent?.[0]?.video_url ? (
+                    <video
+                      src={selectedContent[0].video_url}
+                      poster={
+                        selectedContent?.[0]?.image_url ||
+                        "/assets/images/ytVideoBg.png"
+                      }
+                      controls
+                      className="w-[400px] h-[200px] object-cover rounded-lg"
+                    >
+                      Sorry, your browser doesn’t support embedded videos.
+                    </video>
+                  ) : (
+                    <img
+                      src={
+                        selectedContent?.[0]?.image_url ||
+                        "/assets/images/ytVideoBg.png"
+                      }
+                      alt="Video thumbnail"
+                      className="w-[400px] h-[200px] object-cover rounded-lg"
+                    />
+                  )}
+                </div>
 
-                <p className="text-gray-400 text-sm">
-                  {selectedContent?.bio || "No description available"}
-                </p>
+                <div className="px-4 py-1">
+                  <h3 className="text-lg font-semibold">
+                    {selectedContent?.[0]?.song_name ||
+                      selectedContent?.[0]?.name ||
+                      "No content selected"}
+                  </h3>
+
+                  <p className="text-sm text-cyan-400">
+                    {selectedContent
+                      ? Array.isArray(selectedContent)
+                        ? selectedContent.reduce(
+                            (sum, c) => sum + (Number(c.youtube_views) || 0),
+                            0
+                          )
+                        : Number(selectedContent?.youtube_views || 0)
+                      : "--"}{" "}
+                    {selectedContent ? "Views" : ""}
+                  </p>
+
+                  <p className="text-gray-400 text-sm">
+                    {selectedContent?.[0]?.credits || "No description available"}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Revenue Section */}
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <p className="text-sm text-gray-400">Generated Revenue:</p>
-                  <p className="text-xl font-bold text-cyan-400">
-                    ${inrToUsd(totalRevenueINR).toFixed(2)}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-end justify-center">
-                  <p className="text-xl font-bold text-cyan-400">
-                    INR {totalRevenueINR.toFixed(0)}
-                  </p>
+            {(selectedStream === "YouTube" ||
+              selectedStream === "Audio Platform") && (
+              <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <p className="text-sm text-gray-400">Generated Revenue:</p>
+                    <p className="text-xl font-bold text-cyan-400">
+                      ${inrToUsd(totalRevenueINR).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end justify-center">
+                    <p className="text-xl font-bold text-cyan-400">
+                      INR {totalRevenueINR.toFixed(0)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Charts */}
+            {/* Charts */}
             <div className="space-y-6">
-              {/* Views chart */}
-              {selectedStream === "YouTube" && (
-                <Chart
-                  type="line"
-                  data={chartData.map((d) => ({
-                    name: d.name,
-                    value: d.value,
-                  }))}
-                  title="Views"
-                  subtitle="Count in Millions"
-                  metric={rows.reduce(
-                    (sum, r) => sum + (r.youtube_views || 0),
-                    0
-                  )}
-                  colors={["#22d3ee"]}
-                />
-              )}
+              {selectedStream &&
+                rows.length > 0 &&
+                (() => {
+                  let chartsArray = [];
 
-              {selectedStream === "YouTube" && (
-                <Chart
-                  type="bar"
-                  data={chartData.map((d) => ({
-                    name: d.name,
-                    value: d.valueEngagement,
-                  }))}
-                  title="Engagement"
-                  subtitle="Count in Millions"
-                  metric={engagementMetric}
-                  colors={["#8959D3"]}
-                />
-              )}
+                  if (selectedStream === "YouTube") {
+                    chartsArray = [
+                      <Chart
+                        key="views"
+                        type="line"
+                        data={filteredChartData.map((d) => ({
+                          name: d.name,
+                          value: d.value,
+                        }))}
+                        title="Views"
+                        subtitle="Count in Millions"
+                        metric={rows.reduce(
+                          (sum, r) => sum + (r.youtube_views || 0),
+                          0
+                        )}
+                        colors={["#22d3ee"]}
+                      />,
+                      <Chart
+                        key="engagement"
+                        type="bar"
+                        data={filteredChartData.map((d) => ({
+                          name: d.name,
+                          value: d.valueEngagement,
+                        }))}
+                        title="Engagement"
+                        subtitle="Count in Millions"
+                        metric={engagementMetric}
+                        colors={["#8959D3"]}
+                      />,
+                      <Chart
+                        key="duration"
+                        type="area"
+                        data={filteredChartData.map((d) => ({
+                          ...d,
+                          value: d.valueDuration,
+                        }))}
+                        title="Average View Duration"
+                        subtitle="Total Seconds"
+                        metric={totalDurationSeconds}
+                        colors={["#34a853"]}
+                      />,
+                    ];
+                  }
 
-              {selectedStream === "YouTube" && (
-                <Chart
-                  type="area"
-                  data={chartData.map((d) => ({
-                    ...d,
-                    value: d.valueDuration, // numeric for chart
-                  }))}
-                  title="Average View Duration"
-                  subtitle="Total Seconds"
-                  metric={totalDurationSeconds} // <-- plain number (e.g., 324000)
-                  colors={["#34a853"]}
-                />
-              )}
+                  if (selectedStream === "Instagram") {
+                    chartsArray = [
+                      <Chart
+                        key="instagram"
+                        type="bar"
+                        data={filteredChartData.map((d) => ({
+                          name: d.name,
+                          value: d.valueInstagram,
+                        }))}
+                        title="Instagram Engagement"
+                        subtitle="Count in Millions"
+                        metric={InstagramMetric}
+                        colors={["#22d3ee"]}
+                      />,
+                    ];
+                  }
 
-              {selectedStream === "Instagram" && (
-                <Chart
-                  type="bar"
-                  data={chartData.map((d) => ({
-                    name: d.name,
-                    value: d.valueInstagram,
-                  }))}
-                  title="Instagram"
-                  subtitle="Count in Millions"
-                  metric={InstagramMetric}
-                  colors={["#22d3ee"]}
-                />
-              )}
+                  if (selectedStream === "Audio Platform") {
+                    chartsArray = [
+                      <Chart
+                        key="audio"
+                        type="area"
+                        data={filteredAudioChartData.map((d) => ({
+                          name: d.date,
+                          value: d.value,
+                        }))}
+                        title={AudiochartData[0]?.name || "Audio Streams"}
+                        subtitle="Count in Millions"
+                        metric={AudioMetric}
+                        colors={["#22d3ee"]}
+                      />,
+                    ];
+                  }
 
-              {selectedStream === "Audio Platform" && (
-                <Chart
-                  type="bar"
-                  data={chartData.map((d) => ({
-                    name: d.name,
-                    value: d.valueInstagram,
-                  }))}
-                  title="Instagram"
-                  subtitle="Count in Millions"
-                  metric={InstagramMetric}
-                  colors={["#22d3ee"]}
-                />
-              )}
+                  const paginatedCharts = getPaginatedCharts(chartsArray);
 
-              {/* <Chart
-                type="area"
-                data={analyticsData.incomeData}
-                title="Income"
-                subtitle="In Rupees"
-                metric={`₹${totalIncome.toLocaleString()}`}
-                colors={["#22c55e"]}
-              /> */}
+                  return (
+                    <>
+                      {paginatedCharts.map((chart, idx) => (
+                        <div key={idx}>{chart}</div>
+                      ))}
+
+                      {chartsArray.length > chartsPerPage && (
+                        <div className="flex justify-between mt-4">
+                          <button
+                            disabled={currentPage === 0}
+                            onClick={() =>
+                              setCurrentPage((prev) => Math.max(prev - 1, 0))
+                            }
+                            className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            disabled={
+                              currentPage >= totalPages(chartsArray) - 1
+                            }
+                            onClick={() =>
+                              setCurrentPage((prev) =>
+                                Math.min(prev + 1, totalPages(chartsArray) - 1)
+                              )
+                            }
+                            className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
             </div>
           </div>
         </div>
