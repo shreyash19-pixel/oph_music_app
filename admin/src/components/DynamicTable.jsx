@@ -349,29 +349,31 @@ const DynamicTable = ({
                 className="hover:bg-gray-100 transition cursor-pointer"
                 // ... existing code ...
                 onClick={() => {
-                  if (detailsUrl) {
-                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;  
-                    const songIdValue = row.song_id || row.songId;
-                    const ticketIdValue = row.ticketNumber || row.ticketNumber;
+                if (detailsUrl) {
+                  const ophidValue = row.ophid || row.OPH_ID || row.ophID;
+                  const songIdValue = row.song_id || row.songId;
+                  const ticketIdValue = row.ticketNumber || row.ticketNumber;
+                  const withdrawIdValue = row.withdrawal_id || row.withdrawId;
 
-                    if (ophidValue && songIdValue) {
-                      console.log(detailsPrefer)
-                      if (detailsPrefer === "ophid") {
-                        navigate(`${detailsUrl}/${ophidValue}`);
-                      } else if (detailsPrefer === "song") {
-                        navigate(`${detailsUrl}/${songIdValue}`);
-                      } else {
-                        navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
-                      }
-                    } else if (ophidValue && ticketIdValue) {
-                      navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
-                    } else if (ophidValue) {
+                  if (ophidValue && songIdValue) {
+                    console.log(detailsPrefer);
+                    if (detailsPrefer === "ophid") {
                       navigate(`${detailsUrl}/${ophidValue}`);
-                    } else if (songIdValue) {
+                    } else if (detailsPrefer === "song") {
                       navigate(`${detailsUrl}/${songIdValue}`);
+                    } else {
+                      navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
                     }
-                  
+                  } else if (ophidValue && ticketIdValue) {
+                    navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
+                  } else if (ophidValue && withdrawIdValue) {
+                    navigate(`${detailsUrl}/${ophidValue}/${withdrawIdValue}`);
+                  } else if (ophidValue) {
+                    navigate(`${detailsUrl}/${ophidValue}`);
+                  } else if (songIdValue) {
+                    navigate(`${detailsUrl}/${songIdValue}`);
                   }
+                }
                 }}
               >
                 {columns.map((col) => (

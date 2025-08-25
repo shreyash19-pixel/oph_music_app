@@ -86,7 +86,10 @@ function App() {
           <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
 
           <Route path="/New_SignUp" element={<Home />} />
-          <Route path="/Withdraw/:ophid" element={<Withdraw />} />
+          <Route
+            path="/Withdraw/:ophid/:withdrawal_id"
+            element={<Withdraw />}
+          />
           <Route
             path="/Content_Analysis/:ophid/:songId"
             element={<ContentAnalysis />}
