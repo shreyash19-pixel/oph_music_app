@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
+import { useNavigate } from "react-router-dom";
 
 const AddNewSong = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +16,7 @@ const AddNewSong = () => {
   });
   const [status, setStatus] = useState([]);
   const [errors, setErrors] = useState({});
-
+  const navigate = useNavigate()
   const { headers, ophid } = useArtist();
 
   // handle input change
@@ -112,7 +113,14 @@ const AddNewSong = () => {
         );
 
         if (response.data.success) {
-          console.log("success");
+          const data = Object.values(response.data.data);
+          
+          navigate("/auth/payment", {
+            state: {
+              from: "Special artist song registration",
+              song_id: data.song_id,
+            },
+          })
         }
       } catch (err) {
         console.error(err.message);
@@ -233,7 +241,7 @@ const AddNewSong = () => {
             {formData.audioFile === null ? (
               <div className="flex items-center flex-col gap-3">
                 <Plus className="w-8 h-8 text-gray-500" />
-                <p className="font-medium text-[#666B76] text-[21px]">
+                <p className="font-medium text-white text-[21px]">
                   {formData.audioFile
                     ? formData.audioFile.name
                     : "Upload Audio File"}
@@ -241,7 +249,7 @@ const AddNewSong = () => {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <p className="font-medium text-[#666B76] text-[21px]">
+                <p className="font-medium text-white text-[21px]">
                   {formData.audioFile
                     ? formData.audioFile.name
                     : "Upload Audio File"}
@@ -299,7 +307,7 @@ const AddNewSong = () => {
                 <tr>
                   <td className="py-[12px] font-bold text-[16px]">
                     {new Date(stat.date).toLocaleDateString()}
-                    
+
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.song_name}
