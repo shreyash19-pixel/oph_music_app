@@ -83,4 +83,27 @@ const getAllBookingPayments = async (req, res) => {
   }
 };
 
-module.exports = { updateStatus, getAllSongPayments,getAllEventsPayments, getAllBookingPayments };
+
+const getPaymentDetailsForEventsByOphId = async (req, res) => {
+  try {
+    const { ophid } = req.params;
+    console.log("Controller received ophid:", ophid);
+    console.log("req.params:", req.params);
+    console.log("ophid type:", typeof ophid);
+    
+    if (!ophid) {
+      return res.status(400).json({ message: "ophid parameter is required" });
+    }
+    
+    const payments = await payment_details.getPaymentDetailsForEventsByOphId(ophid);
+    return res.status(200).json({
+      message: "Event payments fetched successfully",
+      data: payments,
+    });
+  }
+  catch (error) {
+    console.error("Error fetching event payments:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+module.exports = { updateStatus, getAllSongPayments,getAllEventsPayments, getAllBookingPayments, getPaymentDetailsForEventsByOphId };

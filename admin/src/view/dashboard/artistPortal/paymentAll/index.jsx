@@ -87,7 +87,7 @@ const PaymentAll = () => {
                   showStatusIndicator={false}
                   pageSize={10}
                   excludeColumns={"Status,song_id,Review,From,reject_reason"}
-                  detailsUrl="/Withdraw"
+                  detailsUrl="/EventPayment"
                 />
                 <br />
               </>

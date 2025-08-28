@@ -103,7 +103,7 @@ const updateSongSectionStatus = async (req, res) => {
     console.log(table);
 
     // Pass ophid only for audio
-    const result = await songsModel.updateSongStatus(
+    const result = await songsModel.updateSongSectionStatus(
       table,
       status,
       reason,
@@ -121,6 +121,23 @@ const updateSongSectionStatus = async (req, res) => {
     console.log("test");
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "No matching record found." });
+    }
+
+    // Update the main song status using the model function directly
+    try {
+      console.log("Updating main song status");
+      console.log(ophid, songId, reason);
+      
+      // Validate parameters before calling the model function
+      if (!ophid || !songId) {
+        console.error("Missing required parameters: ophid or songId");
+        throw new Error("Missing required parameters");
+      }
+      
+      await songsModel.updateSongStatus(parseInt(songId), ophid, (reason || "").trim() || null);
+    } catch (error) {
+      console.error("Error updating main song status:", error);
+      // Continue with notification even if main status update fails
     }
 
     const data = await songsModel.getSongsByOphIdUnderReview(ophid, songId);
@@ -146,7 +163,7 @@ const updateSongSectionStatus = async (req, res) => {
       // No link when accepted/approved
     } else if (isRejected) {
       const reasonText = reason ? ` Reason: ${reason}` : "";
-      message = `${section} for your song ${songName} was rejected.${reasonText}`;
+      message = `${section} of your song ${songName} was rejected due to ${reasonText}`;
       link = "/dashboard/upload-song"; // include link when rejected
     } else {
       message = `${section} for your song ${songName} was ${statusLower}.`;
@@ -191,10 +208,23 @@ const updateSongSectionStatus = async (req, res) => {
   }
 };
 
+
+const updateSongStatus = async (req, res) => {
+  try {
+    const { ophid, songId, status, reason } = req.body;
+    const result = await songsModel.updateSongStatus(parseInt(songId), ophid, (reason || "").trim());
+    res.status(200).json({ message: "Song status updated successfully.", result });
+  } catch (err) {
+    console.error("Error updating song status:", err);
+    res.status(500).json({ error: "Internal server error." });
+  }
+}
+
 module.exports = {
   getAll,
   getSongsUnderReview,
   getAllApprovedSongs,
   getSongApproved,
   updateSongSectionStatus,
+  updateSongStatus
 };

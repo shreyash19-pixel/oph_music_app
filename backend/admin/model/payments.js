@@ -61,10 +61,26 @@ const getPaymentDetailsForAllBooking = async () => {
   }
 }
 
+const getPaymentDetailsForEventsByOphId = async (ophid) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT *
+        FROM sign_up_payment
+        WHERE \`From\` = 'Event Registeration'
+        AND Status = 'under review'
+        AND OPH_ID = ?;`,
+      [ophid]
+    )
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
 
 module.exports = {
   updateStatus,
   getPaymentDetailsForAllSong,
   getPaymentDetailsForAllBooking,
-  getPaymentDetailsForAllEvents
+  getPaymentDetailsForAllEvents,
+  getPaymentDetailsForEventsByOphId
 };
