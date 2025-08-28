@@ -17,7 +17,7 @@ const PaymentScreen = () => {
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
   const [oph_id, setoph_id] = useState("");
-  console.log(location);
+
   const {
     amount = 0,
     planIds = [],
@@ -48,7 +48,6 @@ const PaymentScreen = () => {
         song_id: song_id,
         event_id: event_id,
       };
-      console.log(from);
 
       const apiPath =
         from === "Song Repayment" ? "/song-payment" : "/auth/payment";
@@ -154,7 +153,20 @@ const PaymentScreen = () => {
             });
           }
         }
-      } else if (response.data.success) {
+      } else if (response.data.success && from === "Special artist song registration") {
+        {
+          navigate('/dashboard/pending', {
+            state: {
+              heading: "Your request is under review",
+              btnText: "Back to Home",
+              redirectTo: "/dashboard"
+            }
+          })
+
+        }
+      }
+
+      else if (response.data.success) {
         const path = `/auth/create-profile/personal-details`;
         navigate(path);
       }

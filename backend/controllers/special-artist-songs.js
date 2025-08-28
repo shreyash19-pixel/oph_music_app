@@ -77,11 +77,13 @@ const insertSpecialArtistSongsController = async (req, res) => {
       proof,
       audioURL
     );
+    
 
     if (response) {
       return res.status(201).json({
         success: true,
         message: "Data inserted successfully",
+        data: response
       });
     }
   } catch (err) {

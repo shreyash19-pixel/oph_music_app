@@ -453,7 +453,7 @@ function App() {
             }
           />
           <Route
-            path="/timeCalender"
+            path="/calendar"
             element={
               <ProtectedRoute
                 allowedRoles={[
