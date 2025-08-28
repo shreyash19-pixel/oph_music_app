@@ -153,7 +153,7 @@ const PaymentScreen = () => {
             });
           }
         }
-      } else if (response.data.success && from == "Special artist song registration") {
+      } else if (response.data.success && from === "Special artist song registration") {
         {
           navigate('/dashboard/pending', {
             state: {
