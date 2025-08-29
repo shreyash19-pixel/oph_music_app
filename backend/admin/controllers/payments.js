@@ -116,16 +116,16 @@ const getTransactionDetailsController = async (req, res) => {
 
 const setPaymentVerificationController = async (req, res) => {
   try {
-    const { decision, reason, release_date } = req.body
+    const { decision, reason, release_date, from } = req.body
 
-    if ((decision === "rejected" && reason === null) || decision === "" ||  !release_date) {
+    if ((decision === "rejected" && reason === null) || decision === "" ||  !release_date || !from) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
       })
     }
     
-    const response = await payment_details.setPaymentVerification(decision, reason, release_date)
+    const response = await payment_details.setPaymentVerification(decision, reason, release_date, from)
 
     if (response) {
       return res.status(201).json({
