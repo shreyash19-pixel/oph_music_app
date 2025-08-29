@@ -232,28 +232,15 @@ const updateSongPaymentSp = async (req, res) => {
   }
 };
 
-module.exports = { 
-  updateStatus, 
-  getAllSongPayments,
-  getAllEventsPayments, 
-  getAllBookingPayments, 
-  getPaymentDetailsForEventsByOphId, 
-  getPaymentDetailsForSongByOphId,
-  updateEventPaymentSp,
-  updateSongPaymentSp,
-  updateStatusPayment
-};
 const getTransactionDetailsController = async (req, res) => {
-
   try {
-
     const { release_date } = req.query;
 
     if (!release_date) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
-      })
+      });
     }
 
     const response = await payment_details.getTransactionDetails(release_date);
@@ -263,44 +250,55 @@ const getTransactionDetailsController = async (req, res) => {
         success: true,
         message: "Data fetched successfully",
         data: response
-      })
+      });
     }
 
   } catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message
-    })
+    });
   }
-}
+};
 
 const setPaymentVerificationController = async (req, res) => {
   try {
-    const { decision, reason, release_date, from } = req.body
+    const { decision, reason, release_date, from } = req.body;
 
     if ((decision === "rejected" && reason === null) || decision === "" ||  !release_date || !from) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
-      })
+      });
     }
     
-    const response = await payment_details.setPaymentVerification(decision, reason, release_date, from)
+    const response = await payment_details.setPaymentVerification(decision, reason, release_date, from);
 
     if (response) {
       return res.status(201).json({
         success: true,
         message: "Data updated successfully"
-      })
+      });
     }
 
-  }
-  catch (err) {
+  } catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message
-    })
+    });
   }
-}
+};
 
-module.exports = { updateStatus, getAllSongPayments, getAllEventsPayments, getAllBookingPayments, getTransactionDetailsController, setPaymentVerificationController };
+module.exports = { 
+  updateStatus, 
+  getAllSongPayments,
+  getAllEventsPayments, 
+  getAllBookingPayments, 
+  getPaymentDetailsForEventsByOphId, 
+  getPaymentDetailsForSongByOphId,
+  updateEventPaymentSp,
+  updateSongPaymentSp,
+  updateStatusPayment,
+  getTransactionDetailsController,
+  setPaymentVerificationController
+};

@@ -152,13 +152,33 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
   } catch (error) {
     throw error;
   }
-const getTransactionDetails = async (release_date) => {
-  const [rows] = await db.execute(
-    "SELECT OPH_ID, Transaction_ID, `From` FROM sign_up_payment WHERE release_date = ?",
-    [release_date]
-  );
+};
 
-  return rows;
+const updateStatusPayment = async (ophId, songId, status) => {
+  try {
+    const [result] = await db.query(
+      `UPDATE sign_up_payment 
+       SET Status = ?
+       WHERE OPH_ID = ? AND song_id = ?`,
+      [status, ophId, songId]
+    );
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getTransactionDetails = async (release_date) => {
+  try {
+    const [rows] = await db.execute(
+      "SELECT OPH_ID, Transaction_ID, `From` FROM sign_up_payment WHERE release_date = ?",
+      [release_date]
+    );
+    return rows;
+  } catch (error) {
+    throw error;
+  }
 };
 
 const setPaymentVerification = async (decision, reason, release_date, from) => {
@@ -205,6 +225,7 @@ module.exports = {
   updateEventPaymentSp,
   getPaymentDetailsByTransactionId,
   getPaymentDetailsForSongByOphId,
+  updateStatusPayment,
   getTransactionDetails,
   setPaymentVerification,
 };
