@@ -117,11 +117,8 @@ const getUpcomingSong = async (ophid) => {
             EventName: rows[0].EventName,
             image: JSON.parse(rows[0].image)
         }
-        return songMap
     }
     return songMap
-
-
 }
 
 

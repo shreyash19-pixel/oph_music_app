@@ -23,7 +23,7 @@ export default function TimeCalendar() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await axiosApi.get("special-artist/bookings");
+        const response = await axiosApi.get("admin-calendar/bookings");
 
         if ((response.data.status = 200)) {
           const dateMap = {};

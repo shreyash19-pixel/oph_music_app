@@ -61,10 +61,29 @@ const getPaymentDetailsForAllBooking = async () => {
   }
 }
 
+const getTransactionDetails = async (release_date) => {
+
+  const [rows] = await db.execute("SELECT OPH_ID, Transaction_ID, `From` FROM sign_up_payment WHERE release_date = ?", [release_date])
+
+  return rows
+
+}
+
+const setPaymentVerification = async (decision, reason, release_date) => {
+  console.log(decision, reason, release_date);
+  
+  const [rows] = await db.execute("UPDATE sign_up_payment SET Status = ?, reject_reason = ? WHERE release_date = ?", [decision, reason, release_date])
+
+  return rows
+
+}
+
 
 module.exports = {
   updateStatus,
   getPaymentDetailsForAllSong,
   getPaymentDetailsForAllBooking,
-  getPaymentDetailsForAllEvents
+  getPaymentDetailsForAllEvents,
+  getTransactionDetails,
+  setPaymentVerification
 };

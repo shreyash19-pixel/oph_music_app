@@ -1,10 +1,10 @@
 const db = require('../DB/connect'); // MySQL connectionAdd commentMore actions
 
 
-const insertPayment = async (OPH_ID, Transaction_ID, Review, Status, From, song_id, event_id) => {
+const insertPayment = async (OPH_ID, Transaction_ID, Review, Status, From, song_id, event_id, release_date) => {
   const [result] = await db.execute(
-    'INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [OPH_ID, Transaction_ID, Review, Status, From, song_id, event_id]
+    'INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [OPH_ID, Transaction_ID, Review, Status, From, song_id, event_id, release_date]
   );
   return result;
 };
