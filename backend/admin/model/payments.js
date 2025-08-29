@@ -77,10 +77,92 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
   }
 };
 
+const updateSongPaymentSp = async (ophid,transactionId,FormData,status) => {
+  let query = `CALL sp_update_sign_up_payment(?,?,?,?)`;
+  const values = [ophid,transactionId,FormData,status];
+
+
+  console.log("Values:", values);
+  console.log("Value types:", values.map(v => typeof v));
+
+  try {
+    const [result] = await db.execute(query, values);
+    console.log("Stored procedure result:", result);
+    return result;
+  } catch (error) {
+    console.error("Stored procedure error details:", {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+    throw error;
+  }
+};
+
+const updateEventPaymentSp = async (ophId, transactionId, status, reject_reason, eventId) => {
+  let query = `CALL sp_handle_event_payment(?, ?, ?, ?, ?)`;
+  const values = [ophId, transactionId, status, reject_reason, eventId];
+
+  console.log("Values:", values);
+  console.log("Value types:", values.map(v => typeof v));
+
+  try {
+    const [result] = await db.execute(query, values);
+    console.log("Stored procedure result:", result);
+    return result;
+  } catch (error) {
+    console.error("Stored procedure error details:", {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+    throw error;
+  }
+};
+
+const getPaymentDetailsByTransactionId = async (transactionId) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT *
+        FROM sign_up_payment
+        WHERE Transaction_ID = ?`,
+      [transactionId]
+    );
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT *
+        FROM sign_up_payment
+        WHERE \`From\` = 'Song Registration'
+        AND Status = 'under review'
+        AND OPH_ID = ?
+        AND song_id = ?;`,
+      [ophid, songid]
+    );
+    return rows;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   updateStatus,
   getPaymentDetailsForAllSong,
   getPaymentDetailsForAllBooking,
   getPaymentDetailsForAllEvents,
-  getPaymentDetailsForEventsByOphId
+  getPaymentDetailsForEventsByOphId,
+  updateSongPaymentSp,
+  updateEventPaymentSp,
+  getPaymentDetailsByTransactionId,
+  getPaymentDetailsForSongByOphId,
 };

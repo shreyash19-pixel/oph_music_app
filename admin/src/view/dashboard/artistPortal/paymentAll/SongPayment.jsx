@@ -3,8 +3,9 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
 
-const EventPayment = () => {
-  const { ophid } = useParams();
+const SongPayment = () => {
+  const { ophid, song_id } = useParams();
+  const songid = song_id;
   const [artist, setArtist] = useState(null);
   const [paymentList, setPaymentList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,7 @@ const EventPayment = () => {
         const res = await axiosApi.get(`/user-details/${ophid}`);
         setArtist(res.data.userDetails);
 
-        const paymentRes = await axiosApi.get(`/payment-for-events-by-ophid/${ophid}`);
+        const paymentRes = await axiosApi.get(`/payment-for-song-by-ophid/${ophid}/${song_id}`);
         console.log(paymentRes.data);
         let paymentArray = paymentRes.data.data || [];
         
@@ -31,8 +32,8 @@ const EventPayment = () => {
           status: payment.Status,
           createdAt: payment.CreatedAt,
           paymentType: payment.From,
-          amount: payment.event_id ? `Event ID: ${payment.event_id}` : 'N/A',
-          description: `Event Registration Payment - ${payment.From}`,
+          amount: payment.song_id ? `Song ID: ${payment.song_id}` : 'N/A',
+          description: `Song Registration Payment - ${payment.From}`,
           ophId: payment.OPH_ID
         }));
         
@@ -62,25 +63,21 @@ const EventPayment = () => {
         ophId: ophid,
         transactionId: recentPayment.paymentId,
         status: "rejected",
-        reject_reason: reason || "No reason provided",
-        eventId: recentPayment.amount.replace('Event ID: ', '') || null
+        reject_reason: reason,
+        songId: songid
       };
       console.log("Reject Log:", logData);
 
       try {
-        const submit = await axiosApi.put("/update-event-payment", logData);
+        const submit = await axiosApi.put("/payment-update-status", logData);
         
         // Debug logging to see the actual response structure
         console.log("Reject API Response:", submit);
         console.log("Response data:", submit.data);
         console.log("Response status:", submit.status);
         
-        // Check if the stored procedure was successful - handle different response formats
-        const isSuccess = (
-          (submit.data && submit.data.affectedRows === 1) || 
-          (submit.data && submit.data.result && submit.data.result.affectedRows === 1) ||
-          (submit.status === 200 && submit.data && typeof submit.data === 'object')
-        );
+        // Check if the update was successful
+        const isSuccess = submit.status === 200 && submit.data && submit.data.message === "Status updated successfully";
         
         if (isSuccess) {
           toast.success(`Payment rejected successfully with reason: ${reason || "No reason provided"}`, { duration: 20000 });
@@ -111,25 +108,20 @@ const EventPayment = () => {
         ophId: ophid,
         transactionId: recentPayment.paymentId,
         status: "approved",
-        reject_reason: null,
-        eventId: recentPayment.amount.replace('Event ID: ', '') || null
+        songId: songid
       };
       console.log("Approve Log:", logData);
 
       try {
-        const submit = await axiosApi.put("/update-event-payment", logData);
+        const submit = await axiosApi.put("/payment-update-status", logData);
         
         // Debug logging to see the actual response structure
         console.log("Approve API Response:", submit);
         console.log("Response data:", submit.data);
         console.log("Response status:", submit.status);
         
-        // Check if the stored procedure was successful - handle different response formats
-        const isSuccess = (
-          (submit.data && submit.data.affectedRows === 1) || 
-          (submit.data && submit.data.result && submit.data.result.affectedRows === 1) ||
-          (submit.status === 200 && submit.data && typeof submit.data === 'object')
-        );
+        // Check if the update was successful
+        const isSuccess = submit.status === 200 && submit.data && submit.data.message === "Status updated successfully";
         
         if (isSuccess) {
           toast.success("Payment approved successfully!", { duration: 20000 });
@@ -176,7 +168,7 @@ const EventPayment = () => {
   };
 
   const formatAmount = (amount) => {
-    // For event payments, amount is actually the event ID
+    // For song payments, amount is actually the song ID
     return amount;
   };
 
@@ -194,7 +186,9 @@ const EventPayment = () => {
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
         <div>
-          <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">Artist Payment Details</h2>
+          <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">
+            Artist Song Payment Details - Song ID: {songid}
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Detail label="Full Name" value={artist.full_name} />
             <Detail label="Stage Name" value={artist.stage_name} />
@@ -215,7 +209,7 @@ const EventPayment = () => {
 
         <div className="border rounded-xl p-6 bg-gray-50 shadow-inner">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-gray-700">Payment Requests</h3>
+            <h3 className="text-xl font-semibold text-gray-700">Song Payment Requests</h3>
             {paymentList.length > 1 && (
               <button
                 onClick={() => setShowAllPayments(!showAllPayments)}
@@ -252,22 +246,22 @@ const EventPayment = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm">
                     <div className="text-gray-600">
-                      <span className="font-medium">Event ID:</span> {formatAmount(payment.amount)}
+                      <span className="font-medium">Song ID:</span> {formatAmount(payment.amount)}
                     </div>
                     <div className="text-gray-600">
-                      <span className="font-medium">Type:</span> {payment.paymentType || 'Event Payment'}
+                      <span className="font-medium">Type:</span> {payment.paymentType || 'Song Registration'}
                     </div>
                     <div className="text-gray-600">
                       <span className="font-medium">Status:</span> 
-                                              <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          payment.status === 'under review' ? 'bg-blue-100 text-blue-800' :
-                          payment.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          payment.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {payment.status || 'pending'}
-                        </span>
+                      <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        payment.status === 'under review' ? 'bg-blue-100 text-blue-800' :
+                        payment.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        payment.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {payment.status || 'pending'}
+                      </span>
                     </div>
                     <div className="text-gray-600">
                       <span className="font-medium">Time:</span> {formatDateTime(payment.createdAt)}
@@ -282,12 +276,12 @@ const EventPayment = () => {
               ))}
             </ul>
           ) : (
-            <div className="text-gray-500">No payment requests available</div>
+            <div className="text-gray-500">No song payment requests available</div>
           )}
         </div>
 
         <div className="border-t pt-6 space-y-4">
-          <h3 className="text-xl font-semibold text-gray-700">Payment Actions</h3>
+          <h3 className="text-xl font-semibold text-gray-700">Song Payment Actions</h3>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -358,7 +352,7 @@ const Detail = ({ label, value }) => (
 const ConfirmBlock = ({ type, reason, onConfirm, onCancel }) => (
   <div className="bg-gray-100 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
     <span className="text-gray-800">
-      Are you sure you want to {type.toLowerCase()} this payment
+      Are you sure you want to {type.toLowerCase()} this song payment
       {type === "Reject" && reason ? ` with reason: "${reason}"` : ""}?
     </span>
     <div className="space-x-2">
@@ -378,4 +372,4 @@ const ConfirmBlock = ({ type, reason, onConfirm, onCancel }) => (
   </div>
 );
 
-export default EventPayment;
+export default SongPayment;

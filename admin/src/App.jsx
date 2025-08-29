@@ -62,6 +62,7 @@ import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
 import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
 import EventPayment from "./view/dashboard/artistPortal/paymentAll/EventPayment";
+import SongPayment from "./view/dashboard/artistPortal/paymentAll/SongPayment";
 function App() {
   return (
     <AuthProvider>
@@ -101,6 +102,7 @@ function App() {
           <Route path="/TvIndex/:ophid/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
           <Route path="/EventPayment/:ophid" element={<EventPayment />} />
+          <Route path="/SongPayment/:ophid/:song_id" element={<SongPayment />} />
           
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
