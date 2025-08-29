@@ -61,6 +61,7 @@ import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
 import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
+import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates/VerifyBookingDates";
 
 function App() {
   return (
@@ -462,6 +463,20 @@ function App() {
                 ]}
               >
                 <TimeCalender />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/verify-booking-dates"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <VerifyBookingDates />
               </ProtectedRoute>
             }
           />
