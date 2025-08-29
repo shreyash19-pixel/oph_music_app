@@ -63,6 +63,8 @@ import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
 import EventPayment from "./view/dashboard/artistPortal/paymentAll/EventPayment";
 import SongPayment from "./view/dashboard/artistPortal/paymentAll/SongPayment";
+import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates/VerifyBookingDates";
+
 function App() {
   return (
     <AuthProvider>
@@ -465,6 +467,20 @@ function App() {
                 ]}
               >
                 <TimeCalender />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/verify-booking-dates"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <VerifyBookingDates />
               </ProtectedRoute>
             }
           />

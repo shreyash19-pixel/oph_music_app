@@ -16,20 +16,18 @@ export default function TimeCalendar() {
   const navigate = useNavigate();
   const location = useLocation();
   const toastShownRef = useRef(false); // Ref to track if toast has been shown
-  const [data, setData] = useState([])
+  const [data, setData] = useState([]);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await axiosApi.get(
-          "special-artist/bookings",
-        );
+        const response = await axiosApi.get("admin-calendar/bookings");
 
-        if (response.data.status = 200) {
+        if ((response.data.status = 200)) {
           const dateMap = {};
-          setData(response.data.data)
+          setData(response.data.data);
           response.data.data.forEach((item) => {
             const d = new Date(item.current_booking_date);
             const localDateStr = `${d.getFullYear()}-${String(
@@ -257,34 +255,15 @@ export default function TimeCalendar() {
       "0"
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
-    const isCurrentOwnerOfDate = data.find((da) => {
-      if (da.current_booking_date === dateStr) {
-        return da
-      }
-    })
-
-    const dateInfo = blockedDatesInfo[dateStr]
+    const dateInfo = blockedDatesInfo[dateStr];
 
     if (dateInfo) {
-      // if (dateInfo.artist.id === currentArtistId.artist.id) {
-      if (isCurrentOwnerOfDate.oph_id === ophid) {
-        // It's the current artist's date - navigate to date change
-        // const artistId = currentArtistId.artist.id;
-
-        navigate("/dashboard/date-change", {
-          state: {
-            date: dateStr,
-          },
-        });
-      } else {
-        // It's another artist's date
-        toast.error("You can only update your own release dates");
-      }
-    } else {
-      // Date is not blocked - navigate to block date form
-      navigate("/dashboard/block-date", {
+      navigate("/verify-booking-dates", {
         state: { selectedDate: dateStr },
       });
+    }
+    else{
+      return
     }
   };
 
@@ -316,23 +295,26 @@ export default function TimeCalendar() {
             );
           }
         }}
-        className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${isBlocked && isCurrentMonth
-          ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
-          : isCurrentMonth
+        className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
+          isBlocked && isCurrentMonth
+            ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
+            : isCurrentMonth
             ? "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
             : "bg-gray-900/40 border-gray-700"
-          }
+        }
         ${isPast ? "opacity-50" : ""}
         ${!isValidFutureDate ? " opacity-25" : ""}
-        ${!isPast && isValidFutureDate
+        ${
+          !isPast && isValidFutureDate
             ? "cursor-pointer hover:opacity-80"
             : "cursor-not-allowed"
-          }`}
+        }`}
       >
         <div className="flex justify-between items-start">
           <span
-            className={`text-xs lg:text-lg ${!isCurrentMonth ? "text-gray-600" : ""
-              }`}
+            className={`text-xs lg:text-lg ${
+              !isCurrentMonth ? "text-gray-600" : ""
+            }`}
           >
             {day}
           </span>
@@ -383,7 +365,9 @@ export default function TimeCalendar() {
             <>
               <div className="flex items-center gap-[16px]">
                 <div className="w-full px-8 py-6 bg-gradient-to-r from-[#0d3c44] to-[#145058] text-white rounded-none shadow-lg mb-4">
-                  <h2 className="text-3xl font-extrabold tracking-wide leading-tight drop-shadow-sm">TIME CALENDAR</h2>
+                  <h2 className="text-3xl font-extrabold tracking-wide leading-tight drop-shadow-sm">
+                    TIME CALENDAR
+                  </h2>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
@@ -433,7 +417,9 @@ export default function TimeCalendar() {
               <div className="flex justify-end items-center mt-4 ">
                 <select
                   value={currentMonthIndex}
-                  onChange={(e) => setCurrentMonthIndex(parseInt(e.target.value))}
+                  onChange={(e) =>
+                    setCurrentMonthIndex(parseInt(e.target.value))
+                  }
                   className="bg-[#0d3c44] text-white rounded px-4 py-2 mr-2"
                 >
                   {months.map((month, index) => (

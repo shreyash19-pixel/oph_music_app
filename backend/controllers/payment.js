@@ -3,10 +3,8 @@ const { setCurrentStep } = require("../model/common/set_step.js");
 
 const payment = async (req, res) => {
   try {
-    const { OPH_ID, Transaction_ID, Review, Status, step, from, song_id, event_id } = req.body;
+    const { OPH_ID, Transaction_ID, Review, Status, step, from, song_id, event_id, release_date } = req.body;
     const ophid = OPH_ID;
-    console.log(req.body);
-    
 
     // Validate: only one of song_id or event_id should be present
     if (song_id && event_id) {
@@ -24,7 +22,8 @@ const payment = async (req, res) => {
       Status,
       from,
       song_id || null,
-      event_id || null
+      event_id || null,
+      release_date
     );
 
     if (dbResponse) {
@@ -56,21 +55,19 @@ const payment = async (req, res) => {
 
 const insertSongIDController = async (req, res) => {
 
-  try{
-    const {ophid,song_id} = req.body
+  try {
+    const { ophid, song_id } = req.body
 
-    if(!ophid || !song_id)
-    {
+    if (!ophid || !song_id) {
       return res.status(400).json({
         success: false,
-        message : "Missing required field"
+        message: "Missing required field"
       })
     }
 
     const response = await paymentInfo.insertSongID(ophid, song_id)
 
-    if(response)
-    {
+    if (response) {
       return res.status(201).json({
         success: true,
         message: "Data updated successfully"
@@ -78,8 +75,7 @@ const insertSongIDController = async (req, res) => {
     }
 
   }
-  catch(err)
-  {
+  catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message
@@ -90,22 +86,20 @@ const insertSongIDController = async (req, res) => {
 
 const songRepaymentController = async (req, res) => {
 
-  try{
+  try {
 
-    const {song_id, Transaction_ID, Status} = req.body
+    const { song_id, Transaction_ID, Status } = req.body
 
-    if(!song_id || !Transaction_ID || !Status)
-    {
+    if (!song_id || !Transaction_ID || !Status) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
       })
     }
 
-    const response = await paymentInfo.songRepayment(song_id, Transaction_ID,Status)
+    const response = await paymentInfo.songRepayment(song_id, Transaction_ID, Status)
 
-    if(response)
-    {
+    if (response) {
       return res.status(201).json({
         success: true,
         message: "Data updated successfully"
@@ -113,8 +107,7 @@ const songRepaymentController = async (req, res) => {
     }
 
   }
-  catch(err)
-  {
+  catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message
@@ -124,4 +117,4 @@ const songRepaymentController = async (req, res) => {
 }
 
 
-module.exports = { payment, insertSongIDController,songRepaymentController };
+module.exports = { payment, insertSongIDController, songRepaymentController };

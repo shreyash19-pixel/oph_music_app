@@ -12,5 +12,7 @@ router.get('/payment-for-song-by-ophid/:ophid/:songid', signUpPaymentController.
 router.put('/update-event-payment', signUpPaymentController.updateEventPaymentSp);
 router.put('/update-song-payment', signUpPaymentController.updateSongPaymentSp);
 router.put('/update-status-payment', signUpPaymentController.updateStatusPayment);
+router.get("/get-transaction-details", signUpPaymentController.getTransactionDetailsController)
+router.post("/payment-verification", signUpPaymentController.setPaymentVerificationController)
 
 module.exports = router;

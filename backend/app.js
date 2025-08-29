@@ -58,7 +58,7 @@ const kpi = require("./admin/routes/kpi");
 const resource = require("./admin/routes/resource");
 const TvPublishing = require("./admin/routes/tvPublishing");
 const audioPlatform = require("./admin/routes/audioPlatform");
-const speicalArtistCalendar = require("./admin/routes/date-booking");
+const adminCalendar = require("./admin/routes/date-booking");
 
 // ✅ Middleware order is important
 app.use(
@@ -160,7 +160,7 @@ app.use("/", resource);
 app.use("/", AdminWithdraw);
 app.use("/", TvPublishing);
 app.use("/", audioPlatform);
-app.use("/special-artist", speicalArtistCalendar);
+app.use("/admin-calendar", adminCalendar);
 
 // ✅ Start server
 server.listen(port, () => {

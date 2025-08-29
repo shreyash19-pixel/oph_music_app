@@ -44,10 +44,15 @@ const checkPaymentStatus = async (song_id) => {
   );
   let nextPagePath = "";
 
-  if (rows[0].status === null || rows[0].status === "rejected") {
+  if (rows[0].status === null) {
     nextPagePath = "payment";
-  } else {
-    nextPagePath = "/dashboard/pending/";
+  }
+  else if(rows[0].status === "rejected") 
+  {
+    nextPagePath = "repayment"
+  }
+  else {
+    nextPagePath = "pending";
   }
 
   return nextPagePath;
