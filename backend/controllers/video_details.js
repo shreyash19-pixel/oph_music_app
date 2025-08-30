@@ -114,7 +114,8 @@ exports.checkPaymentStatusController = async (req, res) => {
         })
       }
 
-
+      console.log("in controller of payment status");
+      
       const response = await videoDetails.checkPaymentStatus(contentId)
 
       if(response)

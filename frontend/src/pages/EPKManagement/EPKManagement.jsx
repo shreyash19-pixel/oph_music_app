@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-import {useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { Plus, X } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -94,15 +94,32 @@ const EPKManagement = () => {
         sendFormData.append("updateImages", formData.updateImages);
       }
 
-      const response = await axiosApi.post(
-        "/edit-special-artist-details",
-        sendFormData,
-        {
-          headers: {
-            ...headers,
-          },
+      try {
+        const response = await axiosApi.post(
+          "/edit-special-artist-details",
+          sendFormData,
+          {
+            headers: {
+              ...headers,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          navigate('/dashboard/pending', {
+            state: {
+              heading: "Your request is under review",
+              btnText: "Back to Home",
+              redirectTo: "/dashboard"
+            }
+          })
         }
-      );
+      }
+      catch (err) {
+        console.error(err.message);
+
+      }
+
     } else {
       toast.error("Please edit atleast one field");
     }

@@ -41,10 +41,10 @@ const newReleases = async () => {
 
 const getReleatedArtists = async (profession) => {
 
-    const [rows] = await db.execute("SELECT ud.ophid, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID WHERE pd.Profession = ?", [profession])    
+    const [rows] = await db.execute("SELECT ud.ophid, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID WHERE pd.Profession = ?", [profession])
     return rows
 
-} 
+}
 
 const getArtistDetail = async (ophid) => {
 
@@ -109,16 +109,15 @@ const getArtistDetail = async (ophid) => {
 const getUpcomingSong = async (ophid) => {
 
     const [rows] = await db.execute("SELECT sr.song_id, sr.release_date dateTime, sr.Song_name EventName, vd.image_url image FROM user_details ud LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE ud.ophid = ? AND overall_status = 'approved' ORDER BY `dateTime`LIMIT 1", [ophid])
-
-    
-    
-    const songMap = {
-        song_id: rows[0].song_id,
-        dateTime : rows[0].dateTime,
-        EventName: rows[0].EventName,
-        image: JSON.parse(rows[0].image)
+    let songMap = {}
+    if (rows.length !== 0) {
+        songMap = {
+            song_id: rows[0].song_id,
+            dateTime: rows[0].dateTime,
+            EventName: rows[0].EventName,
+            image: JSON.parse(rows[0].image)
+        }
     }
-
     return songMap
 }
 
