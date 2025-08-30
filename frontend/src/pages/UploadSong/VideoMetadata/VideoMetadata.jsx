@@ -214,7 +214,7 @@ export default function VideoMetadataForm() {
             },
           })
         }
-        else {
+        else if(nextPage === 'pending') {
           navigate("/dashboard/pending", {
             state: {
               heading: "Your video details are under review",
