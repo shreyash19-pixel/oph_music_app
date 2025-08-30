@@ -350,12 +350,13 @@ const DynamicTable = ({
                 // ... existing code ...
                 onClick={() => {
                 if (detailsUrl) {
-                  const ophidValue = row.oph_id || row.OPH_ID || row.ophID; // use oph_id for TV
+                  const ophidValue = row.ophid || row.oph_id || row.OPH_ID || row.ophID; // use oph_id for TV
                   const songIdValue = row.song_id || row.songId;
                   const ticketIdValue = row.ticketNumber || row.ticketNumber;
                   const withdrawIdValue = row.withdrawal_id || row.withdrawId;
                   const tvValue = row.song_id || row.songId; // if TV is tied to song_id
-
+                  const field = row.field;  
+                  console.log("Values",ophidValue , songIdValue ,ticketIdValue ,withdrawIdValue, tvValue, field)
                   if (ophidValue && songIdValue) {
                     console.log(detailsPrefer);
                     if (detailsPrefer === "ophid") {
@@ -367,6 +368,9 @@ const DynamicTable = ({
                     } else {
                       navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
                     }
+                  
+                  } else if (ophidValue && field) {
+                    navigate(`${detailsUrl}/${ophidValue}/${field}`);
                   } else if (ophidValue && ticketIdValue) {
                     navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
                   } else if (ophidValue && withdrawIdValue) {
