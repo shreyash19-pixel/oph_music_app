@@ -50,10 +50,10 @@ const TvIndex = () => {
           const data = res.data.data[0];
           setTvData(data);
           setReason(data.reason || "");
-          setAudioPreview(data.audio || null);
-          setVideoPreview(data.video || null);
-          setOriginalAudioURL(data.audio || null);
-          setOriginalVideoURL(data.video || null);
+          setAudioPreview(data.audio_url || null);
+          setVideoPreview(data.video_url || null);
+          setOriginalAudioURL(data.audio_url || null);
+          setOriginalVideoURL(data.video_url || null);
 
           // Set page-wide unlock state from backend lock
           setunlock(data.lock === 0);
@@ -110,9 +110,9 @@ const TvIndex = () => {
     const file = e.target.files[0];
     if (file) {
       const previewURL = URL.createObjectURL(file);
-      if (field === "audio") {
+      if (field === "audio_url") {
         setAudioPreview(previewURL);
-      } else if (field === "video") {
+      } else if (field === "video_url") {
         setVideoPreview(previewURL);
       }
     }
@@ -150,7 +150,7 @@ const TvIndex = () => {
       }
 
       if (!reason || reason.trim() === "") {
-        toast.warning("Please provide a reason for rejection.");
+        toast.error("Please provide a reason for rejection.");
         return;
       }
 
@@ -179,7 +179,7 @@ const TvIndex = () => {
       }
 
       if (!formData.has("audio") && !formData.has("video")) {
-        toast.warning("No file selected to update.");
+        toast.error("No file selected to update.");
         return;
       }
       const res = await axiosApi.post("/updateTvFiles", formData, {
@@ -252,7 +252,7 @@ const TvIndex = () => {
           <strong>Song ID:</strong> {tvData.song_id}
         </p>
         <p>
-          <strong>OPH ID:</strong> {tvData.OPH_ID}
+          <strong>OPH ID:</strong> {tvData.oph_id}  
         </p>
       </div>
 
@@ -282,7 +282,7 @@ const TvIndex = () => {
                   type="file"
                   accept="audio/*"
                   ref={audioInputRef}
-                  onChange={(e) => handleFileChange(e, "audio")}
+                  onChange={(e) => handleFileChange(e, "audio_url")}
                   className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                   title="Select audio file"
                 />
@@ -319,7 +319,7 @@ const TvIndex = () => {
                   type="file"
                   accept="video/*"
                   ref={videoInputRef}
-                  onChange={(e) => handleFileChange(e, "video")}
+                  onChange={(e) => handleFileChange(e, "video_url")}
                   className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                   title="Select video file"
                 />
