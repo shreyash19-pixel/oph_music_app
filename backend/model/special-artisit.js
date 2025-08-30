@@ -1,14 +1,13 @@
 const db = require("../DB/connect");
 
-
-
 const getSpecialArtistStatus = async (ophid) => {
-
-  const [rows] = await db.execute("SELECT * FROM special_artist_details WHERE ophid = ? ORDER BY date DESC", [ophid])
+  const [rows] = await db.execute(
+    "SELECT * FROM special_artist_details WHERE ophid = ? ORDER BY date DESC",
+    [ophid]
+  );
 
   return rows;
-
-}
+};
 
 const editSpecialArtistDetails = async (updates, len) => {
   let rows = [];
@@ -31,6 +30,19 @@ const editSpecialArtistDetails = async (updates, len) => {
         await db.execute(
           "UPDATE special_artist_details SET content = ? WHERE ophid = ? AND field = ?",
           [updates[i].content, updates[i].ophid, updates[i].field]
+        )
+      );
+    } else if (existRows[0].status === "rejected") {
+      rows.push(
+        await db.execute(
+          "UPDATE special_artist_details SET content = ?, status = ?, reason = ? WHERE ophid = ? AND field = ?",
+          [
+            updates[i].content,
+            "under review",
+            null,
+            updates[i].ophid,
+            updates[i].field,
+          ]
         )
       );
     }
