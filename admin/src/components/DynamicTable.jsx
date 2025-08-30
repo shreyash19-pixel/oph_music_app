@@ -36,21 +36,28 @@ const DynamicTable = ({
 
   // Reorder columns to ensure createdat and updatedat appear at the end
   const reorderColumns = (cols) => {
-    const timestampFields = ['createdat', 'created_at', 'updatedat', 'updated_at', 'modified_at', 'modifiedat'];
+    const timestampFields = [
+      "createdat",
+      "created_at",
+      "updatedat",
+      "updated_at",
+      "modified_at",
+      "modifiedat",
+    ];
     const timestampCols = [];
     const regularCols = [];
-    
-    cols.forEach(col => {
+
+    cols.forEach((col) => {
       if (timestampFields.includes(col.toLowerCase())) {
         timestampCols.push(col);
       } else {
         regularCols.push(col);
       }
     });
-    
+
     return [...regularCols, ...timestampCols];
   };
-  
+
   columns = reorderColumns(columns);
 
   const handleSort = (col) => {
@@ -64,9 +71,7 @@ const DynamicTable = ({
     } else if (existing.order === "asc") {
       // Toggle to descending
       setSortColumns(
-        sortColumns.map((s) =>
-          s.column === col ? { ...s, order: "desc" } : s
-        )
+        sortColumns.map((s) => (s.column === col ? { ...s, order: "desc" } : s))
       );
     } else {
       // Remove from sort
@@ -99,23 +104,31 @@ const DynamicTable = ({
   const currentData = sortedData.slice(startIndex, startIndex + pageSize);
 
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const handleNext = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   // === Date detection & formatting logic ===
   const isDateField = (col) => {
     if (!col) return false;
-          const dateFields = [
-        "createdat", "created_at", "modified_at", "updated_at", "updatedat", "modifiedat",
-        "datetime", "date_time", "event_date", "event_time", "eventdatetime"
-      ];
+    const dateFields = [
+      "createdat",
+      "created_at",
+      "modified_at",
+      "updated_at",
+      "updatedat",
+      "modifiedat",
+      "datetime",
+      "date_time",
+      "event_date",
+      "event_time",
+      "eventdatetime",
+    ];
     return dateFields.includes(col.toLowerCase());
   };
 
   const isDateOnlyField = (col) => {
     if (!col) return false;
-    const dateOnlyFields = [
-      "registrationstart", "registrationend"
-    ];
+    const dateOnlyFields = ["registrationstart", "registrationend"];
     return dateOnlyFields.includes(col.toLowerCase());
   };
 
@@ -131,7 +144,11 @@ const DynamicTable = ({
     } else {
       // handle numeric strings that look like timestamps
       const asNumber = Number(value);
-      if (!Number.isNaN(asNumber) && String(value).trim().length >= 10 && String(value).trim().length <= 13) {
+      if (
+        !Number.isNaN(asNumber) &&
+        String(value).trim().length >= 10 &&
+        String(value).trim().length <= 13
+      ) {
         dateObj = new Date(asNumber);
       } else {
         dateObj = new Date(String(value));
@@ -145,8 +162,10 @@ const DynamicTable = ({
     // Enhanced formatting for better readability
     const now = new Date();
     const isToday = dateObj.toDateString() === now.toDateString();
-    const isTomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString() === dateObj.toDateString();
-    
+    const isTomorrow =
+      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString() ===
+      dateObj.toDateString();
+
     let dateStr = "";
     if (isToday) {
       dateStr = "Today";
@@ -157,14 +176,14 @@ const DynamicTable = ({
         weekday: "short",
         month: "short",
         day: "numeric",
-        year: "numeric"
+        year: "numeric",
       });
     }
 
     const timeStr = dateObj.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
     });
 
     return (
@@ -187,7 +206,11 @@ const DynamicTable = ({
     } else {
       // handle numeric strings that look like timestamps
       const asNumber = Number(value);
-      if (!Number.isNaN(asNumber) && String(value).trim().length >= 10 && String(value).trim().length <= 13) {
+      if (
+        !Number.isNaN(asNumber) &&
+        String(value).trim().length >= 10 &&
+        String(value).trim().length <= 13
+      ) {
         dateObj = new Date(asNumber);
       } else {
         dateObj = new Date(String(value));
@@ -201,12 +224,16 @@ const DynamicTable = ({
     // Date-only formatting
     const now = new Date();
     const isToday = dateObj.toDateString() === now.toDateString();
-    const isTomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString() === dateObj.toDateString();
-    
+    const isTomorrow =
+      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString() ===
+      dateObj.toDateString();
+
     if (isToday) {
       return <span className="text-sm font-medium text-green-600">Today</span>;
     } else if (isTomorrow) {
-      return <span className="text-sm font-medium text-blue-600">Tomorrow</span>;
+      return (
+        <span className="text-sm font-medium text-blue-600">Tomorrow</span>
+      );
     } else {
       return (
         <span className="text-sm font-medium text-gray-900">
@@ -214,7 +241,7 @@ const DynamicTable = ({
             weekday: "short",
             month: "short",
             day: "numeric",
-            year: "numeric"
+            year: "numeric",
           })}
         </span>
       );
@@ -228,15 +255,27 @@ const DynamicTable = ({
       if (value === 1 || value === "1") {
         return (
           <div className="flex items-center justify-center">
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-red-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
         );
       } else if (value === 0 || value === "0") {
         return (
           <div className="flex items-center justify-center">
-            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg
+              className="w-5 h-5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
               <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5zM8 7v2h4V7a2 2 0 00-4 0z" />
               <path d="M8 12a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
             </svg>
@@ -246,20 +285,41 @@ const DynamicTable = ({
     }
 
     // Check if this is a lyrics_services column
-    if (col === "lyrics_services" || col === "lyricsServices" || col === "lyrics_services" || col === "Lyrics_services") {
+    if (
+      col === "lyrics_services" ||
+      col === "lyricsServices" ||
+      col === "lyrics_services" ||
+      col === "Lyrics_services"
+    ) {
       if (value === 1 || value === "1") {
         return (
           <div className="flex items-center justify-start w-full h-full pl-6">
-            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
         );
       } else if (value === 0 || value === "0") {
         return (
           <div className="flex items-center justify-start w-full h-full pl-6">
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-red-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
         );
@@ -282,12 +342,23 @@ const DynamicTable = ({
     const lowerVal = value.toLowerCase();
 
     if (lowerVal.match(/\.(jpeg|jpg|png|gif|svg|webp)$/)) {
-      return <img src={value} alt="preview" className="w-16 h-16 object-cover rounded" />;
+      return (
+        <img
+          src={value}
+          alt="preview"
+          className="w-16 h-16 object-cover rounded"
+        />
+      );
     } else if (lowerVal.match(/\.(mp4|webm|ogg)$/)) {
       return <video src={value} controls className="w-32 h-20 rounded" />;
     } else if (lowerVal.startsWith("http")) {
       return (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline"
+        >
           {value}
         </a>
       );
@@ -309,8 +380,6 @@ const DynamicTable = ({
 
     return matched ? matched[statusField] : "";
   };
-
-
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -350,12 +419,12 @@ const DynamicTable = ({
                 // ... existing code ...
                 onClick={() => {
                   if (detailsUrl) {
-                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;  
+                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;
                     const songIdValue = row.song_id || row.songId;
                     const ticketIdValue = row.ticketNumber || row.ticketNumber;
+                    const field = row.field;
 
                     if (ophidValue && songIdValue) {
-                      console.log(detailsPrefer)
                       if (detailsPrefer === "ophid") {
                         navigate(`${detailsUrl}/${ophidValue}`);
                       } else if (detailsPrefer === "song") {
@@ -363,6 +432,8 @@ const DynamicTable = ({
                       } else {
                         navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
                       }
+                    } else if (ophidValue && field) {
+                      navigate(`${detailsUrl}/${ophidValue}/${field}`);
                     } else if (ophidValue && ticketIdValue) {
                       navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
                     } else if (ophidValue) {
@@ -370,7 +441,6 @@ const DynamicTable = ({
                     } else if (songIdValue) {
                       navigate(`${detailsUrl}/${songIdValue}`);
                     }
-                  
                   }
                 }}
               >
@@ -382,12 +452,13 @@ const DynamicTable = ({
                 {showStatusIndicator && statusField && (
                   <td className="px-4 py-3 border-b border-gray-200">
                     <span
-                      className={`inline-block w-3 h-3 rounded-full ${getStatusForRow(row)?.toLowerCase() === "approved"
-                        ? "bg-green-500"
-                        : getStatusForRow(row)?.toLowerCase() === "rejected"
+                      className={`inline-block w-3 h-3 rounded-full ${
+                        getStatusForRow(row)?.toLowerCase() === "approved"
+                          ? "bg-green-500"
+                          : getStatusForRow(row)?.toLowerCase() === "rejected"
                           ? "bg-red-500"
                           : "bg-gray-500"
-                        }`}
+                      }`}
                     ></span>
                   </td>
                 )}
