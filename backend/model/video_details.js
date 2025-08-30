@@ -51,10 +51,10 @@ const checkPaymentStatus = async (song_id) => {
   {
     nextPagePath = "repayment"
   }
-  else if (rows[0].status === 'approved') {
+  else if (rows[0].status === 'approved' || rows[0].status === "under review") {
     nextPagePath = "pending";
   }
-
+  
   return nextPagePath;
 };
 
