@@ -22,25 +22,49 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
         "UPDATE professional_details SET Bio = ? WHERE OPH_ID = ?",
         [content, ophid]
       );
-    } else if ((section = "Artist Story")) {
+
+      [rows] = await db.execute(
+        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        [type, null, ophid, section]
+      );
+    } else if (section === "Artist Story") {
       [rows] = await db.execute(
         "UPDATE user_details SET artist_story = ? WHERE ophid = ?",
         [content, ophid]
+      );
+      [rows] = await db.execute(
+        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        [type, null, ophid, section]
       );
     } else if (section === "Video Bio") {
       [rows] = await db.execute(
         "UPDATE professional_details SET VideoURL = ? WHERE OPH_ID = ?",
         [content, ophid]
       );
+
+      [rows] = await db.execute(
+        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        [type, null, ophid, section]
+      );
     } else if (section === "Artist Story Video") {
       [rows] = await db.execute(
         "UPDATE user_details SET artist_story_video = ? WHERE ophid = ?",
         [content, ophid]
       );
+
+      [rows] = await db.execute(
+        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        [type, null, ophid, section]
+      );
     } else if (section === "Artist Photo") {
       [rows] = await db.execute(
         "UPDATE user_details SET personal_photo = ? WHERE ophid = ?",
         [content, ophid]
+      );
+
+      [rows] = await db.execute(
+        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        [type, null, ophid, section]
       );
     } else if (section === "Image update") {
       [rows] = await db.execute(
@@ -49,9 +73,15 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
       );
 
       let getData = JSON.parse(rows[0].PhotoURLs);
+
       getData.push(content)[rows] = await db.execute(
-        "UPDATE profession_details SET PhotoURLs = ? WHERE OPH_ID = ?",
+        "UPDATE professional_details SET PhotoURLs = ? WHERE OPH_ID = ?",
         [getData, ophid]
+      );
+
+      [rows] = await db.execute(
+        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        [type, null, ophid, section]
       );
     }
   }

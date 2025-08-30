@@ -171,7 +171,6 @@ const updateSongSectionStatus = async (req, res) => {
     if (!io || !onlineUsers) {
       console.warn("Socket IO or onlineUsers map is not initialized");
     } else {
-      console.log("Online Users Map:", Array.from(onlineUsers.entries()));
       const userSocketId = onlineUsers.get(ophid);
 
       if (userSocketId) {
