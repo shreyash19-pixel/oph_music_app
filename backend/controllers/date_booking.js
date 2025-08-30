@@ -92,12 +92,7 @@ exports.updateBooking = async (req, res) => {
 
 exports.getAllBookings = async (req, res) => {
   try {
-      console.log("in get bookings")
     const bookings = await bookingModel.getAllBookings();
-
-  
-    console.log(bookings);
-    
 
     if (bookings) {
       return res.status(200).json({
