@@ -418,11 +418,6 @@ const DynamicTable = ({
                 className="hover:bg-gray-100 transition cursor-pointer"
                 // ... existing code ...
                 onClick={() => {
-                  if (detailsUrl) {
-                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;
-                    const songIdValue = row.song_id || row.songId;
-                    const ticketIdValue = row.ticketNumber || row.ticketNumber;
-                    const field = row.field;
                 if (detailsUrl) {
                   const ophidValue = row.oph_id || row.OPH_ID || row.ophID; // use oph_id for TV
                   const songIdValue = row.song_id || row.songId;
