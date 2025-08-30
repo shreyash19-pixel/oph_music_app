@@ -1,11 +1,11 @@
 const db = require("../DB/connect");
 
-const updateContentFiles = async (song_id, audio, video) => {
+const updateContentFiles = async (song_id, audio_url, video_url) => {
   const [result] = await db.execute(
     `UPDATE tvPublishing 
-     SET audio = ?, video = ?, status = ?
+     SET audio_url = ?, video_url = ?, status = ?
      WHERE song_id = ?`,
-    [audio, video, "Submitted", song_id]
+    [audio_url, video_url, "Submitted", song_id]
   );
   return result;
 };
