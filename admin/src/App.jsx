@@ -64,6 +64,7 @@ import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Met
 import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates/VerifyBookingDates";
 import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDetails";
 import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
+import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
 
 function App() {
   return (
@@ -81,6 +82,7 @@ function App() {
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route path="/change-details/:ophid/:field" element={ <ChangeDetailsIndividual />} />
           <Route
             path="/ContentManage/:ophid/:songId"
             element={<ContentManage />}
