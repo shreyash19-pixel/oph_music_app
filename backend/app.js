@@ -38,8 +38,8 @@ const increment_form = require("./utils/form_count");
 const professions = require("./routes/professions");
 const my_epk = require("./routes/my-epk");
 const artist_type = require("./routes/sidebar");
-const special_artist = require("./routes/special-artist")
-const special_artist_song = require("./routes/special-artist-songs")
+const special_artist = require("./routes/special-artist");
+const special_artist_song = require("./routes/special-artist-songs");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -58,14 +58,15 @@ const kpi = require("./admin/routes/kpi");
 const resource = require("./admin/routes/resource");
 const TvPublishing = require("./admin/routes/tvPublishing");
 const audioPlatform = require("./admin/routes/audioPlatform");
-
+const adminCalendar = require("./admin/routes/date-booking");
+const specialArtistDetails = require("./admin/routes/special-artist-details");
 // ✅ Middleware order is important
 app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:5174"],
     origin: true,
     credentials: true,
-  }),
+  })
 );
 app.use(express.json());
 
@@ -79,8 +80,6 @@ const io = new Server(server, {
 const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
   socket.on("register", (ophid) => {
     if (!ophid) {
       console.log("Received empty ophid from socket:", socket.id);
@@ -89,10 +88,6 @@ io.on("connection", (socket) => {
 
     const trimmedOphid = ophid.trim();
     onlineUsers.set(trimmedOphid, socket.id);
-    console.log(
-      `✅ Registered OPHID: ${trimmedOphid} with socket: ${socket.id}`,
-    );
-    console.log("Online Users Map:", Array.from(onlineUsers.entries()));
   });
 
   socket.on("disconnect", () => {
@@ -159,6 +154,8 @@ app.use("/", resource);
 app.use("/", AdminWithdraw);
 app.use("/", TvPublishing);
 app.use("/", audioPlatform);
+app.use("/admin-calendar", adminCalendar);
+app.use("/", specialArtistDetails);
 
 // ✅ Start server
 server.listen(port, () => {

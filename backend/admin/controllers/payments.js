@@ -83,4 +83,64 @@ const getAllBookingPayments = async (req, res) => {
   }
 };
 
-module.exports = { updateStatus, getAllSongPayments,getAllEventsPayments, getAllBookingPayments };
+const getTransactionDetailsController = async (req, res) => {
+
+  try {
+
+    const { release_date } = req.query;
+
+    if (!release_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+
+    const response = await payment_details.getTransactionDetails(release_date);
+
+    if (response) {
+      return res.status(200).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+}
+
+const setPaymentVerificationController = async (req, res) => {
+  try {
+    const { decision, reason, release_date, from } = req.body
+
+    if ((decision === "rejected" && reason === null) || decision === "" ||  !release_date || !from) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      })
+    }
+    
+    const response = await payment_details.setPaymentVerification(decision, reason, release_date, from)
+
+    if (response) {
+      return res.status(201).json({
+        success: true,
+        message: "Data updated successfully"
+      })
+    }
+
+  }
+  catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+}
+
+module.exports = { updateStatus, getAllSongPayments, getAllEventsPayments, getAllBookingPayments, getTransactionDetailsController, setPaymentVerificationController };

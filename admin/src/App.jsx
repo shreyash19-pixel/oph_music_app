@@ -61,6 +61,10 @@ import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
 import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
+import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates/VerifyBookingDates";
+import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDetails";
+import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
+import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
 
 function App() {
   return (
@@ -78,6 +82,7 @@ function App() {
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route path="/change-details/:ophid/:field" element={ <ChangeDetailsIndividual />} />
           <Route
             path="/ContentManage/:ophid/:songId"
             element={<ContentManage />}
@@ -131,6 +136,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/Resource"
             element={
@@ -455,7 +461,7 @@ function App() {
             }
           />
           <Route
-            path="/timeCalender"
+            path="/calendar"
             element={
               <ProtectedRoute
                 allowedRoles={[
@@ -465,6 +471,20 @@ function App() {
                 ]}
               >
                 <TimeCalender />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/verify-booking-dates"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <VerifyBookingDates />
               </ProtectedRoute>
             }
           />
@@ -546,6 +566,38 @@ function App() {
                 ]}
               >
                 <TicketMain />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-details"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_MEMBER,
+                  ROLES.SALES_HEAD,
+                ]}
+              >
+                <ChangeDetails/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/special-artist-songs"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_MEMBER,
+                  ROLES.SALES_HEAD,
+                ]}
+              >
+                <NewSongs/>
               </ProtectedRoute>
             }
           />

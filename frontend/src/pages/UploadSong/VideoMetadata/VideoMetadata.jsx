@@ -24,9 +24,9 @@ export default function VideoMetadataForm() {
     video_file: null,
     existing_thumbnails: [],
     existing_video_url: null,
-    reject_reason : null
+    reject_reason: null
   });
-  
+
 
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -191,23 +191,38 @@ export default function VideoMetadataForm() {
       }
 
       if (response.data.success) {
-        nextPage === "payment"
-          ? navigate("/auth/payment", {
-              state: {
-                from: "Song Registration",
-                booking_date: location.state.release_date,
-                song_id: contentId,
-                songName: location.state.songName,
-                project_type: location.state.project_type,
-              },
-            })
-          : navigate("/dashboard/pending", {
-              state: {
-                heading: "Your video details are under review",
-                btnText: "Upload a new song",
-                redirectTo: "/dashboard/upload-song",
-              },
-            });
+
+        if (nextPage === "repayment") {
+          navigate("/auth/payment", {
+            state: {
+              from: "Song Repayment",
+              booking_date: location.state.release_date,
+              song_id: contentId,
+              songName: location.state.songName,
+              project_type: projectType,
+            },
+          })
+        }
+        else if (nextPage === "payment") {
+          navigate("/auth/payment", {
+            state: {
+              from: "Song Registration",
+              booking_date: location.state.release_date,
+              song_id: contentId,
+              songName: location.state.songName,
+              project_type: location.state.project_type,
+            },
+          })
+        }
+        else if(nextPage === "pending") {
+          navigate("/dashboard/pending", {
+            state: {
+              heading: "Your video details are under review",
+              btnText: "Upload a new song",
+              redirectTo: "/dashboard/upload-song",
+            },
+          });
+        }
       }
     } catch (error) {
       console.error("Error uploading video metadata:", error);
@@ -438,19 +453,19 @@ export default function VideoMetadataForm() {
               {formData.thumbnails.length +
                 formData.existing_thumbnails.length <
                 3 && (
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                    multiple
-                  />
-                  <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
-                    <Plus className="w-8 h-8 text-gray-500" />
-                  </div>
-                </label>
-              )}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      multiple
+                    />
+                    <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
+                      <Plus className="w-8 h-8 text-gray-500" />
+                    </div>
+                  </label>
+                )}
             </div>
           </div>
 
@@ -509,7 +524,7 @@ export default function VideoMetadataForm() {
           )}
 
           {/* Submit Button */}
-          {formData.reject_reason === null && nextPage === "payment" ? (
+          {formData.reject_reason === null && nextPage === "repayment" ? (
             <div
               onClick={() => navigate("/auth/payment", {
                 state: {

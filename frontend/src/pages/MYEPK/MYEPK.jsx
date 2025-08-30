@@ -285,7 +285,7 @@ const MYEPK = () => {
                   <p className="text-primary mb-2 font-bold">
                     {artist.total_content}{" "}
                     {artist.total_content > 1 ? "Songs" : "Song"} 
-                    {artist.total_views > 0 && "— " + formatListeners(artist.total_views)}
+                    {/* {artist.total_views > 0 && "— " + formatListeners(artist.total_views)} */}
                   </p>
                 )}
                 <p className="text-gray-400 mb-6">{artist.bio}</p>
