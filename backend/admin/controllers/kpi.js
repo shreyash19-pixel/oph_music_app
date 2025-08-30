@@ -175,6 +175,31 @@ const getArtistProfile = async (req, res) => {
 
 }
 
+const fetchmonthly = async (req, res) => {
+
+  try {
+
+    const response = await SongSocialMetrics.fetchmonthly()
+
+    if (response) {
+      return res.status(200).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response
+      })
+    }
+
+  }
+
+  catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+
+}
+
 module.exports = {
-  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController, getArtistProfile
+  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController, getArtistProfile, fetchmonthly
 };

@@ -231,6 +231,16 @@ const getAllKpiScores = async () => {
   return songMap;
 };
 
+const fetchmonthly = async (req, res) => {
+  try {
+      const [rows] = await db.execute("SELECT * FROM KPI_score");
+      return rows;
+    } catch (error) {
+      console.error("DB Error in fetchMonthly:", error);
+      throw error;
+    }
+};
+
 module.exports = {
   getMetricsSummary,
   getAllKpiScores,
@@ -239,4 +249,5 @@ module.exports = {
   getTopArtists,
   getTotalPages,
   getArtistProfile,
+  fetchmonthly
 };
