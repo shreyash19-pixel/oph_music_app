@@ -64,6 +64,8 @@ import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Met
 import EventPayment from "./view/dashboard/artistPortal/paymentAll/EventPayment";
 import SongPayment from "./view/dashboard/artistPortal/paymentAll/SongPayment";
 import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates/VerifyBookingDates";
+import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDetails";
+import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
 
 function App() {
   return (
@@ -133,6 +135,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/Resource"
             element={
@@ -562,6 +565,38 @@ function App() {
                 ]}
               >
                 <TicketMain />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-details"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_MEMBER,
+                  ROLES.SALES_HEAD,
+                ]}
+              >
+                <ChangeDetails/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/special-artist-songs"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_MEMBER,
+                  ROLES.SALES_HEAD,
+                ]}
+              >
+                <NewSongs/>
               </ProtectedRoute>
             }
           />
