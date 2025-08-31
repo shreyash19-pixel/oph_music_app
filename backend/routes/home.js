@@ -10,10 +10,19 @@ const {
 } = require("../controllers/home");
 
 router.get("/home/new-releases", authMiddleware, newReleasesController);
+
+//protected pages
 router.get("/get-artist-detail", authMiddleware, getArtistDetailController);
 router.get(
   "/get-releated-artists",
   authMiddleware,
+  getReleatedArtistsController
+);
+
+//nav pages
+router.get("/get-nav-artist-detail", getArtistDetailController);
+router.get(
+  "/get-nav-releated-artists",
   getReleatedArtistsController
 );
 router.get("/get-upcoming-event", authMiddleware, getUpcomingSongController);
