@@ -19,8 +19,8 @@ router.post("/updateTvStatus", updateTvStatus);
 router.post(
   "/updateTvFiles",
   upload.fields([
-    { name: "audio", maxCount: 1 },
-    { name: "video", maxCount: 1 },
+    { name: "audio_url", maxCount: 1 },
+    { name: "video_url", maxCount: 1 },
   ]),
   updateTvFiles
 );

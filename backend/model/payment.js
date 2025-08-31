@@ -39,7 +39,6 @@ const songRepayment = async (
   Transaction_ID,
   Review,
   Status,
-  From,
   song_id,
   event_id,
   release_date
@@ -51,7 +50,6 @@ const songRepayment = async (
     Transaction_ID,
     Review,
     Status,
-    From,
     song_id,
     release_date
   );
@@ -62,12 +60,12 @@ const songRepayment = async (
       [song_id, null, song_id]
     )
   );
-  console.log("hehehe");
+
 
   rows.push(
     await db.execute(
       "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [OPH_ID, Transaction_ID, Review, Status, From, song_id,event_id, release_date]
+      [OPH_ID, Transaction_ID, Review, Status, 'Song Registration', song_id,event_id, release_date]
     )
   );
 

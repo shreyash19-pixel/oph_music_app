@@ -60,6 +60,7 @@ const getPaymentDetailsForAllBooking = async () => {
   }
 };
 
+
 const getPaymentDetailsForEventsByOphId = async (ophid) => {
   try {
     const [rows] = await db.query(
@@ -75,6 +76,14 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
     throw error;
   }
 };
+
+
+const getTransactionDetails = async (release_date) => {
+  const [rows] = await db.execute(
+    "SELECT OPH_ID, Transaction_ID, `From`, song_id FROM sign_up_payment WHERE release_date = ?",
+    [release_date]
+  );
+
 
 const updateSongPaymentSp = async (ophid,transactionId,FormData,status) => {
   let query = `CALL sp_update_sign_up_payment(?,?,?,?)`;

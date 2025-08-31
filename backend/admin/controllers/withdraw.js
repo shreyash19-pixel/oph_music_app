@@ -37,7 +37,28 @@ const getWithdrawSummaries = async (req, res) => {
   }
 };
 
+const getWithdraw = async (req, res) => {
+  const { withdrawal_id } = req.query;
+  if (!withdrawal_id) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing withdrawal_id in query" });
+  } else {
+    try {
+      const tv = await WithdrawModel.getWithdraw(withdrawal_id);
+      res.status(200).json({ success: true, data: tv });
+    } catch (error) {
+      console.error("Error fetching tv based on withdrawal_id:", error);
+      console.log("Controller - withdrawal_id:", withdrawal_id);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  }
+};
+
 module.exports = {
   getWithdrawSummaries,
-  updateWithdrawStatus
+  updateWithdrawStatus,
+  getWithdraw,
 };

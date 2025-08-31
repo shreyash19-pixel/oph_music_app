@@ -418,30 +418,40 @@ const DynamicTable = ({
                 className="hover:bg-gray-100 transition cursor-pointer"
                 // ... existing code ...
                 onClick={() => {
-                  if (detailsUrl) {
-                    const ophidValue = row.ophid || row.OPH_ID || row.ophID;
-                    const songIdValue = row.song_id || row.songId;
-                    const ticketIdValue = row.ticketNumber || row.ticketNumber;
-                    const field = row.field;
-
-                    if (ophidValue && songIdValue) {
-                      if (detailsPrefer === "ophid") {
-                        navigate(`${detailsUrl}/${ophidValue}`);
-                      } else if (detailsPrefer === "song") {
-                        navigate(`${detailsUrl}/${songIdValue}`);
-                      } else {
-                        navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
-                      }
-                    } else if (ophidValue && field) {
-                      navigate(`${detailsUrl}/${ophidValue}/${field}`);
-                    } else if (ophidValue && ticketIdValue) {
-                      navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
-                    } else if (ophidValue) {
+                if (detailsUrl) {
+                  const ophidValue = row.ophid || row.oph_id || row.OPH_ID || row.ophID; // use oph_id for TV
+                  const songIdValue = row.song_id || row.songId;
+                  const ticketIdValue = row.ticketNumber || row.ticketNumber;
+                  const withdrawIdValue = row.withdrawal_id || row.withdrawId;
+                  const tvValue = row.song_id || row.songId; // if TV is tied to song_id
+                  const field = row.field;  
+                  console.log("Values",ophidValue , songIdValue ,ticketIdValue ,withdrawIdValue, tvValue, field)
+                  if (ophidValue && songIdValue) {
+                    console.log(detailsPrefer);
+                    if (detailsPrefer === "ophid") {
                       navigate(`${detailsUrl}/${ophidValue}`);
-                    } else if (songIdValue) {
+                    } else if (detailsPrefer === "song") {
                       navigate(`${detailsUrl}/${songIdValue}`);
+                    } else if (detailsPrefer === "tv") {
+                      navigate(`${detailsUrl}/tv/${tvValue}`);
+                    } else {
+                      navigate(`${detailsUrl}/${ophidValue}/${songIdValue}`);
                     }
+                  
+                  } else if (ophidValue && field) {
+                    navigate(`${detailsUrl}/${ophidValue}/${field}`);
+                  } else if (ophidValue && ticketIdValue) {
+                    navigate(`${detailsUrl}/${ophidValue}/${ticketIdValue}`);
+                  } else if (ophidValue && withdrawIdValue) {
+                    navigate(`${detailsUrl}/${ophidValue}/${withdrawIdValue}`);
+                  } else if (ophidValue) {
+                    navigate(`${detailsUrl}/${ophidValue}`);
+                  } else if (songIdValue) {
+                    navigate(`${detailsUrl}/${songIdValue}`);
+                  } else if (tvValue) {
+                    navigate(`${detailsUrl}/tv/${tvValue}`);
                   }
+                }
                 }}
               >
                 {columns.map((col) => (

@@ -3,32 +3,29 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 
 export default function Withdraw(){
-  const { ophid } = useParams();
+  const { withdrawal_id , ophID} = useParams();
   const [withdrawData, setWithdrawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summaryMap, setSummaryMap] = useState({});
 
- useEffect(() => {
-   const fetchData = async () => {
-     try {
-       const res = await axiosApi.get(`/getWithdraw?ophID=${ophid}`);
-       if (res.data && Array.isArray(res.data.data)) {
-         setWithdrawData(res.data.data);
-         console.log("Fetched withdraw data:", res.data.data);
-       } else {
-         setWithdrawData([]);
-       }
-     } catch (err) {
-       console.error("Error fetching withdrawal data:", err);
-       setWithdrawData([]);
-     } finally {
-       setLoading(false);
-     }
-   };
-   if (ophid) {
-     fetchData();
-   }
- }, [ophid]);
+useEffect(() => {
+  axiosApi
+    .get(`/getWithdrawAdmin?withdrawal_id=${withdrawal_id}`)
+    .then((res) => {
+      if (res.data && Array.isArray(res.data.data)) {
+        setWithdrawData(res.data.data);
+      } else {
+        setWithdrawData([]);
+      }
+    })
+    .catch((err) => {
+      console.error("Error fetching Withdraw:", err);
+      setWithdrawData([]);
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}, []);
   
   const handleStatusChange = async (withdrawal_id, action) => {
     const data = summaryMap[withdrawal_id] || {};

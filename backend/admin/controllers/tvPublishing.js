@@ -113,12 +113,9 @@ const updateTvStatus = async (req, res) => {
 const updateTvFiles = async (req, res) => {
   try {
     const { song_id } = req.body;
-    const audio_file = req.files.audio?.[0];
-    const video_file = req.files.video?.[0];
+    const audio_file = req.files.audio_url?.[0]; // matches Multer field
+    const video_file = req.files.video_url?.[0];
 
-    console.log("Audio file:", audio_file);
-    console.log("Video file:", video_file);
- 
     if (!song_id) {
       return res.status(400).json({ error: "song_id is required" });
     }
@@ -126,32 +123,37 @@ const updateTvFiles = async (req, res) => {
     if (!audio_file && !video_file) {
       return res.status(400).json({
         success: false,
-        message: "Both audio and video files are required",
+        message: "At least one file (audio or video) must be provided",
       });
     }
 
-   if (audio_file) {
-     if (!audio_file.buffer) {
-       throw new Error("Audio file has no buffer");
-     }
-     audio = await uploadToS3(audio_file, `contents/${song_id}/audio`);
-   }
+    let audio_url = null;
+    let video_url = null;
 
-   if (video_file) {
-     if (!video_file.buffer) {
-       throw new Error("Video file has no buffer");
-     }
-     video = await uploadToS3(video_file, `contents/${song_id}/video`);
-   }
+    if (audio_file) {
+      if (!audio_file.buffer) {
+        throw new Error("Audio file has no buffer");
+      }
+      audio_url = await uploadToS3(audio_file, `contents/${song_id}/audio_url`);
+    }
 
-    await tvModel.updateTvFiles(song_id, audio, video);
+    if (video_file) {
+      if (!video_file.buffer) {
+        throw new Error("Video file has no buffer");
+      }
+      video_url = await uploadToS3(video_file, `contents/${song_id}/video_url`);
+    }
 
-    return res.json({ message: "Files updated successfully" });
+    // Update only the files that exist
+    await tvModel.updateTvFiles(song_id, audio_url, video_url);
+
+    return res.json({ success: true, message: "Files updated successfully" });
   } catch (err) {
     console.error("Error updating files:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 
 module.exports = {

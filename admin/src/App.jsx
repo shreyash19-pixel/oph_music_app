@@ -67,6 +67,7 @@ import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates
 import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDetails";
 import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
 import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
+import NewSongsIndividual from "./view/dashboard/artistPortal/NewSongs";
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route path="/special-artist-songs/:ophid/:songId" element={<NewSongsIndividual />} />
           <Route path="/change-details/:ophid/:field" element={ <ChangeDetailsIndividual />} />
           <Route
             path="/ContentManage/:ophid/:songId"
@@ -93,7 +95,10 @@ function App() {
           <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
 
           <Route path="/New_SignUp" element={<Home />} />
-          <Route path="/Withdraw/:ophid" element={<Withdraw />} />
+          <Route
+            path="/Withdraw/:ophid/:withdrawal_id"
+            element={<Withdraw />}
+          />
           <Route
             path="/Content_Analysis/:ophid/:songId"
             element={<ContentAnalysis />}
@@ -105,7 +110,7 @@ function App() {
           <Route path="/AllEvents" element={<Events />} />
           <Route path="/event_participants" element={<EventParticipation />} />
           <Route path="/content/tv" element={<Tvpublishing />} />
-          <Route path="/TvIndex/:ophid/:song_id" element={<TvIndex />} />
+          <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
           <Route path="/EventPayment/:ophid" element={<EventPayment />} />
           <Route path="/SongPayment/:ophid/:song_id" element={<SongPayment />} />

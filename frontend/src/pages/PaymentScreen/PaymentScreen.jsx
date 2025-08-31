@@ -47,7 +47,7 @@ const PaymentScreen = () => {
         from: from,
         song_id: song_id,
         event_id: event_id,
-        release_date: location.state.date || location.state.booking_date
+        release_date: location.state.date || location.state.booking_date || null
       };
 
       const apiPath =
