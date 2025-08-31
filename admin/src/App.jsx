@@ -65,6 +65,7 @@ import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates
 import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDetails";
 import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
 import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
+import NewSongsIndividual from "./view/dashboard/artistPortal/NewSongs";
 
 function App() {
   return (
@@ -82,6 +83,7 @@ function App() {
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route path="/special-artist-songs/:ophid/:songId" element={<NewSongsIndividual />} />
           <Route path="/change-details/:ophid/:field" element={ <ChangeDetailsIndividual />} />
           <Route
             path="/ContentManage/:ophid/:songId"

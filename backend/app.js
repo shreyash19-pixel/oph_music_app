@@ -60,6 +60,8 @@ const TvPublishing = require("./admin/routes/tvPublishing");
 const audioPlatform = require("./admin/routes/audioPlatform");
 const adminCalendar = require("./admin/routes/date-booking");
 const specialArtistDetails = require("./admin/routes/special-artist-details");
+const specialArtistSongs = require("./admin/routes/special-artist-songs")
+
 // ✅ Middleware order is important
 app.use(
   cors({
@@ -156,6 +158,7 @@ app.use("/", TvPublishing);
 app.use("/", audioPlatform);
 app.use("/admin-calendar", adminCalendar);
 app.use("/", specialArtistDetails);
+app.use("/", specialArtistSongs);
 
 // ✅ Start server
 server.listen(port, () => {
