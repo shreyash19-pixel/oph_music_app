@@ -60,7 +60,6 @@ const getPaymentDetailsForAllBooking = async () => {
   }
 };
 
-
 const getPaymentDetailsForEventsByOphId = async (ophid) => {
   try {
     const [rows] = await db.query(
@@ -70,7 +69,7 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
         AND Status = 'under review'
         AND OPH_ID = ?;`,
       [ophid]
-    )
+    );
     return rows;
   } catch (error) {
     throw error;
@@ -78,20 +77,15 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
 };
 
 
-const getTransactionDetails = async (release_date) => {
-  const [rows] = await db.execute(
-    "SELECT OPH_ID, Transaction_ID, `From`, song_id FROM sign_up_payment WHERE release_date = ?",
-    [release_date]
-  );
-
-
-const updateSongPaymentSp = async (ophid,transactionId,FormData,status) => {
+const updateSongPaymentSp = async (ophid, transactionId, FormData, status) => {
   let query = `CALL sp_update_sign_up_payment(?,?,?,?)`;
-  const values = [ophid,transactionId,FormData,status];
-
+  const values = [ophid, transactionId, FormData, status];
 
   console.log("Values:", values);
-  console.log("Value types:", values.map(v => typeof v));
+  console.log(
+    "Value types:",
+    values.map((v) => typeof v)
+  );
 
   try {
     const [result] = await db.execute(query, values);
@@ -103,18 +97,27 @@ const updateSongPaymentSp = async (ophid,transactionId,FormData,status) => {
       code: error.code,
       errno: error.errno,
       sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
+      sqlMessage: error.sqlMessage,
     });
     throw error;
   }
 };
 
-const updateEventPaymentSp = async (ophId, transactionId, status, reject_reason, eventId) => {
+const updateEventPaymentSp = async (
+  ophId,
+  transactionId,
+  status,
+  reject_reason,
+  eventId
+) => {
   let query = `CALL sp_handle_event_payment(?, ?, ?, ?, ?)`;
   const values = [ophId, transactionId, status, reject_reason, eventId];
 
   console.log("Values:", values);
-  console.log("Value types:", values.map(v => typeof v));
+  console.log(
+    "Value types:",
+    values.map((v) => typeof v)
+  );
 
   try {
     const [result] = await db.execute(query, values);
@@ -126,7 +129,7 @@ const updateEventPaymentSp = async (ophId, transactionId, status, reject_reason,
       code: error.code,
       errno: error.errno,
       sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
+      sqlMessage: error.sqlMessage,
     });
     throw error;
   }
@@ -181,7 +184,7 @@ const updateStatusPayment = async (ophId, songId, status) => {
 const getTransactionDetails = async (release_date) => {
   try {
     const [rows] = await db.execute(
-      "SELECT OPH_ID, Transaction_ID, `From` FROM sign_up_payment WHERE release_date = ?",
+      "SELECT OPH_ID, Transaction_ID, `From`, song_id, Status FROM sign_up_payment WHERE release_date = ?",
       [release_date]
     );
     return rows;
@@ -193,7 +196,7 @@ const getTransactionDetails = async (release_date) => {
 const setPaymentVerification = async (decision, reason, release_date, from) => {
   let rows = [];
 
-  let isReasonEmpty = reason === "null" ? null : reason
+  let isReasonEmpty = reason === "null" ? null : reason;
 
   if (from === "Date booking") {
     if (decision === "rejected") {

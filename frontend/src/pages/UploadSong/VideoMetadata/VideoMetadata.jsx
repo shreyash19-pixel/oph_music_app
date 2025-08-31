@@ -13,7 +13,13 @@ export default function VideoMetadataForm() {
   const [error, setError] = useState(null);
   const location = useLocation();
   const [nextPage, setNextPage] = useState("");
-  console.log(location);
+  const release_date = new Date(location.state.release_date).toLocaleDateString()
+  
+  const year = release_date.split("/")[2]
+  const month = release_date.split("/")[0]
+  const day = release_date.split("/")[1]
+
+  const formattedDate = `${year}-${month}-${day}`
 
   const [songName, setSongName] = useState(location.state.songName);
   const projectType = localStorage.getItem("projectType") || "";
@@ -529,7 +535,7 @@ export default function VideoMetadataForm() {
               onClick={() => navigate("/auth/payment", {
                 state: {
                   from: "Song Repayment",
-                  booking_date: location.state.release_date,
+                  booking_date: formattedDate,
                   song_id: contentId,
                   songName: location.state.songName,
                   project_type: projectType,

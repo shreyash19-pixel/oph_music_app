@@ -22,7 +22,7 @@ const VerifyBookingDates = () => {
 
       if (response.data.success) {
         const data = response.data.data[0];
-        if (data.From === "Song Registration") {
+        if (data.From === "Song Registration" && data.Status === 'under review') {
           navigate(`/SongPayment/${data.OPH_ID}/${data.song_id}`);
           return;
         }
