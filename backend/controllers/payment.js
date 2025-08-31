@@ -96,7 +96,6 @@ const songRepaymentController = async (req, res) => {
       Review,
       Status,
       step,
-      from,
       song_id,
       event_id,
       release_date,
@@ -107,7 +106,6 @@ const songRepaymentController = async (req, res) => {
       !Transaction_ID ||
       !Status ||
       !step ||
-      !from ||
       !song_id ||
       !release_date
     ) {
@@ -122,7 +120,6 @@ const songRepaymentController = async (req, res) => {
       Transaction_ID,
       Review,
       Status,
-      from,
       song_id || null,
       event_id || null,
       release_date

@@ -62,7 +62,7 @@ const getPaymentDetailsForAllBooking = async () => {
 
 const getTransactionDetails = async (release_date) => {
   const [rows] = await db.execute(
-    "SELECT OPH_ID, Transaction_ID, `From` FROM sign_up_payment WHERE release_date = ?",
+    "SELECT OPH_ID, Transaction_ID, `From`, song_id FROM sign_up_payment WHERE release_date = ?",
     [release_date]
   );
 

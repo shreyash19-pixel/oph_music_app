@@ -9,20 +9,30 @@ const VerifyBookingDates = () => {
   const release_date = location.state.selectedDate;
   const [transactions, setTransactions] = useState([]);
   const [confirmReject, setConfirmReject] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [reason, setReason] = useState(null);
   const navigate = useNavigate();
 
   const fetchBookingDetails = async () => {
+    setLoading(true);
     try {
       const response = await axiosApi.get("/get-transaction-details", {
         params: { release_date },
       });
 
       if (response.data.success) {
+        const data = response.data.data[0];
+        if (data.From === "Song Registration") {
+          navigate(`/SongPayment/${data.OPH_ID}/${data.song_id}`);
+          return;
+        }
+
         setTransactions(response.data.data[0]);
       }
     } catch (err) {
       console.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
@@ -50,8 +60,7 @@ const VerifyBookingDates = () => {
       });
 
       if (response.data.success) {
-
-        alert(`Date ${dec}`)
+        alert(`Date ${dec}`);
 
         navigate("/calendar");
       }
@@ -59,6 +68,10 @@ const VerifyBookingDates = () => {
       console.error(err.message);
     }
   };
+
+  if (loading) {
+    return <div className="p-10 text-center">Loading...</div>;
+  }
 
   return (
     <div>
