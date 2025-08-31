@@ -28,8 +28,17 @@ const updateWithdrawStatus = async (withdrawal_id, action, reason = null) => {
   }
 };
 
+const getWithdraw = async (withdrawal_id) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM withdraw WHERE withdrawal_id = ?",
+    [withdrawal_id]
+  );
+  return rows;
+};
+
 
 module.exports = {
   getAllWithdraw,
   updateWithdrawStatus,
+  getWithdraw,
 };

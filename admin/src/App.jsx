@@ -93,7 +93,10 @@ function App() {
           <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
 
           <Route path="/New_SignUp" element={<Home />} />
-          <Route path="/Withdraw/:ophid" element={<Withdraw />} />
+          <Route
+            path="/Withdraw/:ophid/:withdrawal_id"
+            element={<Withdraw />}
+          />
           <Route
             path="/Content_Analysis/:ophid/:songId"
             element={<ContentAnalysis />}
@@ -105,7 +108,7 @@ function App() {
           <Route path="/AllEvents" element={<Events />} />
           <Route path="/event_participants" element={<EventParticipation />} />
           <Route path="/content/tv" element={<Tvpublishing />} />
-          <Route path="/TvIndex/:ophid/:song_id" element={<TvIndex />} />
+          <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
           <Route path="/tickets" element={<TicketMain />} />
 
