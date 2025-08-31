@@ -1,10 +1,10 @@
-// monthly_kpi.js
+// monthly_song.js
 import fs from "fs";
 import path from "path";
 import Backendaxios from "./utils/backendAxios.js"; // your axios instance
 import { deleteFromS3, saveToS3 } from "./utils.js";
 
-const S3_KEY = "monthly_kpi/kpi_metrics.json";
+const S3_KEY = "monthly_kpi/song_metrics.json";
 
 /*
 HOW TO RUN THIS FILE:
@@ -13,40 +13,45 @@ HOW TO RUN THIS FILE:
    cd backend
 
 2. Run the file directly with Node.js:
-   node monthly_kpi.js
+   node monthly_song.js
 
 3. Or if you have nodemon installed for development:
-   nodemon monthly_kpi.js
+   nodemon monthly_song.js
 
 4. Or run it as a module:
-   node -e "import('./monthly_kpi.js')"
+   node -e "import('./monthly_song.js')"
 
 Note: Make sure you have all required dependencies installed:
    npm install
 
 The file will:
-- Fetch KPI data from /kpi_monthly_score endpoint
+- Fetch song metrics data from /get-all_song_metrics endpoint
 - Process records and place them in both creation and update months
+- Preserve historical months while allowing current month updates
 - Save results to S3 bucket
 - Show detailed logging of what's happening
 */
 
-async function saveMonthlyKPIMetrics() {
+async function saveMonthlySongMetrics() {
   try {
-    console.log("Fetching /kpi_monthly_score ...");
-    const response = await Backendaxios.get("/kpi_monthly_score");
+    console.log("Fetching /get-all_song_metrics ...");
+    const response = await Backendaxios.get("/get-all_song_metrics");
     const raw = response.data ?? response;
 
     console.log("Raw response:", typeof raw, Array.isArray(raw) ? "Array" : "Object");
     console.log(raw);
 
     // ensure we have an array
-    const kpiData = Array.isArray(raw) ? raw : raw.data ?? raw.kpi ?? [];
-    if (!Array.isArray(kpiData)) {
+    const songs = Array.isArray(raw) ? raw : raw.data ?? raw.songs ?? [];
+    if (!Array.isArray(songs)) {
       throw new Error("Expected API to return an array, got: " + JSON.stringify(raw));
     }
 
-    console.log(`Processing ${kpiData.length} KPI records`);
+    console.log(`Processing ${songs.length} song records`);
+
+    // filter out songs with empty audio_platform_name
+    const validSongs = songs.filter(song => song.audio_platform_name && song.audio_platform_name.trim() !== '');
+    console.log(`Filtered ${songs.length - validSongs.length} songs with empty audio_platform_name`);
 
     // try to get existing data from S3
     let existingData = {};
@@ -70,25 +75,26 @@ async function saveMonthlyKPIMetrics() {
 
     console.log(`Current month: ${currentMonthName} ${currentYear}`);
 
-    // Create a map of all existing OPH_IDs across all months to prevent duplicates
-    const existingOPHIDs = new Set();
+    // Create a map of all existing song_id + audio_platform_name combinations across all months to prevent duplicates
+    const existingSongKeys = new Set();
     Object.keys(updatedData).forEach(year => {
       Object.keys(updatedData[year]).forEach(month => {
-        updatedData[year][month].forEach(record => {
-          existingOPHIDs.add(record.OPH_ID);
+        updatedData[year][month].forEach(song => {
+          const songKey = `${song.song_id}_${song.audio_platform_name}`;
+          existingSongKeys.add(songKey);
         });
       });
     });
 
-    console.log(`📊 Found ${existingOPHIDs.size} existing OPH_IDs in current data structure`);
+    console.log(`📊 Found ${existingSongKeys.size} existing song entries in current data structure`);
 
     // First, organize all incoming data by both created_at and updated_at months
     const organizedData = {};
     
-    kpiData.forEach((record) => {
+    validSongs.forEach((song) => {
       // Get both creation and update dates
-      const createdAt = new Date(record.created_at);
-      const updatedAt = new Date(record.updated_at);
+      const createdAt = new Date(song.created_at);
+      const updatedAt = new Date(song.updated_at);
       
       const createdYear = createdAt.getFullYear();
       const createdMonth = createdAt.getMonth();
@@ -98,18 +104,21 @@ async function saveMonthlyKPIMetrics() {
       const updatedMonth = updatedAt.getMonth();
       const updatedMonthName = updatedAt.toLocaleString("en-US", { month: "long" });
 
+      const songKey = `${song.song_id}_${song.audio_platform_name}`;
+
       // Place record in creation month
       if (!organizedData[createdYear]) organizedData[createdYear] = {};
       if (!organizedData[createdYear][createdMonthName]) organizedData[createdYear][createdMonthName] = [];
       
-      // Check if this OPH_ID already exists in creation month
-      const existingInCreatedMonth = organizedData[createdYear][createdMonthName].some(existingRecord => 
-        existingRecord.OPH_ID === record.OPH_ID
+      // Check if this song already exists in creation month
+      const existingInCreatedMonth = organizedData[createdYear][createdMonthName].some(existingSong => 
+        existingSong.song_id === song.song_id && 
+        existingSong.audio_platform_name === song.audio_platform_name
       );
       
       if (!existingInCreatedMonth) {
-        organizedData[createdYear][createdMonthName].push(record);
-        console.log(`➕ Added record for OPH_ID: ${record.OPH_ID} in ${createdMonthName} ${createdYear} (creation month)`);
+        organizedData[createdYear][createdMonthName].push(song);
+        console.log(`➕ Added song for song_id: ${song.song_id} (${song.audio_platform_name}) in ${createdMonthName} ${createdYear} (creation month)`);
       }
 
       // Place record in update month (if different from creation month)
@@ -117,17 +126,18 @@ async function saveMonthlyKPIMetrics() {
         if (!organizedData[updatedYear]) organizedData[updatedYear] = {};
         if (!organizedData[updatedYear][updatedMonthName]) organizedData[updatedYear][updatedMonthName] = [];
         
-        // Check if this OPH_ID already exists in update month
-        const existingInUpdatedMonth = organizedData[updatedYear][updatedMonthName].some(existingRecord => 
-          existingRecord.OPH_ID === record.OPH_ID
+        // Check if this song already exists in update month
+        const existingInUpdatedMonth = organizedData[updatedYear][updatedMonthName].some(existingSong => 
+          existingSong.song_id === song.song_id && 
+          existingSong.audio_platform_name === song.audio_platform_name
         );
         
         if (!existingInUpdatedMonth) {
-          organizedData[updatedYear][updatedMonthName].push(record);
-          console.log(`➕ Added record for OPH_ID: ${record.OPH_ID} in ${updatedMonthName} ${updatedYear} (update month)`);
+          organizedData[updatedYear][updatedMonthName].push(song);
+          console.log(`➕ Added song for song_id: ${song.song_id} (${song.audio_platform_name}) in ${updatedMonthName} ${updatedYear} (update month)`);
         }
       } else {
-        console.log(`📝 Record for OPH_ID: ${record.OPH_ID} created and updated in same month (${createdMonthName} ${createdYear})`);
+        console.log(`📝 Song for song_id: ${song.song_id} (${song.audio_platform_name}) created and updated in same month (${createdMonthName} ${createdYear})`);
       }
     });
 
@@ -144,16 +154,18 @@ async function saveMonthlyKPIMetrics() {
           // For past months, preserve existing data and only add new records
           if (!updatedData[year][month]) updatedData[year][month] = [];
           
-          organizedData[year][month].forEach(newRecord => {
-            const recordExists = updatedData[year][month].some(existingRecord => 
-              existingRecord.OPH_ID === newRecord.OPH_ID
+          organizedData[year][month].forEach(newSong => {
+            const songKey = `${newSong.song_id}_${newSong.audio_platform_name}`;
+            const songExists = updatedData[year][month].some(existingSong => 
+              existingSong.song_id === newSong.song_id && 
+              existingSong.audio_platform_name === newSong.audio_platform_name
             );
             
-            if (!recordExists) {
-              updatedData[year][month].push(newRecord);
-              console.log(`✅ Added new historical record for OPH_ID: ${newRecord.OPH_ID} in ${month} ${year}`);
+            if (!songExists) {
+              updatedData[year][month].push(newSong);
+              console.log(`✅ Added new historical song for song_id: ${newSong.song_id} (${newSong.audio_platform_name}) in ${month} ${year}`);
             } else {
-              console.log(`🛡️ PROTECTED: Skipped updating historical record for OPH_ID: ${newRecord.OPH_ID} in ${month} ${year} (already exists, month is closed)`);
+              console.log(`🛡️ PROTECTED: Skipped updating historical song for song_id: ${newSong.song_id} (${newSong.audio_platform_name}) in ${month} ${year} (already exists, month is closed)`);
             }
           });
         } else {
@@ -168,12 +180,12 @@ async function saveMonthlyKPIMetrics() {
     console.log("Saving updated data to S3...");
     await saveToS3(S3_KEY, updatedData);
 
-    console.log(`✅ Successfully updated KPI metrics file in S3`);
+    console.log(`✅ Successfully updated song metrics file in S3`);
     console.log(`📅 Historical months are preserved, only current month (${currentMonthName} ${currentYear}) can be updated`);
   } catch (err) {
-    console.error("❌ Error updating KPI metrics:", err.message);
+    console.error("❌ Error updating song metrics:", err.message);
     console.error(err);
   }
 }
 
-await saveMonthlyKPIMetrics();
+await saveMonthlySongMetrics();
