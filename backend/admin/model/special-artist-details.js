@@ -1,7 +1,7 @@
 const db = require("../../DB/connect");
 
 const getSpecialArtistRequestedDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM special_artist_details");
+  const [rows] = await db.execute("SELECT * FROM special_artist_details WHERE status != 'approved'");
   return rows;
 };
 

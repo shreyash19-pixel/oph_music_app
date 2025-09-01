@@ -24,7 +24,7 @@
 ☐ SP Navpages => Artist => Fix mapping for specialist artists , retest and fix for remianing bugs.
 ☐ SP Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
 ✔ NN Navpages => Resources => Fix mapping for podcast title , page should navigate to IndividualPodcast, remove all socket and comment logic and the make whole page (Doubt like and dislike) => Done => Go to Testing @done(25-08-09 12:10)
-☐ JS Navpages => Contact => Compelete
+✔ JS Navpages => Contact => Compelete => Done => Go to Testing @done(25-08-24 23:58)
 ✔ NN SignIn/SignUp/Login => Fix routes in Sign-in/Sign-up, route to dashboard after full accepted. @done(25-08-13 04:48)
 ☐ JS Dashboard => Home => Remove Event card and only keep song card.
 ☐ JS Dashboard => Home => Get Details => Complete page
@@ -32,7 +32,7 @@
 ✔ Dashboard => Song Registration => In-Progess(Will update task after testing ) => Compeleted => Go to Testing @done(25-08-07 23:33)
 ☐ JS Dashboard => Tv Publishing => Compelete => GO to Testing
 ✔ NN Dashboard => artist spotlight => Fix icons => Done => Go to Testing. @done(25-08-14 04:10)
-☐ JS Dashboard => Analytics => Compelete
+☐ JS Dashboard => Analytics => Compelete 
 ✔ Dashboard => Request Tickets =>  Done. => Go to Testing @done(25-08-07 23:22)
 ✔ Dashboard => Events => Compeleted aka Done. => Go to Testing. @done(25-08-07 23:22)
 ☐ NN Dashboard => Income => Make api to get bank details and show it , as get and show Available Amount
@@ -45,7 +45,7 @@
 ☐ ALL Notification => Add for all status updates.
 ✔ NN Admin => Artist Portal => New => Change query to fetch only when all forms are Completed. @done(25-08-14 04:11)
 ☐ ALL Email Hits
-☐ Fix KPI and Leaderboard input values as tables have changed
+✔ Fix KPI and Leaderboard input values as tables have changed @done(25-08-24 23:56)
 ### Admin
 ✔ New Signup => Done => Go to testing. @done(25-08-09 12:10)
 ✔ NN Artist Portal =>Artist => New => Update layout to show based on filled/submitted count. @done(25-08-14 04:13)
@@ -56,21 +56,21 @@
 ✔ Artist Portal =>Analytics => Content analysis => Done => Go to Testing. @done(25-08-09 12:16)
 ✔ NN Artist Portal => Analytics => Artist KPI => Done => Go to Testing. @done(25-08-23 09:00)
 ☐ SP Artist Portal =>Analytics => Content Release => Complete
-☐ JS Artist Portal =>Payment => All => Compelete.
-☐ JS Artist Portal =>Payment => Withdraw => Fix table layout
+✔ JS Artist Portal =>Payment => All => Compelete => Done => Go to Testing @done(25-08-24 23:57)
+☐ JS Artist Portal =>Payment => Withdraw => Fix table layout => Done => Go to Testing
 ☐ JS Artist Portal =>Payment => Withdraw-Redirect => Fix layout.
 ☐ NN Artist Portal =>All Data => Compelete
 ☐ SP Artist Portal =>Time Calender => Complete
 ☐ JS Artist Portal =>Tickets => Give table view and Redirect to Individual Page .Fix layout inside the redirect
-☐ ALL Artist Portal =>Setting => Compelete.
-☐ JS Website Config => Contact => Compelete
+☐ ALL Artist Portal =>Setting => Compelete => Done => Go to Testing
+☐ JS Website Config => Contact => Compelete => Done => Go to Testing
 ✔ NN - Website Config => Resource => Compelete => Done => Go to Testing. @done(25-08-09 12:09)
 ☐ ALL Website Config => Homepage => Compelete
 ☐ JS Website Config => Collab => Compelete
 ☐ JS Website Config => Leaderboard => Compelete
 ✔ Website Config => Event => Event Creation => Done => Go to Testing @done(25-08-07 23:32)
-☐ JS Website Config => Event => Events => Add SideBar and fix table layout
-☐ JS Website Config => Event => Event Participation => Add SideBar and fix table layout, also add working filter based on specific Event(aka eventName or event_id on the backend side)
+☐ JS Website Config => Event => Events => Add SideBar and fix table layout => Done => Go to Testing
+☐ JS Website Config => Event => Event Participation => Add SideBar and fix table layout, also add working filter based on specific Event(aka eventName or event_id on the backend side) => Done => Go to Testing
 ☐ Check all routes for specific roles and whether its is accessable or not (Aka Protected routes)
 ☐ NN,JS Make Admin pages for sales and accounting team.
 

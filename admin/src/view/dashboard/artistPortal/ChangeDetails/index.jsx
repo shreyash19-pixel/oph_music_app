@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
 
@@ -8,6 +8,7 @@ const ChangeDetailsIndividual = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
   const [confirmAction, setConfirmAction] = useState(null);
+  const navigate = useNavigate()
 
   const handleAction = (action) => {
     setConfirmAction(action);
@@ -36,12 +37,14 @@ const ChangeDetailsIndividual = () => {
         );
 
         if (response.data.success) {
-          console.log("success");
+          navigate("/change-details")
         }
       } catch (err) {
         console.error(err.message);
       }
     }
+
+    setConfirmAction(null);
   };
 
   useEffect(() => {
@@ -182,7 +185,7 @@ const SectionBlock = ({
 
       <>
         <textarea
-        readOnly = {statuses === "rejected"}
+          readOnly={statuses === "rejected"}
           value={reasonText}
           onChange={(e) => {
             setReasonText(e.target.value);

@@ -405,7 +405,7 @@ const MYEPK = () => {
             </div>
 
             {/* Songs Table */}
-            {artist.songs.length > 0 && artist.songs[0].song_name !== null ? (
+            {artist.songs.length > 0 && artist.songs[0].song_name !== null && artist.songs[0].status === 'approved' ? (
               <table
                 table
                 className="w-full mb-12 text-xs sm:text-sm lg:text-base table-auto"

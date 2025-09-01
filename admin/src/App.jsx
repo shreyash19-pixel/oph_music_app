@@ -43,11 +43,11 @@ import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
 import Artist_All from "./view/dashboard/artistPortal/artistAll/Artist_All";
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
 import Content_New from "./view/dashboard/artistPortal/contentNew/Content_New";
-import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_manage";
+import Content_Manage from "./view/dashboard/artistPortal/contentManage/Content_Manage";
 import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
-import EventParticipation from "./view/dashboard/websiteConfig/Events/eventParticipation";
+import EventParticipation from "./view/dashboard/websiteConfig/Events/EventParticipation";
 import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
 import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
 import CreateResource from "./view/dashboard/websiteConfig/resource";
@@ -61,10 +61,13 @@ import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
 import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
+import EventPayment from "./view/dashboard/artistPortal/paymentAll/EventPayment";
+import SongPayment from "./view/dashboard/artistPortal/paymentAll/SongPayment";
 import VerifyBookingDates from "./view/dashboard/artistPortal/VerifyBookingDates/VerifyBookingDates";
 import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDetails";
 import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
 import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
+import NewSongsIndividual from "./view/dashboard/artistPortal/NewSongs";
 
 function App() {
   return (
@@ -82,6 +85,7 @@ function App() {
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route path="/special-artist-songs/:ophid/:songId" element={<NewSongsIndividual />} />
           <Route path="/change-details/:ophid/:field" element={ <ChangeDetailsIndividual />} />
           <Route
             path="/ContentManage/:ophid/:songId"
@@ -108,7 +112,9 @@ function App() {
           <Route path="/content/tv" element={<Tvpublishing />} />
           <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
-          <Route path="/tickets" element={<TicketMain />} />
+          <Route path="/EventPayment/:ophid" element={<EventPayment />} />
+          <Route path="/SongPayment/:ophid/:song_id" element={<SongPayment />} />
+          
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
           {/* ---------- PROTECTED (SUPER_ADMIN) ---------- */}

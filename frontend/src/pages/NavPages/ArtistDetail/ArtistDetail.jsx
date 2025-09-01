@@ -64,7 +64,7 @@ const ArtistDetail = () => {
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
     try {
-      const response = await axiosApi.get(`/get-artist-detail?id=${id}`);
+      const response = await axiosApi.get(`/get-nav-artist-detail?id=${id}`);
       setArtist(response.data.data);
     } catch (err) {
       console.log(err);
@@ -77,7 +77,7 @@ const ArtistDetail = () => {
   const fetchRankedArtists = async () => {
     try {
       const response = await axiosApi.get(
-        `/get-releated-artists?q=${artist.profession}`
+        `/get-nav-releated-artists?q=${artist.profession}`
       );
       setRelatedArtists(
         response.data.data.filter((data) => data.ophid !== id).slice(0, 8)

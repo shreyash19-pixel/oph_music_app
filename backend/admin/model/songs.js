@@ -6,13 +6,12 @@ FROM songs_register sr
 JOIN audio_details ad ON sr.song_id = ad.song_id
 JOIN video_details vd ON sr.song_id = vd.song_id
 WHERE (
-    ad.status IN ('under review', 'approved')
-    OR vd.status IN ('under review', 'approved')
+    ad.status IN ('under review')
+    OR vd.status IN ('under review')
 )
-AND NOT (
-    ad.status = 'approved'
-    AND vd.status = 'approved'
-);`);
+AND ad.status != 'rejected'
+AND vd.status != 'rejected'
+;`);
   return rows;
 };
 
@@ -115,7 +114,7 @@ const getAllApprovedSongs = async () => {
   return rows;
 };
 
-const updateSongStatus = async (table, status, reason, songId, ophid) => {
+const updateSongSectionStatus = async (table, status, reason, songId, ophid) => {
   let query = `UPDATE ${table} SET status = ?, reject_reason = ? WHERE song_id = ?`;
   const values = [status.toLowerCase(), reason, songId];
 
@@ -177,7 +176,37 @@ GROUP BY sr.song_id;
 `, [ophId,songId]);
 
   return rows;
-}
+};
 
+const updateSongStatus = async (songId, ophid, reason) => {
+  let query = `CALL sp_sync_song_status(?,?,?)`;
+  const values = [songId, ophid, reason];
 
-module.exports ={getAllSongs,getSongsByOphIdUnderReview,getAllApprovedSongs,updateSongStatus,getSongsByOphIdApproved}
+  console.log("Calling stored procedure with query:", query);
+  console.log("Values:", values);
+  console.log("Value types:", values.map(v => typeof v));
+
+  try {
+    const [result] = await db.execute(query, values);
+    console.log("Stored procedure result:", result);
+    return result;
+  } catch (error) {
+    console.error("Stored procedure error details:", {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+    throw error;
+  }
+};
+
+module.exports = {
+  getAllSongs,
+  getSongsByOphIdUnderReview,
+  getAllApprovedSongs,
+  updateSongSectionStatus,
+  updateSongStatus,
+  getSongsByOphIdApproved
+};

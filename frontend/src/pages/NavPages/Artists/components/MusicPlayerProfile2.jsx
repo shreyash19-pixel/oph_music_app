@@ -152,7 +152,7 @@ const MusicPlayerProfile2 = () => {
 
                 <div
                   className="relative h-64 hover:cursor-pointer"
-                  onClick={() => navigate(`/artists/${artist.ophid}`)}
+                  onClick={() => navigate(`/public-artist-detail?id=${artist.ophid}`)}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
                   <Image

@@ -87,4 +87,21 @@ const saveToS3 = async (key, data) => {
   }
 };
 
-module.exports = { uploadToS3, uploadToS3Form, readFromS3, saveToS3 };
+// Function to delete data from S3
+const deleteFromS3 = async (key) => {
+  try {
+    const params = {
+      Bucket: process.env.S3_BUCKET,
+      Key: key
+    };
+
+    const result = await s3.deleteObject(params).promise();
+    console.log(`✅ File deleted from S3: ${key}`);
+    return result;
+  } catch (err) {
+    console.error('Error deleting from S3:', err.message);
+    throw err;
+  }
+};
+
+module.exports = { uploadToS3, uploadToS3Form, readFromS3, saveToS3, deleteFromS3 };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axiosApi from "../../../../../../frontend/src/conf/axios";
+import axiosApi from "../../../../conf/axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import WebsiteConfig from "../../../../components/WebConfigSidebar";
