@@ -1,19 +1,44 @@
 import React, { useState, useEffect, useRef } from "react";
 import Slider from "react-slick";
-import { useSelector } from "react-redux";
 import { Image, Shimmer } from "react-shimmer";
 import "./TipsSlider.css";
 import Struggle from "../../../../../../public/assets/images/struggle.png";
 import Elipse3 from "../../../../../../public/assets/images/elipse3.png";
+import axiosApi from "../../../../../conf/axios"; // ✅ adjust import if needed
 
 const TipsSlider = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
   const [isPlaying, setIsPlaying] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [tips, setTips] = useState([]); // ✅ local state instead of Redux
   const videoRef = useRef(null);
-  const tips = useSelector((state) => state.websiteConfig.success_stories);
+
+  // ✅ Fetch podcasts data
+  useEffect(() => {
+    const fetchPodcasts = async () => {
+      try {
+        const res = await axiosApi.get("/allStories");
+        console.log("Podcasts response:", res.data);
+
+        if (Array.isArray(res.data)) {
+          setTips(res.data);
+        } else if (Array.isArray(res.data.data)) {
+          setTips(res.data.data);
+        } else {
+          setTips([]);
+        }
+      } catch (error) {
+        console.error("Error fetching podcasts:", error);
+        setTips([]);
+      }
+    };
+
+    fetchPodcasts();
+  }, []);
+
   const reelsData = tips;
+
   const settings = {
     dots: false,
     infinite: true,
@@ -27,9 +52,24 @@ const TipsSlider = () => {
     pauseOnFocus: true,
     pauseOnDotsHover: true,
     responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length } },
-      { breakpoint: 768, settings: { slidesToShow: reelsData.length >= 3 ? 2 : reelsData.length } },
-      { breakpoint: 480, settings: { slidesToShow: reelsData.length >= 3 ? 1 : reelsData.length } },
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length,
+        },
+      },
+      {
+        breakpoint: 768,
+        settings: {
+          slidesToShow: reelsData.length >= 3 ? 2 : reelsData.length,
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: reelsData.length >= 3 ? 1 : reelsData.length,
+        },
+      },
     ],
   };
 
@@ -76,16 +116,25 @@ const TipsSlider = () => {
 
   return (
     <div className="bg-black relative">
-      <img src={Struggle} className="absolute right-0 w-[300px] -top-[0]" alt="" />
-      <img src={Elipse3} className="absolute right-0 w-[300px] -top-[250px]" alt="" />
-      
+      <img
+        src={Struggle}
+        className="absolute right-0 w-[300px] -top-[0]"
+        alt=""
+      />
+      <img
+        src={Elipse3}
+        className="absolute right-0 w-[300px] -top-[250px]"
+        alt=""
+      />
+
       <div className="mx-auto">
-        <div className="container  px-4 lg:px-16 xl:px-16 text-white py-10 w-full">
+        <div className="container px-4 lg:px-16 xl:px-16 text-white py-10 w-full">
           <h2 className="text-3xl lg:text-5xl font-bold mb-2">
             ARE YOU <span className="text-[#5DC9DE]">STRUGGLING</span> TOO?
           </h2>
           <p className="text-gray-400 max-w-2xl">
-          If you're also facing challenges, working hard, and striving for success in music industry, join this online music community today.
+            If you're also facing challenges, working hard, and striving for
+            success in music industry, join this online music community today.
           </p>
         </div>
 
@@ -101,10 +150,15 @@ const TipsSlider = () => {
                   onMouseUp={() => !isDragging && openModal(tip.video_url)}
                 >
                   <Image
-                    src={tip.thumbnail_url}
+                    src={
+                      tip.thumbnail_url ||
+                      "https://via.placeholder.com/300x400?text=No+Image"
+                    } // ✅ safe fallback
                     fallback={<Shimmer width={300} height={400} />}
-                    alt={tip.title}
-                    NativeImgProps={{ className: "w-[300px] h-[auto] object-contain" }}
+                    alt={tip.title || "Podcast"}
+                    NativeImgProps={{
+                      className: "w-[300px] h-[auto] object-contain",
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                 </div>
@@ -116,7 +170,10 @@ const TipsSlider = () => {
 
       {/* Video Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={closeModal}>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+          onClick={closeModal}
+        >
           <div
             className="relative bg-black rounded-lg shadow-lg max-w-3xl w-full px-4 p-1"
             onClick={(e) => e.stopPropagation()}
