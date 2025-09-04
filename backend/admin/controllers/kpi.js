@@ -12,16 +12,30 @@ const getKPI = async (req, res) => {
     const Key = "monthly_kpi/kpi_metrics.json";
     const s3Data = await readFromS3(Key);
 
-    const matchedRecords = [];
-    for (const year of Object.keys(s3Data)) {
-      for (const month of Object.keys(s3Data[year])) {
-        const records = s3Data[year][month];
-        const filtered = records.filter((r) => r.OPH_ID === OPH_ID);
-        if (filtered.length > 0) {
-          matchedRecords.push(...filtered);
-        }
-      }
-    }
+   const matchedRecords = [];
+
+   for (const year of Object.keys(s3Data)) {
+     for (const month of Object.keys(s3Data[year])) {
+       const records = s3Data[year][month];
+
+       if (records.length > 0) {
+         // filter by OPH_ID before enriching
+         const filtered = records.filter((r) => r.OPH_ID === OPH_ID);
+
+         if (filtered.length > 0) {
+           const enriched = filtered.map((r) => ({
+             ...r,
+             year,
+             month,
+           }));
+
+           matchedRecords.push(...enriched);
+         }
+       }
+     }
+   }
+
+
 
     res.status(200).json({
       success: true,

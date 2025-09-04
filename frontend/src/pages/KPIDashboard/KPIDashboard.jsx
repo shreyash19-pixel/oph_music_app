@@ -23,51 +23,84 @@ export default function KPIDashboard() {
     { value: 30, label: "Last 30 Days" },
   ];
 
-  const fetchContent = async () => {
+  const fetchRanking = async () => {
     try {
-      const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}`);
-      const metrics = response.data.s3Metrics || [];
-      console.log(metrics);
+      const response = await axiosApi.get(`/kpi_score`);
+      const allData = response.data?.data || {};
 
-      // Map backend JSON to chart-friendly structure
-      const mappedData = metrics.map((item) => {
-        // Convert avg_view_duration "HH:MM:SS" → total seconds
-        const [h, m, s] = item.avg_view_duration.split(":").map(Number);
-        const totalSeconds = h * 3600 + m * 60 + s;
+      // Convert into array
+      const artists = Object.values(allData).map((item) => ({
+        ophid: item.ophid,
+        stageName: item.stageName,
+        personalPhoto: item.personalPhoto,
+        kpiScore: parseFloat(item.kpiScore),
+      }));
 
-        return {
-          performanceData: [
-            {
-              name: "August", // single month label
-              Songs: item.song_count,
-              Traffic: item.user_traffic,
-              Performance: 10, // dummy rank
-            },
-          ],
-          trafficData: [{ name: "August", value: item.user_traffic }],
-          songsData: [{ name: "August", value: item.song_count }],
-          audienceData: [{ name: "August", value: item.total_views }],
-          eventsData: [{ name: "August", value: item.total_accepted_events }],
-          durationData: [{ name: "August", value: totalSeconds }],
-        };
-      });
+      // Sort by kpiScore (descending)
+      artists.sort((a, b) => b.kpiScore - a.kpiScore);
 
-      setKpiData(mappedData[0] || {}); // single month data
-      setSelectedContentId(null);
-      setSelectedContent(null);
-      setLoading(false);
+      // Find current artist
+      const index = artists.findIndex((a) => a.ophid === ophid);
+
+      if (index !== -1) {
+        setArtistRank(index + 1); // ranking position (1-based)
+        setArtistImage(artists[index].personalPhoto);
+      }
     } catch (error) {
-      console.error("Error fetching content:", error);
-      setError(error.message);
-      setLoading(false);
+      console.error("Error fetching ranking:", error);
     }
   };
+
+
+ const fetchContent = async () => {
+   try {
+     const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}`);
+     const metrics = response.data.s3Metrics || [];
+     console.log(metrics);
+
+     // Map backend JSON to chart-friendly structure
+     const mappedData = metrics.map((item) => {
+       // Convert avg_view_duration "HH:MM:SS" → total seconds
+       const [h, m, s] = item.avg_view_duration.split(":").map(Number);
+       const totalSeconds = h * 3600 + m * 60 + s;
+
+       const label = `${item.month} ${item.year}`; // e.g. "August 2025"
+
+       return {
+         performanceData: [
+           {
+             name: label,
+             Songs: item.song_count,
+             Traffic: item.user_traffic,
+             Performance: artistRank || null,
+           },
+         ],
+         trafficData: [{ name: label, value: item.user_traffic }],
+         songsData: [{ name: label, value: item.song_count }],
+         audienceData: [{ name: label, value: item.total_views }],
+         eventsData: [{ name: label, value: item.total_accepted_events }],
+         durationData: [{ name: label, value: totalSeconds }],
+       };
+     });
+
+     setKpiData(mappedData[0] || {}); // single month data
+     setSelectedContentId(null);
+     setSelectedContent(null);
+     setLoading(false);
+   } catch (error) {
+     console.error("Error fetching content:", error);
+     setError(error.message);
+     setLoading(false);
+   }
+ };
+
 
   useEffect(() => {
     if (!ophid) return;
 
     fetchContent();
-  }, [ophid, duration]);
+    fetchRanking();
+  }, [ophid, duration, artistRank]);
 
   if (error) return <div>Error: {error}</div>;
 
@@ -115,7 +148,9 @@ export default function KPIDashboard() {
             <div>
               <p className="text-white-400">Your Ranking Position</p>
               <p className="text-xl font-semibold text-cyan-200">
-                {artistRank ? `${artistRank}th` : "N/A"}
+                {artistRank
+                  ? `${String(artistRank).padStart(2, "0")}th`
+                  : "N/A"}
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-gray-700">
