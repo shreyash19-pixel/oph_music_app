@@ -172,23 +172,33 @@ const MYEPK = () => {
     document.body.removeChild(link);
   };
 
-  const professionOptions = [
-    { id: 1, name: "Singer" },
-    { id: 2, name: "Musician" },
-    { id: 3, name: "DJ" },
-    { id: 4, name: "Composer" },
-    { id: 5, name: "Instrumentalist" },
-    { id: 6, name: "Lyricist" },
-    { id: 7, name: "Music Producer" },
-  ];
+  const [professions, setProfessions] = useState([]);
+
+  // Fetch professions from API
+  const fetchProfessions = async () => {
+    try {
+      const response = await axiosApi.get("/get_professions");
+      if (response.data && response.data.success) {
+        setProfessions(response.data.data || []);
+      } else {
+        console.error("Failed to fetch professions:", response.data?.message);
+      }
+    } catch (error) {
+      console.error("Error fetching professions:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfessions();
+  }, []);
 
   const setProfession = (prof) => {
-    const profession = professionOptions.find((p) => {
+    const profession = professions.find((p) => {
       if (parseInt(prof) === p.id) {
         return p;
       }
     });
-    return profession.name;
+    return profession ? profession.name : "Unknown";
   };
 
   return (

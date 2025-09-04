@@ -33,7 +33,7 @@ const payment = async (req, res) => {
       from,
       song_id || null,
       event_id || null,
-      release_date
+      release_date || null
     );
 
     if (dbResponse) {

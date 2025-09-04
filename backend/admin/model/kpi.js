@@ -184,10 +184,6 @@ const getAllKpiScores = async () => {
     )
     SELECT *
     FROM CTEKPI
-    WHERE
-      song_register_status = 'Approved'
-      AND audio_details_status = 'approved'
-      AND video_details_status = 'approved'
   `);
 
   const songMap = {};

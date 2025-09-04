@@ -36,7 +36,7 @@ import ContentRelease from "./view/dashboard/artistPortal/contentRelease";
 import Notifications from "./view/dashboard/artistPortal/notifications";
 import PaymentAll from "./view/dashboard/artistPortal/paymentAll";
 import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/Payment";
-import Settings from "./view/dashboard/artistPortal/Settings";
+import ArtistSettings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
 import TicketMain from "./view/dashboard/artistPortal/Tickets/tickets";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
@@ -69,6 +69,7 @@ import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
 import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
 import NewSongsIndividual from "./view/dashboard/artistPortal/NewSongs";
 
+import WebsiteSettings from "./view/dashboard/websiteConfig/Settings";
 function App() {
   return (
     <AuthProvider>
@@ -495,7 +496,7 @@ function App() {
             }
           />
           <Route
-            path="/AllData"
+            path="/data"
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
                 <Alldata />
@@ -555,7 +556,7 @@ function App() {
             path="/Settings"
             element={
               <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-                <Settings />
+                <ArtistSettings />
               </ProtectedRoute>
             }
           />
@@ -604,6 +605,23 @@ function App() {
                 ]}
               >
                 <NewSongs/>
+              </ProtectedRoute>
+            }
+          />
+
+<Route
+            path="/websiteConfig_Setting"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_MEMBER,
+                  ROLES.SALES_HEAD,
+                ]}
+              >
+                <WebsiteSettings/>
               </ProtectedRoute>
             }
           />

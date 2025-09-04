@@ -1,0 +1,88 @@
+const db = require('../../DB/connect');
+
+const getAllApplicationStatus = async () => {
+  const [rows] = await db.execute("SELECT * FROM application_status");
+  return rows;
+};
+
+const getAllUserDetails = async () => {
+    const [rows] = await db.execute("SELECT * FROM user_details");
+    return rows;
+};
+
+
+
+ const getAllProfessionalDetails = async () => {
+  // Only select allowed fields (excluding VideoURL, PhotoURLs, step_status, reject_reason)
+  const [rows] = await db.execute(`
+    SELECT 
+      OPH_ID,
+      Profession,
+      Bio,
+      SpotifyLink,
+      InstagramLink,
+      FacebookLink,
+      AppleMusicLink,
+      ExperienceYearly,
+      ExperienceMonthly,
+      SongsPlanningCount,
+      SongsPlanningType,
+      CreatedAt
+    FROM professional_details
+  `);
+  return rows;
+};
+
+
+
+const getDocumentationDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM documentation_details");
+
+  return rows;
+};
+
+const paymentDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM sign_up_payment");
+  return rows;
+};
+
+
+const bookingsDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM calender");
+  return rows;
+};
+
+const songRegistrationDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM song_application_status");
+  return rows;
+};
+
+const tvpublishingDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM tvPublishing");
+  return rows;
+};
+
+
+const withdrawalsDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM withdraw");
+  return rows;
+};
+
+const ticketsDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM tickets");
+  return rows;
+};
+
+module.exports = {
+  getAllApplicationStatus,
+  getAllUserDetails,
+  getAllProfessionalDetails,
+  getDocumentationDetails,
+  paymentDetails,
+  bookingsDetails,
+  songRegistrationDetails,
+  tvpublishingDetails,
+  withdrawalsDetails,
+  ticketsDetails
+
+};
