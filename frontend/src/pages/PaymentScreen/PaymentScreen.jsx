@@ -13,7 +13,7 @@ const PaymentScreen = () => {
   const [trans, setTrans] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [, setCostingData] = useState([]);
+  const [costingData, setCostingData] = useState([]);
   const [matchedCosting, setMatchedCosting] = useState(null);
   const from = location.state.from;
   const song_id = location.state.song_id;
