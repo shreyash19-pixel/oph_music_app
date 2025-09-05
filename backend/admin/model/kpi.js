@@ -183,8 +183,7 @@ const getAllKpiScores = async () => {
       JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID
     )
     SELECT *
-    FROM CTEKPI
-  `);
+    FROM CTEKPI`);
 
   const songMap = {};
 

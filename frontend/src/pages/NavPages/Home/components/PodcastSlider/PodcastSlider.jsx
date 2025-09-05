@@ -315,7 +315,7 @@ function PodcastSlider({ searchText, title }) {
         )}
         <div className="text-center mt-6 relative z-10 mb-4">
           <a
-            href={import.meta.env.VITE_PORTAL_URL + "/auth/signup"}
+            href={"/auth/signup"}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-[#5DC9DE] text-black font-semibold py-3 px-8 rounded-full hover:font-bold transition delay-300 pointer-events-auto"

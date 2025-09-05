@@ -57,7 +57,7 @@ const WebConfigSidebar = ({ children }) => {
     },
     {
       label: "Collab",
-      route: "/collab",
+      route: "/Collab",
       roles: [
         ROLES.SUPER_ADMIN,
         ROLES.ADMINISTRATIVE_HEAD,
@@ -92,7 +92,7 @@ const WebConfigSidebar = ({ children }) => {
     },
     {
       label: "Leaderboard",
-      route: "/leaderboard",
+      route: "/LeaderBoard",
       roles: [
         ROLES.ADMINISTRATIVE_HEAD,
         ROLES.ADMINISTRATIVE_MEMBER,
