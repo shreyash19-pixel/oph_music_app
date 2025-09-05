@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import WebConfigSidebar from '../../../../components/WebConfigSidebar';
+import axiosApi from '../../../../conf/axios';
+import toast from 'react-hot-toast';
 
 const WebsiteSettings = () => {
   // State for costing data
@@ -26,30 +28,27 @@ const WebsiteSettings = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState('');
 
-  // Mock data for demonstration (replace with actual API calls)
+  // Load costing data from API
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setCostingItems([
-        {
-          id: 1,
-          name: 'Basic Package',
-          cost: 99.99,
-          qr_image_path: '/path/to/qr1.png',
-          created_at: '2024-01-15T10:30:00Z',
-          updated_at: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: 2,
-          name: 'Premium Package',
-          cost: 199.99,
-          qr_image_path: '/path/to/qr2.png',
-          created_at: '2024-01-16T14:20:00Z',
-          updated_at: '2024-01-16T14:20:00Z'
+    const fetchCostingData = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosApi.get('/get_costing');
+        if (response.data.success) {
+          console.log('Costing data received:', response.data.data);
+          setCostingItems(response.data.data);
+        } else {
+          setError('Failed to load costing data');
         }
-      ]);
-      setLoading(false);
-    }, 1000);
+      } catch (err) {
+        console.error('Error fetching costing data:', err);
+        setError('Failed to load costing data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCostingData();
   }, []);
 
   // Handle form input changes
@@ -70,7 +69,6 @@ const WebsiteSettings = () => {
     if (file) {
       setSelectedFile(file);
       setFilePreview(URL.createObjectURL(file));
-      setNewItem(prev => ({ ...prev, qr_image_path: file.name }));
     }
   };
 
@@ -79,7 +77,7 @@ const WebsiteSettings = () => {
     const file = e.target.files[0];
     if (file) {
       setFilePreview(URL.createObjectURL(file));
-      setEditingItem(prev => ({ ...prev, qr_image_path: file.name }));
+      setEditingItem(prev => ({ ...prev, qr_image_path: file })); // Store the actual file object
     }
   };
 
@@ -87,33 +85,44 @@ const WebsiteSettings = () => {
   const handleAddItem = async (e) => {
     e.preventDefault();
     
-    if (!newItem.name.trim() || !newItem.cost || !newItem.qr_image_path) {
+    if (!newItem.name.trim() || !newItem.cost || !selectedFile) {
       setError('All fields are required');
       return;
     }
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await axiosApi.post('/api/costing', newItem);
-      
-      // Mock successful response
-      const newCostingItem = {
-        id: Date.now(),
-        ...newItem,
-        cost: parseFloat(newItem.cost),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const formData = new FormData();
+      formData.append('name', newItem.name);
+      formData.append('cost', newItem.cost);
+      formData.append('qr_image', selectedFile);
 
-      setCostingItems(prev => [...prev, newCostingItem]);
-      setNewItem({ name: '', cost: '', qr_image_path: '' });
-      setShowAddForm(false);
-      setSelectedFile(null);
-      setFilePreview('');
-      setError(null);
+      const response = await axiosApi.post('/insert_costing', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        // Refresh the costing data
+        const fetchResponse = await axiosApi.get('/get_costing');
+        if (fetchResponse.data.success) {
+          setCostingItems(fetchResponse.data.data);
+        }
+        
+        setNewItem({ name: '', cost: '', qr_image_path: '' });
+        setShowAddForm(false);
+        setSelectedFile(null);
+        setFilePreview('');
+        setError(null);
+        toast.success('Costing package added successfully!');
+      } else {
+        setError('Failed to add costing item');
+        toast.error('Failed to add costing package');
+      }
     } catch (err) {
       console.error('Error adding costing item:', err);
       setError('Failed to add costing item');
+      toast.error('Failed to add costing package');
     }
   };
 
@@ -121,35 +130,47 @@ const WebsiteSettings = () => {
   const handleEditItem = async (e) => {
     e.preventDefault();
     
-    if (!editingItem.name.trim() || !editingItem.cost || !editingItem.qr_image_path) {
-      setError('All fields are required');
+    if (!editingItem.cost) {
+      setError('Cost is required');
       return;
     }
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await axiosApi.put(`/api/costing/${editingItem.id}`, editingItem);
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('cost', editingItem.cost);
       
-      // Mock successful response
-      const updatedItem = {
-        ...editingItem,
-        cost: parseFloat(editingItem.cost),
-        updated_at: new Date().toISOString()
-      };
+      // Only append QR image if a new file is selected
+      if (editingItem.qr_image_path && editingItem.qr_image_path !== editingItem.originalQrImage) {
+        formData.append('qr_image', editingItem.qr_image_path);
+      }
 
-      setCostingItems(prev => 
-        prev.map(item => 
-          item.id === editingItem.id ? updatedItem : item
-        )
-      );
-      
-      setEditingItem(null);
-      setShowEditForm(false);
-      setFilePreview('');
-      setError(null);
+      const response = await axiosApi.put(`/update_costing/${editingItem.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        // Refresh the entire costing list from server
+        const refreshResponse = await axiosApi.get('/get_costing');
+        if (refreshResponse.data.success) {
+          setCostingItems(refreshResponse.data.data);
+        }
+        
+        setEditingItem(null);
+        setShowEditForm(false);
+        setFilePreview('');
+        setError(null);
+        toast.success('Costing item updated successfully');
+      } else {
+        setError('Failed to update costing item');
+      }
     } catch (err) {
       console.error('Error updating costing item:', err);
       setError('Failed to update costing item');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -174,7 +195,10 @@ const WebsiteSettings = () => {
 
   // Start editing an item
   const startEditing = (item) => {
-    setEditingItem({ ...item });
+    setEditingItem({ 
+      ...item, 
+      originalQrImage: item.qr_image_path // Store original QR image for comparison
+    });
     setShowEditForm(true);
     setFilePreview(item.qr_image_path);
   };
@@ -288,7 +312,7 @@ const WebsiteSettings = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Cost (USD) *
+                                Cost (INR) *
                               </label>
                               <input
                                 type="number"
@@ -298,7 +322,7 @@ const WebsiteSettings = () => {
                                 step="0.01"
                                 min="0"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0d3c44] focus:border-transparent transition-colors"
-                                placeholder="99.99"
+                                placeholder="999.00"
                                 required
                               />
                             </div>
@@ -347,20 +371,20 @@ const WebsiteSettings = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Package Name *
+                                Package Name
                               </label>
                               <input
                                 type="text"
                                 name="name"
                                 value={editingItem.name}
-                                onChange={handleEditInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0d3c44] focus:border-transparent transition-colors"
-                                required
+                                disabled
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                               />
+                              <p className="text-xs text-gray-500 mt-1">Package name cannot be changed</p>
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Cost (USD) *
+                                Cost (INR) *
                               </label>
                               <input
                                 type="number"
@@ -376,7 +400,7 @@ const WebsiteSettings = () => {
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              QR Code Image *
+                              QR Code Image (Optional)
                             </label>
                             <input
                               type="file"
@@ -419,7 +443,7 @@ const WebsiteSettings = () => {
                                 Package Name
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Cost (USD)
+                                Cost (INR)
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 QR Code
@@ -458,7 +482,7 @@ const WebsiteSettings = () => {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-green-600">
-                                      ${item.cost.toFixed(2)}
+                                      ₹{item.cost ? Number(item.cost).toFixed(2) : '0.00'}
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
@@ -472,7 +496,7 @@ const WebsiteSettings = () => {
                                         }}
                                       />
                                       <span className="ml-2 text-xs text-gray-500 truncate max-w-20">
-                                        {item.qr_image_path.split('/').pop()}
+                                        {item.qr_image_path ? item.qr_image_path.split('/').pop() : 'No image'}
                                       </span>
                                     </div>
                                   </td>

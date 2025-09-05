@@ -206,6 +206,7 @@ export default function VideoMetadataForm() {
               song_id: contentId,
               songName: location.state.songName,
               project_type: projectType,
+              lyricalVid: location.state.lyricalVid,
             },
           })
         }
@@ -217,6 +218,7 @@ export default function VideoMetadataForm() {
               song_id: contentId,
               songName: location.state.songName,
               project_type: location.state.project_type,
+              lyricalVid: location.state.lyricalVid,
             },
           })
         }
@@ -539,6 +541,7 @@ export default function VideoMetadataForm() {
                   song_id: contentId,
                   songName: location.state.songName,
                   project_type: projectType,
+                  lyricalVid: location.state.lyricalVid,
                 },
               })}
               className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400 text-center"
