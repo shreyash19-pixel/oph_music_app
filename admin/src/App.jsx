@@ -68,7 +68,7 @@ import ChangeDetails from "./view/dashboard/artistPortal/ChangeDetails/ChangeDet
 import NewSongs from "./view/dashboard/artistPortal/NewSongs/NewSongs";
 import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails";
 import NewSongsIndividual from "./view/dashboard/artistPortal/NewSongs";
-
+import CreateLearning from "./view/dashboard/websiteConfig/resource/CreateLearning";
 import WebsiteSettings from "./view/dashboard/websiteConfig/Settings";
 function App() {
   return (
@@ -191,6 +191,23 @@ function App() {
                 ]}
               >
                 <CreateStory />
+              </ProtectedRoute>
+            }
+          />
+
+<Route
+            path="/Learning"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <CreateLearning />
               </ProtectedRoute>
             }
           />

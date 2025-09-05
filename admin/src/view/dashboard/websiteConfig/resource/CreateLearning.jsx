@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import axiosApi from "../../../../conf/axios";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 
-const CreateResource = () => {
+const CreateLearning = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -55,13 +56,13 @@ const CreateResource = () => {
     }
 
     try {
-      await axiosApi.post("/createPodcast", data, {
+      await axiosApi.post("/createLearning", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      alert("Podcast created successfully!");
+      toast.success("Learning resource created successfully!");
 
       setFormData({
         title: "",
@@ -76,8 +77,8 @@ const CreateResource = () => {
       setThumbnailPreview(null);
       setVideoPreview(null);
     } catch (err) {
-      console.error("Error creating podcast:", err);
-      alert("Failed to create podcast.");
+      console.error("Error creating Learning resource:", err);
+      toast.error("Failed to create Learning resource.");
     }
   };
 
@@ -98,14 +99,14 @@ const CreateResource = () => {
               className="border p-2 rounded shadow w-full"
             >
               <option value="">Go to...</option>
-              <option value="/Reels">Create Reels</option>
+              <option value="/Resource">Create Podcast</option>
               <option value="/Stories">Create Stories</option>
-              <option value="/Learning">Create Learning</option>
+              <option value="/Reels">Create Reels</option>
             </select>
           </div>
 
           <h2 className="text-2xl font-bold text-[#0d3c44] text-center">
-            Create Podcast
+            Create Learning Resource
           </h2>
 
           {/* Title */}
@@ -212,7 +213,7 @@ const CreateResource = () => {
             type="submit"
             className="w-full bg-[#0d3c44] text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-[#0b3239] transition-all duration-150"
           >
-            Create Podcast
+            Create Learning Resource
           </button>
         </form>
       </div>
@@ -220,4 +221,4 @@ const CreateResource = () => {
   );
 };
 
-export default CreateResource;
+export default CreateLearning;
