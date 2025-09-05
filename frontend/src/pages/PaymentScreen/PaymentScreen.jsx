@@ -1,36 +1,139 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useArtist } from "../auth/API/ArtistContext";
 import axiosApi from "../../conf/axios";
 import Loading from "../../components/Loading";
-import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const PaymentScreen = () => {
   const { logout, headers, ophid } = useArtist();
   const navigate = useNavigate();
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
   const [trans, setTrans] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [, setCostingData] = useState([]);
+  const [matchedCosting, setMatchedCosting] = useState(null);
   const from = location.state.from;
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
   const [oph_id, setoph_id] = useState("");
+  
+  // Debug log for lyricalVid flag
+  console.log("PaymentScreen - lyricalVid flag:", lyricalVid);
 
   const {
     amount = 0,
-    planIds = [],
-    paymentIds = [],
     returnPath = "/",
     heading = "Payment Required",
+    lyricalVid = false,
   } = location.state || {};
+
+  // Function to fetch costing data and match with 'from' field
+  const fetchCostingData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axiosApi.get("/get_costing");
+      
+      if (response.data.success) {
+        // Handle both array and single object responses
+        const costingData = Array.isArray(response.data.data) 
+          ? response.data.data 
+          : [response.data.data];
+        
+        setCostingData(costingData);
+        
+        // Match the 'from' field with costing data 'name' field
+        // If lyricalVid is true, use "lyrical video" data regardless of 'from' value
+        // If no 'from' is provided, default to "Registration"
+        // Handle "Registration" and "Song Registration" as separate cases
+        let searchName;
+        if (lyricalVid) {
+          searchName = "lyrical video";
+        } else {
+          // Handle case when no 'from' is provided - default to Registration
+          if (!from) {
+            searchName = "registration";
+          } else {
+            searchName = from.toLowerCase();
+            if (searchName === "song repayment") {
+              searchName = "song registration";
+            }
+            // Date booking also uses Song Registration data
+            if (searchName === "date booking") {
+              searchName = "song registration";
+            }
+            // Handle "Release date change" as a separate case
+            if (searchName === "release date change") {
+              searchName = "release date change";
+            }
+            // "registration" stays as "registration"
+            // "song registration" stays as "song registration"
+          }
+        }
+        
+        const matched = costingData.find(item => 
+          item.name && item.name.toLowerCase() === searchName
+        );
+        
+        if (matched) {
+          setMatchedCosting(matched);
+          console.log(`Using costing data for: ${from || 'default'} (lyricalVid: ${lyricalVid}) -> ${matched.name} (Amount: ${matched.cost})`);
+        } else {
+          // Fallback to default amounts if no match found
+          console.warn(`No costing data found for: ${from || 'default'} (lyricalVid: ${lyricalVid}) - using fallback amounts`);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching costing data:", err);
+      toast.error("Failed to fetch payment information");
+    } finally {
+      setLoading(false);
+    }
+  }, [from, lyricalVid]);
+
+  // Function to get the appropriate amount based on the matched costing data or fallback
+  const getDisplayAmount = () => {
+    if (matchedCosting) {
+      // Parse cost as number (handles string format like "799.00")
+      return parseFloat(matchedCosting.cost);
+    }
+    
+    // Fallback to hardcoded amounts if no costing data match
+    if (lyricalVid) {
+      return 499; // Lyrical video amount
+    } else if (!from || from === "Registration") {
+      return 500; // Registration amount (default or explicit)
+    } else if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") {
+      return 799; // Song Registration amount (used by multiple services)
+    } else if (from === "Event Registeration") {
+      return 1000;
+    } else if (from === "Release date change") {
+      return 300;
+    } else if (from === "Special artist song registration") {
+      return 800;
+    }
+    return amount; // Default to the passed amount
+  };
+
+  // Function to get the QR code image
+  const getQRCodeImage = () => {
+    if (matchedCosting && matchedCosting.qr_image_path) {
+      return matchedCosting.qr_image_path;
+    }
+    return "/qr.png"; // Fallback to default QR code
+  };
 
   useEffect(() => {
     if (ophid) {
       setoph_id(ophid);
     }
   }, [ophid]);
+
+  useEffect(() => {
+    fetchCostingData();
+  }, [fetchCostingData]);
 
   const handlePaymentSuccess = async (e) => {
     e.preventDefault();
@@ -47,7 +150,8 @@ const PaymentScreen = () => {
         from: from,
         song_id: song_id,
         event_id: event_id,
-        release_date: location.state.date || location.state.booking_date || null
+        release_date: location.state.date || location.state.booking_date || null,
+        lyricalVid: lyricalVid
       };
 
       const apiPath =
@@ -109,6 +213,7 @@ const PaymentScreen = () => {
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
+              lyricalVid: lyricalVid,
             },
             { headers: headers }
           );
@@ -116,7 +221,7 @@ const PaymentScreen = () => {
           if (CalenderRes.data.success) {
             navigate("/dashboard/success", {
               state: {
-                heading: "Your date blocked successfully!",
+                heading: "Your Song Registration has been done successfully!",
                 btnText: "Register another song",
                 redirectTo: "/dashboard/upload-song",
               },
@@ -126,9 +231,9 @@ const PaymentScreen = () => {
       } else if (response.data.success && from === "Song Repayment") {
         navigate("/dashboard/success", {
           state: {
-            heading: "Your date blocked successfully!",
-            btnText: "View Calendar",
-            redirectTo: "/dashboard/time-calendar",
+            heading: "Your Song Registration has been done successfully!",
+            btnText: "View Song Registration",
+            redirectTo: "/dashboard/upload-song",
           },
         });
       } else if (response.data.success && from === "Event Registeration") {
@@ -196,12 +301,12 @@ const PaymentScreen = () => {
       {loading && <Loading />}
       <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center p-8">
         <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
-          {heading} <span className="text-cyan-400">₹{amount}/-</span>
+          {heading} <span className="text-cyan-400">₹{getDisplayAmount()}/-</span>
         </h1>
 
         <div className="flex flex-col items-center gap-6 max-w-md w-full">
           <img
-            src="/qr.png"
+            src={getQRCodeImage()}
             alt="QR Code"
             className="w-48 h-48 drop-shadow-[0_0_15px_rgb(252 253 253 / 45%))]"
           />
@@ -254,8 +359,3 @@ const PaymentScreen = () => {
 
 export default PaymentScreen;
 
-("trg_video_status_change");
-("trg_payment_status_change_update_only");
-
-("trg_update_status_payment_after_insert");
-("trg_update_status_payment_after_update");

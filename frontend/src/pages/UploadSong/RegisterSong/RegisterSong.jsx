@@ -24,6 +24,9 @@ export default function RegisterSongForm() {
   const [selectedPlans, setSelectedPlans] = useState([]);
   const [payableAmount, setPayableAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [costingData, setCostingData] = useState([]);
+  const [songRegAmount, setSongRegAmount] = useState(799); // Default fallback
+  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(499); // Default fallback
   const { headers, artist, user, ophid } = useArtist();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false); // Add state for success message
   const [agreement, setAgreement] = useState(false);
@@ -54,13 +57,53 @@ export default function RegisterSongForm() {
     }
   }, [ophid]);
 
+  // Function to fetch costing data
+  const fetchCostingData = async () => {
+    try {
+      const response = await axiosApi.get("/get_costing", {
+        headers: headers,
+      });
+
+      if (response.data.success) {
+        const costingData = Array.isArray(response.data.data) 
+          ? response.data.data 
+          : [response.data.data];
+        
+        setCostingData(costingData);
+        
+        // Find Song Registration amount
+        const songRegCost = costingData.find(item => 
+          item.name && item.name.toLowerCase().includes("song registration")
+        );
+        if (songRegCost) {
+          setSongRegAmount(parseFloat(songRegCost.cost) || 799);
+          console.log("Song Registration amount:", songRegCost.cost);
+        }
+        
+        // Find Lyrical Video amount
+        const lyricalVideoCost = costingData.find(item => 
+          item.name && item.name.toLowerCase().includes("lyrical video")
+        );
+        if (lyricalVideoCost) {
+          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 499);
+          console.log("Lyrical Video amount:", lyricalVideoCost.cost);
+        }
+        
+        console.log("All costing data:", costingData);
+      }
+    } catch (error) {
+      console.error("Error fetching costing data:", error);
+      // Keep default values if API fails
+    }
+  };
+
   const handleTotalPayment = () => {
     if (songReg && lyricalVid) {
-      setPayableAmount(799 + 399);
+      setPayableAmount(songRegAmount + lyricalVideoAmount);
     } else if (songReg && !lyricalVid) {
-      setPayableAmount(799);
+      setPayableAmount(songRegAmount);
     } else if (!songReg && lyricalVid) {
-      setPayableAmount(399);
+      setPayableAmount(lyricalVideoAmount);
     } else {
       setPayableAmount(0);
     }
@@ -68,7 +111,12 @@ export default function RegisterSongForm() {
 
   useEffect(() => {
     handleTotalPayment();
-  }, [songReg, lyricalVid]);
+  }, [songReg, lyricalVid, songRegAmount, lyricalVideoAmount]);
+
+  // Fetch costing data on component mount
+  useEffect(() => {
+    fetchCostingData();
+  }, []);
 
   // Modified useEffect to include blocked dates fetch
   useEffect(() => {
@@ -216,6 +264,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
+              lyricalVid: updatedFormData.lyricalVid,
             },
           }
         );
@@ -249,6 +298,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
+              lyricalVid: updatedFormData.lyricalVid,
             },
           }
         );
@@ -283,6 +333,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
+              lyricalVid: updatedFormData.lyricalVid,
             },
           }
         );
@@ -715,7 +766,7 @@ export default function RegisterSongForm() {
                       className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400"
                       disabled={songReg}
                     />
-                    <span>799 - Song Registration fees </span>
+                    <span>{songRegAmount} - Song Registration fees </span>
                   </label>
                 </div>
 
@@ -727,7 +778,7 @@ export default function RegisterSongForm() {
                       onChange={() => setLyricalVid(!lyricalVid)}
                       className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400"
                     />
-                    <span>399 - Lyrical Video </span>
+                    <span>{lyricalVideoAmount} - Lyrical Video </span>
                   </label>
                 </div>
               </div>
