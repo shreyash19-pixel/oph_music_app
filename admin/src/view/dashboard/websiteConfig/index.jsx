@@ -4,6 +4,7 @@ import Sidebar from "../../../components/Sidebar";
 import { ROLES } from "./../../../utils/roles";
 import { useAuth } from "../../../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import WebConfigSidebar from "../../../components/WebConfigSidebar";
 
 // WebsiteConfig page – independent component
 // Tailwind‑only styling – brand colour #0d3c44
@@ -54,7 +55,7 @@ const WebsiteConfig = () => {
     },
     {
       label: "Collab",
-      route: "/notifications",
+      route: "/Collab",
       roles: [
         ROLES.SUPER_ADMIN,
         ROLES.ADMINISTRATIVE_HEAD,
@@ -89,7 +90,7 @@ const WebsiteConfig = () => {
     },
     {
       label: "Leaderboard",
-      route: "/leaderboard",
+      route: "/LeaderBoard",
       roles: [
         ROLES.ADMINISTRATIVE_HEAD,
         ROLES.ADMINISTRATIVE_MEMBER,
@@ -129,15 +130,9 @@ const WebsiteConfig = () => {
     );
   }
   return (
-    <div className="h-screen flex overflow-hidden relative bg-gray-50">
-      <Sidebar title="Website Config" links={links} userRole={user.role} />
-
-      {/* Main content */}
-      <main className="flex-1 p-10 flex items-center justify-center">
-        <div className="text-gray-400 italic">
-          Select an item from the sidebar…
-        </div>
-      </main>
+    <div>
+      <WebConfigSidebar>
+      </WebConfigSidebar>
     </div>
   );
 };

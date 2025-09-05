@@ -19,7 +19,6 @@ const WhatWeProvide = () => {
     "Artists Management",
     "Artists Revenue Tools",
     "All-in-one Music Business Tool"
-    
   ];
 
 

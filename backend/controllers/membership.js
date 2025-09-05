@@ -1,6 +1,7 @@
 const docs = require("../model/documentation_details");
 const personal_details = require("../model/personal_details");
 const prof_details = require("../model/professional_details");
+const professions = require("../model/professions");
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const { uploadToS3, uploadToS3Form } = require("../utils");
@@ -14,15 +15,8 @@ const bucketName = process.env.S3_BUCKET;
 const membershipForm = async (req, res) => {
   {
     try {
-      const professionOptions = [
-        { id: 1, name: "Singer" },
-        { id: 2, name: "Musician" },
-        { id: 3, name: "DJ" },
-        { id: 4, name: "Composer" },
-        { id: 5, name: "Instrumentalist" },
-        { id: 6, name: "Lyricist" },
-        { id: 7, name: "Music Producer" },
-      ];
+      // Fetch professions from database instead of hardcoding
+      const professionOptions = await professions.getAll();
 
       const banking = [
         { id: 1, bank_name: "State Bank of India" },

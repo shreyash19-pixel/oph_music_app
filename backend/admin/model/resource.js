@@ -29,11 +29,20 @@ const Resource = {
              OR credit_name LIKE CONCAT('%', ?, '%')
              OR keywords LIKE CONCAT('%', ?, '%')
       )
+      UNION
+      (
+          SELECT id, title, artist_name, thumbnail_url, views
+          FROM resource_learning
+          WHERE title LIKE CONCAT('%', ?, '%')
+             OR artist_name LIKE CONCAT('%', ?, '%')
+             OR credit_name LIKE CONCAT('%', ?, '%')
+             OR keywords LIKE CONCAT('%', ?, '%')
+      )
       ORDER BY views DESC
       LIMIT 20
       `;
 
-    const [rows] = await db.execute(query, [q, q, q, q]);
+    const [rows] = await db.execute(query, [q, q, q, q, q, q, q, q, q, q, q, q]);
     return rows;
   },
 
@@ -207,15 +216,15 @@ const Resource = {
     return result.affectedRows > 0;
   },
 
-  deleteReelById: async (podcastId) => {
+  deleteReelById: async (reelId) => {
     try {
       const [result] = await db.query(
-        "DELETE FROM resource_podcast WHERE id = ?",
-        [podcastId],
+        "DELETE FROM resource_reels WHERE id = ?",
+        [reelId],
       );
       return result.affectedRows > 0;
     } catch (err) {
-      console.error("Error in deletePodcastById:", err);
+      console.error("Error in deleteReelById:", err);
       throw err;
     }
   },
@@ -280,7 +289,7 @@ const Resource = {
     }
   },
 
-  updateStoryById: async (podcastId, data) => {
+  updateStoryById: async (storyId, data) => {
     const fields = [];
     const values = [];
 
@@ -289,25 +298,97 @@ const Resource = {
       values.push(data[key]);
     }
 
-    values.push(podcastId); // for WHERE clause
+    values.push(storyId); // for WHERE clause
 
     const [result] = await db.query(
-      `UPDATE resource_podcast SET ${fields.join(", ")} WHERE id = ?`,
+      `UPDATE resource_story SET ${fields.join(", ")} WHERE id = ?`,
       values,
     );
 
     return result.affectedRows > 0;
   }, // Insert a new music video
 
-  deleteStoryById: async (podcastId) => {
+  deleteStoryById: async (storyId) => {
     try {
       const [result] = await db.query(
-        "DELETE FROM resource_podcast WHERE id = ?",
-        [podcastId],
+        "DELETE FROM resource_story WHERE id = ?",
+        [storyId],
       );
       return result.affectedRows > 0;
     } catch (err) {
-      console.error("Error in deletePodcastById:", err);
+      console.error("Error in deleteStoryById:", err);
+      throw err;
+    }
+  },
+
+  createLearning: async (learningData) => {
+    try {
+      const { title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords } = learningData;
+      
+      const [result] = await db.query(
+        `INSERT INTO resource_learning
+         (title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords],
+      );
+      
+      return result.insertId;
+    } catch (err) {
+      console.error("Error in createLearning:", err);
+      throw err;
+    }
+  },
+
+  getAllLearning: async () => {
+    try {
+      const [rows] = await db.query(
+        "SELECT * FROM resource_learning ORDER BY created_at DESC",
+      );
+      return rows;
+    } catch (err) {
+      console.error("Error in getAllLearning:", err);
+      throw err;
+    }
+  },
+
+  getLearningById: async (learningId) => {
+    const [rows] = await db.query(
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords
+         FROM resource_learning
+         WHERE id = ?`,
+      [learningId],
+    );
+    return rows[0] || null;
+  },
+
+  updateLearningById: async (learningId, data) => {
+    const fields = [];
+    const values = [];
+
+    for (const key in data) {
+      fields.push(`${key} = ?`);
+      values.push(data[key]);
+    }
+
+    values.push(learningId); // for WHERE clause
+
+    const [result] = await db.query(
+      `UPDATE resource_learning SET ${fields.join(", ")} WHERE id = ?`,
+      values,
+    );
+
+    return result.affectedRows > 0;
+  },
+
+  deleteLearningById: async (learningId) => {
+    try {
+      const [result] = await db.query(
+        "DELETE FROM resource_learning WHERE id = ?",
+        [learningId],
+      );
+      return result.affectedRows > 0;
+    } catch (err) {
+      console.error("Error in deleteLearningById:", err);
       throw err;
     }
   },

@@ -19,7 +19,7 @@
 ## Sections(Remaining)
 
 ### Frontend (Client)
-☐ ALL Navpages => Home => Compelete
+✔ ALL Navpages => Home => Compelete => Done => Go to Testing @done(25-09-05 08:37)
 ✔ NN Navpages => Event => Compelete => Done => Go to Testing @done(25-08-16 02:15)
 ☐ SP Navpages => Artist => Fix mapping for specialist artists , retest and fix for remianing bugs.
 ☐ SP Navpages => Leaderboard => Fix mapping for monthly data and map it using api to call json file from S3
@@ -30,13 +30,13 @@
 ☐ JS Dashboard => Home => Get Details => Complete page
 ☐ SP Dashboard => Calender => Add Artist Profile Image
 ✔ Dashboard => Song Registration => In-Progess(Will update task after testing ) => Compeleted => Go to Testing @done(25-08-07 23:33)
-☐ JS Dashboard => Tv Publishing => Compelete => GO to Testing
+✔ JS Dashboard => Tv Publishing => Compelete => GO to Testing @done(25-09-05 08:38)
 ✔ NN Dashboard => artist spotlight => Fix icons => Done => Go to Testing. @done(25-08-14 04:10)
-☐ JS Dashboard => Analytics => Compelete 
+✔ JS Dashboard => Analytics => Compelete => Done => Go to Testing @done(25-09-05 08:38)
 ✔ Dashboard => Request Tickets =>  Done. => Go to Testing @done(25-08-07 23:22)
 ✔ Dashboard => Events => Compeleted aka Done. => Go to Testing. @done(25-08-07 23:22)
 ☐ NN Dashboard => Income => Make api to get bank details and show it , as get and show Available Amount
-☐ JS Dashboard => KPI => Compelete
+✔ JS Dashboard => KPI => Compelete => Done => Go to Testing @done(25-09-05 08:39)
 ✔ Dashboard => Notification => Done => Go to Testing @done(25-08-07 23:32)
 ☐ JS Dashboard => Learning => Compelete
 
@@ -59,11 +59,11 @@
 ✔ JS Artist Portal =>Payment => All => Compelete => Done => Go to Testing @done(25-08-24 23:57)
 ☐ JS Artist Portal =>Payment => Withdraw => Fix table layout => Done => Go to Testing
 ☐ JS Artist Portal =>Payment => Withdraw-Redirect => Fix layout.
-☐ NN Artist Portal =>All Data => Compelete
-☐ SP Artist Portal =>Time Calender => Complete
+✔ NN Artist Portal =>All Data => Compelete => Done => Go to Testing @done(25-09-05 08:40)
+✔ SP Artist Portal =>Time Calender => Complete => Done => Go to Testing @done(25-09-05 08:39)
 ☐ JS Artist Portal =>Tickets => Give table view and Redirect to Individual Page .Fix layout inside the redirect
-☐ ALL Artist Portal =>Setting => Compelete => Done => Go to Testing
-☐ JS Website Config => Contact => Compelete => Done => Go to Testing
+✔ ALL Artist Portal =>Setting => Compelete => Done => Go to Testing @done(25-09-05 08:39)
+✔ JS Website Config => Contact => Compelete => Done => Go to Testing @done(25-09-05 07:53)
 ✔ NN - Website Config => Resource => Compelete => Done => Go to Testing. @done(25-08-09 12:09)
 ☐ ALL Website Config => Homepage => Compelete
 ☐ JS Website Config => Collab => Compelete

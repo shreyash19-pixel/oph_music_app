@@ -71,4 +71,25 @@ router.put(
 
 router.delete("/delete_story/:id", Resource.deleteStory);
 
+//Learning
+router.post(
+  "/createLearning",
+  upload.fields([
+    { name: "video_url", maxCount: 1 },
+    { name: "thumbnail_url", maxCount: 1 },
+  ]),
+  Resource.insertLearning,
+);
+router.get("/allLearning", Resource.fetchAllLearning);
+router.get(`/learning/:learningId`, Resource.getLearningById);
+router.put(
+  "/update_learning/:learningId",
+  upload.fields([
+    { name: "video_url", maxCount: 1 },
+    { name: "thumbnail_url", maxCount: 1 },
+  ]),
+  Resource.updateLearningById,
+);
+router.delete("/delete_learning/:id", Resource.deleteLearning);  
+
 module.exports = router;

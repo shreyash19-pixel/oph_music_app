@@ -100,6 +100,7 @@ const CreateResource = () => {
               <option value="">Go to...</option>
               <option value="/Reels">Create Reels</option>
               <option value="/Stories">Create Stories</option>
+              <option value="/Learning">Create Learning</option>
             </select>
           </div>
 

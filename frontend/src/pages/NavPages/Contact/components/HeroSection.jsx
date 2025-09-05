@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import ContactBG from '../../../../../public/assets/images/music_bg.png'
 import Glow from '../../../../../public/assets/images/contact-elipise.png'
 
-const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(\?.*)?$/;
+const instagramRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
 
 function HeroSection() {
   const [modal,setModal] = useState(false)
@@ -79,7 +79,7 @@ function HeroSection() {
 
     // Log form data
     console.log('Form Data:', formData);
-    const response = await axiosApi.post('/contacts',formData)
+    const response = await axiosApi.post('/contact_us',formData)
     if(response.status == 201){
       setModal(true)
       setFormData({

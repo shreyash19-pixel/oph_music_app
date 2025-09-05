@@ -261,7 +261,7 @@ const insertStories = async (req, res) => {
 
 const updateStroyById = async (req, res) => {
   try {
-    const { podcastId } = req.params;
+    const { storyId } = req.params;
     const videoFile = req.files?.["video_url"]?.[0];
     const thumbnailFile = req.files?.["thumbnail_url"]?.[0];
 
@@ -304,7 +304,7 @@ const updateStroyById = async (req, res) => {
       updateData.thumbnail_url = thumbnail_url;
     }
 
-    const success = await Resource.updatePodcastById(podcastId, updateData);
+    const success = await Resource.updateStoryById(storyId, updateData);
 
     if (!success) {
       return res
@@ -542,6 +542,160 @@ const getReelById = async (req, res) => {
   }
 };
 
+// Learning
+
+const insertLearning = async (req, res) => {
+  try {
+    const videoFile = req.files["video_url"]?.[0];
+    const thumbnailFile = req.files["thumbnail_url"]?.[0];
+    
+    if (!videoFile || !thumbnailFile) {
+      return res.status(400).json({
+        success: false,
+        message: "Both video and thumbnail are required",
+      });
+    }
+
+    const {
+      title,
+      artist_name,
+      duration_in_minutes,
+      views,
+      credit_name,
+      keywords,
+    } = req.body;
+
+    const videoUrl = await bucket.uploadToS3(videoFile, "Resource/Learning");
+    const thumbnailUrl = await bucket.uploadToS3(
+      thumbnailFile,
+      "Resource/Learning",
+    );
+
+    const learningData = {
+      title,
+      video_url: videoUrl,
+      thumbnail_url: thumbnailUrl,
+      artist_name,
+      duration_in_minutes: parseInt(duration_in_minutes),
+      views: parseInt(views),
+      credit_name,
+      keywords,
+    };
+
+    const insertId = await Resource.createLearning(learningData);
+
+    res.status(201).json({
+      success: true,
+      message: "Learning added",
+      id: insertId,
+    });
+  } catch (err) {
+    console.error("Error inserting Learning:", err);
+    res.status(500).json({ success: false, message: "Failed to add Learning" });
+  }
+};
+
+const updateLearningById = async (req, res) => {
+  try {
+    const { learningId } = req.params;
+    const videoFile = req.files?.["video_url"]?.[0];
+    const thumbnailFile = req.files?.["thumbnail_url"]?.[0];
+
+    const {
+      title,
+      artist_name,
+      duration_in_minutes,
+      views,
+      credit_name,
+      keywords,
+      video_url,
+      thumbnail_url,
+    } = req.body;
+
+    const updateData = {};
+
+    if (title) updateData.title = title;
+    if (artist_name) updateData.artist_name = artist_name;
+    if (duration_in_minutes)
+      updateData.duration_in_minutes = parseInt(duration_in_minutes);
+    if (views) updateData.views = parseInt(views);
+    if (credit_name) updateData.credit_name = credit_name;
+    if (keywords) updateData.keywords = keywords;
+
+    if (videoFile) {
+      updateData.video_url = await bucket.uploadToS3(
+        videoFile,
+        "Resource/Learning",
+      );
+    } else if (video_url) {
+      updateData.video_url = video_url;
+    }
+
+    if (thumbnailFile) {
+      updateData.thumbnail_url = await bucket.uploadToS3(
+        thumbnailFile,
+        "Resource/Learning",
+      );
+    } else if (thumbnail_url) {
+      updateData.thumbnail_url = thumbnail_url;
+    }
+
+    const success = await Resource.updateLearningById(learningId, updateData);
+
+    if (!success) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Learning not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Learning updated successfully",
+    });
+  } catch (err) {
+    console.error("Error updating Learning:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const fetchAllLearning = async (req, res) => {
+  try {
+    const videos = await Resource.getAllLearning();
+    res.status(200).json({ success: true, data: videos });
+  } catch (err) {
+    console.error("Error fetching Learning:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch Learning" });
+  }
+};
+
+const getLearningById = async (req, res) => {
+  try {
+    const { learningId } = req.params;
+    const learning = await Resource.getLearningById(parseInt(learningId));
+    res.status(200).json({ success: true, data: learning });
+  } catch (err) {
+    console.error("Error fetching Learning:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch Learning" });
+  }
+};
+
+const deleteLearning = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const success = await Resource.deleteLearningById(id);
+    if (!success) {
+      return res.status(404).json({ message: "Learning not found." });
+    }
+    res.json({ message: "Learning deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting Learning.", error: err });
+  }
+};  
+
+
 module.exports = {
   searchPodcasts,
   getPodcastById,
@@ -561,4 +715,10 @@ module.exports = {
   updateStroyById,
   getStroyById,
   deleteStory,
+  //Learning
+  insertLearning,
+  fetchAllLearning,
+  updateLearningById,
+  deleteLearning,
+  getLearningById,
 };

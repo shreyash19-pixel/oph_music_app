@@ -2,7 +2,7 @@ import React from "react";
 import ArtistSidebar from "../../../../components/ArtistSidebar";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import axiosApi from "../../../../../../frontend/src/conf/axios";
+import axiosApi from "../../../../conf/axios";
 import { useState } from "react";
 const VerifyBookingDates = () => {
   const location = useLocation();

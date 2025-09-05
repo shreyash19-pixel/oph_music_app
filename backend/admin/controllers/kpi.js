@@ -1,12 +1,67 @@
 const SongSocialMetrics = require('../model/kpi');
+const { readFromS3 } = require("../../utils");
+const getKPI = async (req, res) => {
+  try {
+    const { OPH_ID } = req.query; // make sure client passes ?OPH_ID=...
+    if (!OPH_ID) {
+      return res
+        .status(400)
+        .json({ success: false, message: "OPH_ID required" });
+    }
+
+    const Key = "monthly_kpi/kpi_metrics.json";
+    const s3Data = await readFromS3(Key);
+
+   const matchedRecords = [];
+
+   for (const year of Object.keys(s3Data)) {
+     for (const month of Object.keys(s3Data[year])) {
+       const records = s3Data[year][month];
+
+       if (records.length > 0) {
+         // filter by OPH_ID before enriching
+         const filtered = records.filter((r) => r.OPH_ID === OPH_ID);
+
+         if (filtered.length > 0) {
+           const enriched = filtered.map((r) => ({
+             ...r,
+             year,
+             month,
+           }));
+
+           matchedRecords.push(...enriched);
+         }
+       }
+     }
+   }
+
+
+
+    res.status(200).json({
+      success: true,
+      s3Metrics: matchedRecords,
+    });
+  } catch (error) {
+    console.error("Error fetching Metric:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 
 const getSongMetricsSummary = async (req, res) => {
-  try {
-    const metrics = await SongSocialMetrics.getMetricsSummary();
-    res.status(200).json(metrics);
-  } catch (error) {
-    console.error('Error fetching song metrics summary:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+const { OPH_ID } = req.query;
+  if (!OPH_ID) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing OPH ID in query" });
+  } else {
+    try {
+      const metrics = await SongSocialMetrics.getMetricsSummary();
+      res.status(200).json(metrics);
+    } catch (error) {
+      console.error('Error fetching song metrics summary:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
 };
 
@@ -180,8 +235,17 @@ const fetchmonthly = async (req, res) => {
     })
   }
 
+
+
 }
 
 module.exports = {
-  getSongMetricsSummary, fetchAllKpiScores, insertOrUpdateKpiScore, getTopSearchedArtistsController, getTopArtistsController, getArtistProfile, fetchmonthly
+  getSongMetricsSummary,
+  fetchAllKpiScores,
+  insertOrUpdateKpiScore,
+  getTopSearchedArtistsController,
+  getTopArtistsController,
+  getArtistProfile,
+  fetchmonthly,
+  getKPI,
 };

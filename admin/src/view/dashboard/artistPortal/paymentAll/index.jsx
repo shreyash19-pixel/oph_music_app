@@ -100,27 +100,14 @@ const PaymentAll = () => {
                   data={tableData}
                   showStatusIndicator={false}
                   pageSize={10}
-                  excludeColumns={"Status,event_id,Review,From,reject_reason,CreatedAt,UpdatedAt"}
-                  detailsPrefer="song_id"
+                  excludeColumns={"Status,event_id,Review,From,reject_reason,CreatedAt,UpdatedAt,reject_for,release_date"}
                   detailsUrl="/SongPayment"
                 />
                 <br />
               </>
             )}
 
-            {canView.booking && (
-              <>
-                <SearchableDynamicTable
-                  title="Booking"
-                  data={bookingdata}
-                  showStatusIndicator={false}
-                  pageSize={10}
-                  excludeColumns={"Status,song_id,event_id,Review,From,reject_reason,CreatedAt,UpdatedAt"}
-                  detailsUrl="/Withdraw"
-                />
-                <br />
-              </>
-            )}
+           
 
             {/* If you want a fallback when nothing is visible */}
             {!canView.events && !canView.song && !canView.booking && (
