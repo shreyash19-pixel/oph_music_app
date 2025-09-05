@@ -247,8 +247,8 @@ export default function TimeCalendar() {
     </div>
   );
 
-  const handleDateCellClick = (year, month, day, isCurrentMonth) => {
-    if (!isCurrentMonth) return; // Don't handle clicks on non-current month days
+  const handleDateCellClick = (year, month, day, isCurrentMonth, getCurrentGridStatus) => {
+    if (!isCurrentMonth || getCurrentGridStatus.Status === 'approved') return; // Don't handle clicks on non-current month days
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
@@ -261,14 +261,13 @@ export default function TimeCalendar() {
       navigate("/verify-booking-dates", {
         state: { selectedDate: dateStr },
       });
-    }
-    else{
-      return
+    } else {
+      return;
     }
   };
 
   // Update renderCalendarCell to include click handler
-  const renderCalendarCell = ({ day, isCurrentMonth }, index) => {
+  const renderCalendarCell = ({ day, isCurrentMonth }, index) => {    
     const isBlocked = isDateBlocked(currentYear, currentMonthIndex, day);
     const isPast = isDateInPast(currentYear, currentMonthIndex, day);
     const isValidFutureDate = isWithinOneYear(
@@ -276,12 +275,16 @@ export default function TimeCalendar() {
       currentMonthIndex,
       day
     );
+
     const d = new Date(currentYear, currentMonthIndex, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
       "0"
     )}-${String(d.getDate()).padStart(2, "0")}`;
     const artist = blockedDatesInfo[dateStr];
+
+    const getCurrentGridStatus = data.find((d) => d.current_booking_date === dateStr)
+
     return (
       <div
         key={index}
@@ -291,16 +294,17 @@ export default function TimeCalendar() {
               currentYear,
               currentMonthIndex,
               day,
-              isCurrentMonth
+              isCurrentMonth,
+              getCurrentGridStatus
             );
           }
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
-          isBlocked && isCurrentMonth
+          isBlocked && isCurrentMonth && getCurrentGridStatus.Status === 'under review'
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
-            : isCurrentMonth
-            ? "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
-            : "bg-gray-900/40 border-gray-700"
+            : isBlocked && isCurrentMonth && getCurrentGridStatus.Status === 'approved'
+            ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
+            : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
         ${isPast ? "opacity-50" : ""}
         ${!isValidFutureDate ? " opacity-25" : ""}
@@ -318,7 +322,7 @@ export default function TimeCalendar() {
           >
             {day}
           </span>
-          {isBlocked && isCurrentMonth && (
+          {isBlocked && isCurrentMonth && getCurrentGridStatus.Status === 'under review' && (
             <svg
               className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
               viewBox="0 0 18 21"
@@ -364,7 +368,7 @@ export default function TimeCalendar() {
           {!isLoading && !error && (
             <>
               <div className="flex items-center gap-[16px]">
-                <div className="w-full px-8 py-6 bg-gradient-to-r from-[#0d3c44] to-[#145058] text-white rounded-none shadow-lg mb-4">
+                <div className="px-8 py-6 bg-gradient-to-r from-[#0d3c44] to-[#145058] text-white rounded-none shadow-lg mb-4">
                   <h2 className="text-3xl font-extrabold tracking-wide leading-tight drop-shadow-sm">
                     TIME CALENDAR
                   </h2>
@@ -376,7 +380,11 @@ export default function TimeCalendar() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>
-                    <span className="text-[#0d3c44]">Available</span>
+                    <span className="text-[#0d3c44]">Not Booked</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#FFD700]"></div>
+                    <span className="text-[#0d3c44]">Approved</span>
                   </div>
                 </div>
               </div>
