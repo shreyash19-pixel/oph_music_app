@@ -82,32 +82,14 @@ const getTopArtistsController = async (req, res) => {
 
   try {
 
-    const { page, per_page } = req.query
-
-    if (!page || !per_page) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields"
-      })
-    }
-
-    const formattedPage = parseInt(page)
-    const formattedPerPage = parseInt(per_page)
-    const response = await SongSocialMetrics.getTopArtists(formattedPage, formattedPerPage)
-    let totalPages = await SongSocialMetrics.getTotalPages() 
+    const response = await SongSocialMetrics.getTopArtists()
     
-    let countTotalPages = 0
-    if (totalPages) {
-      let totalPageCount = totalPages[0].rows
-      countTotalPages = Math.ceil(totalPageCount / formattedPerPage)
-    }
-
-    if (response && totalPages && countTotalPages !== 0) {
+    
+    if (response) {
       return res.status(200).json({
         success: true,
         message: "Data fetched successfully",
         data: response,
-        pagination: countTotalPages
       })
     }
 

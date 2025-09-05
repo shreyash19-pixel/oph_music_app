@@ -47,7 +47,7 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date) => {
 };
 
 const getAllBookings = async () => {
-  const [rows] = await db.execute("SELECT * FROM calender");
+  const [rows] = await db.execute("SELECT c.*, sup.Transaction_ID, sup.`From`, sup.song_id, sup.`Status` FROM calender c LEFT JOIN sign_up_payment sup ON c.current_booking_date = sup.release_date WHERE sup.`From` IN ('Date booking')");
 
   const rowsWithIST = rows.map((row) => ({
     ...row,

@@ -108,7 +108,7 @@ const getArtistDetail = async (ophid) => {
 
 const getUpcomingSong = async (ophid) => {
 
-    const [rows] = await db.execute("SELECT sr.song_id, sr.release_date dateTime, sr.Song_name EventName, vd.image_url image FROM user_details ud LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE ud.ophid = ? AND overall_status = 'approved' ORDER BY `dateTime`LIMIT 1", [ophid])
+    const [rows] = await db.execute("SELECT sr.song_id, sr.release_date `date`, sr.Song_name EventName, vd.image_url image FROM user_details ud LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE ud.ophid = ? AND overall_status = 'approved' ORDER BY `dateTime`LIMIT 1", [ophid])
     let songMap = {}
     if (rows.length !== 0) {
         songMap = {

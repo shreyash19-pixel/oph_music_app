@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
 
@@ -22,24 +22,28 @@ const SongPayment = () => {
         const res = await axiosApi.get(`/user-details/${ophid}`);
         setArtist(res.data.userDetails);
 
-        const paymentRes = await axiosApi.get(`/payment-for-song-by-ophid/${ophid}/${song_id}`);
+        const paymentRes = await axiosApi.get(
+          `/payment-for-song-by-ophid/${ophid}/${song_id}`
+        );
         console.log(paymentRes.data);
         let paymentArray = paymentRes.data.data || [];
-        
+
         // Map the backend response to frontend expected format
-        const mappedPayments = paymentArray.map(payment => ({
+        const mappedPayments = paymentArray.map((payment) => ({
           paymentId: payment.Transaction_ID,
           status: payment.Status,
           createdAt: payment.CreatedAt,
           paymentType: payment.From,
-          amount: payment.song_id ? `Song ID: ${payment.song_id}` : 'N/A',
+          amount: payment.song_id ? `Song ID: ${payment.song_id}` : "N/A",
           description: `Song Registration Payment - ${payment.From}`,
-          ophId: payment.OPH_ID
+          ophId: payment.OPH_ID,
         }));
-        
-        mappedPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        mappedPayments.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
         console.log("Mapped payments:", mappedPayments);
-        
+
         setPaymentList(mappedPayments);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -51,7 +55,7 @@ const SongPayment = () => {
     fetchData();
   }, [ophid]);
 
-  const handleFinalAction = async(type) => {
+  const handleFinalAction = async (type) => {
     const recentPayment = paymentList.length > 0 ? paymentList[0] : null;
     if (!recentPayment) {
       toast.error("No payment found to process");
@@ -64,29 +68,36 @@ const SongPayment = () => {
         transactionId: recentPayment.paymentId,
         status: "rejected",
         reject_reason: reason,
-        songId: songid
+        songId: songid,
       };
-      console.log("Reject Log:", logData);
 
       try {
         const submit = await axiosApi.put("/payment-update-status", logData);
-        
+
         // Debug logging to see the actual response structure
         console.log("Reject API Response:", submit);
         console.log("Response data:", submit.data);
         console.log("Response status:", submit.status);
-        
+
         // Check if the update was successful
-        const isSuccess = submit.status === 200 && submit.data && submit.data.message === "Status updated successfully";
-        
+        const isSuccess =
+          submit.status === 200 &&
+          submit.data &&
+          submit.data.message === "Status updated successfully";
+
         if (isSuccess) {
-          toast.success(`Payment rejected successfully with reason: ${reason || "No reason provided"}`, { duration: 20000 });
-          
+          toast.success(
+            `Payment rejected successfully with reason: ${
+              reason || "No reason provided"
+            }`,
+            { duration: 20000 }
+          );
+
           // Update local state instead of reloading
-          setPaymentList(prevPayments => 
-            prevPayments.map(payment => 
-              payment.paymentId === recentPayment.paymentId 
-                ? { ...payment, status: 'rejected' }
+          setPaymentList((prevPayments) =>
+            prevPayments.map((payment) =>
+              payment.paymentId === recentPayment.paymentId
+                ? { ...payment, status: "rejected" }
                 : payment
             )
           );
@@ -108,29 +119,32 @@ const SongPayment = () => {
         ophId: ophid,
         transactionId: recentPayment.paymentId,
         status: "approved",
-        songId: songid
+        songId: songid,
       };
       console.log("Approve Log:", logData);
 
       try {
         const submit = await axiosApi.put("/payment-update-status", logData);
-        
+
         // Debug logging to see the actual response structure
         console.log("Approve API Response:", submit);
         console.log("Response data:", submit.data);
         console.log("Response status:", submit.status);
-        
+
         // Check if the update was successful
-        const isSuccess = submit.status === 200 && submit.data && submit.data.message === "Status updated successfully";
-        
+        const isSuccess =
+          submit.status === 200 &&
+          submit.data &&
+          submit.data.message === "Status updated successfully";
+
         if (isSuccess) {
           toast.success("Payment approved successfully!", { duration: 20000 });
-          
+
           // Update local state instead of reloading
-          setPaymentList(prevPayments => 
-            prevPayments.map(payment => 
-              payment.paymentId === recentPayment.paymentId 
-                ? { ...payment, status: 'approved' }
+          setPaymentList((prevPayments) =>
+            prevPayments.map((payment) =>
+              payment.paymentId === recentPayment.paymentId
+                ? { ...payment, status: "approved" }
                 : payment
             )
           );
@@ -164,7 +178,10 @@ const SongPayment = () => {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })} — ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    })} — ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
   };
 
   const formatAmount = (amount) => {
@@ -173,14 +190,24 @@ const SongPayment = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-lg">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg">
+        Loading...
+      </div>
+    );
   }
 
   if (!artist) {
-    return <div className="min-h-screen flex items-center justify-center text-lg">Artist not found.</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg">
+        Artist not found.
+      </div>
+    );
   }
 
-  const displayedPayments = showAllPayments ? paymentList : paymentList.slice(0, 1);
+  const displayedPayments = showAllPayments
+    ? paymentList
+    : paymentList.slice(0, 1);
 
   return (
     <div className="min-h-screen bg-blue-50 p-6">
@@ -197,9 +224,15 @@ const SongPayment = () => {
             <Detail label="Artist Type" value={artist.artist_type} />
             <Detail label="Location" value={artist.location} />
             <div className="sm:col-span-2">
-              <label className="block text-gray-700 text-sm font-semibold mb-1">Personal Photo</label>
+              <label className="block text-gray-700 text-sm font-semibold mb-1">
+                Personal Photo
+              </label>
               <img
-                src={artist.personal_photo ? artist.personal_photo : "https://avatars.githubusercontent.com/u/49544693?v=4"}
+                src={
+                  artist.personal_photo
+                    ? artist.personal_photo
+                    : "https://avatars.githubusercontent.com/u/49544693?v=4"
+                }
                 alt="Artist"
                 className="mt-2 w-40 h-40 object-cover rounded-xl border"
               />
@@ -209,7 +242,9 @@ const SongPayment = () => {
 
         <div className="border rounded-xl p-6 bg-gray-50 shadow-inner">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-gray-700">Song Payment Requests</h3>
+            <h3 className="text-xl font-semibold text-gray-700">
+              Song Payment Requests
+            </h3>
             {paymentList.length > 1 && (
               <button
                 onClick={() => setShowAllPayments(!showAllPayments)}
@@ -222,7 +257,10 @@ const SongPayment = () => {
           {paymentList.length > 0 ? (
             <ul className="space-y-2">
               {displayedPayments.map((payment, index) => (
-                <li key={index} className="bg-white p-4 rounded-lg border border-gray-200">
+                <li
+                  key={index}
+                  className="bg-white p-4 rounded-lg border border-gray-200"
+                >
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="text-gray-800 font-medium break-words flex items-center gap-2">
                       Payment ID: {payment.paymentId}
@@ -240,89 +278,131 @@ const SongPayment = () => {
                         Copy
                       </button>
                       {copiedPaymentId === payment.paymentId && (
-                        <span className="text-green-600 text-sm font-medium">Copied!</span>
+                        <span className="text-green-600 text-sm font-medium">
+                          Copied!
+                        </span>
                       )}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm">
                     <div className="text-gray-600">
-                      <span className="font-medium">Song ID:</span> {formatAmount(payment.amount)}
+                      <span className="font-medium">Song ID:</span>{" "}
+                      {formatAmount(payment.amount)}
                     </div>
                     <div className="text-gray-600">
-                      <span className="font-medium">Type:</span> {payment.paymentType || 'Song Registration'}
+                      <span className="font-medium">Type:</span>{" "}
+                      {payment.paymentType || "Song Registration"}
                     </div>
                     <div className="text-gray-600">
-                      <span className="font-medium">Status:</span> 
-                      <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
-                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        payment.status === 'under review' ? 'bg-blue-100 text-blue-800' :
-                        payment.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        payment.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {payment.status || 'pending'}
+                      <span className="font-medium">Status:</span>
+                      <span
+                        className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          payment.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : payment.status === "under review"
+                            ? "bg-blue-100 text-blue-800"
+                            : payment.status === "approved"
+                            ? "bg-green-100 text-green-800"
+                            : payment.status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {payment.status || "pending"}
                       </span>
                     </div>
                     <div className="text-gray-600">
-                      <span className="font-medium">Time:</span> {formatDateTime(payment.createdAt)}
+                      <span className="font-medium">Time:</span>{" "}
+                      {formatDateTime(payment.createdAt)}
                     </div>
                   </div>
                   {payment.description && (
                     <div className="text-gray-600 text-sm mt-2">
-                      <span className="font-medium">Description:</span> {payment.description}
+                      <span className="font-medium">Description:</span>{" "}
+                      {payment.description}
                     </div>
                   )}
                 </li>
               ))}
             </ul>
           ) : (
-            <div className="text-gray-500">No song payment requests available</div>
+            <div className="text-gray-500">
+              No song payment requests available
+            </div>
           )}
         </div>
 
         <div className="border-t pt-6 space-y-4">
-          <h3 className="text-xl font-semibold text-gray-700">Song Payment Actions</h3>
+          <h3 className="text-xl font-semibold text-gray-700">
+            Song Payment Actions
+          </h3>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Enter rejection reason (required for rejection)..."
-            disabled={actionLocked || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status))}
+            disabled={
+              actionLocked ||
+              (paymentList[0] &&
+                !["pending", "under review"].includes(paymentList[0].status))
+            }
             className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setConfirmAction("Reject")}
-              disabled={actionLocked || !reason.trim() || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status))}
+              disabled={
+                actionLocked ||
+                !reason.trim() ||
+                (paymentList[0] &&
+                  !["pending", "under review"].includes(paymentList[0].status))
+              }
               className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
-                actionLocked || !reason.trim() || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status)) ? "opacity-50 cursor-not-allowed" : ""
+                actionLocked ||
+                !reason.trim() ||
+                (paymentList[0] &&
+                  !["pending", "under review"].includes(paymentList[0].status))
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
             >
               Reject Payment
             </button>
             <button
               onClick={() => setConfirmAction("Approve")}
-              disabled={actionLocked || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status))}
+              disabled={
+                actionLocked ||
+                (paymentList[0] &&
+                  !["pending", "under review"].includes(paymentList[0].status))
+              }
               className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
-                actionLocked || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status)) ? "opacity-50 cursor-not-allowed" : ""
+                actionLocked ||
+                (paymentList[0] &&
+                  !["pending", "under review"].includes(paymentList[0].status))
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
             >
               Approve Payment
             </button>
           </div>
-          
+
           {/* Show status message when payment is processed */}
-          {paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status) && (
-            <div className={`mt-4 p-3 rounded-lg text-center font-medium ${
-              paymentList[0].status === 'approved' 
-                ? 'bg-green-100 text-green-800 border border-green-200' 
-                : 'bg-red-100 text-red-800 border border-red-200'
-            }`}>
-              Payment has been {paymentList[0].status}. No further actions can be taken.
-            </div>
-          )}
-          
+          {paymentList[0] &&
+            !["pending", "under review"].includes(paymentList[0].status) && (
+              <div
+                className={`mt-4 p-3 rounded-lg text-center font-medium ${
+                  paymentList[0].status === "approved"
+                    ? "bg-green-100 text-green-800 border border-green-200"
+                    : "bg-red-100 text-red-800 border border-red-200"
+                }`}
+              >
+                Payment has been {paymentList[0].status}. No further actions can
+                be taken.
+              </div>
+            )}
+
           {/* Show message when payment is under review */}
-          {paymentList[0] && paymentList[0].status === 'under review' && (
+          {paymentList[0] && paymentList[0].status === "under review" && (
             <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
               Payment is under review. You can approve or reject this payment.
             </div>
@@ -344,7 +424,9 @@ const SongPayment = () => {
 
 const Detail = ({ label, value }) => (
   <div>
-    <label className="block text-gray-700 text-sm font-semibold mb-1">{label}</label>
+    <label className="block text-gray-700 text-sm font-semibold mb-1">
+      {label}
+    </label>
     <div className="text-gray-900">{value}</div>
   </div>
 );
@@ -358,7 +440,9 @@ const ConfirmBlock = ({ type, reason, onConfirm, onCancel }) => (
     <div className="space-x-2">
       <button
         onClick={onConfirm}
-        className={`px-4 py-2 ${type === "Reject" ? "bg-red-600" : "bg-green-600"} text-white rounded-lg shadow hover:opacity-90 transition-colors`}
+        className={`px-4 py-2 ${
+          type === "Reject" ? "bg-red-600" : "bg-green-600"
+        } text-white rounded-lg shadow hover:opacity-90 transition-colors`}
       >
         Yes, {type}
       </button>
