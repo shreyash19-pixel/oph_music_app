@@ -173,6 +173,9 @@ const getAllKpiScores = async () => {
     SELECT *
     FROM CTEKPI`);
 
+    console.log("wqas");
+    
+
   const songMap = {};
 
   rows.forEach((row) => {

@@ -26,12 +26,8 @@ const ArtistSlider = ({ rows = 1 }) => {
         const response = await axiosApi.get(
           `/get-top-artist`
         );
-
-        console.log(response);
-        
-
-        setArtists(response.data.data);
-        // setTotalPages(response.data.pagination);
+        setArtists(response.data.data.slice((currentPage - 1) * 6,6 * currentPage));
+        setTotalPages(response.data.data.length);
       } catch (error) {
         console.error("Error fetching artists:", error);
       }

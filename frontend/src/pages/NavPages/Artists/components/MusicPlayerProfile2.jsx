@@ -7,13 +7,38 @@ import { Image, Shimmer } from "react-shimmer";
 import { useNavigate } from "react-router-dom";
 import arrowLeftIc from "/assets/images/arrowLeftIc.svg";
 import arrowRightIc from "/assets/images/arrowRightIc.svg";
+import axiosApi from "../../../../conf/axios";
 
 const MusicPlayerProfile2 = () => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const audioRef = useRef(null); // Ref for audio
-  const artistData = useSelector((state) => state.topPick.topPicks);
+  const [artistData, setArtistData] = useState([])
 
+  useEffect(() => {
+
+    async function fetchArtist()
+    {
+      try{
+        const response = await axiosApi.get("/kpi_score")
+
+        if(response.data.success)
+        {
+          setArtistData(response.data.data)
+        }
+      }
+      catch(err)
+      {
+        console.error(err.message);
+        
+      }
+    }
+
+    fetchArtist()
+
+  },[])
+
+  
   const songsArray = Object.values(artistData).sort(
     (a, b) => b.kpiScore - a.kpiScore
   );
