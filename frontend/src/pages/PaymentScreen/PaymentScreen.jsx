@@ -19,9 +19,6 @@ const PaymentScreen = () => {
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
   const [oph_id, setoph_id] = useState("");
-  
-  // Debug log for lyricalVid flag
-  console.log("PaymentScreen - lyricalVid flag:", lyricalVid);
 
   const {
     amount = 0,
@@ -29,6 +26,9 @@ const PaymentScreen = () => {
     heading = "Payment Required",
     lyricalVid = false,
   } = location.state || {};
+
+  // Debug log for lyricalVid flag
+  console.log("PaymentScreen - lyricalVid flag:", lyricalVid);
 
   // Function to fetch costing data and match with 'from' field
   const fetchCostingData = useCallback(async () => {
