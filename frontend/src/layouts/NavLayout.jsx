@@ -13,15 +13,15 @@ import { fetchHistoryLeaderboard } from "../slice/leaderboard";
 
 const NavLayout = ({ children }) => {
   const dispatch = useDispatch();
-  useEffect(() => {
-    dispatch(fetchWebsiteConfig());
-    dispatch(fetchArtists());
-    dispatch(fetchTopPicks());
-    dispatch(fetchEvents());
-    dispatch(fetchReels());
-    dispatch(fetchHistoryLeaderboard());
-    dispatch(fetchSuccessStories());
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch(fetchWebsiteConfig());
+  //   dispatch(fetchArtists());
+  //   dispatch(fetchTopPicks());
+  //   dispatch(fetchEvents());
+  //   dispatch(fetchReels());
+  //   dispatch(fetchHistoryLeaderboard());
+  //   dispatch(fetchSuccessStories());
+  // }, [dispatch]);
   return (
     <div>
       <WebsiteNavbar />

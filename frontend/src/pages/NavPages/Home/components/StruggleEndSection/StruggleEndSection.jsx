@@ -15,12 +15,13 @@ const StruggleEndsSection = () => {
   useEffect(() => {
     const fetchHighlightedStory = async () => {
       try {
-        const response = await axiosApi.get("/website-configs/highlighted-story");
+        const response = await axiosApi.get("/allReels");
         setHighlightedStory(response.data.data);
       } catch (err) {
         setError(err.message);
+        // console.log(err.message);
       } finally {
-        setLoading(false);
+        setLoading(false);  
       }
     };
 
