@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Lock, ChevronLeft, ChevronRight } from "lucide-react";
-import axiosApi from "../../../../../../frontend/src/conf/axios";
+import axiosApi from "../../../../../../config/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import ArtistSidebar from "../../../../components/ArtistSidebar";
