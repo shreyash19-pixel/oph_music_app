@@ -40,6 +40,7 @@ const my_epk = require("./routes/my-epk");
 const artist_type = require("./routes/sidebar");
 const special_artist = require("./routes/special-artist");
 const special_artist_song = require("./routes/special-artist-songs");
+const contact_us = require("./routes/contact_us");
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -60,8 +61,7 @@ const TvPublishing = require("./admin/routes/tvPublishing");
 const audioPlatform = require("./admin/routes/audioPlatform");
 const adminCalendar = require("./admin/routes/date-booking");
 const specialArtistDetails = require("./admin/routes/special-artist-details");
-const specialArtistSongs = require("./admin/routes/special-artist-songs")
-
+const allData = require("./admin/routes/allData");
 // ✅ Middleware order is important
 app.use(
   cors({
@@ -137,7 +137,7 @@ app.use("/", my_epk);
 app.use("/", artist_type);
 app.use("/", special_artist);
 app.use("/", special_artist_song);
-
+app.use("/", contact_us);
 //Admin Routes
 
 app.use("/", adminSignUp);
@@ -158,7 +158,7 @@ app.use("/", TvPublishing);
 app.use("/", audioPlatform);
 app.use("/admin-calendar", adminCalendar);
 app.use("/", specialArtistDetails);
-app.use("/", specialArtistSongs);
+app.use("/", allData);
 
 // ✅ Start server
 server.listen(port, () => {

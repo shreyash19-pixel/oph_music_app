@@ -36,12 +36,24 @@ const useSocketRegistration = (OPH_ID) => {
       });
     };
 
+    const handlePaymentUpdate = (data) => {
+      console.log("Received payment-updated event:", data);
+
+      toast.success(`${data.title}`, {
+        duration: 10000,
+        position: "top-right",
+        icon: "💳",
+      });
+    };
+
     socket.on("Music-update", handleTicketUpdate);
+    socket.on("Payment-update", handlePaymentUpdate);
 
     // Cleanup on unmount
     return () => {
       socket.off("connect", registerIfConnected);
       socket.off("ticket-updated", handleTicketUpdate);
+      socket.off("payment-updated", handlePaymentUpdate);
     };
   }, [OPH_ID]);
 };

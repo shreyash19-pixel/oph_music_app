@@ -28,6 +28,49 @@ const updateStatus = async (req, res) => {
       return res.status(404).json({ message: "No record found to update" });
     }
 
+    const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionId);
+    const place = paymentDetails[0].From;
+
+    let link = null;
+    if (status === "rejected") {
+      switch (place) {
+        case "Song Registration":
+          link = "/dashboard/upload-song";
+          break;
+        case "Event Registeration":
+          link = "/dashboard/events";
+          break;
+        case "Date booking":
+          link = "/dashboard/time-calendar";
+          break;
+        case "Special artist song registration":
+          link = "/dashboard/special-artist-song";
+          break;
+        default:
+          link = null;
+      }
+    }
+
+    
+    const message = status === "rejected" 
+      ? `Your payment with Transaction ID: ${transactionId} has been ${status} for ${place} due to ${reject_reason}.`
+      : `Your payment with Transaction ID: ${transactionId} has been ${status} for ${place}.`;
+
+    const noificationPayload = {
+      ophid: ophId,
+      message: message,
+      title: `Payment ${status} for ${place}`,
+      link: link
+    };
+    await saveNotification(noificationPayload);
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+    const userSocketId = onlineUsers.get(ophId);
+    if (userSocketId) {
+      io.to(userSocketId).emit("Payment-update", noificationPayload);
+    }
+
+
     res.status(200).json({ message: "Status updated successfully" });
   } catch (error) {
     console.error("Error updating status:", error);
@@ -289,6 +332,17 @@ const setPaymentVerificationController = async (req, res) => {
   }
 };
 
+const getPaymentDetailsByTransactionId = async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const response = await payment_details.getPaymentDetailsByTransactionId(transactionId);
+    return res.status(200).json({ message: "Payment details fetched successfully", data: response });
+  } catch (error) {
+    console.error("Error fetching payment details:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = { 
   updateStatus, 
   getAllSongPayments,
@@ -300,5 +354,6 @@ module.exports = {
   updateSongPaymentSp,
   updateStatusPayment,
   getTransactionDetailsController,
-  setPaymentVerificationController
+  setPaymentVerificationController,
+  getPaymentDetailsByTransactionId
 };

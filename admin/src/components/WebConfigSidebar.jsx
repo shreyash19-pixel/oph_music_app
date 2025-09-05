@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 // WebsiteConfig page – independent component
 // Tailwind‑only styling – brand colour #0d3c44
 
-const WebsiteConfig = () => {
+const WebConfigSidebar = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [docHeight, setDocHeight] = useState("100vh");
   const containerRef = useRef(null);
@@ -99,6 +99,15 @@ const WebsiteConfig = () => {
         ROLES.SUPER_ADMIN,
       ],
     },
+    {
+      label: "Setting",
+      route: "/websiteConfig_Setting",
+      roles: [
+        ROLES.ADMINISTRATIVE_HEAD,
+        ROLES.ADMINISTRATIVE_MEMBER,
+        ROLES.SUPER_ADMIN,
+      ],
+    },
   ];
 
   const { user, loading } = useAuth();
@@ -170,8 +179,11 @@ const WebsiteConfig = () => {
         collapsed={!sidebarOpen}
         toggleCollapse={() => setSidebarOpen(!sidebarOpen)}
       />
+      <div className="flex-1 ml-10">
+        {children}
+      </div>
     </div>
   );
 };
 
-export default WebsiteConfig;
+export default WebConfigSidebar;

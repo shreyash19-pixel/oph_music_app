@@ -4,6 +4,7 @@ import Sidebar from "../../../components/Sidebar";
 import { ROLES } from "./../../../utils/roles";
 import { useAuth } from "../../../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import WebConfigSidebar from "../../../components/WebConfigSidebar";
 
 // WebsiteConfig page – independent component
 // Tailwind‑only styling – brand colour #0d3c44
@@ -129,15 +130,9 @@ const WebsiteConfig = () => {
     );
   }
   return (
-    <div className="h-screen flex overflow-hidden relative bg-gray-50">
-      <Sidebar title="Website Config" links={links} userRole={user.role} />
-
-      {/* Main content */}
-      <main className="flex-1 p-10 flex items-center justify-center">
-        <div className="text-gray-400 italic">
-          Select an item from the sidebar…
-        </div>
-      </main>
+    <div>
+      <WebConfigSidebar>
+      </WebConfigSidebar>
     </div>
   );
 };

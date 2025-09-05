@@ -45,7 +45,7 @@ const NewSignupDetails = () => {
         action: "Reject",
         ophId: ophid,
         transactionId: recentTxn ? recentTxn.transactionId : "No transaction",
-        status: "Rejected",
+        status: "rejected",
         reject_reason:reason
       };
       console.log("Reject Log:", logData);
@@ -63,7 +63,7 @@ const NewSignupDetails = () => {
         action: "Accept",
         ophId: ophid,
         transactionId: recentTxn ? recentTxn.transactionId : "No transaction",
-        status: "Completed",
+        status: "approved",
       };
       console.log("Accept Log:", logData);
 

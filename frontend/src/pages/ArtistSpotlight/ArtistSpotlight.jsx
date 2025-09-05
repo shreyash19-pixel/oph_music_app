@@ -347,15 +347,25 @@ export default function ArtistSpotlight() {
   //   fetchNotes();
   // }, [ophid, headers]);
 
-  const professionOptions = [
-    { id: 1, name: "Singer" },
-    { id: 2, name: "Musician" },
-    { id: 3, name: "DJ" },
-    { id: 4, name: "Composer" },
-    { id: 5, name: "Instrumentalist" },
-    { id: 6, name: "Lyricist" },
-    { id: 7, name: "Music Producer" },
-  ];
+  const [professions, setProfessions] = useState([]);
+
+  // Fetch professions from API
+  const fetchProfessions = async () => {
+    try {
+      const response = await axiosApi.get("/get_professions");
+      if (response.data && response.data.success) {
+        setProfessions(response.data.data || []);
+      } else {
+        console.error("Failed to fetch professions:", response.data?.message);
+      }
+    } catch (error) {
+      console.error("Error fetching professions:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfessions();
+  }, []);
 
   const fetchArtistSpotlight = async () => {
     setIsLoading(true);
@@ -382,12 +392,12 @@ export default function ArtistSpotlight() {
   };
 
   function getProfession(profession) {
-    let prof = professionOptions.find((pf) => {
+    let prof = professions.find((pf) => {
       if (pf.id === parseInt(profession)) {
         return pf;
       }
     });
-    return prof.name;
+    return prof ? prof.name : "Unknown";
   }
 
   const getArtistRank = () => {

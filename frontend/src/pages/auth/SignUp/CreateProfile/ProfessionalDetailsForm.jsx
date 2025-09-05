@@ -16,15 +16,6 @@ import Elipse from "../../../../../public/assets/images/elipse2.png";
 import axiosApi from "../../../../conf/axios";
 import { data, useNavigate, useSearchParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-const professionOptions = [
-  { id: 1, name: "Singer" },
-  { id: 2, name: "Musician" },
-  { id: 3, name: "DJ" },
-  { id: 4, name: "Composer" },
-  { id: 5, name: "Instrumentalist" },
-  { id: 6, name: "Lyricist" },
-  { id: 7, name: "Music Producer" },
-];
 
 const ProfessionalDetailsForm = () => {
   const { headers, ophid } = useArtist();
@@ -37,8 +28,29 @@ const ProfessionalDetailsForm = () => {
   const [video, setVideo] = useState(null);
   const [rejectReason, setRejectReason] = useState(null);
   const [searchParams] = useSearchParams();
+  const [professions, setProfessions] = useState([]);
+  const [professionsLoading, setProfessionsLoading] = useState(true);
 
   const shouldHideSongsPlanned = ophid?.includes("SA");
+
+  // Fetch professions from API
+  const fetchProfessions = async () => {
+    try {
+      setProfessionsLoading(true);
+      const response = await axiosApi.get("/get_professions");
+      if (response.data && response.data.success) {
+        setProfessions(response.data.data || []);
+      } else {
+        console.error("Failed to fetch professions:", response.data?.message);
+        toast.error("Failed to fetch professions");
+      }
+    } catch (error) {
+      console.error("Error fetching professions:", error);
+      toast.error("Failed to fetch professions");
+    } finally {
+      setProfessionsLoading(false);
+    }
+  };
 
   // const fetchVideo = async () => {
   //   try {
@@ -95,10 +107,14 @@ const ProfessionalDetailsForm = () => {
   // console.log(formData,"formdata");
 
   useEffect(() => {
-    if (ophid) {
+    fetchProfessions(); // Fetch professions when component mounts
+  }, []);
+
+  useEffect(() => {
+    if (ophid && professions.length > 0) {
       fetchProfessionalDetails();
     }
-  }, [ophid]);
+  }, [ophid, professions]);
 
   // useEffect(() => {
   //   const loadVideo = async () => {
@@ -148,8 +164,10 @@ const ProfessionalDetailsForm = () => {
 
         const artist = data[0];
 
+        // Find profession ID by name for form display
+        const professionId = professions.find(p => p.name === artist.Profession)?.id || "";
         setFormData({
-          profession: artist.Profession || "",
+          profession: professionId,
           bio: artist.Bio || "",
           photos: JSON.parse(artist.PhotoURLs) || [],
           spotifyUrl: artist.SpotifyLink || "",
@@ -165,7 +183,7 @@ const ProfessionalDetailsForm = () => {
         });
 
         setcheckSimilarData({
-          profession: artist.Profession || "",
+          profession: professionId,
           bio: artist.Bio || "",
           photos: JSON.parse(artist.PhotoURLs) || [],
           spotifyUrl: artist.SpotifyLink || "",
@@ -223,7 +241,9 @@ const ProfessionalDetailsForm = () => {
 
       // Append all text fields
       formDataToSend.append("OPH_ID", ophid);
-      formDataToSend.append("Profession", formData.profession);
+      // Find the profession name by ID and send the name as text
+      const selectedProfession = professions.find(p => p.id == formData.profession);
+      formDataToSend.append("Profession", selectedProfession ? selectedProfession.name : "");
       formDataToSend.append("Bio", formData.bio);
       formDataToSend.append("SpotifyLink", formData.spotifyUrl);
       formDataToSend.append("InstagramLink", formData.instagramUrl);
@@ -428,9 +448,12 @@ const ProfessionalDetailsForm = () => {
                       profession: e.target.value,
                     }))
                   }
+                  disabled={professionsLoading}
                 >
-                  <option value="">Select Profession</option>
-                  {professionOptions.map((profession) => (
+                  <option value="">
+                    {professionsLoading ? "Loading professions..." : "Select Profession"}
+                  </option>
+                  {professions.map((profession) => (
                     <option key={profession.id} value={profession.id}>
                       {profession.name}
                     </option>
