@@ -54,7 +54,7 @@ const WebsiteConfig = () => {
     },
     {
       label: "Collab",
-      route: "/notifications",
+      route: "/Collab",
       roles: [
         ROLES.SUPER_ADMIN,
         ROLES.ADMINISTRATIVE_HEAD,
@@ -89,7 +89,7 @@ const WebsiteConfig = () => {
     },
     {
       label: "Leaderboard",
-      route: "/leaderboard",
+      route: "/LeaderBoard",
       roles: [
         ROLES.ADMINISTRATIVE_HEAD,
         ROLES.ADMINISTRATIVE_MEMBER,

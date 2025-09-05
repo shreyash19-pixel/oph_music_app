@@ -24,7 +24,6 @@ import Events from "../pages/Events/Events";
 import IncomeWithdrawal from "../pages/Income/Income";
 import VideoMetadataForm from "../pages/UploadSong/VideoMetadata/VideoMetadata";
 import Error from "../pages/Error.jsx";
-import React from "react";
 import MembershipForm from "../pages/auth/SignUp/MembershipFrom.jsx";
 import ErrorScreen from "../pages/ErrorScreen/ErrorScreen.jsx";
 import ArtistDetail from "../pages/ArtistDetail/ArtistDetail.jsx";

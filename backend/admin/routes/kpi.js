@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getSongMetricsSummary,insertOrUpdateKpiScore,fetchAllKpiScores, getTopSearchedArtistsController, getTopArtistsController,getArtistProfile, fetchmonthly
+
+getKPI,getSongMetricsSummary,insertOrUpdateKpiScore,fetchAllKpiScores, getTopSearchedArtistsController, getTopArtistsController,getArtistProfile, fetchmonthly
 } = require('../controllers/kpi');
 
 router.get('/get_kpi_model', getSongMetricsSummary);
@@ -13,5 +14,6 @@ router.get("/get-top-artist-detail", getArtistProfile)
 // GET /api/kpi-score — Get all scores sorted by highest
 router.get("/kpi_score", fetchAllKpiScores);
 router.get("/kpi_monthly_score", fetchmonthly);
+router.get("/getKPI", getKPI);
 
 module.exports = router;
