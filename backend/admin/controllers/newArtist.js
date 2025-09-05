@@ -41,6 +41,24 @@ const getAllUserDetailsIfAnyStepUnderReview = async (req, res) => {
   }
 };
 
+const getAllSales = async (req, res) => {
+  try {
+    const userDetails = await userDetailsModel.getAllSales();
+
+    if (!userDetails || userDetails.length === 0) {
+      return res.status(404).json({
+        message:
+          "No user details found with step_status rejected in any table",
+      });
+    }
+
+    res.status(200).json({ userDetails });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 const updateStatus = async (req, res) => {
   const { ophid, Personal, Professional, Documentation } = req.body;
@@ -93,5 +111,6 @@ const updateStatus = async (req, res) => {
 module.exports = {
   getAllDetailsUnderReview,
   getAllUserDetailsIfAnyStepUnderReview,
-  updateStatus
+  updateStatus,
+  getAllSales,
 };

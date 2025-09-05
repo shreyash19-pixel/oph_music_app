@@ -32,7 +32,7 @@ const getAllUserDetails = async () => {
     WHERE ophid IN (
       SELECT OPH_ID FROM application_status WHERE overall_status = 'completed'
     )
-    `
+    ` 
   );
   return rows;
 };
