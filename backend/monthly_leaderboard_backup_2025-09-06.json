@@ -1,0 +1,56 @@
+{
+  "2025": {
+    "September": [
+      {
+        "stage_name": "NN Beats",
+        "personal_photo": "https://ophcommunity.s3.ap-south-1.amazonaws.com/profile_image/1750847940370-Access%20Full%20Pattern.png",
+        "location": "Gujarat",
+        "OPH_ID": "OPH-CAN-IA-07",
+        "song_count": 22,
+        "total_views": 23000,
+        "score": 1523,
+        "createdAt": "2025-08-02T10:05:24.000Z",
+        "updatedAt": "2025-09-06T02:14:06.000Z",
+        "ranks": 2
+      }
+    ],
+    "August": [
+      {
+        "stage_name": "Armin",
+        "personal_photo": "https://ophcommunity.s3.ap-south-1.amazonaws.com/allUsers/OPH-CAN-IA-036/profile_image/1751703309480-flutter.jpg",
+        "location": "Jharkhand",
+        "OPH_ID": "OPH-CAN-IA-036",
+        "song_count": 7,
+        "total_views": 0,
+        "score": 3500,
+        "createdAt": "2025-08-12T19:33:18.000Z",
+        "updatedAt": "2025-08-30T08:14:57.000Z",
+        "ranks": 1
+      },
+      {
+        "stage_name": "NN Beats",
+        "personal_photo": "https://ophcommunity.s3.ap-south-1.amazonaws.com/profile_image/1750847940370-Access%20Full%20Pattern.png",
+        "location": "Gujarat",
+        "OPH_ID": "OPH-CAN-IA-07",
+        "song_count": 20,
+        "total_views": 23000,
+        "score": 1523,
+        "createdAt": "2025-08-02T10:05:24.000Z",
+        "updatedAt": "2025-08-06T02:14:06.000Z",
+        "ranks": 2
+      },
+      {
+        "stage_name": "dasffdsf",
+        "personal_photo": "https://ophcommunity.s3.ap-south-1.amazonaws.com/profile_image/1750615618733-WhatsApp%20Image%202025-05-29%20at%209.07.42%20PM.jpeg",
+        "location": "Karnataka",
+        "OPH_ID": "OPH-CAN-IA-05",
+        "song_count": 2,
+        "total_views": 10596,
+        "score": 1011,
+        "createdAt": "2025-08-02T09:54:51.000Z",
+        "updatedAt": "2025-08-30T08:14:57.000Z",
+        "ranks": 3
+      }
+    ]
+  }
+}

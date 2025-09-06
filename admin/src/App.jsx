@@ -48,6 +48,7 @@ import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
 import EventParticipation from "./view/dashboard/websiteConfig/Events/EventParticipation";
+import EventManagement from "./view/dashboard/websiteConfig/Events/EventManagement";
 import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
 import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
 import CreateResource from "./view/dashboard/websiteConfig/resource";
@@ -368,6 +369,26 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/event_management/:event_id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                  ROLES.PROJECT_HEAD,
+                  ROLES.PROJECT_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
+                <EventManagement />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/LeaderBoard"
             element={

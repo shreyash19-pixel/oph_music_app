@@ -200,14 +200,7 @@ const updateEventPaymentSp = async (req, res) => {
       return res.status(404).json({ message: "No record found to update" });
     }
     else{
-      // Save notification
-      const notificationMessage = `Your event payment with Transaction ID: ${transactionId} has been ${status}.`;
-      await saveNotification({
-        ophid: ophId,
-        message: notificationMessage,
-        title: `Event Payment ${status}`,
-        link: null
-      });
+      // Event payment status updated
     }
 
     res.status(200).json({ message: "Event payment updated successfully" });

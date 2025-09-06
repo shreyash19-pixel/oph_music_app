@@ -26,6 +26,8 @@ const Events = () => {
             includeColumns={["EventName","dateTime","location","description","long_desc","registrationStart","registrationEnd","winnerReward","image"]}
             showStatusIndicator={false}
             pageSize={10}
+            detailsUrl="/event_management"
+            detailsPrefer="event_id"
           />
         </div>
     </div>

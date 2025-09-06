@@ -20,6 +20,8 @@ const insertEvent = async (eventData) => {
     registrationEnd,
     winnerReward,
     image,
+    payment_qr,
+    payment_qr_discount,
   } = eventData;
 
   const [result] = await db.execute(
@@ -34,8 +36,10 @@ const insertEvent = async (eventData) => {
       registrationStart,
       registrationEnd,
       winnerReward,
-      image
-    ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      image,
+      payment_qr,
+      payment_qr_discount
+    ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       EventName,
       dateTime,
@@ -48,6 +52,8 @@ const insertEvent = async (eventData) => {
       registrationEnd,
       winnerReward,
       image,
+      payment_qr,
+      payment_qr_discount,
     ],
   );
 
@@ -70,6 +76,8 @@ const getAllEventsWithStatus = async () => {
       registrationEnd,
       winnerReward,
       image,
+      payment_qr,
+      payment_qr_discount,
       CASE
         WHEN dateTime >= NOW() THEN 'upcoming'
         ELSE 'previous'
@@ -99,7 +107,9 @@ const getEventById = async (eventId) => {
                  registrationStart,
                  registrationEnd,
                  winnerReward,
-                 image
+                 image,
+                 payment_qr,
+                 payment_qr_discount
                FROM events
                WHERE event_id = ?
                LIMIT 1`;
@@ -108,9 +118,64 @@ const getEventById = async (eventId) => {
   return rows.length ? rows[0] : null;
 };
 
+const updateEvent = async (eventId, eventData) => {
+  const {
+    EventName,
+    dateTime,
+    location,
+    description,
+    long_desc,
+    hashtags,
+    registrationFee_normal,
+    registrationStart,
+    registrationEnd,
+    winnerReward,
+    image,
+    payment_qr,
+    payment_qr_discount,
+  } = eventData;
+
+  const [result] = await db.execute(
+    `UPDATE OphData.events SET
+      EventName = ?,
+      dateTime = ?,
+      location = ?,
+      description = ?,
+      long_desc = ?,
+      hashtags = ?,
+      registrationFee_normal = ?,
+      registrationStart = ?,
+      registrationEnd = ?,
+      winnerReward = ?,
+      image = ?,
+      payment_qr = ?,
+      payment_qr_discount = ?
+    WHERE event_id = ?`,
+    [
+      EventName,
+      dateTime,
+      location,
+      description,
+      long_desc,
+      hashtags,
+      registrationFee_normal,
+      registrationStart,
+      registrationEnd,
+      winnerReward,
+      image,
+      payment_qr,
+      payment_qr_discount,
+      eventId,
+    ],
+  );
+
+  return result;
+};
+
 module.exports = {
   getAllEvents,
   insertEvent,
   getAllEventsWithStatus,
   getEventById,
+  updateEvent,
 };
