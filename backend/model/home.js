@@ -103,18 +103,30 @@ const getArtistDetail = async (ophid) => {
 
 const getUpcomingSong = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT sr.song_id, sr.release_date `date`, sr.Song_name EventName, vd.image_url image FROM user_details ud LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE ud.ophid = ? AND overall_status = 'approved' ORDER BY `date`LIMIT 1",
+    `SELECT DISTINCT sre.*, sr.release_date, vd.image_url
+FROM song_release sre
+LEFT JOIN songs_register sr ON sre.song_id = sr.song_id
+LEFT JOIN video_details vd ON sr.song_id = vd.song_id
+WHERE sre.ophid = 'OPH-CAN-IA-07'
+  AND CURDATE() < sr.release_date
+ORDER BY sr.release_date
+LIMIT 1;
+`,
     [ophid]
   );
+
   let songMap = {};
   if (rows.length !== 0) {
     songMap = {
       song_id: rows[0].song_id,
-      dateTime: rows[0].date,
-      EventName: rows[0].EventName,
-      image: JSON.parse(rows[0].image),
+      dateTime: rows[0].release_date,
+      EventName: rows[0].song_name,
+      image: JSON.parse(rows[0].image_url),
     };
   }
+
+  console.log(songMap);
+
   return songMap;
 };
 

@@ -20,15 +20,13 @@ const SongDetails = () => {
   const { headers, ophid } = useArtist();
 
   const fetchSongDetails = async () => {
-
-    if(!headers || !headers.Authorization)
-    {
-      console.warn("Headers are not ready yet")
-      return
+    if (!headers || !headers.Authorization) {
+      console.warn("Headers are not ready yet");
+      return;
     }
 
     try {
-      const response = await axiosApi.get("/get-artist-song", {
+      const response = await axiosApi.get("/get-artist-song-details", {
         headers: headers,
         params: { ophid, song_id },
       });
@@ -38,38 +36,16 @@ const SongDetails = () => {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-
-    if(ophid)
-    {
-      fetchSongDetails()
+    if (ophid) {
+      fetchSongDetails();
     }
-
-  },[ophid, headers])
-
-  // Fetch data from API
-  // useEffect(() => {
-  //   axiosApi
-  //     .get("/content/upcoming-release-details", {
-  //       headers: headers,
-  //       params: { ophid, song_id },
-  //     })
-  //     .then((res) => {
-  //       if (res.data.success) {
-  //         setData(res.data.data);
-  //       } else {
-  //         setError("No data found");
-  //       }
-  //     })
-  //     .catch((err) => {
-  //       setError("Something went wrong!");
-  //       console.error(err);
-  //     })
-  //     .finally(() => setLoading(false));
-  // }, []);
+  }, [ophid, headers]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -78,14 +54,14 @@ const SongDetails = () => {
           <span className="flex items-center gap-2 ms-2">
             {" "}
             <FaSpinner className="text-yellow-500 animate-spin" />
-            Pending
+            In Progress
           </span>
         );
       case 1:
         return (
           <span className="flex items-center gap-2 ms-2">
             {" "}
-            <FaCheckCircle className="text-green-500" /> In Progress
+            <FaCheckCircle className="text-green-500" /> Completed
           </span>
         );
       case 2:
@@ -137,22 +113,19 @@ const SongDetails = () => {
     );
   }
 
-  const { content, primary_artist, secondary_artists, release_details } = data;
-  const latestDetail = (() => {
-    const valid = release_details.filter((r) => r.release_time);
-    if (!valid.length) return release_details[0] || {};
-    return valid.reduce((a, b) =>
-      new Date(b.release_time) > new Date(a.release_time) ? b : a
-    );
-  })();
+  const { content, secondary_artists, release_details } = data;
 
-  const releaseDate = new Date(content.release_date);
-  const isReleaseTomorrow = isTomorrow(releaseDate);
-  const daysUntilRelease = differenceInDays(
-    new Date(releaseDate).setHours(0, 0, 0, 0), // Normalize releaseDate to midnight
-    new Date().setHours(0, 0, 0, 0) // Normalize current date to midnight
-  );
+  const currentDate = new Date();
+  const songReleaseDate = new Date(content?.release_date);
 
+  const getCurrentTime = currentDate.getTime();
+  const getUpcomingSongTime = songReleaseDate.getTime();
+
+  const diffInMins = getUpcomingSongTime - getCurrentTime;
+
+  const daysUntilRelease = Math.ceil(diffInMins / (1000 * 60 * 60 * 24));
+
+  const isReleaseTomorrow = daysUntilRelease === 1;
   const bannerMessage = isReleaseTomorrow
     ? "Your Song Is Gonna Release Tomorrow"
     : `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
@@ -167,7 +140,7 @@ const SongDetails = () => {
         <p className="text-gray-200 text-sm sm:text-base mt-1 text-center sm:text-left">
           Get ready for the release of{" "}
           <span className="font-semibold text-white">
-            {content.name.toUpperCase()}
+            {content.song_name.toUpperCase()}
           </span>{" "}
           on{" "}
           <span className="text-[#ffffff]">
@@ -182,7 +155,7 @@ const SongDetails = () => {
       </h2>
       <div className="flex flex-col sm:flex-row items-center justify-between mb-8 space-y-6 sm:space-y-0">
         <img
-          src="https://images.pexels.com/photos/31327788/pexels-photo-31327788/free-photo-of-beautiful-cherry-blossom-branches-in-spring.jpeg"
+          src={JSON.parse(content.image_url)}
           alt="Album Cover"
           className="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-md shadow-xl hover:scale-105 transition-all duration-300 mx-auto sm:mx-0"
         />
@@ -191,7 +164,7 @@ const SongDetails = () => {
             {/* Title */}
             <div className="flex flex-col space-y-2">
               <h3 className="font-semibold text-[#00B8D9] text-lg">Title</h3>
-              <p className="text-gray-200">{content.name.toUpperCase()}</p>
+              <p className="text-gray-200">{content.song_name.toUpperCase()}</p>
             </div>
 
             {/* Primary Artist */}
@@ -200,7 +173,7 @@ const SongDetails = () => {
                 Primary Artist
               </h3>
               <p className="text-gray-200">
-                {primary_artist.stage_name} ({primary_artist.name})
+                {content.stage_name} ({content.full_name})
               </p>
             </div>
 
@@ -212,7 +185,7 @@ const SongDetails = () => {
               <p className="text-gray-200">
                 {secondary_artists
                   ? [...(secondary_artists.featuring || [])]
-                      .map((a) => a.name)
+                      .map((a) => a)
                       .join(", ") || "N/A"
                   : "N/A"}
               </p>
@@ -224,8 +197,8 @@ const SongDetails = () => {
               </h3>
               <p className="text-gray-200">
                 {secondary_artists
-                  ? [...(secondary_artists.lyrics || [])]
-                      .map((a) => a.name)
+                  ? [...(secondary_artists.lyricist || [])]
+                      .map((a) => a)
                       .join(", ") || "N/A"
                   : "N/A"}
               </p>
@@ -238,7 +211,7 @@ const SongDetails = () => {
               <p className="text-gray-200">
                 {secondary_artists
                   ? [...(secondary_artists.composer || [])]
-                      .map((a) => a.name)
+                      .map((a) => a)
                       .join(", ") || "N/A"
                   : "N/A"}
               </p>
@@ -251,7 +224,7 @@ const SongDetails = () => {
               <p className="text-gray-200">
                 {secondary_artists
                   ? [...(secondary_artists.producer || [])]
-                      .map((a) => a.name)
+                      .map((a) => a)
                       .join(", ") || "N/A"
                   : "N/A"}
               </p>
@@ -277,24 +250,20 @@ const SongDetails = () => {
             key={idx}
             className="flex items-center py-3 px-4 border-b border-gray-700 text-center"
           >
-            {/* Stream/Platform Name */}
             <div className="flex-1 border-r border-gray-600">
               <p className="font-semibold">{detail.stream_name}</p>
             </div>
 
-            {/* Release Time */}
             <div className="flex-1 border-r border-gray-600">
               <p>
                 {detail.release_time ? formatTime(detail.release_time) : "TBD"}
               </p>
             </div>
 
-            {/* Status Icon */}
             <div className="flex-1 border-r border-gray-600">
               {getStatusIcon(detail.status)}
             </div>
 
-            {/* Share Button */}
             <div className="flex-1">
               <button
                 onClick={() => {

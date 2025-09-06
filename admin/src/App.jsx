@@ -32,7 +32,7 @@ import Tvpublishing from "./view/dashboard/artistPortal/tvPublishing/tv";
 // import artistKPI from "./view/dashboard/artistPortal/artistKPI";
 import Alldata from "./view/dashboard/artistPortal/allData";
 import Content_Analysis from "./view/dashboard/artistPortal/contentAnalysis";
-import ContentRelease from "./view/dashboard/artistPortal/contentRelease";
+
 import Notifications from "./view/dashboard/artistPortal/notifications";
 import PaymentAll from "./view/dashboard/artistPortal/paymentAll";
 import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/Payment";
@@ -71,6 +71,9 @@ import ChangeDetailsIndividual from "./view/dashboard/artistPortal/ChangeDetails
 import NewSongsIndividual from "./view/dashboard/artistPortal/NewSongs";
 import CreateLearning from "./view/dashboard/websiteConfig/resource/CreateLearning";
 import WebsiteSettings from "./view/dashboard/websiteConfig/Settings";
+import ContentRelease from "./view/dashboard/artistPortal/contentRelease/ContentRelease";
+import ContentReleaseInd from "./view/dashboard/artistPortal/contentRelease/index";
+
 function App() {
   return (
     <AuthProvider>
@@ -95,6 +98,11 @@ function App() {
             path="/change-details/:ophid/:field"
             element={<ChangeDetailsIndividual />}
           />
+          <Route
+            path="/ContentRelease/:ophid/:songId"
+            element={<ContentReleaseInd /> }
+          />
+
           <Route
             path="/ContentManage/:ophid/:songId"
             element={<ContentManage />}
@@ -582,7 +590,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/platform"
             element={

@@ -110,6 +110,8 @@ const getUpcomingSongController = async (req ,res) => {
             })
         }
 
+        console.log("in upcomg");
+        
         const response = await getUpcomingSong(ophid)
 
         if(response)
