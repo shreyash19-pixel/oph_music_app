@@ -202,11 +202,159 @@ const updateSongStatus = async (songId, ophid, reason) => {
   }
 };
 
+// Update audio details
+const updateAudioDetails = async (songId, ophId, audioData) => {
+  const {
+    Song_name,
+    language,
+    genre,
+    sub_genre,
+    mood,
+    lyrics,
+    primary_artist,
+    audio_url,
+    reject_reason
+  } = audioData;
+
+  // Build dynamic query to only update provided fields
+  const updateFields = [];
+  const values = [];
+
+  if (Song_name !== undefined) {
+    updateFields.push('Song_name = ?');
+    values.push(Song_name || null);
+  }
+  if (language !== undefined) {
+    updateFields.push('language = ?');
+    values.push(language || null);
+  }
+  if (genre !== undefined) {
+    updateFields.push('genre = ?');
+    values.push(genre || null);
+  }
+  if (sub_genre !== undefined) {
+    updateFields.push('sub_genre = ?');
+    values.push(sub_genre || null);
+  }
+  if (mood !== undefined) {
+    updateFields.push('mood = ?');
+    values.push(mood || null);
+  }
+  if (lyrics !== undefined) {
+    updateFields.push('lyrics = ?');
+    values.push(lyrics || null);
+  }
+  if (primary_artist !== undefined) {
+    updateFields.push('primary_artist = ?');
+    values.push(primary_artist || null);
+  }
+  if (audio_url !== undefined) {
+    updateFields.push('audio_url = ?');
+    values.push(audio_url || null);
+  }
+  if (reject_reason !== undefined) {
+    updateFields.push('reject_reason = ?');
+    values.push(reject_reason || null);
+  }
+
+  if (updateFields.length === 0) {
+    throw new Error('No fields to update');
+  }
+
+  const query = `
+    UPDATE audio_details 
+    SET ${updateFields.join(', ')}
+    WHERE song_id = ? AND OPH_ID = ?
+  `;
+
+  values.push(songId, ophId);
+
+  const [result] = await db.execute(query, values);
+  return result;
+};
+
+// Update video details with image validation (max 3 images)
+const updateVideoDetails = async (songId, videoData) => {
+  const {
+    credits,
+    image_url,
+    video_url,
+    reject_reason
+  } = videoData;
+
+  // Build dynamic query to only update provided fields
+  const updateFields = [];
+  const values = [];
+
+  if (credits !== undefined) {
+    updateFields.push('credits = ?');
+    values.push(credits || null);
+  }
+  if (video_url !== undefined) {
+    updateFields.push('video_url = ?');
+    values.push(video_url || null);
+  }
+  if (reject_reason !== undefined) {
+    updateFields.push('reject_reason = ?');
+    values.push(reject_reason || null);
+  }
+  if (image_url !== undefined) {
+    // Validate image_url - ensure it's an array with max 3 images
+    let processedImageUrl = image_url;
+    if (Array.isArray(image_url)) {
+      if (image_url.length > 3) {
+        throw new Error('Maximum 3 images allowed for video section');
+      }
+      // Convert array to JSON string for storage
+      processedImageUrl = JSON.stringify(image_url);
+    } else if (typeof image_url === 'string') {
+      // If it's a string, try to parse it as JSON array
+      try {
+        const parsed = JSON.parse(image_url);
+        if (Array.isArray(parsed) && parsed.length > 3) {
+          throw new Error('Maximum 3 images allowed for video section');
+        }
+      } catch (e) {
+        // If it's not JSON, treat as single image
+        processedImageUrl = image_url;
+      }
+    }
+    
+    updateFields.push('image_url = ?');
+    values.push(processedImageUrl || null);
+  }
+
+  if (updateFields.length === 0) {
+    throw new Error('No fields to update');
+  }
+
+  const query = `
+    UPDATE video_details 
+    SET ${updateFields.join(', ')}
+    WHERE song_id = ?
+  `;
+
+  values.push(songId);
+
+  const [result] = await db.execute(query, values);
+  return result;
+};
+
+// Get current video details to check image count
+const getVideoDetails = async (songId) => {
+  const query = `SELECT image_url FROM video_details WHERE song_id = ?`;
+  const [rows] = await db.execute(query, [songId]);
+  return rows[0];
+};
+
 module.exports = {
   getAllSongs,
   getSongsByOphIdUnderReview,
   getAllApprovedSongs,
   updateSongSectionStatus,
   updateSongStatus,
-  getSongsByOphIdApproved
+  getSongsByOphIdApproved,
+  updateAudioDetails,
+  updateVideoDetails,
+  getVideoDetails
 };

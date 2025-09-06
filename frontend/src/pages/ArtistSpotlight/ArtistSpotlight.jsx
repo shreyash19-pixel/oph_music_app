@@ -327,25 +327,25 @@ export default function ArtistSpotlight() {
 
   const [notes, setNotes] = useState("No Note Provided Yet.");
 
-  // useEffect(() => {
-  //   const fetchNotes = async () => {
-  //     try {
-  //       if (!ophid || !headers) return;
-  //       const response = await axiosApi.get(`/notes/${ophid}`, {
-  //         headers,
-  //       });
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        if (!ophid || !headers) return;
+        const response = await axiosApi.get(`/notes/${ophid}`, {
+          headers,
+        });
 
-  //       if (response.data) {
-  //         setNotes(response.data[0]?.Notes || "No Note Provided Yet.");
-  //         console.log(response, "data");
-  //       }
-  //     } catch (err) {
-  //       console.error("Failed to fetch notes", err);
-  //     }
-  //   };
+        if (response.data) {
+          setNotes(response.data[0]?.Notes || "No Note Provided Yet.");
+          console.log(response, "data");
+        }
+      } catch (err) {
+        console.error("Failed to fetch notes", err);
+      }
+    };
 
-  //   fetchNotes();
-  // }, [ophid, headers]);
+    fetchNotes();
+  }, [ophid, headers]);
 
   const [professions, setProfessions] = useState([]);
 

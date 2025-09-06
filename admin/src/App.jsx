@@ -116,7 +116,24 @@ function App() {
             element={<Audio_Metrics />} // Adjusted to match the new export
           />
           <Route path="/AllEvents" element={<Events />} />
-          <Route path="/event_participants" element={<EventParticipation />} />
+          <Route
+            path="/event_participants"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                  ROLES.PROJECT_HEAD,
+                  ROLES.PROJECT_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
+                <EventParticipation />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/content/tv" element={<Tvpublishing />} />
           <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
