@@ -58,32 +58,42 @@ export default function KPIDashboard() {
      const metrics = response.data.s3Metrics || [];
      console.log(metrics);
 
-     // Map backend JSON to chart-friendly structure
-     const mappedData = metrics.map((item) => {
-       // Convert avg_view_duration "HH:MM:SS" → total seconds
+     // Merge into chart-friendly arrays
+     const performanceData = [];
+     const trafficData = [];
+     const songsData = [];
+     const audienceData = [];
+     const eventsData = [];
+     const durationData = [];
+
+     metrics.forEach((item) => {
        const [h, m, s] = item.avg_view_duration.split(":").map(Number);
        const totalSeconds = h * 3600 + m * 60 + s;
-
        const label = `${item.month} ${item.year}`; // e.g. "August 2025"
 
-       return {
-         performanceData: [
-           {
-             name: label,
-             Songs: item.song_count,
-             Traffic: item.user_traffic,
-             Performance: artistRank || null,
-           },
-         ],
-         trafficData: [{ name: label, value: item.user_traffic }],
-         songsData: [{ name: label, value: item.song_count }],
-         audienceData: [{ name: label, value: item.total_views }],
-         eventsData: [{ name: label, value: item.total_accepted_events }],
-         durationData: [{ name: label, value: totalSeconds }],
-       };
+       performanceData.push({
+         name: label,
+         Songs: item.song_count,
+         Traffic: item.user_traffic,
+         Performance: artistRank || null,
+       });
+
+       trafficData.push({ name: label, value: item.user_traffic });
+       songsData.push({ name: label, value: item.song_count });
+       audienceData.push({ name: label, value: item.total_views });
+       eventsData.push({ name: label, value: item.total_accepted_events });
+       durationData.push({ name: label, value: totalSeconds });
      });
 
-     setKpiData(mappedData[0] || {}); // single month data
+     setKpiData({
+       performanceData,
+       trafficData,
+       songsData,
+       audienceData,
+       eventsData,
+       durationData,
+     });
+
      setSelectedContentId(null);
      setSelectedContent(null);
      setLoading(false);
@@ -93,6 +103,7 @@ export default function KPIDashboard() {
      setLoading(false);
    }
  };
+
 
 
   useEffect(() => {
@@ -186,7 +197,7 @@ export default function KPIDashboard() {
               metric={`${(
                 kpiData?.trafficData.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0 
                 ) / 1000000
               ).toFixed(2)}M`}
               colors={["#22c55e"]}
