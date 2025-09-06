@@ -42,6 +42,24 @@ const getAllUserDetailsWithAnyStepUnderReview = async () => {
   return rows;
 };
 
+const getAllSales = async () => {
+  const [rows] = await db.execute(
+    `
+    SELECT *
+    FROM user_details
+    WHERE ophid IN (
+      SELECT ophid FROM user_details WHERE step_status = 'rejected'
+      INTERSECT
+      SELECT OPH_ID FROM professional_details WHERE step_status = 'rejected'
+      INTERSECT
+      SELECT OPH_ID FROM documentation_details WHERE step_status = 'rejected'
+    );
+
+    `
+  );
+  return rows;
+};
+
 const updateUserDetailsStatus = async (ophid, status, reason) => {
   const [rows] = await db.execute(
     `
@@ -89,4 +107,5 @@ module.exports = {
   updateUserDetailsStatus,
   updateProfessionalStatus,
   updateDocumentationStatus,
+  getAllSales,
 };

@@ -2,46 +2,48 @@ import React, { useState, useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
 import SearchableDynamicTable from "../../../../components/SearchableDynamicTable";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
-
 const Collab = () => {
   const [tableData, setTableData] = useState([]);
+  const [Loading, setLoading] = useState();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axiosApi.get("/kpi_score");
-        console.log("API Response:", res.data);
+ useEffect(() => {
+   const fetchData = async () => {
+     try {
+       const res = await axiosApi.get("/kpi_score");
+       console.log("API Response:", res.data);
 
-        const dataObj = res.data.data; // your object keyed by ophid
-        const flattened = [];
+       const dataObj = res.data.data; // object keyed by ophid
+       let flattened = Object.values(dataObj).map((user) => {
+         const { ophid, fullName, kpiScore, songs } = user;
+         return {
+           ophid,
+           fullName,
+           kpiScore: parseFloat(kpiScore), // ensure numeric
+           totalSongs: songs?.length || 0,
+         };
+       });
 
-        Object.values(dataObj).forEach((user) => {
-          const { ophid, fullName, kpiScore, songs } = user;
-          songs.forEach((song) => {
-            flattened.push({
-              ophid,
-              fullName,
-              kpiScore,
-              songId: song.songId,
-              songName: song.songName,
-              primaryArtist: song.primaryArtist,
-              audioUrl: song.audioUrl,
-              secondaryArtist: song.secondaryArtist,
-            });
-          });
-        });
+       // Sort by kpiScore (descending)
+       flattened.sort((a, b) => b.kpiScore - a.kpiScore);
 
-        setTableData(flattened);
-      } catch (err) {
-        console.error("Error fetching KPI score:", err);
-        setTableData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+       // Assign position (1-based)
+       flattened = flattened.map((user, index) => ({
+         ...user,
+         position: index + 1,
+       }));
 
-    fetchData();
-  }, []);
+       setTableData(flattened);
+     } catch (err) {
+       console.error("Error fetching KPI score:", err);
+       setTableData([]);
+     } finally {
+       setLoading(false);
+     }
+   };
+
+   fetchData();
+ }, []);
+
 
   return (
     <div className="flex h-screen bg-gray-50">
