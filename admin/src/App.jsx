@@ -87,8 +87,14 @@ function App() {
           <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
-          <Route path="/special-artist-songs/:ophid/:songId" element={<NewSongsIndividual />} />
-          <Route path="/change-details/:ophid/:field" element={ <ChangeDetailsIndividual />} />
+          <Route
+            path="/special-artist-songs/:ophid/:songId"
+            element={<NewSongsIndividual />}
+          />
+          <Route
+            path="/change-details/:ophid/:field"
+            element={<ChangeDetailsIndividual />}
+          />
           <Route
             path="/ContentManage/:ophid/:songId"
             element={<ContentManage />}
@@ -115,8 +121,10 @@ function App() {
           <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
           <Route path="/EventPayment/:ophid" element={<EventPayment />} />
-          <Route path="/SongPayment/:ophid/:song_id" element={<SongPayment />} />
-          
+          <Route
+            path="/SongPayment/:ophid/:song_id"
+            element={<SongPayment />}
+          />
 
           {/* <Route path="/home" element={<ProtectedRoute allowedRoles={Object.values(ROLES)}><Home /></ProtectedRoute>} /> */}
           {/* ---------- PROTECTED (SUPER_ADMIN) ---------- */}
@@ -196,7 +204,7 @@ function App() {
             }
           />
 
-<Route
+          <Route
             path="/Learning"
             element={
               <ProtectedRoute
@@ -577,7 +585,13 @@ function App() {
           <Route
             path="/PaymentAll"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
                 <PaymentAll />
               </ProtectedRoute>
             }
@@ -585,7 +599,13 @@ function App() {
           <Route
             path="/PaymentWithdraw"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
                 <PaymentWithdraw />
               </ProtectedRoute>
             }
@@ -626,7 +646,7 @@ function App() {
                   ROLES.SALES_HEAD,
                 ]}
               >
-                <ChangeDetails/>
+                <ChangeDetails />
               </ProtectedRoute>
             }
           />
@@ -642,12 +662,12 @@ function App() {
                   ROLES.SALES_HEAD,
                 ]}
               >
-                <NewSongs/>
+                <NewSongs />
               </ProtectedRoute>
             }
           />
 
-<Route
+          <Route
             path="/websiteConfig_Setting"
             element={
               <ProtectedRoute
@@ -659,7 +679,7 @@ function App() {
                   ROLES.SALES_HEAD,
                 ]}
               >
-                <WebsiteSettings/>
+                <WebsiteSettings />
               </ProtectedRoute>
             }
           />

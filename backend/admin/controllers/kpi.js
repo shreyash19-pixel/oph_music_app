@@ -162,7 +162,13 @@ const getTopArtistsController = async (req, res) => {
 
 const fetchAllKpiScores = async (req, res) => {
   try {
+    console.log("before");
+    
     const scores = await SongSocialMetrics.getAllKpiScores();
+
+    console.log(scores);
+    
+
     res.status(200).json({
       success: true,
       message: "Data fetched successfully",

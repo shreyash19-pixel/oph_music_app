@@ -22,6 +22,7 @@
             title="Tv Publishing"
             data={tableData}
             showStatusIndicator={false}
+            excludeColumns={"audio_url,video_url,created_at,updated_at"}
             pageSize={10}
             detailsUrl="/TvIndex"
           />

@@ -76,7 +76,6 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
   }
 };
 
-
 const updateSongPaymentSp = async (ophid, transactionId, FormData, status) => {
   let query = `CALL sp_update_sign_up_payment(?,?,?,?)`;
   const values = [ophid, transactionId, FormData, status];
@@ -204,6 +203,13 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         await db.execute(
           "DELETE FROM calender WHERE current_booking_date = ?",
           [release_date]
+        )
+      );
+
+      rows.push(
+        await db.execute(
+          "UPDATE sign_up_payment SET Status = ?, reject_reason = ?, release_date = ? WHERE release_date = ?",
+          [decision, isReasonEmpty, null, release_date]
         )
       );
     } else {

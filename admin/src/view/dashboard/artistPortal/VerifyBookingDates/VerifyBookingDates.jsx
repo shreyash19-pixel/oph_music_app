@@ -1,6 +1,7 @@
 import React from "react";
 import ArtistSidebar from "../../../../components/ArtistSidebar";
 import { useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
 import { useState } from "react";
@@ -54,8 +55,14 @@ const VerifyBookingDates = () => {
       });
 
       if (response.data.success) {
-        alert(`Date ${dec}`);
-
+        
+        if(dec === 'rejected')
+        {
+          toast.error("Date rejected")
+        }
+        else{
+          toast.success("Date approved")
+        }
         navigate("/calendar");
       }
     } catch (err) {

@@ -74,7 +74,6 @@
 ☐ Check all routes for specific roles and whether its is accessable or not (Aka Protected routes)
 ☐ NN,JS Make Admin pages for sales and accounting team.
 
-
 Updates
 ☐ SP In artist spotlight fix the songs sections to get the song name rather than artist name and also get total view form song_social_metrics
 ☐ Made modification to social_metrics table so tv publishing table will have to be updated too.
