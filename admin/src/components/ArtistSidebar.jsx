@@ -102,7 +102,6 @@ const artistLinks = [
     ],
   },
   { label: "All Data", route: "/data" },
-  { label: "Notifications", route: "/notifications" },
   {
     label: "Time Calendar",
     route: "/calendar",

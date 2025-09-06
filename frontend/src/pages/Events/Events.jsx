@@ -12,7 +12,7 @@ export default function Events() {
   const [id, setID] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [artistBookEvents, setArtistBookEvents] = useState([]);
   const [musicEvents, setMusicEvents] = useState([]);

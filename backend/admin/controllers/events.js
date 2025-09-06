@@ -13,18 +13,31 @@ const fetchAllEvents = async (req, res) => {
 
 const createEvent = async (req, res) => {
   try {
-    const { body, file } = req;
+    const { body, files } = req;
     console.log(req.body);
-    console.log(req.file);
+    console.log(req.files);
 
     let imageUrl = "";
-    if (file) {
-      imageUrl = await uploadToS3(file, "event_images");
+    let paymentQrUrl = "";
+    let paymentQrDiscountUrl = "";
+
+    if (files) {
+      if (files.image) {
+        imageUrl = await uploadToS3(files.image[0], "event_images");
+      }
+      if (files.payment_qr) {
+        paymentQrUrl = await uploadToS3(files.payment_qr[0], "event_images");
+      }
+      if (files.payment_qr_discount) {
+        paymentQrDiscountUrl = await uploadToS3(files.payment_qr_discount[0], "event_images");
+      }
     }
 
     const result = await Event.insertEvent({
       ...body,
       image: imageUrl,
+      payment_qr: paymentQrUrl,
+      payment_qr_discount: paymentQrDiscountUrl,
     });
 
     res.status(201).json({ message: "Event created successfully", result });
@@ -46,7 +59,7 @@ const fetchAllEventsWithStatus = async (req, res) => {
 
 const getEventById = async (req, res) => {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params.id || req.params.event_id;
     // basic validation: must be positive integer
     const eventId = parseInt(idParam, 10);
     if (!eventId || eventId <= 0) {
@@ -71,9 +84,65 @@ const getEventById = async (req, res) => {
   }
 };
 
+const updateEvent = async (req, res) => {
+  try {
+    const idParam = req.params.id || req.params.event_id;
+    const eventId = parseInt(idParam, 10);
+    if (!eventId || eventId <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event id" });
+    }
+
+    const { body, files } = req;
+    console.log("Update event body:", req.body);
+    console.log("Update event files:", req.files);
+
+    // First get the existing event to preserve the current images
+    const existingEvent = await Event.getEventById(eventId);
+    if (!existingEvent) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Event not found" });
+    }
+
+    let imageUrl = existingEvent.image; // Keep existing image by default
+    let paymentQrUrl = existingEvent.payment_qr; // Keep existing payment QR by default
+    let paymentQrDiscountUrl = existingEvent.payment_qr_discount; // Keep existing payment QR discount by default
+
+    if (files) {
+      if (files.image) {
+        // Only update image if a new file is uploaded
+        imageUrl = await uploadToS3(files.image[0], "event_images");
+      }
+      if (files.payment_qr) {
+        // Only update payment QR if a new file is uploaded
+        paymentQrUrl = await uploadToS3(files.payment_qr[0], "event_images");
+      }
+      if (files.payment_qr_discount) {
+        // Only update payment QR discount if a new file is uploaded
+        paymentQrDiscountUrl = await uploadToS3(files.payment_qr_discount[0], "event_images");
+      }
+    }
+
+    const result = await Event.updateEvent(eventId, {
+      ...body,
+      image: imageUrl,
+      payment_qr: paymentQrUrl,
+      payment_qr_discount: paymentQrDiscountUrl,
+    });
+
+    res.status(200).json({ success: true, message: "Event updated successfully", result });
+  } catch (err) {
+    console.error("Error updating event:", err);
+    res.status(500).json({ success: false, message: "Failed to update event" });
+  }
+};
+
 module.exports = {
   fetchAllEvents,
   createEvent,
   fetchAllEventsWithStatus,
   getEventById,
+  updateEvent,
 };

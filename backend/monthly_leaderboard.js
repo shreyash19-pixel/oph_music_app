@@ -1,4 +1,4 @@
-// monthly_song.js
+// monthly_leaderboard.js
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
@@ -11,7 +11,7 @@ const Backendaxios = axios.create({
   withCredentials: true
 });
 
-const S3_KEY = "monthly_kpi/song_metrics.json";
+const S3_KEY = "monthly_kpi/leaderboard.json";
 
 /*
 HOW TO RUN THIS FILE:
@@ -20,51 +20,46 @@ HOW TO RUN THIS FILE:
    cd backend
 
 2. Run the file directly with Node.js:
-   node monthly_song.js
+   node monthly_leaderboard.js
 
 3. Or if you have nodemon installed for development:
-   nodemon monthly_song.js
+   nodemon monthly_leaderboard.js
 
 4. Or run it as a module:
-   node -e "import('./monthly_song.js')"
+   node -e "import('./monthly_leaderboard.js')"
 
 Note: Make sure you have all required dependencies installed:
    npm install
 
 The file will:
-- Fetch song metrics data from /get-all_song_metrics endpoint
+- Fetch leaderboard data from /leaderboard endpoint
 - Process records and place them in both creation and update months
-- Preserve historical months while allowing current month updates
 - Save results to S3 bucket
 - Show detailed logging of what's happening
 */
 
-async function saveMonthlySongMetrics() {
+async function saveMonthlyLeaderboardMetrics() {
   try {
-    console.log("Fetching /get-all_song_metrics ...");
-    const response = await Backendaxios.get("/get-all_song_metrics");
+    console.log("Fetching /leaderboard ...");
+    const response = await Backendaxios.get("/leaderboard");
     const raw = response.data ?? response;
 
     console.log("Raw response:", typeof raw, Array.isArray(raw) ? "Array" : "Object");
     console.log(raw);
 
-    // ensure we have an array
-    const songs = Array.isArray(raw) ? raw : raw.data ?? raw.songs ?? [];
-    if (!Array.isArray(songs)) {
+    // ensure we have an array from the data property
+    const leaderboardData = Array.isArray(raw) ? raw : raw.data ?? raw.leaderboard ?? [];
+    if (!Array.isArray(leaderboardData)) {
       throw new Error("Expected API to return an array, got: " + JSON.stringify(raw));
     }
 
-    console.log(`Processing ${songs.length} song records`);
-
-    // filter out songs with empty audio_platform_name
-    const validSongs = songs.filter(song => song.audio_platform_name && song.audio_platform_name.trim() !== '');
-    console.log(`Filtered ${songs.length - validSongs.length} songs with empty audio_platform_name`);
+    console.log(`Processing ${leaderboardData.length} leaderboard records`);
 
     // try to get existing data from S3
     let existingData = {};
     try {
       // Try to get existing data from S3
-      console.log("Downloading existing data from S3...");
+      console.log("📥 Downloading existing data from S3...");
       const existingDataFromS3 = await readFromS3(S3_KEY);
       existingData = existingDataFromS3 || {};
       console.log("Successfully loaded existing data from S3");
@@ -103,27 +98,26 @@ async function saveMonthlySongMetrics() {
       console.log(`FIRST RUN: Will populate August 2025 with all historical data`);
     }
 
-    // Create a map of all existing song_id + audio_platform_name combinations across all months to prevent duplicates
-    const existingSongKeys = new Set();
+    // Create a map of all existing OPH_IDs across all months to prevent duplicates
+    const existingOPHIDs = new Set();
     Object.keys(updatedData).forEach(year => {
       Object.keys(updatedData[year]).forEach(month => {
-        updatedData[year][month].forEach(song => {
-          const songKey = `${song.song_id}_${song.audio_platform_name}`;
-          existingSongKeys.add(songKey);
+        updatedData[year][month].forEach(record => {
+          existingOPHIDs.add(record.OPH_ID);
         });
       });
     });
 
-    console.log(`Found ${existingSongKeys.size} existing song entries in current data structure`);
+    console.log(`Found ${existingOPHIDs.size} existing OPH_IDs in current data structure`);
 
     // First, organize all incoming data by both created_at and updated_at months
     // BUT ONLY process records that are relevant to current month or future months
     const organizedData = {};
     
-    validSongs.forEach((song) => {
+    leaderboardData.forEach((record) => {
       // Get both creation and update dates
-      const createdAt = new Date(song.created_at);
-      const updatedAt = new Date(song.updated_at);
+      const createdAt = new Date(record.createdAt);
+      const updatedAt = new Date(record.updatedAt);
       
       const createdYear = createdAt.getFullYear();
       const createdMonth = createdAt.getMonth();
@@ -132,8 +126,6 @@ async function saveMonthlySongMetrics() {
       const updatedYear = updatedAt.getFullYear();
       const updatedMonth = updatedAt.getMonth();
       const updatedMonthName = updatedAt.toLocaleString("en-US", { month: "long" });
-
-      const songKey = `${song.song_id}_${song.audio_platform_name}`;
 
       // Check if this record is relevant to current month or future months
       const isCreatedInCurrentOrFuture = (createdYear > currentYear) || 
@@ -144,12 +136,12 @@ async function saveMonthlySongMetrics() {
       // For first run, process all records including historical data
       // For subsequent runs, only process records that are relevant to current or future months
       if (!isFirstRun && !isCreatedInCurrentOrFuture && !isUpdatedInCurrentOrFuture) {
-        console.log(`SKIPPED: Song for song_id: ${song.song_id} (${song.audio_platform_name}) is from past months only - not processing`);
+        console.log(`SKIPPED: Record for OPH_ID: ${record.OPH_ID} is from past months only - not processing`);
         return; // Skip this record completely
       }
 
       if (isFirstRun) {
-        console.log(`FIRST RUN: Processing all records including historical data for song_id: ${song.song_id} (${song.audio_platform_name})`);
+        console.log(`FIRST RUN: Processing all records including historical data for OPH_ID: ${record.OPH_ID}`);
       }
 
       // Place record in creation month
@@ -157,15 +149,14 @@ async function saveMonthlySongMetrics() {
         if (!organizedData[createdYear]) organizedData[createdYear] = {};
         if (!organizedData[createdYear][createdMonthName]) organizedData[createdYear][createdMonthName] = [];
         
-        // Check if this song already exists in creation month
-        const existingInCreatedMonth = organizedData[createdYear][createdMonthName].some(existingSong => 
-          existingSong.song_id === song.song_id && 
-          existingSong.audio_platform_name === song.audio_platform_name
+        // Check if this OPH_ID already exists in creation month
+        const existingInCreatedMonth = organizedData[createdYear][createdMonthName].some(existingRecord => 
+          existingRecord.OPH_ID === record.OPH_ID
         );
         
         if (!existingInCreatedMonth) {
-          organizedData[createdYear][createdMonthName].push(song);
-          console.log(`Added song for song_id: ${song.song_id} (${song.audio_platform_name}) in ${createdMonthName} ${createdYear} (creation month)`);
+          organizedData[createdYear][createdMonthName].push(record);
+          console.log(`Added record for OPH_ID: ${record.OPH_ID} in ${createdMonthName} ${createdYear} (creation month)`);
         }
       }
 
@@ -174,18 +165,17 @@ async function saveMonthlySongMetrics() {
         if (!organizedData[updatedYear]) organizedData[updatedYear] = {};
         if (!organizedData[updatedYear][updatedMonthName]) organizedData[updatedYear][updatedMonthName] = [];
         
-        // Check if this song already exists in update month
-        const existingInUpdatedMonth = organizedData[updatedYear][updatedMonthName].some(existingSong => 
-          existingSong.song_id === song.song_id && 
-          existingSong.audio_platform_name === song.audio_platform_name
+        // Check if this OPH_ID already exists in update month
+        const existingInUpdatedMonth = organizedData[updatedYear][updatedMonthName].some(existingRecord => 
+          existingRecord.OPH_ID === record.OPH_ID
         );
         
         if (!existingInUpdatedMonth) {
-          organizedData[updatedYear][updatedMonthName].push(song);
-          console.log(`Added song for song_id: ${song.song_id} (${song.audio_platform_name}) in ${updatedMonthName} ${updatedYear} (update month)`);
+          organizedData[updatedYear][updatedMonthName].push(record);
+          console.log(`Added record for OPH_ID: ${record.OPH_ID} in ${updatedMonthName} ${updatedYear} (update month)`);
         }
       } else if ((isFirstRun || isCreatedInCurrentOrFuture) && (isFirstRun || isUpdatedInCurrentOrFuture)) {
-        console.log(`Song for song_id: ${song.song_id} (${song.audio_platform_name}) created and updated in same month (${createdMonthName} ${createdYear})`);
+        console.log(`Record for OPH_ID: ${record.OPH_ID} created and updated in same month (${createdMonthName} ${createdYear})`);
       }
     });
 
@@ -209,8 +199,8 @@ async function saveMonthlySongMetrics() {
           if (!updatedData[year][month]) updatedData[year][month] = [];
           
           // Get records that were updated in current month (not just created)
-          const currentMonthUpdatedRecords = organizedData[year][month].filter(song => {
-            const updatedAt = new Date(song.updated_at);
+          const currentMonthUpdatedRecords = organizedData[year][month].filter(record => {
+            const updatedAt = new Date(record.updatedAt);
             const updatedYear = updatedAt.getFullYear();
             const updatedMonth = updatedAt.getMonth();
             return updatedYear === currentYear && updatedMonth === currentMonth;
@@ -219,27 +209,26 @@ async function saveMonthlySongMetrics() {
           console.log(`Found ${currentMonthUpdatedRecords.length} records updated in current month (${month} ${year})`);
           
           // Update only the records that were actually updated in current month
-          currentMonthUpdatedRecords.forEach(updatedSong => {
-            const existingIndex = updatedData[year][month].findIndex(existingSong => 
-              existingSong.song_id === updatedSong.song_id && 
-              existingSong.audio_platform_name === updatedSong.audio_platform_name
+          currentMonthUpdatedRecords.forEach(updatedRecord => {
+            const existingIndex = updatedData[year][month].findIndex(existingRecord => 
+              existingRecord.OPH_ID === updatedRecord.OPH_ID
             );
             
             if (existingIndex !== -1) {
-              updatedData[year][month][existingIndex] = updatedSong;
-              console.log(`Updated song for song_id: ${updatedSong.song_id} (${updatedSong.audio_platform_name}) in current month (${month} ${year})`);
+              updatedData[year][month][existingIndex] = updatedRecord;
+              console.log(`Updated record for OPH_ID: ${updatedRecord.OPH_ID} in current month (${month} ${year})`);
             } else {
-              updatedData[year][month].push(updatedSong);
-              console.log(`Added new song for song_id: ${updatedSong.song_id} (${updatedSong.audio_platform_name}) in current month (${month} ${year})`);
+              updatedData[year][month].push(updatedRecord);
+              console.log(`Added new record for OPH_ID: ${updatedRecord.OPH_ID} in current month (${month} ${year})`);
             }
           });
           
           // Add any new records that were created in current month but not updated
-          const currentMonthCreatedRecords = organizedData[year][month].filter(song => {
-            const createdAt = new Date(song.created_at);
+          const currentMonthCreatedRecords = organizedData[year][month].filter(record => {
+            const createdAt = new Date(record.createdAt);
             const createdYear = createdAt.getFullYear();
             const createdMonth = createdAt.getMonth();
-            const updatedAt = new Date(song.updated_at);
+            const updatedAt = new Date(record.updatedAt);
             const updatedYear = updatedAt.getFullYear();
             const updatedMonth = updatedAt.getMonth();
             
@@ -248,50 +237,46 @@ async function saveMonthlySongMetrics() {
                    !(updatedYear === currentYear && updatedMonth === currentMonth);
           });
           
-          currentMonthCreatedRecords.forEach(newSong => {
-            const songExists = updatedData[year][month].some(existingSong => 
-              existingSong.song_id === newSong.song_id && 
-              existingSong.audio_platform_name === newSong.audio_platform_name
+          currentMonthCreatedRecords.forEach(newRecord => {
+            const recordExists = updatedData[year][month].some(existingRecord => 
+              existingRecord.OPH_ID === newRecord.OPH_ID
             );
             
-            if (!songExists) {
-              updatedData[year][month].push(newSong);
-              console.log(`Added new song for song_id: ${newSong.song_id} (${newSong.audio_platform_name}) in current month (${month} ${year}) - created but not updated`);
+            if (!recordExists) {
+              updatedData[year][month].push(newRecord);
+              console.log(`Added new record for OPH_ID: ${newRecord.OPH_ID} in current month (${month} ${year}) - created but not updated`);
             }
           });
         } else {
           // For future months, append new records without overwriting existing ones
           if (!updatedData[year][month]) updatedData[year][month] = [];
           
-          organizedData[year][month].forEach(newSong => {
-            const songExists = updatedData[year][month].some(existingSong => 
-              existingSong.song_id === newSong.song_id && 
-              existingSong.audio_platform_name === newSong.audio_platform_name
+          organizedData[year][month].forEach(newRecord => {
+            const recordExists = updatedData[year][month].some(existingRecord => 
+              existingRecord.OPH_ID === newRecord.OPH_ID
             );
             
-            if (!songExists) {
-              updatedData[year][month].push(newSong);
-              console.log(`Added new song for song_id: ${newSong.song_id} (${newSong.audio_platform_name}) in future month (${month} ${year})`);
+            if (!recordExists) {
+              updatedData[year][month].push(newRecord);
+              console.log(`Added new record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year})`);
             } else {
               // Update existing record only if the new one has a more recent updated_at
-              const existingSong = updatedData[year][month].find(existingSong => 
-                existingSong.song_id === newSong.song_id && 
-                existingSong.audio_platform_name === newSong.audio_platform_name
+              const existingRecord = updatedData[year][month].find(existingRecord => 
+                existingRecord.OPH_ID === newRecord.OPH_ID
               );
               
-              if (existingSong) {
-                const existingUpdatedAt = new Date(existingSong.updated_at);
-                const newUpdatedAt = new Date(newSong.updated_at);
+              if (existingRecord) {
+                const existingUpdatedAt = new Date(existingRecord.updatedAt);
+                const newUpdatedAt = new Date(newRecord.updatedAt);
                 
                 if (newUpdatedAt > existingUpdatedAt) {
-                  const existingIndex = updatedData[year][month].findIndex(existingSong => 
-                    existingSong.song_id === newSong.song_id && 
-                    existingSong.audio_platform_name === newSong.audio_platform_name
+                  const existingIndex = updatedData[year][month].findIndex(existingRecord => 
+                    existingRecord.OPH_ID === newRecord.OPH_ID
                   );
-                  updatedData[year][month][existingIndex] = newSong;
-                  console.log(`Updated song for song_id: ${newSong.song_id} (${newSong.audio_platform_name}) in future month (${month} ${year}) - newer data`);
+                  updatedData[year][month][existingIndex] = newRecord;
+                  console.log(`Updated record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year}) - newer data`);
                 } else {
-                  console.log(`PROTECTED: Kept existing song for song_id: ${newSong.song_id} (${newSong.audio_platform_name}) in future month (${month} ${year}) - existing data is newer`);
+                  console.log(`PROTECTED: Kept existing record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year}) - existing data is newer`);
                 }
               }
             }
@@ -310,7 +295,7 @@ async function saveMonthlySongMetrics() {
     console.log(`Total final records after merge: ${totalFinalRecords}`);
 
     // Create local backup file first
-    const localBackupPath = `./monthly_song_backup_${new Date().toISOString().split('T')[0]}.json`;
+    const localBackupPath = `./monthly_leaderboard_backup_${new Date().toISOString().split('T')[0]}.json`;
     console.log("Creating local backup file...");
     fs.writeFileSync(localBackupPath, JSON.stringify(updatedData, null, 2));
     console.log(`Local backup created: ${localBackupPath}`);
@@ -319,13 +304,13 @@ async function saveMonthlySongMetrics() {
     console.log("Uploading updated data to S3...");
     await saveToS3(S3_KEY, updatedData);
 
-    console.log(`Successfully updated song metrics file in S3`);
+    console.log(`Successfully updated leaderboard metrics file in S3`);
     console.log(`Historical months are preserved, only current month (${currentMonthName} ${currentYear}) can be updated`);
     console.log(`Local backup available at: ${localBackupPath}`);
   } catch (err) {
-    console.error("Error updating song metrics:", err.message);
+    console.error("Error updating leaderboard metrics:", err.message);
     console.error(err);
   }
 }
 
-saveMonthlySongMetrics();
+saveMonthlyLeaderboardMetrics();

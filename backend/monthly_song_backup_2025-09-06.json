@@ -1,0 +1,140 @@
+{
+  "2025": {
+    "August": [
+      {
+        "id": 8,
+        "song_id": 106,
+        "OPH_ID": "OPH-CAN-IA-036",
+        "song_name": "Lean On",
+        "audio_platform_name": "Spotify",
+        "audio_platform_streams": 0,
+        "audio_platform_revenue": "0.00",
+        "created_at": "2025-08-07T15:41:49.000Z",
+        "updated_at": "2025-09-01T17:41:49.000Z"
+      },
+      {
+        "id": 9,
+        "song_id": 100,
+        "OPH_ID": "OPH-CAN-IA-036",
+        "song_name": "Tere Naina",
+        "audio_platform_name": "Spotify",
+        "audio_platform_streams": 0,
+        "audio_platform_revenue": "0.00",
+        "created_at": "2025-08-07T15:41:49.000Z",
+        "updated_at": "2025-09-02T17:41:49.000Z"
+      },
+      {
+        "id": 40,
+        "song_id": 95,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Husn",
+        "audio_platform_name": "Spotify",
+        "audio_platform_streams": 312,
+        "audio_platform_revenue": "22.00",
+        "created_at": "2025-08-21T03:42:53.000Z",
+        "updated_at": "2025-08-21T04:19:48.000Z"
+      },
+      {
+        "id": 41,
+        "song_id": 95,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Husn",
+        "audio_platform_name": "Apple Music",
+        "audio_platform_streams": 2100,
+        "audio_platform_revenue": "0.00",
+        "created_at": "2025-08-21T03:43:15.000Z",
+        "updated_at": "2025-08-21T04:23:31.000Z"
+      },
+      {
+        "id": 42,
+        "song_id": 95,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Husn",
+        "audio_platform_name": "Jiosaavan",
+        "audio_platform_streams": 300,
+        "audio_platform_revenue": "20.00",
+        "created_at": "2025-08-21T16:34:42.000Z",
+        "updated_at": "2025-08-21T16:34:56.000Z"
+      },
+      {
+        "id": 43,
+        "song_id": 96,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Khamoshiyan",
+        "audio_platform_name": "Jiosaavan",
+        "audio_platform_streams": 1000,
+        "audio_platform_revenue": "21.00",
+        "created_at": "2025-08-21T18:12:42.000Z",
+        "updated_at": "2025-08-21T18:12:49.000Z"
+      },
+      {
+        "id": 44,
+        "song_id": 112,
+        "OPH_ID": "OPH-CAN-IA-07",
+        "song_name": "testing07",
+        "audio_platform_name": "zoom",
+        "audio_platform_streams": 1000,
+        "audio_platform_revenue": "20.00",
+        "created_at": "2025-08-24T08:01:41.000Z",
+        "updated_at": "2025-08-30T08:37:24.000Z"
+      },
+      {
+        "id": 46,
+        "song_id": 95,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Husn",
+        "audio_platform_name": "zoom",
+        "audio_platform_streams": 100,
+        "audio_platform_revenue": "22.00",
+        "created_at": "2025-08-24T10:16:24.000Z",
+        "updated_at": "2025-09-24T10:16:35.000Z"
+      }
+    ],
+    "September": [
+      {
+        "id": 8,
+        "song_id": 106,
+        "OPH_ID": "OPH-CAN-IA-036",
+        "song_name": "Lean On",
+        "audio_platform_name": "Spotify",
+        "audio_platform_streams": 0,
+        "audio_platform_revenue": "0.00",
+        "created_at": "2025-08-07T15:41:49.000Z",
+        "updated_at": "2025-09-01T17:41:49.000Z"
+      },
+      {
+        "id": 9,
+        "song_id": 100,
+        "OPH_ID": "OPH-CAN-IA-036",
+        "song_name": "Tere Naina",
+        "audio_platform_name": "Spotify",
+        "audio_platform_streams": 0,
+        "audio_platform_revenue": "0.00",
+        "created_at": "2025-08-07T15:41:49.000Z",
+        "updated_at": "2025-09-02T17:41:49.000Z"
+      },
+      {
+        "id": 46,
+        "song_id": 95,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Husn",
+        "audio_platform_name": "zoom",
+        "audio_platform_streams": 100,
+        "audio_platform_revenue": "22.00",
+        "created_at": "2025-08-24T10:16:24.000Z",
+        "updated_at": "2025-09-24T10:16:35.000Z"
+      },
+      {
+        "id": 42,
+        "song_id": 95,
+        "OPH_ID": "OPH-CAN-IA-033",
+        "song_name": "Husn",
+        "audio_platform_name": "Jiosaavan",
+        "audio_platform_streams": 500,
+        "audio_platform_revenue": "20.00",
+        "created_at": "2025-08-21T16:34:42.000Z",
+        "updated_at": "2025-09-21T16:34:56.000Z"
+      }
+    ]
+  }
+}
