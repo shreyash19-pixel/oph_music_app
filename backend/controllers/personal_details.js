@@ -52,7 +52,11 @@ const insertPersonalDetails = async (req, res) => {
       if (storeImgIntoBucket) {
         storageLocation = storeImgIntoBucket;
       }
+    } else if (req.body.existing_image_url) {
+      // If no new image is provided but existing image URL is sent, use the existing one
+      storageLocation = req.body.existing_image_url;
     }
+    // If neither new image nor existing image URL is provided, keep the current storageLocation (existingUser.personal_photo)
 
     // 🟢 Update in DB if data changed or new photo provided
     const updatedData = await user_details.setPersonalDetails(

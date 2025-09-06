@@ -9,7 +9,12 @@ const s3 = new AWS.S3({
 });
 
 const uploadToS3 = async (file, folder) => {
-  console.log(file[0]);
+  console.log("Uploading file to S3:", {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    folder: folder
+  });
   
   const params = {
     Bucket: process.env.S3_BUCKET,
@@ -20,6 +25,7 @@ const uploadToS3 = async (file, folder) => {
 
   try {
     const result = await s3.upload(params).promise();
+    console.log("S3 upload successful:", result.Location);
     return result.Location;
   } catch (error) {
     console.error('S3 upload error:', error);

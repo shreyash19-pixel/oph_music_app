@@ -25,13 +25,19 @@ const PaymentAll = () => {
   const canView = {
     events:
       role === ROLES.SUPER_ADMIN ||
-      role === ROLES.PROJECT_HEAD, 
+      role === ROLES.PROJECT_HEAD ||
+      role === ROLES.ACCOUNTS_HEAD ||
+      role === ROLES.ACCOUNTS_MEMBER,
     song:
       role === ROLES.SUPER_ADMIN ||
-      role === ROLES.ADMINISTRATIVE_HEAD ,
+      role === ROLES.ADMINISTRATIVE_HEAD ||
+      role === ROLES.ACCOUNTS_HEAD ||
+      role === ROLES.ACCOUNTS_MEMBER,
     booking:
       role === ROLES.SUPER_ADMIN ||
-      role === ROLES.CREATIVE_HEAD ,
+      role === ROLES.CREATIVE_HEAD ||
+      role === ROLES.ACCOUNTS_HEAD ||
+      role === ROLES.ACCOUNTS_MEMBER,
   };
 
   useEffect(() => {
