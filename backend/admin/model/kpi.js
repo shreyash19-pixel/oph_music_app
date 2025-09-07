@@ -3,32 +3,35 @@ const db = require("../../DB/connect");
 const getMetricsSummary = async () => {
   const [rows] = await db.execute(`
     SELECT
-    kpi.OPH_ID,
-    kpi.song_count,
-    kpi.total_views,
-    kpi.avg_view_duration,
-    kpi.total_accepted_events,
-    kpi.user_traffic,
-    kpi.score,
-    kpi.created_at,
-    kpi.updated_at,
-    IFNULL(ud.traffic, 0) AS user_details_traffic,
-    IFNULL(ep.accepted_event_count, 0) AS participant_event_count
+    sm.OPH_ID,
+    COUNT(DISTINCT sm.song_id) AS song_count,
+    SUM(sm.youtube_views) AS total_views,
+    SEC_TO_TIME(
+        ROUND(
+            SUM(TIME_TO_SEC(sm.youtube_avg_view_duration)) / COUNT(DISTINCT sm.song_id)
+        )
+    ) AS avg_view_duration,
+    SUM(sm.insta_engagement) AS total_insta_engagement,
+    IFNULL(ud.traffic, 0) AS user_traffic,
+    IFNULL(ep.accepted_event_count, 0) AS total_accepted_events
 FROM
-    OphData.KPI_score kpi
+    OphData.song_social_metrics sm
 LEFT JOIN (
     SELECT
         OPH_ID,
         COUNT(*) AS accepted_event_count
     FROM
-        OphData.event_participants
+        event_participants
     WHERE
         status = 'accepted'
     GROUP BY
         OPH_ID
-) ep ON kpi.OPH_ID = ep.OPH_ID
+) ep ON sm.OPH_ID = ep.OPH_ID
 LEFT JOIN
-    OphData.user_details ud ON kpi.OPH_ID = ud.ophid;
+    user_details ud ON sm.OPH_ID = ud.ophid
+GROUP BY
+    sm.OPH_ID;
+
 `);
 
   return rows;

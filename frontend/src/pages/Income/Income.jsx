@@ -1,6 +1,5 @@
-import React,{ useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchIncome, getWithDrawHistory, postWithdraw } from "../../slice/income";
+import React from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useArtist } from "../auth/API/ArtistContext";
 import axiosApi from "../../conf/axios";
 import { toast } from "react-toastify";
@@ -12,7 +11,61 @@ export default function IncomeWithdrawal() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ type: "", message: "" });
+
+  // Fetch income data using the /get_income/:ophid route
+  const fetchIncome = useCallback(async () => {
+    if (!ophid) return;
+    
+    try {
+      setLoading(true);
+      const response = await axiosApi.get(`/get_income/${ophid}`);
+      
+      if (response.data && response.data.success && response.data.data) {
+        const incomeData = response.data.data[0]; // Get first result from array
+        // Use total_revenue as the income value
+        setIncome({
+          income: incomeData.total_revenue,
+          // Additional data from the API response
+          distinct_song_count: incomeData.distinct_song_count,
+          total_song_count: incomeData.total_song_count,
+          total_youtube_revenue: incomeData.total_youtube_revenue,
+          total_audio_revenue: incomeData.total_audio_revenue
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch income:", err);
+      toast.error("Failed to fetch income data");
+    } finally {
+      setLoading(false);
+    }
+  }, [ophid]);
+
+  // Fetch bank details using the /auth/documentation-details route
+  const fetchBankDetails = useCallback(async () => {
+    if (!ophid) return;
+    
+    try {
+      const response = await axiosApi.get(`/auth/documentation-details?ophid=${ophid}`, {
+        headers: { ...headers }
+      });
+      
+      if (response.data && response.data.success && response.data.data) {
+        const bankData = response.data.data[0]; // Get first result from array
+        // Update income state with bank details
+        setIncome(prevIncome => ({
+          ...prevIncome,
+          bank_name: bankData.BankName || null,
+          account_holder_name: bankData.AccountHolderName || null,
+          account_number: bankData.AccountNumber || null,
+          ifsc_code: bankData.IFSCCode || null,
+          agreement_accepted: bankData.AgreementAccepted || null
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch bank details:", err);
+      // Don't show error toast for bank details as it's not critical
+    }
+  }, [ophid, headers]);
 
   // const { income, history, loading, isError, errorMessage } = useSelector((state) => state.income);
   // const dispatch = useDispatch();
@@ -120,10 +173,10 @@ export default function IncomeWithdrawal() {
      );
 
       if (res.status === 201) {
-        toast.success("Withdrawal request submitted successfully")
-       setStatus({ type: "success", message: "Withdrawal request submitted" });
-       setWithdrawAmount("");
-      //  fetchHistory(); // refresh
+        toast.success("Withdrawal request submitted successfully");
+        setWithdrawAmount("");
+        // Refresh income data after successful withdrawal
+        await fetchIncome();
      } else {
        throw new Error("Withdrawal failed");
      }
@@ -134,10 +187,19 @@ export default function IncomeWithdrawal() {
   };
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       if (!ophid) return; // wait until ophID is available
 
       try {
+        setLoading(true);
+        
+        // Fetch income data
+        await fetchIncome();
+        
+        // Fetch bank details
+        await fetchBankDetails();
+        
+        // Fetch withdrawal history
         const response = await axiosApi.get(
           `/getWithdraw?ophID=${ophid}`
         );
@@ -145,18 +207,15 @@ export default function IncomeWithdrawal() {
         const withdrawals = response.data.data;
         setHistory(withdrawals);
       } catch (err) {
-        console.error("Failed to fetch withdrawal history:", err);
-        setRequestStatus({
-          message: err.message || "Failed to fetch withdrawal history",
-          status: "Failed",
-        });
+        console.error("Failed to fetch data:", err);
+        toast.error(err.message || "Failed to fetch data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchHistory();
-  }, [ophid]);
+    fetchData();
+  }, [ophid, fetchIncome, fetchBankDetails]);
 
   
   // useEffect(() => {
@@ -208,7 +267,6 @@ export default function IncomeWithdrawal() {
     return <div className="min-h-[calc(100vh-70px)] flex items-center justify-center">Loading...</div>;
   }
 
-   const randomWithdrawNumber = Math.floor(1000 + Math.random() * 9000);
 
   // if (isError) {
   //   return (
@@ -230,22 +288,31 @@ export default function IncomeWithdrawal() {
           <div className="space-y-1">
             <p className="text-sm text-purple-200">Available Amount:</p>
             {income ? (
-              <p className="text-2xl font-bold">{income.income}</p>
+              <p className="text-2xl font-bold">${parseFloat(income.income).toFixed(2)}</p>
             ) : (
-              ""
+              <p className="text-2xl font-bold">$0.00</p>
             )}
           </div>
+          {income && (
+            <div className="mt-4 text-sm text-purple-200">
+              <p>Total Songs: {income.total_song_count}</p>
+              <p>YouTube Revenue: ${parseFloat(income.total_youtube_revenue).toFixed(2)}</p>
+              <p>Audio Revenue: ${parseFloat(income.total_audio_revenue).toFixed(2)}</p>
+            </div>
+          )}
         </div>
 
         {/* Bank Details */}
         <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-cyan-400">Bank Details</h3>
+          
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
               <label className="text-sm text-gray-400">Bank Name:</label>
               {income && income.bank_name ? (
                 <p className="text-cyan-300">{income.bank_name}</p>
               ) : (
-                <p>Not Available</p>
+                <p className="text-gray-500">Not Available</p>
               )}
             </div>
           </div>
@@ -253,12 +320,12 @@ export default function IncomeWithdrawal() {
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
               <label className="text-sm text-gray-400">
-                Bank Account Holder:
+                Account Holder:
               </label>
-              {income && income.bank_acc_name ? (
-                <p className="text-cyan-300">{income.bank_acc_name}</p>
+              {income && income.account_holder_name ? (
+                <p className="text-cyan-300">{income.account_holder_name}</p>
               ) : (
-                <p>Not Available</p>
+                <p className="text-gray-500">Not Available</p>
               )}
             </div>
           </div>
@@ -266,26 +333,27 @@ export default function IncomeWithdrawal() {
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
               <label className="text-sm text-gray-400">
-                Bank Account Number:
+                Account Number:
               </label>
-              {income && income.masked_acc_number ? (
-                <p className="text-cyan-300">{income.masked_acc_number}</p>
+              {income && income.account_number ? (
+                <p className="text-cyan-300">{income.account_number}</p>
               ) : (
-                <p>Not Available</p>
+                <p className="text-gray-500">Not Available</p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
-              <label className="text-sm text-gray-400">Bank IFSC Code:</label>
-              {income && income.bank_ifsc_code ? (
-                <p className="text-cyan-300">{income.bank_ifsc_code}</p>
+              <label className="text-sm text-gray-400">IFSC Code:</label>
+              {income && income.ifsc_code ? (
+                <p className="text-cyan-300">{income.ifsc_code}</p>
               ) : (
-                <p>Not Available</p>
+                <p className="text-gray-500">Not Available</p>
               )}
             </div>
           </div>
+
         </div>
 
         {/* Withdrawal Form */}
