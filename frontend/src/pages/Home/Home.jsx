@@ -3,8 +3,8 @@ import EventsNewReleases from "./components/EventsNewReleases/EventsNewReleases"
 import ArtistRankingSection from "./components/ArtistRankingSection/ArtistRankingSection";
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
-import getToken from "../../utils/getToken";
 import { useArtist } from "../auth/API/ArtistContext";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 function Home() {
   const artistsdata = {};
@@ -22,7 +22,7 @@ function Home() {
     try {
       const response = await axiosApi.get("/get-upcoming-event", {
         headers: headers,
-        params: {ophid}
+        params: { ophid },
       });
 
       if (response.data.success) {
@@ -72,6 +72,17 @@ function Home() {
 
   return (
     <div>
+      {/* ✅ Navbar placed at the top */}
+      <div className="flex justify-end items-center p-4">
+        <NavbarRight
+          profileImage="/images/profile.png" // replace with your image path
+          onDocsClick={() => console.log("Docs clicked")}
+          onBellClick={() => console.log("Notifications clicked")}
+          onProfileClick={() => console.log("Profile clicked")}
+        />
+      </div>
+
+      {/* ✅ Page content */}
       {isLoading && (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
