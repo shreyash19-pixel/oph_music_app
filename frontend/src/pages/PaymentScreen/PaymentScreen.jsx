@@ -10,6 +10,8 @@ const PaymentScreen = () => {
   const { logout, headers, ophid } = useArtist();
   const navigate = useNavigate();
   const location = useLocation();
+  console.log(location);
+
   const [trans, setTrans] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,15 +37,15 @@ const PaymentScreen = () => {
     try {
       setLoading(true);
       const response = await axiosApi.get("/get_costing");
-      
+
       if (response.data.success) {
         // Handle both array and single object responses
-        const costingData = Array.isArray(response.data.data) 
-          ? response.data.data 
+        const costingData = Array.isArray(response.data.data)
+          ? response.data.data
           : [response.data.data];
-        
+
         setCostingData(costingData);
-        
+
         // Match the 'from' field with costing data 'name' field
         // If lyricalVid is true, use "lyrical video" data regardless of 'from' value
         // If no 'from' is provided, default to "Registration"
@@ -72,17 +74,27 @@ const PaymentScreen = () => {
             // "song registration" stays as "song registration"
           }
         }
-        
-        const matched = costingData.find(item => 
-          item.name && item.name.toLowerCase() === searchName
+
+        const matched = costingData.find(
+          (item) => item.name && item.name.toLowerCase() === searchName
         );
-        
+
         if (matched) {
           setMatchedCosting(matched);
-          console.log(`Using costing data for: ${from || 'default'} (lyricalVid: ${lyricalVid}) -> ${matched.name} (Amount: ${matched.cost})`);
+          console.log(
+            `Using costing data for: ${
+              from || "default"
+            } (lyricalVid: ${lyricalVid}) -> ${matched.name} (Amount: ${
+              matched.cost
+            })`
+          );
         } else {
           // Fallback to default amounts if no match found
-          console.warn(`No costing data found for: ${from || 'default'} (lyricalVid: ${lyricalVid}) - using fallback amounts`);
+          console.warn(
+            `No costing data found for: ${
+              from || "default"
+            } (lyricalVid: ${lyricalVid}) - using fallback amounts`
+          );
         }
       }
     } catch (err) {
@@ -99,13 +111,17 @@ const PaymentScreen = () => {
       // Parse cost as number (handles string format like "799.00")
       return parseFloat(matchedCosting.cost);
     }
-    
+
     // Fallback to hardcoded amounts if no costing data match
     if (lyricalVid) {
       return 499; // Lyrical video amount
     } else if (!from || from === "Registration") {
       return 500; // Registration amount (default or explicit)
-    } else if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") {
+    } else if (
+      from === "Song Repayment" ||
+      from === "Song Registration" ||
+      from === "Date booking"
+    ) {
       return 799; // Song Registration amount (used by multiple services)
     } else if (from === "Event Registeration") {
       return 1000;
@@ -150,8 +166,9 @@ const PaymentScreen = () => {
         from: from,
         song_id: song_id,
         event_id: event_id,
-        release_date: location.state.date || location.state.booking_date || null,
-        lyricalVid: lyricalVid
+        release_date:
+          location.state.date || location.state.booking_date || null,
+        lyricalVid: lyricalVid,
       };
 
       const apiPath =
@@ -204,8 +221,10 @@ const PaymentScreen = () => {
             });
           }
         }
-      } else if (response.data.success && from == "Song Registration") {
+      } else if (response.data.success && from == "Song Registration" && location.state.project_type !== "paid in advance") {
         {
+          console.log("in song", location.state.project_type);
+
           const CalenderRes = await axiosApi.post(
             "/booking",
             {
@@ -227,6 +246,37 @@ const PaymentScreen = () => {
               },
             });
           }
+        }
+      } else if (
+        response.data.success &&
+        from == "Song Registration" &&
+        location.state.project_type === "paid in advance"
+      ) {
+        console.log("in sdasdsd");
+        
+        const response = await axiosApi.post(
+          "/insert-calender-song-project",
+          {
+            oph_id: ophid,
+            song_name: location.state.songName,
+            project_type: location.state.project_type,
+          },
+          {
+            headers: {
+              ...headers,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.data.success) {
+          navigate("/dashboard/success", {
+            state: {
+              heading: "Your Song Registration has been done successfully!",
+              btnText: "Register another song",
+              redirectTo: "/dashboard/upload-song",
+            },
+          });
         }
       } else if (response.data.success && from === "Song Repayment") {
         navigate("/dashboard/success", {
@@ -259,20 +309,20 @@ const PaymentScreen = () => {
             });
           }
         }
-      } else if (response.data.success && from === "Special artist song registration") {
+      } else if (
+        response.data.success &&
+        from === "Special artist song registration"
+      ) {
         {
-          navigate('/dashboard/pending', {
+          navigate("/dashboard/pending", {
             state: {
               heading: "Your request is under review",
               btnText: "Back to Home",
-              redirectTo: "/dashboard"
-            }
-          })
-
+              redirectTo: "/dashboard",
+            },
+          });
         }
-      }
-
-      else if (response.data.success) {
+      } else if (response.data.success) {
         const path = `/auth/create-profile/personal-details`;
         navigate(path);
       }
@@ -301,7 +351,8 @@ const PaymentScreen = () => {
       {loading && <Loading />}
       <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center p-8">
         <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
-          {heading} <span className="text-cyan-400">₹{getDisplayAmount()}/-</span>
+          {heading}{" "}
+          <span className="text-cyan-400">₹{getDisplayAmount()}/-</span>
         </h1>
 
         <div className="flex flex-col items-center gap-6 max-w-md w-full">
@@ -358,4 +409,3 @@ const PaymentScreen = () => {
 };
 
 export default PaymentScreen;
-
