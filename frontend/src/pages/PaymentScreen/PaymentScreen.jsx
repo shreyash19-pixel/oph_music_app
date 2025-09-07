@@ -265,6 +265,7 @@ const PaymentScreen = () => {
             oph_id: ophid,
             song_name: location.state.songName,
             project_type: location.state.project_type,
+            release_date: location.state.booking_date
           },
           {
             headers: {
