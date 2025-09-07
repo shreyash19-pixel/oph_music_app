@@ -20,6 +20,8 @@ const PaymentScreen = () => {
   const from = location.state.from;
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
+  const output_user = location.state.output_user;
+  const user_type = location.state.user_type;
   const [oph_id, setoph_id] = useState("");
 
   const {
@@ -36,67 +38,111 @@ const PaymentScreen = () => {
   const fetchCostingData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosApi.get("/get_costing");
-
-      if (response.data.success) {
-        // Handle both array and single object responses
-        const costingData = Array.isArray(response.data.data)
-          ? response.data.data
-          : [response.data.data];
-
-        console.log(costingData);
-
-        setCostingData(costingData);
-
-        // Match the 'from' field with costing data 'name' field
-        // If lyricalVid is true, use "lyrical video" data regardless of 'from' value
-        // If no 'from' is provided, default to "Registration"
-        // Handle "Registration" and "Song Registration" as separate cases
-        let searchName;
-        if (lyrical_services) {
-          searchName = "lyrical video";
-        } else {
-          // Handle case when no 'from' is provided - default to Registration
-          if (!from) {
-            searchName = "registration";
-          } else {
-            searchName = from.toLowerCase();
-            if (searchName === "song repayment") {
-              searchName = "song registration";
-            }
-            // Date booking also uses Song Registration data
-            if (searchName === "date booking") {
-              searchName = "song registration";
-            }
-            // Handle "Release date change" as a separate case
-            if (searchName === "release date change") {
-              searchName = "release date change";
-            }
-            // "registration" stays as "registration"
-            // "song registration" stays as "song registration"
-          }
-        }
-
-        const matched = costingData.find(
-          (item) => item.name && item.name.toLowerCase() === searchName
-        );
-
-        if (matched) {
-          setMatchedCosting(matched);
+      
+      // Check if this is an event registration
+      if (from === "Event Registeration" && event_id) {
+        const response = await axiosApi.get(`/event/${event_id}`);
+        
+        if (response.data.success) {
+          const eventData = response.data.data;
+          
+          // Set output_user to "outside user"
+          const isOutsideUser = "outside user";
+          
+          // Calculate amount based on output_user
+          const registrationFee = eventData.registrationFee_normal;
+          const finalAmount = (output_user === true || output_user === 1) 
+            ? registrationFee  // Full amount for outside users
+            : registrationFee / 2;  // Half amount for regular users
+          
+          // Create a mock costing object for event data
+          const eventCosting = {
+            name: "Event Registeration",
+            cost: finalAmount,
+            qr_image_path: (output_user === true || output_user === 1)
+              ? eventData.payment_qr || "/qr.png"
+              : eventData.payment_qr_discount || "/qr.png"
+          };
+          
+          setMatchedCosting(eventCosting);
           console.log(
-            `Using costing data for: ${
-              from || "default"
-            } (lyricalVid: ${lyrical_services}) -> ${matched.name} (Amount: ${
-              matched.cost
-            })`
+            `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${isOutsideUser})`
           );
-        } else {
-          // Fallback to default amounts if no match found
-          console.warn(
-            `No costing data found for: ${
-              from || "default"
-            } (lyricalVid: ${lyrical_services}) - using fallback amounts`
+        }
+      } else {
+        // Regular costing data fetch for other services
+        const response = await axiosApi.get("/get_costing");
+
+        if (response.data.success) {
+          // Handle both array and single object responses
+          const costingData = Array.isArray(response.data.data)
+            ? response.data.data
+            : [response.data.data];
+
+          console.log(costingData);
+
+          setCostingData(costingData);
+
+          // Match the 'from' field with costing data 'name' field
+          // If lyricalVid is true, use "lyrical video" data regardless of 'from' value
+          // If no 'from' is provided, default to "Registration"
+          // Handle "Registration" and "Song Registration" as separate cases
+          let searchName;
+          if (lyrical_services) {
+            // Check if form (project_type) is "paid in advance" for lyrics service
+            if (location.state.project_type === "paid in advance") {
+              searchName = "lyrics service";
+            } else {
+              searchName = "lyrical video";
+            }
+          } else {
+            // Handle case when no 'from' is provided - default to Registration
+            if (!from) {
+              // Check if user_type is special artist
+              if (user_type === "special artist") {
+                searchName = "special artist registration";
+              } else {
+                searchName = "registration";
+              }
+            } else {
+              searchName = from.toLowerCase();
+              if (searchName === "song repayment") {
+                searchName = "song registration";
+              }
+              // Date booking also uses Song Registration data
+              if (searchName === "date booking") {
+                searchName = "song registration";
+              }
+              // Handle "Release date change" as a separate case
+              if (searchName === "release date change") {
+                searchName = "release date change";
+              }
+              // "registration" stays as "registration"
+              // "song registration" stays as "song registration"
+            }
+          }
+
+          const matched = costingData.find(
+            (item) => item.name && item.name.toLowerCase() === searchName
           );
+
+          if (matched) {
+            setMatchedCosting(matched);
+            console.log(
+              `Using costing data for: ${
+                from || "default"
+              } (lyricalVid: ${lyrical_services}) -> ${matched.name} (Amount: ${
+                matched.cost
+              })`
+            );
+          } else {
+            // Fallback to default amounts if no match found
+            console.warn(
+              `No costing data found for: ${
+                from || "default"
+              } (lyricalVid: ${lyrical_services}) - using fallback amounts`
+            );
+          }
         }
       }
     } catch (err) {
@@ -105,7 +151,7 @@ const PaymentScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, lyrical_services]);
+  }, [from, lyrical_services, event_id]);
 
   // Function to get the appropriate amount based on the matched costing data or fallback
   const getDisplayAmount = () => {

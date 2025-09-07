@@ -288,16 +288,16 @@ export default function IncomeWithdrawal() {
           <div className="space-y-1">
             <p className="text-sm text-purple-200">Available Amount:</p>
             {income ? (
-              <p className="text-2xl font-bold">${parseFloat(income.income).toFixed(2)}</p>
+              <p className="text-2xl font-bold">₹{parseFloat(income.income).toFixed(2)}</p>
             ) : (
-              <p className="text-2xl font-bold">$0.00</p>
+              <p className="text-2xl font-bold">₹0.00</p>
             )}
           </div>
           {income && (
             <div className="mt-4 text-sm text-purple-200">
               <p>Total Songs: {income.total_song_count}</p>
-              <p>YouTube Revenue: ${parseFloat(income.total_youtube_revenue).toFixed(2)}</p>
-              <p>Audio Revenue: ${parseFloat(income.total_audio_revenue).toFixed(2)}</p>
+              <p>YouTube Revenue: ₹{parseFloat(income.total_youtube_revenue).toFixed(2)}</p>
+              <p>Audio Revenue: ₹{parseFloat(income.total_audio_revenue).toFixed(2)}</p>
             </div>
           )}
         </div>
