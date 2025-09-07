@@ -99,7 +99,7 @@ const PaymentScreen = () => {
             // Handle case when no 'from' is provided - default to Registration
             if (!from || from === 'Registration') {
               // Check if user_type is special artist
-              if (user_type === "special artist") {
+              if (user_type === "Special artist") {
                 searchName = "special artist registration";
               } else {
                 searchName = "registration";
