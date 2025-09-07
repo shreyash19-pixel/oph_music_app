@@ -37,5 +37,68 @@ const getAllUserDetails = async () => {
   return rows;
 };
 
-module.exports ={getUserDetailsByOphId,getDocumentationDetailsByOphId,getProfessionalDetailsByOphId,getAllUserDetails
+
+const updateUserDetails = async (ophid, data) => {
+  // Build the SET clause dynamically
+  const fields = Object.keys(data);
+  const values = Object.values(data);
+  
+  if (fields.length === 0) {
+    throw new Error('No fields to update');
+  }
+  
+  const setClause = fields.map(field => `${field} = ?`).join(', ');
+  const query = `UPDATE user_details SET ${setClause} WHERE ophid = ?`;
+  
+  const [rows] = await db.execute(query, [...values, ophid]);
+  return rows;
+};
+
+const updateProfessionalDetails = async (ophid, data) => {
+  console.log("Database update - OPH_ID:", ophid);
+  console.log("Database update - Data:", data);
+  
+  // Build the SET clause dynamically
+  const fields = Object.keys(data);
+  const values = Object.values(data);
+  
+  if (fields.length === 0) {
+    throw new Error('No fields to update');
+  }
+  
+  const setClause = fields.map(field => `${field} = ?`).join(', ');
+  const query = `UPDATE professional_details SET ${setClause} WHERE OPH_ID = ?`;
+  
+  console.log("Database query:", query);
+  console.log("Database values:", [...values, ophid]);
+  
+  const [rows] = await db.execute(query, [...values, ophid]);
+  console.log("Database update result:", rows);
+  return rows;
+};
+
+
+const updateDocumentationDetails = async (ophid, data) => {
+  console.log("Database update - OPH_ID:", ophid);
+  console.log("Database update - Data:", data);
+  
+  // Build the SET clause dynamically
+  const fields = Object.keys(data);
+  const values = Object.values(data);
+  
+  if (fields.length === 0) {
+    throw new Error('No fields to update');
+  }
+  
+  const setClause = fields.map(field => `${field} = ?`).join(', ');
+  const query = `UPDATE documentation_details SET ${setClause} WHERE OPH_ID = ?`;
+  
+  console.log("Database query:", query);
+  console.log("Database values:", [...values, ophid]);
+  
+  const [rows] = await db.execute(query, [...values, ophid]);
+  console.log("Database update result:", rows);
+  return rows;
+};
+module.exports ={getUserDetailsByOphId,getDocumentationDetailsByOphId,getProfessionalDetailsByOphId,getAllUserDetails,updateUserDetails,updateProfessionalDetails,updateDocumentationDetails
 }

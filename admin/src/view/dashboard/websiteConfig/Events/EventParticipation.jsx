@@ -10,11 +10,14 @@ const EventParticipation = () => {
    const [filteredData, setFilteredData] = useState([]);
    const [loading, setLoading] = useState(true);
    const [enrichedData, setEnrichedData] = useState([]);
+   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
         // Fetch events first
         const eventsRes = await axiosApi.get("/events");
         const eventsData = eventsRes.data.data || [];
@@ -46,6 +49,7 @@ const EventParticipation = () => {
         console.log('Enriched Data:', enriched);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setError('Failed to load data. Please try refreshing the page.');
       } finally {
         setLoading(false);
       }
@@ -76,6 +80,25 @@ const EventParticipation = () => {
         <WebConfigSidebar />
         <div className="flex-1 ml-10 overflow-auto flex items-center justify-center">
           <div className="text-lg text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <WebConfigSidebar />
+        <div className="flex-1 ml-10 overflow-auto flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-600 text-lg mb-4">{error}</div>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
+          </div>
         </div>
       </div>
     );

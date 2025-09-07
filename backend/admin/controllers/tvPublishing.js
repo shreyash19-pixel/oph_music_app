@@ -1,4 +1,5 @@
 const tvModel = require("../model/tvPublishing");
+const { saveNotification } = require("../../utils/notify");
 
 const { uploadToS3 } = require("../../utils");
 
@@ -47,6 +48,40 @@ const updateLockStatus = async (req, res) => {
 
   try {
     await tvModel.updateTvLock(song_id, lock);
+    
+    // Get OPH_ID for notification
+    const ophid = await tvModel.getOphIdFromSongId(song_id);
+    
+    if (ophid) {
+      // Create and save notification
+      const lockStatus = lock === 1 ? "locked" : "unlocked";
+      const notificationPayload = {
+        ophid,
+        title: `TV Publishing ${lockStatus.charAt(0).toUpperCase() + lockStatus.slice(1)}`,
+        message: `Your TV publishing content has been ${lockStatus} by admin.`,
+        link: `/dashboard/tv-publishing`
+      };
+
+      // Save notification to database
+      const notification = await saveNotification(notificationPayload);
+
+      // Emit notification via Socket.IO if user is online
+      const io = req.app.get("io");
+      const onlineUsers = req.app.get("onlineUsers");
+
+      if (io && onlineUsers) {
+        const userSocketId = onlineUsers.get(ophid);
+        if (userSocketId) {
+          io.to(userSocketId).emit("TV-update", notification);
+          console.log(`Emitted 'TV-update' to ophid ${ophid}, socket ID: ${userSocketId}`);
+        } else {
+          console.log(`No active socket found for ophid: ${ophid}`);
+        }
+      } else {
+        console.warn("Socket IO or onlineUsers map is not initialized");
+      }
+    }
+    
     return res.json({ success: true, message: "Lock status updated" });
   } catch (err) {
     console.error("Error updating lock:", err);
@@ -88,6 +123,40 @@ const updateTvStatus = async (req, res) => {
      );
 
      if (result.affectedRows > 0) {
+       // Get OPH_ID for notification
+       const ophid = await tvModel.getOphIdFromSongId(song_id);
+       
+       if (ophid) {
+         // Create and save notification
+         const notificationPayload = {
+           ophid,
+           title: `TV Publishing ${finalStatus}`,
+           message: finalStatus === "Accepted" 
+             ? "Your TV publishing content has been accepted by admin."
+             : `Your TV publishing content has been rejected. Reason: ${finalReason}`,
+           link: `/dashboard/tv-publishing`
+         };
+
+         // Save notification to database
+         const notification = await saveNotification(notificationPayload);
+
+         // Emit notification via Socket.IO if user is online
+         const io = req.app.get("io");
+         const onlineUsers = req.app.get("onlineUsers");
+
+         if (io && onlineUsers) {
+           const userSocketId = onlineUsers.get(ophid);
+           if (userSocketId) {
+             io.to(userSocketId).emit("TV-update", notification);
+             console.log(`Emitted 'TV-update' to ophid ${ophid}, socket ID: ${userSocketId}`);
+           } else {
+             console.log(`No active socket found for ophid: ${ophid}`);
+           }
+         } else {
+           console.warn("Socket IO or onlineUsers map is not initialized");
+         }
+       }
+       
        return res.status(200).json({
          success: true,
          message: `TV status updated to ${finalStatus}`,

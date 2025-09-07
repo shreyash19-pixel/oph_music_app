@@ -4,8 +4,8 @@ import toast, { Toaster } from "react-hot-toast";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import { useParams, useNavigate } from "react-router-dom";
 
-const UpdatePodcast = () => {
-  const { podcastId } = useParams();
+const UpdateLearning = () => {
+  const { learningId } = useParams();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -25,9 +25,9 @@ const UpdatePodcast = () => {
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    const fetchPodcast = async () => {
+    const fetchLearning = async () => {
       try {
-        const res = await axiosApi.get(`/podcast/${podcastId}`);
+        const res = await axiosApi.get(`/learning/${learningId}`);
         console.log(res);
         const data = res.data.data;
 
@@ -45,14 +45,14 @@ const UpdatePodcast = () => {
         setThumbnailPreview(data.thumbnail_url || null);
         setVideoPreview(data.video_url || null);
       } catch (err) {
-        toast.error("Failed to fetch podcast.");
+        toast.error("Failed to fetch Learning.", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPodcast();
-  }, [podcastId]);
+    fetchLearning();
+  }, [learningId]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -98,16 +98,16 @@ const UpdatePodcast = () => {
 
     try {
       setUpdating(true);
-      await axiosApi.put(`/update_podcast/${podcastId}`, data, {
+      await axiosApi.put(`/update_learning/${learningId}`, data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      toast.success("Podcast updated successfully!");
-      navigate("/WebConfig/Podcast");
+      toast.success("Learning updated successfully!");
+      navigate("/allLearning");
     } catch (error) {
-      console.error("Error updating podcast:", error);
-      toast.error("Failed to update podcast.");
+      console.error("Error updating learning:", error);
+      toast.error("Failed to update learning.");
     } finally {
       setUpdating(false);
     }
@@ -128,7 +128,7 @@ const UpdatePodcast = () => {
           encType="multipart/form-data"
         >
           <h2 className="text-2xl font-bold text-[#0d3c44] text-center">
-            Update Podcast
+            Update Learning
           </h2>
 
           {/* Title */}
@@ -306,7 +306,7 @@ const UpdatePodcast = () => {
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
-              onClick={() => navigate("/WebConfig/Podcast")}
+              onClick={() => navigate("/allLearning")}
               className="px-4 py-2 rounded-xl bg-gray-300 hover:bg-gray-400 text-black"
             >
               Cancel
@@ -325,4 +325,4 @@ const UpdatePodcast = () => {
   );
 };
 
-export default UpdatePodcast;
+export default UpdateLearning;

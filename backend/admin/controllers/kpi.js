@@ -49,19 +49,13 @@ const getKPI = async (req, res) => {
 
 
 const getSongMetricsSummary = async (req, res) => {
-const { OPH_ID } = req.query;
-  if (!OPH_ID) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing OPH ID in query" });
-  } else {
-    try {
-      const metrics = await SongSocialMetrics.getMetricsSummary();
-      res.status(200).json(metrics);
-    } catch (error) {
-      console.error('Error fetching song metrics summary:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
+  try {
+    const metrics = await SongSocialMetrics.getMetricsSummary();
+    res.status(200).json(metrics);
+  } catch (error) {
+    console.error('Error fetching song metrics summary:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+
   }
 };
 

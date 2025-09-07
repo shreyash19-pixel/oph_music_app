@@ -14,13 +14,13 @@ const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionSto
 
 export default function RegisterSongForm() {
   const navigate = useNavigate();
-  const location = useLocation();  
+  const location = useLocation();
   console.log(location);
-  
+
   const [blockedDates, setBlockedDates] = useState([]); // Add state for blocked dates
   const [artistBlockedDates, setArtistBlockedDates] = useState([]); // Add state for blocked dates
   const [songReg, setSongReg] = useState(true);
-  const [lyricalVid, setLyricalVid] = useState(false);
+  const [lyrical_services, setLyricalVid] = useState(false);
   const [selectedPlans, setSelectedPlans] = useState([]);
   const [payableAmount, setPayableAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,12 +37,12 @@ export default function RegisterSongForm() {
   localStorage.setItem("projectType", projectType);
   const [formData, setFormData] = useState({
     oph_id: ophid,
-    name: location.state.songName || "" ,
+    name: location.state.songName || "",
     release_date: "",
     p_line: "",
     cp_line: "",
     song_reg: songReg,
-    lyricalVid: lyricalVid,
+    lyrical_services: lyrical_services,
     // agreement: false,
     available_on_music_platforms: false, // Add new field for toggle button
     project_type: projectType,
@@ -65,30 +65,32 @@ export default function RegisterSongForm() {
       });
 
       if (response.data.success) {
-        const costingData = Array.isArray(response.data.data) 
-          ? response.data.data 
+        const costingData = Array.isArray(response.data.data)
+          ? response.data.data
           : [response.data.data];
-        
+
         setCostingData(costingData);
-        
+
         // Find Song Registration amount
-        const songRegCost = costingData.find(item => 
-          item.name && item.name.toLowerCase().includes("song registration")
+        const songRegCost = costingData.find(
+          (item) =>
+            item.name && item.name.toLowerCase().includes("song registration")
         );
         if (songRegCost) {
           setSongRegAmount(parseFloat(songRegCost.cost) || 799);
           console.log("Song Registration amount:", songRegCost.cost);
         }
-        
+
         // Find Lyrical Video amount
-        const lyricalVideoCost = costingData.find(item => 
-          item.name && item.name.toLowerCase().includes("lyrical video")
+        const lyricalVideoCost = costingData.find(
+          (item) =>
+            item.name && item.name.toLowerCase().includes("lyrical video")
         );
         if (lyricalVideoCost) {
           setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 499);
           console.log("Lyrical Video amount:", lyricalVideoCost.cost);
         }
-        
+
         console.log("All costing data:", costingData);
       }
     } catch (error) {
@@ -98,11 +100,11 @@ export default function RegisterSongForm() {
   };
 
   const handleTotalPayment = () => {
-    if (songReg && lyricalVid) {
+    if (songReg && lyrical_services) {
       setPayableAmount(songRegAmount + lyricalVideoAmount);
-    } else if (songReg && !lyricalVid) {
+    } else if (songReg && !lyrical_services) {
       setPayableAmount(songRegAmount);
-    } else if (!songReg && lyricalVid) {
+    } else if (!songReg && lyrical_services) {
       setPayableAmount(lyricalVideoAmount);
     } else {
       setPayableAmount(0);
@@ -111,7 +113,7 @@ export default function RegisterSongForm() {
 
   useEffect(() => {
     handleTotalPayment();
-  }, [songReg, lyricalVid, songRegAmount, lyricalVideoAmount]);
+  }, [songReg, lyrical_services, songRegAmount, lyricalVideoAmount]);
 
   // Fetch costing data on component mount
   useEffect(() => {
@@ -155,12 +157,22 @@ export default function RegisterSongForm() {
 
         if (response.data.success) {
           setIsLoading(false);
-          // Extract just the dates from the response
-          const individualDates = response.data.data.filter((date) => date.song_name === null).map(
-            (item) => item.current_booking_date
-          );
 
-          setArtistBlockedDates(individualDates);
+          // Extract just the dates where song_name is null
+          const individualDates = response.data.data
+            .filter((date) => date.song_name === null)
+            .map((item) => item.current_booking_date);
+
+          // Format each date to YYYY-MM-DD in IST
+          const formattedDates = individualDates.map((d) => {
+            const dateObj = new Date(d);
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+            const day = String(dateObj.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          });
+
+          setArtistBlockedDates(formattedDates);
         }
       } catch (error) {
         console.error("Error fetching blocked dates by ophid", error);
@@ -250,7 +262,7 @@ export default function RegisterSongForm() {
           project_type: projectType,
           name: updatedFormData.name,
           release_date: updatedFormData.release_date,
-          lyricalVid: updatedFormData.lyricalVid,
+          lyricalVid: updatedFormData.lyrical_services,
           next_step: updatedFormData.next_step,
         },
         { headers: headers }
@@ -264,7 +276,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
-              lyricalVid: updatedFormData.lyricalVid,
+              lyrical_services: updatedFormData.lyrical_services,
             },
           }
         );
@@ -283,7 +295,7 @@ export default function RegisterSongForm() {
           project_type: projectType,
           name: updatedFormData.name,
           release_date: updatedFormData.release_date,
-          lyricalVid: updatedFormData.lyricalVid,
+          lyricalVid: updatedFormData.lyrical_services,
           available_on_music_platforms:
             updatedFormData.available_on_music_platforms,
           next_step: updatedFormData.next_step,
@@ -298,7 +310,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
-              lyricalVid: updatedFormData.lyricalVid,
+              lyrical_services: updatedFormData.lyrical_services,
             },
           }
         );
@@ -317,7 +329,7 @@ export default function RegisterSongForm() {
           project_type: projectType,
           name: updatedFormData.name,
           release_date: updatedFormData.release_date,
-          lyricalVid: updatedFormData.lyricalVid,
+          lyricalVid: updatedFormData.lyrical_services,
           available_on_music_platforms:
             updatedFormData.available_on_music_platforms,
           next_step: updatedFormData.next_step,
@@ -333,7 +345,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
-              lyricalVid: updatedFormData.lyricalVid,
+              lyrical_services: updatedFormData.lyrical_services,
             },
           }
         );
@@ -355,7 +367,7 @@ export default function RegisterSongForm() {
     const updatedFormData = {
       ...formData,
       song_reg: songReg,
-      lyricalVid: lyricalVid,
+      lyrical_services: lyrical_services,
       cp_line: `${artistName} - ${stageName}`,
       p_line: `${artistName} - ${stageName}`,
       available_on_music_platforms:
@@ -521,7 +533,12 @@ export default function RegisterSongForm() {
           >
             <option value="">Select a blocked date</option>
             {artistBlockedDates.map((date) => (
-              <option key={date} value={date}>
+              <option
+                key={new Date(date).toLocaleDateString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                })}
+                value={date}
+              >
                 {new Date(date).toLocaleDateString("en-IN", {
                   timeZone: "Asia/Kolkata",
                 })}
@@ -618,7 +635,7 @@ export default function RegisterSongForm() {
                 onChange={handleChange}
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
                 required
-                disabled = {location.state.songName}
+                disabled={location.state.songName}
               />
             </div>
 
@@ -774,8 +791,8 @@ export default function RegisterSongForm() {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={lyricalVid}
-                      onChange={() => setLyricalVid(!lyricalVid)}
+                      checked={lyrical_services}
+                      onChange={() => setLyricalVid(!lyrical_services)}
                       className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400"
                     />
                     <span>{lyricalVideoAmount} - Lyrical Video </span>

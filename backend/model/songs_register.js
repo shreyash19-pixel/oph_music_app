@@ -81,7 +81,7 @@ const insertHybridSong = async (
 
 const getPendingSongsList = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT sr.song_id, sr.Song_name, sr.project_type, sr.release_date, sr.current_page, ad.`status` audio_status , ad.reject_reason audio_reason, vd.`status` video_status, vd.reject_reason video_reason,  sp.`status` payment_status, sp.reject_reason payment_reason FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN sign_up_payment sp ON sr.song_id = sp.song_id WHERE sr.OPH_ID = ?",
+    "SELECT sr.song_id, sr.Song_name, sr.project_type, sr.Lyrics_services, sr.release_date, sr.current_page, ad.`status` audio_status , ad.reject_reason audio_reason, vd.`status` video_status, vd.reject_reason video_reason,  sp.`status` payment_status, sp.reject_reason payment_reason FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN sign_up_payment sp ON sr.song_id = sp.song_id WHERE sr.OPH_ID = ?",
     [ophid]
   );
 
@@ -147,10 +147,11 @@ const getPendingSongsList = async (ophid) => {
         projectType: row.project_type,
         release_date: row.release_date,
         firstRejectedStep: firstRejectedStep,
+        lyrical_services: row.Lyrics_services
       };
     }
   });
-
+  
   return songDetails;
 };
 

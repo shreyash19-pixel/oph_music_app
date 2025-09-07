@@ -60,6 +60,14 @@ const updateTvFiles = async (song_id, audio, video) => {
   return result;
 };
 
+const getOphIdFromSongId = async (song_id) => {
+  const [rows] = await db.execute(
+    "SELECT OPH_ID FROM songs_register WHERE song_id = ?",
+    [song_id]
+  );
+  return rows.length > 0 ? rows[0].OPH_ID : null;
+};
+
 
 module.exports = {
   getAllTv,
@@ -67,4 +75,5 @@ module.exports = {
   updateTvLock,
   updateTvStatus,
   updateTvFiles,
+  getOphIdFromSongId,
 };

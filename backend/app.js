@@ -41,6 +41,8 @@ const artist_type = require("./routes/sidebar");
 const special_artist = require("./routes/special-artist");
 const special_artist_song = require("./routes/special-artist-songs");
 const contact_us = require("./routes/contact_us");
+const song_details = require("./routes/song_details")
+const navleaderboard = require("./routes/leaderboard")
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -64,6 +66,8 @@ const specialArtistDetails = require("./admin/routes/special-artist-details");
 const specialArtistSong = require("./admin/routes/special-artist-songs");
 const allData = require("./admin/routes/allData");
 const costing = require("./admin/routes/costing");
+const songRelease = require("./admin/routes/song_release");
+
 // ✅ Middleware order is important
 app.use(
   cors({
@@ -73,11 +77,16 @@ app.use(
   })
 );
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174",process.env.ADMIN_URL,process.env.CLIENT_URL],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      process.env.ADMIN_URL,
+      process.env.CLIENT_URL,
+    ],
     credentials: true,
   },
 });
@@ -141,6 +150,8 @@ app.use("/", artist_type);
 app.use("/", special_artist);
 app.use("/", special_artist_song);
 app.use("/", contact_us);
+app.use("/", song_details);
+app.use("/", navleaderboard);
 //Admin Routes
 
 app.use("/", adminSignUp);
@@ -164,6 +175,7 @@ app.use("/", specialArtistDetails);
 app.use("/", allData);
 app.use("/", costing);
 app.use("/", specialArtistSong);
+app.use("/", songRelease);
 
 // ✅ Start server
 server.listen(port, () => {

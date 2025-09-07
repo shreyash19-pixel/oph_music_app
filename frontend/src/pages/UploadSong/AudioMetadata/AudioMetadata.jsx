@@ -255,6 +255,8 @@ export default function AudioMetadataForm() {
   ]);
   const [audioFileUrl, setAudioFileUrl] = useState(null);
   const location = useLocation();
+  console.log(location);
+  
 
   const [songName, setSongName] = useState(location.state.songName);
   const [showSecondaryForm, setShowSecondaryForm] = useState(false);
@@ -559,7 +561,7 @@ export default function AudioMetadataForm() {
               songName: location.state.songName,
               release_date: location.state.release_date,
               project_type: location.state.project_type,
-              lyricalVid: location.state.lyricalVid,
+              lyrical_services: location.state.lyrical_services,
             },
           }
         ) : navigate('/dashboard/pending', {

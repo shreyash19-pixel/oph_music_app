@@ -13,7 +13,7 @@ router.get("/get-top-artist-detail", getArtistProfile)
 
 // GET /api/kpi-score — Get all scores sorted by highest
 
-console.log("sdsddasd");
+
 
 router.get("/kpi_score", fetchAllKpiScores);
 router.get("/kpi_monthly_score", fetchmonthly);

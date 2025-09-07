@@ -82,8 +82,6 @@ export const ArtistProvider = ({ children }) => {
           "/terms-and-conditions",
         ];
 
-        console.log(window.location.pathname);
-
         // if (!openRoutes.includes(window.location.pathname)) {
         //   navigate("/auth/login");
         // }

@@ -2,7 +2,7 @@ const db = require('../DB/connect');
 
 const getByOPH_ID = async (OPH_ID) => {
   const [results] = await db.execute(
-    'SELECT * FROM song_social_metrics WHERE OPH_ID = ?',
+    'SELECT * FROM user_details WHERE ophid = ?',
     [OPH_ID]
   );
   return results;
@@ -10,7 +10,7 @@ const getByOPH_ID = async (OPH_ID) => {
 
 const updateNotes = async (ophid, notes) => {
   const [result] = await db.execute(
-    'UPDATE song_social_metrics SET Notes = ? WHERE OPH_ID = ?',
+    'UPDATE user_details SET Notes = ? WHERE ophid = ?',
     [notes, ophid]
   );
   return result;
