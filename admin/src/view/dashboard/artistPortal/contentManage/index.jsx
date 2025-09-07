@@ -26,12 +26,16 @@ const ContentManage = () => {
     primary_artist: "",
     secondary_artists: [],
     audio_url: "",
+    audio_file: null, // For new file uploads
   });
 
   const [video, setVideo] = useState({
     credits: "",
     image: "",
     video: "",
+    images: [], // Array to store multiple images
+    video_file: null, // For new video file uploads
+    image_files: [], // For new image file uploads
   });
 
   useEffect(() => {
@@ -98,14 +102,21 @@ const ContentManage = () => {
           });
         }
 
+        let parsedImages = [];
         let parsedImage = "";
         try {
           const imgArray = JSON.parse(song.image_url);
           if (Array.isArray(imgArray)) {
-            parsedImage = imgArray[0];
+            parsedImages = imgArray;
+            parsedImage = imgArray[0] || "";
           }
         } catch (err) {
           console.error("Failed to parse image_url", err);
+          // If it's not JSON, treat as single image
+          if (song.image_url) {
+            parsedImage = song.image_url;
+            parsedImages = [song.image_url];
+          }
         }
 
         if (!hasInteracted.current.Video) {
@@ -113,6 +124,7 @@ const ContentManage = () => {
             credits: song.credits || "",
             image: parsedImage || "",
             video: song.video_url || "",
+            images: parsedImages,
           });
         }
       } catch (err) {
@@ -131,6 +143,127 @@ const ContentManage = () => {
     setStateFn((prev) => ({ ...prev, [name]: value }));
   };
 
+  const updateAudioSection = async (audioData) => {
+    try {
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add text fields
+      formData.append('Song_name', audioData.song_name);
+      formData.append('language', audioData.language);
+      formData.append('genre', audioData.genre);
+      formData.append('sub_genre', audioData.sub_genre || '');
+      formData.append('mood', audioData.mood || '');
+      formData.append('lyrics', audioData.lyrics || '');
+      formData.append('primary_artist', audioData.primary_artist);
+      
+      // Add existing audio URL if no new file is being uploaded
+      if (audioData.audio_url && !audioData.audio_file) {
+        formData.append('audio_url', audioData.audio_url);
+      }
+
+      // Add audio file if provided
+      if (audioData.audio_file) {
+        formData.append('audio_file', audioData.audio_file);
+      }
+
+      const response = await axiosApi.put(`/audio/${songId}/${ophid}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        toast.success("✅ Audio section updated successfully!");
+        console.log("Audio update response:", response.data);
+        
+        // Update the audio_url in state if a new file was uploaded
+        if (response.data.audio_url) {
+          setAudio(prev => ({ ...prev, audio_url: response.data.audio_url }));
+        }
+      } else {
+        throw new Error(response.data.message || "Audio update failed");
+      }
+    } catch (error) {
+      console.error("Audio update error:", error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  };
+
+  const updateVideoSection = async (videoData) => {
+    try {
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      
+      // Add text fields
+      formData.append('credits', videoData.credits);
+      
+      // Add existing video URL if no new file is being uploaded
+      if (videoData.video && !videoData.video_file) {
+        formData.append('video_url', videoData.video);
+      }
+
+      // Add video file if provided
+      if (videoData.video_file) {
+        formData.append('video_file', videoData.video_file);
+      }
+
+      // Handle existing images
+      if (videoData.images && videoData.images.length > 0) {
+        formData.append('image_url', JSON.stringify(videoData.images));
+      }
+
+      // Add new image files if provided
+      if (videoData.image_files && videoData.image_files.length > 0) {
+        // Validate max 3 images total
+        const existingImages = videoData.images || [];
+        const totalImages = existingImages.length + videoData.image_files.length;
+        if (totalImages > 3) {
+          toast.error("❌ Maximum 3 images allowed for video section");
+          return;
+        }
+
+        // Add each image file
+        videoData.image_files.forEach((file) => {
+          formData.append('thumbnails', file);
+        });
+      }
+
+      const response = await axiosApi.put(`/video/${songId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        toast.success("✅ Video section updated successfully!");
+        console.log("Video update response:", response.data);
+        
+        // Update the video_url and images in state if new files were uploaded
+        if (response.data.video_url) {
+          setVideo(prev => ({ ...prev, video: response.data.video_url }));
+        }
+        if (response.data.image_urls) {
+          setVideo(prev => ({ ...prev, images: response.data.image_urls }));
+        }
+      } else {
+        throw new Error(response.data.message || "Video update failed");
+      }
+    } catch (error) {
+      console.error("Video update error:", error);
+      if (error.response?.data?.message?.includes("Maximum 3 images allowed")) {
+        toast.error("❌ Maximum 3 images allowed for video section");
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw error;
+      }
+    }
+  };
+
   if (loading) return <div className="p-10 text-center">Loading...</div>;
 
   return (
@@ -146,6 +279,7 @@ const ContentManage = () => {
           data={content}
           fields={["project_type", "CP_Line", "PLine", "release_date"]}
           onChange={handleSectionChange("Content", setContent)}
+          updateFunction={null}
         />
 
         <SectionBlock
@@ -162,6 +296,7 @@ const ContentManage = () => {
             "audio_url",
           ]}
           onChange={handleSectionChange("Audio", setAudio)}
+          updateFunction={updateAudioSection}
           renderExtra={() =>
             audio.secondary_artists?.length > 0 && (
               <div className="mt-4 space-y-4">
@@ -194,28 +329,182 @@ const ContentManage = () => {
           data={video}
           fields={["credits"]}
           onChange={handleSectionChange("Video", setVideo)}
+          updateFunction={updateVideoSection}
           renderExtra={() => (
             <div className="space-y-4">
-              {video.image ? (
-                <img
-                  src={video.image}
-                  alt="Thumbnail"
-                  className="w-[200px] h-[200px] object-cover rounded shadow"
-                />
-              ) : (
-                <img
-                  src="https://avatars.githubusercontent.com/u/49544693?v=4"
-                  alt="No Thumbnail"
-                  className="w-[200px] h-[200px] object-cover rounded shadow"
-                />
-              )}
-              {video.video && (
-                <video
-                  src={video.video}
-                  controls
-                  className="w-full rounded border"
-                />
-              )}
+              {/* Multiple Images Display */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Images ({video.images?.length || 0}/3)
+                </h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {video.images?.map((img, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-24 object-cover rounded shadow"
+                      />
+                      <button
+                        onClick={() => {
+                          const newImages = video.images.filter((_, i) => i !== index);
+                          setVideo(prev => ({ ...prev, images: newImages }));
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {video.images?.length < 3 && (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files);
+                          const totalImages = (video.images?.length || 0) + files.length;
+                          if (totalImages > 3) {
+                            toast.error("❌ Maximum 3 images allowed total");
+                            return;
+                          }
+                          setVideo(prev => ({ ...prev, image_files: files }));
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        id="image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="flex flex-col items-center justify-center h-24 p-3 text-sm font-medium text-gray-700 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0d3c44] hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                      >
+                        <svg className="w-6 h-6 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-xs">Upload Images</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+                {video.images?.length >= 3 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Maximum 3 images reached
+                  </p>
+                )}
+                
+                {/* New Image Files Preview */}
+                {video.image_files && video.image_files.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">New Images Selected:</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {video.image_files.map((file, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded shadow"
+                          />
+                          <button
+                            onClick={() => {
+                              const newFiles = video.image_files.filter((_, i) => i !== index);
+                              setVideo(prev => ({ ...prev, image_files: newFiles }));
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                            title="Remove file"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Video Display and Upload */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Video</h3>
+                {video.video && (
+                  <video
+                    src={video.video}
+                    controls
+                    className="w-full rounded border mb-4"
+                  />
+                )}
+                
+                {/* Custom File Upload Button */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setVideo(prev => ({ ...prev, video_file: file }));
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    id="video-upload"
+                  />
+                  <label
+                    htmlFor="video-upload"
+                    className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0d3c44] hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {video.video_file ? 'Change Video File' : 'Upload Video File'}
+                  </label>
+                </div>
+                
+                {video.video_file && (
+                  <div className="mt-3 space-y-3">
+                    {/* Video Preview */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Video Preview</h4>
+                      <video
+                        src={URL.createObjectURL(video.video_file)}
+                        controls
+                        className="w-full rounded border"
+                        style={{ maxHeight: '300px' }}
+                      />
+                    </div>
+                    
+                    {/* File Info */}
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-sm text-green-700 font-medium">
+                            New video selected: {video.video_file.name}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setVideo(prev => ({ ...prev, video_file: null }));
+                            // Reset the file input
+                            const fileInput = document.getElementById('video-upload');
+                            if (fileInput) fileInput.value = '';
+                          }}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                          title="Remove video"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <p className="text-xs text-green-600 mt-1">
+                        File size: {(video.video_file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
         />
@@ -224,7 +513,7 @@ const ContentManage = () => {
   );
 };
 
-const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
+const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderExtra }) => {
   const [unlockFields, setunlockFields] = useState({
     Content: {},
     Audio: {},
@@ -261,7 +550,12 @@ const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
     );
   };
 
-  const [initialData] = useState({ ...data });
+  const [initialData] = useState({ 
+    ...data,
+    audio_file: null,
+    video_file: null,
+    image_files: []
+  });
 
   const toggleLock = (field) => {
     setunlockFields((prev) => ({
@@ -290,9 +584,10 @@ const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
   //   console.log(`📤 [${section}] Submitted Data:`, data);
   // };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     let hasChanges = false;
 
+    // Check for changes in regular fields
     for (const key of fields) {
       if (initialData[key] !== data[key]) {
         hasChanges = true;
@@ -300,13 +595,32 @@ const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
       }
     }
 
+    // Check for file changes (audio_file, video_file, image_files)
     if (!hasChanges) {
-      console.log(`✅ [${section}] No changes to save`);
+      if (data.audio_file || data.video_file || (data.image_files && data.image_files.length > 0)) {
+        hasChanges = true;
+      }
+    }
+
+    if (!hasChanges) {
+      toast.success(`✅ [${section}] No changes to save`);
       return;
     }
 
-    showConfirmationToast(() => {
-      console.log(`📤 [${section}] Submitted Data:`, data);
+    if (!updateFunction) {
+      console.log(`⚠️ [${section}] Update not implemented yet`);
+      toast.info(`⚠️ [${section}] Update functionality not implemented yet`);
+      return;
+    }
+
+    showConfirmationToast(async () => {
+      try {
+        console.log(`📤 [${section}] Submitted Data:`, data);
+        await updateFunction(data);
+      } catch (error) {
+        console.error(`❌ [${section}] Update failed:`, error);
+        toast.error(`❌ [${section}] Update failed: ${error.message}`);
+      }
     });
   };
 
@@ -336,10 +650,82 @@ const SectionBlock = ({ section, data, fields, onChange, renderExtra }) => {
                   }`}
                 />
               ) : field.includes("audio_url") ? (
-                <audio controls className="w-full max-w-xs rounded border mb-2">
-                  <source src={data[field]} type="audio/mpeg" />
-                  Your browser does not support the audio element.
-                </audio>
+                <div className="space-y-3">
+                  <audio controls className="w-full max-w-xs rounded border mb-3">
+                    <source src={data[field]} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                  
+                  {/* Custom Audio File Upload Button */}
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          onChange({ target: { name: 'audio_file', value: file } });
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      id="audio-upload"
+                    />
+                    <label
+                      htmlFor="audio-upload"
+                      className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-[#0d3c44] hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      {data.audio_file ? 'Change Audio File' : 'Upload Audio File'}
+                    </label>
+                  </div>
+                  
+                  {data.audio_file && (
+                    <div className="mt-3 space-y-3">
+                      {/* Audio Preview */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Audio Preview</h4>
+                        <audio
+                          src={URL.createObjectURL(data.audio_file)}
+                          controls
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      {/* File Info */}
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-sm text-green-700 font-medium">
+                              New audio selected: {data.audio_file.name}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              onChange({ target: { name: 'audio_file', value: null } });
+                              // Reset the file input
+                              const fileInput = document.getElementById('audio-upload');
+                              if (fileInput) fileInput.value = '';
+                            }}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                            title="Remove audio"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">
+                          File size: {(data.audio_file.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <input
                   type="text"

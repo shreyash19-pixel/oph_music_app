@@ -1,5 +1,6 @@
 const songsModel = require("../model/songs");
 const { saveNotification } = require("../../utils/notify");
+const { uploadToS3 } = require("../../utils");
 
 getAll = async (req, res) => {
   try {
@@ -219,11 +220,301 @@ const updateSongStatus = async (req, res) => {
   }
 }
 
+// Update audio details
+const updateAudioSection = async (req, res) => {
+  try {
+    const { songId, ophId } = req.params;
+    const audioData = req.body;
+    const audioFile = req.file;
+
+    // Validate required fields
+    if (!songId || !ophId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "songId and ophId are required" 
+      });
+    }
+
+    // Validate audio data
+    const requiredFields = ['Song_name', 'language', 'genre', 'primary_artist'];
+    for (const field of requiredFields) {
+      if (!audioData[field]) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `${field} is required` 
+        });
+      }
+    }
+
+
+    // Handle audio file upload
+    let audioUrl = audioData.audio_url; // Keep existing URL if no new file uploaded
+    
+    // If no audio_url provided in form data, get existing one from database
+    if (!audioUrl) {
+      // We need to get the current audio details to preserve the existing URL
+      // This will be handled by the model layer - if audioUrl is null, it won't update the field
+    }
+    
+    if (audioFile) {
+      // Validate file type
+      const allowedAudioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/mp4', 'audio/ogg'];
+      if (!allowedAudioTypes.includes(audioFile.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid audio file type. Allowed types: MP3, WAV, MP4, OGG"
+        });
+      }
+
+      // Validate file size (max 50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (audioFile.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: "Audio file too large. Maximum size: 50MB"
+        });
+      }
+
+      try {
+        // Upload to S3
+        audioUrl = await uploadToS3(audioFile, 'audio-files');
+        console.log("Audio file uploaded to S3:", audioUrl);
+      } catch (uploadError) {
+        console.error("S3 upload error:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload audio file"
+        });
+      }
+    }
+
+    // Prepare data for database update - only include provided fields
+    const updateData = {};
+    
+    if (audioData.Song_name !== undefined) updateData.Song_name = audioData.Song_name;
+    if (audioData.language !== undefined) updateData.language = audioData.language;
+    if (audioData.genre !== undefined) updateData.genre = audioData.genre;
+    if (audioData.sub_genre !== undefined) updateData.sub_genre = audioData.sub_genre;
+    if (audioData.mood !== undefined) updateData.mood = audioData.mood;
+    if (audioData.lyrics !== undefined) updateData.lyrics = audioData.lyrics;
+    if (audioData.primary_artist !== undefined) updateData.primary_artist = audioData.primary_artist;
+    if (audioUrl !== undefined) updateData.audio_url = audioUrl;
+    if (audioData.reject_reason !== undefined) updateData.reject_reason = audioData.reject_reason;
+
+    console.log('Audio update data:', updateData);
+    const result = await songsModel.updateAudioDetails(songId, ophId, updateData);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "No audio record found for the given songId and ophId" 
+      });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Audio details updated successfully", 
+      data: result,
+      audio_url: audioUrl
+    });
+
+  } catch (error) {
+    console.error("Error updating audio details:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error" 
+    });
+  }
+};
+
+// Update video details
+const updateVideoSection = async (req, res) => {
+  try {
+    const { songId } = req.params;
+    const videoData = req.body;
+    const files = req.files;
+
+    // Validate required fields
+    if (!songId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "songId is required" 
+      });
+    }
+
+    // Validate video data
+    const requiredFields = ['credits'];
+    for (const field of requiredFields) {
+      if (!videoData[field]) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `${field} is required` 
+        });
+      }
+    }
+
+
+    // Check current video details to validate image count
+    const currentVideo = await songsModel.getVideoDetails(songId);
+    if (!currentVideo) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "No video record found for the given songId" 
+      });
+    }
+
+    // Handle video file upload
+    let videoUrl = videoData.video_url; // Keep existing URL if no new file uploaded
+    
+    if (files && files.video_file && files.video_file[0]) {
+      const videoFile = files.video_file[0];
+      
+      // Validate video file type
+      const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'];
+      if (!allowedVideoTypes.includes(videoFile.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid video file type. Allowed types: MP4, AVI, MOV, WMV, WEBM"
+        });
+      }
+
+      // Validate video file size (max 500MB)
+      const maxSize = 500 * 1024 * 1024; // 500MB
+      if (videoFile.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: "Video file too large. Maximum size: 500MB"
+        });
+      }
+
+      try {
+        // Upload video to S3
+        videoUrl = await uploadToS3(videoFile, 'video-files');
+        console.log("Video file uploaded to S3:", videoUrl);
+      } catch (uploadError) {
+        console.error("S3 upload error:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload video file"
+        });
+      }
+    }
+
+    // Handle thumbnail images upload
+    let imageUrls = [];
+    
+    // First, get existing images from database to preserve them
+    const existingVideoData = await songsModel.getVideoDetails(songId);
+    if (existingVideoData && existingVideoData.image_url) {
+      try {
+        const existingImages = JSON.parse(existingVideoData.image_url);
+        if (Array.isArray(existingImages)) {
+          imageUrls = existingImages;
+        }
+      } catch (e) {
+        // If not JSON, treat as single image
+        imageUrls = [existingVideoData.image_url];
+      }
+    }
+
+    // Add new uploaded images if provided
+    if (files && files.thumbnails && files.thumbnails.length > 0) {
+      // Validate image count (max 3 total)
+      const totalImages = imageUrls.length + files.thumbnails.length;
+      if (totalImages > 3) {
+        return res.status(400).json({
+          success: false,
+          message: "Maximum 3 images allowed for video section"
+        });
+      }
+
+      // Validate and upload each image
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const maxImageSize = 10 * 1024 * 1024; // 10MB per image
+
+      for (const imageFile of files.thumbnails) {
+        // Validate image type
+        if (!allowedImageTypes.includes(imageFile.mimetype)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid image file type. Allowed types: JPEG, PNG, GIF, WEBP"
+          });
+        }
+
+        // Validate image size
+        if (imageFile.size > maxImageSize) {
+          return res.status(400).json({
+            success: false,
+            message: "Image file too large. Maximum size: 10MB per image"
+          });
+        }
+
+        try {
+          // Upload image to S3
+          const imageUrl = await uploadToS3(imageFile, 'video-thumbnails');
+          imageUrls.push(imageUrl);
+          console.log("Image uploaded to S3:", imageUrl);
+        } catch (uploadError) {
+          console.error("S3 upload error:", uploadError);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to upload image file"
+          });
+        }
+      }
+    }
+
+    // Prepare data for database update - only include provided fields
+    const updateData = {};
+    
+    if (videoData.credits !== undefined) updateData.credits = videoData.credits;
+    if (videoUrl !== undefined) updateData.video_url = videoUrl;
+    if (imageUrls !== undefined) updateData.image_url = imageUrls;
+    if (videoData.reject_reason !== undefined) updateData.reject_reason = videoData.reject_reason;
+
+    console.log('Video update data:', updateData);
+    const result = await songsModel.updateVideoDetails(songId, updateData);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "No video record found for the given songId" 
+      });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Video details updated successfully", 
+      data: result,
+      video_url: videoUrl,
+      image_urls: imageUrls
+    });
+
+  } catch (error) {
+    console.error("Error updating video details:", error);
+    
+    // Handle specific error for image count validation
+    if (error.message.includes('Maximum 3 images allowed')) {
+      return res.status(400).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error" 
+    });
+  }
+};
+
 module.exports = {
   getAll,
   getSongsUnderReview,
   getAllApprovedSongs,
   getSongApproved,
   updateSongSectionStatus,
-  updateSongStatus
+  updateSongStatus,
+  updateAudioSection,
+  updateVideoSection
 };

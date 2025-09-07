@@ -58,8 +58,10 @@ import ViewPodcasts from "./view/dashboard/websiteConfig/resource/ViewPodcasts";
 import UpdatePodcast from "./view/dashboard/websiteConfig/resource/UpdatePodcast";
 import ViewReels from "./view/dashboard/websiteConfig/resource/ViewReels";
 import ViewStories from "./view/dashboard/websiteConfig/resource/ViewStories";
+import ViewLearning from "./view/dashboard/websiteConfig/resource/ViewLearning";
 import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
+import UpdateLearning from "./view/dashboard/websiteConfig/resource/UpdateLearning";
 import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
 import EventPayment from "./view/dashboard/artistPortal/paymentAll/EventPayment";
@@ -124,7 +126,24 @@ function App() {
             element={<Audio_Metrics />} // Adjusted to match the new export
           />
           <Route path="/AllEvents" element={<Events />} />
-          <Route path="/event_participants" element={<EventParticipation />} />
+          <Route
+            path="/event_participants"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                  ROLES.PROJECT_HEAD,
+                  ROLES.PROJECT_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
+                <EventParticipation />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/content/tv" element={<Tvpublishing />} />
           <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
@@ -281,6 +300,23 @@ function App() {
           />
 
           <Route
+            path="/allLearning"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <ViewLearning />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/update_podcast/:podcastId"
             element={
               <ProtectedRoute
@@ -327,6 +363,23 @@ function App() {
                 ]}
               >
                 <UpdateStory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/update_learning/:learningId"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <UpdateLearning />
               </ProtectedRoute>
             }
           />

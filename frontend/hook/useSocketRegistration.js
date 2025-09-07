@@ -46,14 +46,37 @@ const useSocketRegistration = (OPH_ID) => {
       });
     };
 
+    const handleProfileUpdate = (data) => {
+      console.log("Received profile-update event:", data);
+
+      toast.success(`${data.title}`, {
+        duration: 10000,
+        position: "top-right",
+        icon: "👤",
+      });
+    };
+    const handleTVUpdate = (data) => {
+      console.log("Received TV-update event:", data);
+
+      toast.success(`${data.title}`, {
+        duration: 10000,
+        position: "top-right",
+        icon: "🎥",
+      });
+    };
+
     socket.on("Music-update", handleTicketUpdate);
     socket.on("Payment-update", handlePaymentUpdate);
+    socket.on("Profile-update", handleProfileUpdate);
+    socket.on("TV-update", handleTVUpdate);
 
     // Cleanup on unmount
     return () => {
       socket.off("connect", registerIfConnected);
       socket.off("ticket-updated", handleTicketUpdate);
       socket.off("payment-updated", handlePaymentUpdate);
+      socket.off("profile-update", handleProfileUpdate);
+      socket.off("TV-update", handleTVUpdate);
     };
   }, [OPH_ID]);
 };

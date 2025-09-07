@@ -73,6 +73,7 @@ const ViewPodcasts = () => {
               <option value="">Go to...</option>
               <option value="/allReel">View Reels</option>
               <option value="/allStories">View Stories</option>
+              <option value="/allLearning">View Learning</option>
             </select>
           </div>
 
