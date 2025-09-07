@@ -24,13 +24,13 @@ const PaymentScreen = () => {
 
   const {
     amount = 0,
-    returnPath = "/",
+    backPath = "/",
     heading = "Payment Required",
-    lyricalVid = false,
+    lyrical_services = false,
   } = location.state || {};
 
   // Debug log for lyricalVid flag
-  console.log("PaymentScreen - lyricalVid flag:", lyricalVid);
+  console.log("PaymentScreen - lyricalVid flag:", lyrical_services);
 
   // Function to fetch costing data and match with 'from' field
   const fetchCostingData = useCallback(async () => {
@@ -44,6 +44,8 @@ const PaymentScreen = () => {
           ? response.data.data
           : [response.data.data];
 
+        console.log(costingData);
+
         setCostingData(costingData);
 
         // Match the 'from' field with costing data 'name' field
@@ -51,7 +53,7 @@ const PaymentScreen = () => {
         // If no 'from' is provided, default to "Registration"
         // Handle "Registration" and "Song Registration" as separate cases
         let searchName;
-        if (lyricalVid) {
+        if (lyrical_services) {
           searchName = "lyrical video";
         } else {
           // Handle case when no 'from' is provided - default to Registration
@@ -84,7 +86,7 @@ const PaymentScreen = () => {
           console.log(
             `Using costing data for: ${
               from || "default"
-            } (lyricalVid: ${lyricalVid}) -> ${matched.name} (Amount: ${
+            } (lyricalVid: ${lyrical_services}) -> ${matched.name} (Amount: ${
               matched.cost
             })`
           );
@@ -93,7 +95,7 @@ const PaymentScreen = () => {
           console.warn(
             `No costing data found for: ${
               from || "default"
-            } (lyricalVid: ${lyricalVid}) - using fallback amounts`
+            } (lyricalVid: ${lyrical_services}) - using fallback amounts`
           );
         }
       }
@@ -103,7 +105,7 @@ const PaymentScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, lyricalVid]);
+  }, [from, lyrical_services]);
 
   // Function to get the appropriate amount based on the matched costing data or fallback
   const getDisplayAmount = () => {
@@ -113,7 +115,7 @@ const PaymentScreen = () => {
     }
 
     // Fallback to hardcoded amounts if no costing data match
-    if (lyricalVid) {
+    if (lyrical_services) {
       return 499; // Lyrical video amount
     } else if (!from || from === "Registration") {
       return 500; // Registration amount (default or explicit)
@@ -168,7 +170,7 @@ const PaymentScreen = () => {
         event_id: event_id,
         release_date:
           location.state.date || location.state.booking_date || null,
-        lyricalVid: lyricalVid,
+        lyricalVid: lyrical_services,
       };
 
       const apiPath =
@@ -221,7 +223,11 @@ const PaymentScreen = () => {
             });
           }
         }
-      } else if (response.data.success && from == "Song Registration" && location.state.project_type !== "paid in advance") {
+      } else if (
+        response.data.success &&
+        from == "Song Registration" &&
+        location.state.project_type !== "paid in advance"
+      ) {
         {
           console.log("in song", location.state.project_type);
 
@@ -232,7 +238,6 @@ const PaymentScreen = () => {
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
-              
             },
             { headers: headers }
           );
@@ -253,7 +258,7 @@ const PaymentScreen = () => {
         location.state.project_type === "paid in advance"
       ) {
         console.log("in sdasdsd");
-        
+
         const response = await axiosApi.post(
           "/insert-calender-song-project",
           {
@@ -335,14 +340,15 @@ const PaymentScreen = () => {
   };
 
   const handleCancel = () => {
-    if (returnPath.includes("auth")) {
-      logout();
-    }
-    navigate(returnPath, {
+    navigate(backPath, {
       state: {
-        status: "cancelled",
+        from: location.state.from,
+        booking_date: location.state.release_date,
+        song_id: location.state.song_id,
+        songName: location.state.songName,
+        project_type: location.state.project_type,
+        lyrical_services: location.state.lyrical_services,
       },
-      replace: true,
     });
   };
 

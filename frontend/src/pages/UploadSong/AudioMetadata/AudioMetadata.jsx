@@ -561,7 +561,7 @@ export default function AudioMetadataForm() {
               songName: location.state.songName,
               release_date: location.state.release_date,
               project_type: location.state.project_type,
-              lyricalVid: location.state.lyricalVid,
+              lyrical_services: location.state.lyrical_services,
             },
           }
         ) : navigate('/dashboard/pending', {
