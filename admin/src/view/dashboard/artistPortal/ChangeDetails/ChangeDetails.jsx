@@ -44,6 +44,7 @@ const ChangeDetails = () => {
           data={tableData}
           showStatusIndicator={false}
           pageSize={10}
+          excludeColumns = {"content"}
           detailsUrl="/change-details"
         />
       </ArtistSidebar>

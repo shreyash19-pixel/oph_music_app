@@ -29,7 +29,7 @@ const NewSongs = () => {
           showStatusIndicator={false}
           pageSize={10}
           detailsUrl="/special-artist-songs"
-          excludeColumns={"date"}
+          excludeColumns={"date,proof,audio_url"}
         />
       </ArtistSidebar>
     </div>
