@@ -107,7 +107,7 @@ const getUpcomingSong = async (ophid) => {
 FROM song_release sre
 LEFT JOIN songs_register sr ON sre.song_id = sr.song_id
 LEFT JOIN video_details vd ON sr.song_id = vd.song_id
-WHERE sre.ophid = 'OPH-CAN-IA-07'
+WHERE sre.ophid = ?
   AND CURDATE() < sr.release_date
 ORDER BY sr.release_date
 LIMIT 1;

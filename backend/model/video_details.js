@@ -29,8 +29,9 @@ const insertVideoDetails = async (song_id, credits, image_url, video_url) => {
 };
 
 const setJourneyStatus = async (ophid, song_id) => {
+
   const [rows] = await db.execute(
-    "UPDATE songs_register SET status = 'Pending', current_page = NULL WHERE OPH_ID = ? AND song_id = ?",
+    "UPDATE songs_register SET status = 'Pending' WHERE OPH_ID = ? AND song_id = ?",
     [ophid, song_id]
   );
 

@@ -50,7 +50,9 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
     console.log(e);
     dispatch(changeSelectedEvent({ data: e }));
     // Navigate to the payment page
-    await navigate("/dashboard/payment", {
+    console.log( e);
+    
+     navigate("/dashboard/payment", {
       state: {
         amount: e.registrationFee_normal,
         // planIds: [e.payment_plan_id],
