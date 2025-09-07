@@ -1,17 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { toast } from "react-hot-toast";
-import { useNavigate, useLocation } from "react-router-dom";
-import { FaPauseCircle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import axiosApi from "../conf/axios";
-
-// import PlayBtn from "../../../../../public/assets/images/playButton.png";
-// import Struggle from "../../../../../public/assets/images/struggle.png";
-// import Elipse from "../../../../../public/assets/images/elipse.png";
-// import Elipse2 from "../../../../../public/assets/images/elipse2.png";
 
 const AdminSignUpForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [formData, setFormData] = useState({
     Name: "",
@@ -21,7 +14,6 @@ const AdminSignUpForm = () => {
     confirmPassword: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isSubmittingRef = useRef(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -49,53 +41,61 @@ const AdminSignUpForm = () => {
       !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])/.test(formData.password)
     )
       newErrors.password =
-        "Include uppercase, lowercase, number, and special character";
+        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
 
-    if (formData.confirmPassword !== formData.password)
+    if (!formData.confirmPassword)
+      newErrors.confirmPassword = "Please confirm your password";
+    else if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
 
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
   };
 
-  const getFieldError = (name, value, formData) => {
-    switch (name) {
-      case "name":
+  const getFieldError = (fieldName, value, formData) => {
+    switch (fieldName) {
+      case "Name":
         if (!value.trim()) return "Full name is required";
         if (value.length < 2) return "Name must be at least 2 characters";
-        break;
-      case "email":
+        return "";
+
+      case "Email":
         if (!value) return "Email is required";
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
           return "Invalid email format";
-        break;
+        return "";
+
       case "contactNumber":
         if (!value) return "Contact number is required";
         if (!/^\d{10}$/.test(value)) return "Must be 10 digits";
-        break;
+        return "";
+
       case "password":
         if (!value) return "Password is required";
         if (value.length < 8) return "Password must be at least 8 characters";
-        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])/.test(value))
-          return "Include uppercase, lowercase, number, and special character";
-        break;
+        if (
+          !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])/.test(value)
+        )
+          return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
+        return "";
+
       case "confirmPassword":
-        if (value !== formData.password) return "Passwords do not match";
-        break;
+        if (!value) return "Please confirm your password";
+        if (formData.password !== value) return "Passwords do not match";
+        return "";
+
       default:
         return "";
     }
-    return "";
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => {
-      const updatedFormData = { ...prev, [name]: value };
+    setFormData((prevFormData) => {
+      const updatedFormData = { ...prevFormData, [name]: value };
 
-      // Validate this field
+      // Get error for the current field
       const error = getFieldError(name, value, updatedFormData);
 
       // Also revalidate confirmPassword if password is changing
@@ -128,6 +128,7 @@ const AdminSignUpForm = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const signupUser = async (formData) => {
         console.log(formData);
@@ -144,95 +145,89 @@ const AdminSignUpForm = () => {
       }
     } catch (e) {
       toast.error(e.response);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <>
-      <div
-        className="min-h-screen pt-40 pb-20 xl:px-16 lg:px-10 px-6   bg-cover bg-center relative
-                  "
-      >
-        <div className="w-full container mx-auto py-8 relative z-10 flex flex-col lg:flex-row  gap-8">
-          {/* Form Section */}
-          <div
-            // className="lg:w-1/2 bg-contain bg-no-repeat "
-            // style={{ backgroundImage: `url(${Struggle})` }}
-          >
-            <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-              SIGN UP
+    <div className="min-h-screen flex items-center justify-center bg-[url('/assets/images/music_bg.png')] bg-cover bg-center p-5">
+      <div className="w-full max-w-2xl bg-[#0d3c44] p-10 rounded-2xl shadow-2xl border border-white/20">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-white mb-4">
+            ADMIN SIGN UP
             </h1>
-            <p className="text-gray-400 mb-8 text-sm">
-              OPH Community, along with all artists and fans, warmly welcomes
-              you. Once you sign up, you’ll become a valued member of our music
-              family.
-            </p>
+          <p className="text-gray-200 text-sm">
+            Create your admin account to manage the OPH Music platform
+          </p>
+        </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Full Name:<span className="text-red-500">*</span>
+            <label className="block mb-2 text-white font-medium">
+              Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="Name"
                   value={formData.Name}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                  placeholder="Martin"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:border-[#0d3c44] focus:ring-1 focus:ring-[#0d3c44]"
+              placeholder="Enter your full name"
                 />
                 {errors.Name && (
-                  <div className="text-red-500 text-sm mt-1">{errors.Name}</div>
+              <div className="text-red-400 text-sm mt-1">{errors.Name}</div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Email:<span className="text-red-500">*</span>
+            <label className="block mb-2 text-white font-medium">
+              Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   name="Email"
                   value={formData.Email}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                  placeholder="abc@gmail.com"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:border-[#0d3c44] focus:ring-1 focus:ring-[#0d3c44]"
+              placeholder="admin@example.com"
                 />
                 {errors.Email && (
-                  <div className="text-red-500 text-sm mt-1">
+              <div className="text-red-400 text-sm mt-1">
                     {errors.Email}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Contact Number:<span className="text-red-500">*</span>
+            <label className="block mb-2 text-white font-medium">
+              Contact Number <span className="text-red-500">*</span>
                 </label>
                 <div className="flex">
-                  <select className="px-4 py-2 rounded-l-full bg-gray-800/50 border border-r-0 border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
+              <select className="px-4 py-3 rounded-l-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:border-[#0d3c44] focus:ring-1 focus:ring-[#0d3c44]">
                     <option>IND +91</option>
                   </select>
                   <input
                     type="tel"
-                    max={10}
+                maxLength={10}
                     name="contactNumber"
                     value={formData.contactNumber}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-r-full bg-gray-800/50 border border-l-0 border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                    placeholder="0000 0000 00"
+                className="w-full px-4 py-3 rounded-r-lg border border-l-0 border-gray-300 bg-white text-gray-900 focus:outline-none focus:border-[#0d3c44] focus:ring-1 focus:ring-[#0d3c44]"
+                placeholder="Enter 10-digit number"
                   />
                 </div>
                 {errors.contactNumber && (
-                  <div className="text-red-500 text-sm mt-1">
+              <div className="text-red-400 text-sm mt-1">
                     {errors.contactNumber}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Password:
+            <label className="block mb-2 text-white font-medium">
+              Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -240,13 +235,13 @@ const AdminSignUpForm = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 pr-10"
-                    placeholder="••••••••••••••"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 pr-12 focus:outline-none focus:border-[#0d3c44] focus:ring-1 focus:ring-[#0d3c44]"
+                placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0d3c44] hover:text-[#0b3239]"
                   >
                     {showPassword ? (
                       <svg
@@ -286,15 +281,15 @@ const AdminSignUpForm = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <div className="text-red-500 text-sm mt-1">
+              <div className="text-red-400 text-sm mt-1">
                     {errors.password}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Confirm Password:
+            <label className="block mb-2 text-white font-medium">
+              Confirm Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -302,13 +297,13 @@ const AdminSignUpForm = () => {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 pr-10"
-                    placeholder="••••••••••••••"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 pr-12 focus:outline-none focus:border-[#0d3c44] focus:ring-1 focus:ring-[#0d3c44]"
+                placeholder="Confirm your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0d3c44] hover:text-[#0b3239]"
                   >
                     {showConfirmPassword ? (
                       <svg
@@ -348,7 +343,7 @@ const AdminSignUpForm = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <div className="text-red-500 text-sm mt-1">
+              <div className="text-red-400 text-sm mt-1">
                     {errors.confirmPassword}
                   </div>
                 )}
@@ -356,290 +351,27 @@ const AdminSignUpForm = () => {
 
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-medium rounded-full transition-colors duration-200"
+            disabled={isSubmitting}
+            className="w-full py-3 px-4 bg-white hover:bg-gray-100 text-[#0d3c44] font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Account
+            {isSubmitting ? "Creating Account..." : "Create Admin Account"}
               </button>
             </form>
-          </div>
 
-          {/* Image Section */}
-          <div className="lg:w-1/2  mt-5 lg:mt-0 relative">
-            <div className="aspect-[3/4] lg:aspect-[5/6] overflow-hidden rounded-lg">
-              {/* <img
-                src="/assets/images/signup-image.png"
-                alt="Sign Up"
-                className="w-full h-full object-cover rounded-lg"
-              /> */}
-              {/* {video && (
-                <video
-                  ref={videoRef}
-                  src={video.value}
-                  onPlay={handlePlay}
-                  onPause={handlePause}
-                  onClick={togglePlayPause}
-                  className="w-full h-full mt-10 object-cover rounded-lg"
-                  controls={false} // Disable default controls
-                />
-              )}
-              {!isPlaying && (
-                <button
-                  onClick={togglePlayPause}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none"
-                >
-                  <img src={PlayBtn} alt="Play" className="w-32 h-32" />
-                </button>
-              )} */}
-              {/* <button className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-purple-600 rounded-full p-4">
-                <img
-                  src="/assets/images/resources/play-icon.png"
-
-
-                  alt="Play"
-                  className="w-6 h-6"
-                />
-              </button> */}
-            </div>
-          </div>
-        </div>
-        <div className="container w-full h-[1px] mx-auto bg-[#959494] my-10 opacity-30 relative"></div>
-        {/* <img src={Elipse} className="absolute h-[600px] right-0" alt="" /> */}
-        {/* <img
-          src={Elipse2}
-          className="absolute h-[600px] top-[500px] left-0"
-          alt=""
-        />
-        <img
-          src={Elipse2}
-          className="absolute h-[600px] top-[1000px] left-0"
-          alt=""
-        />
-        <img src={Elipse} className="absolute h-[600px] right-0" alt="" />
-        <img
-          src={Elipse2}
-          className="absolute h-[600px] bottom-[1500px] left-0"
-          alt=""
-        /> */}
-
-        <h1 className="text-4xl text-center text-white font-bold">
-          <span className="text-[#5DC9DE]">ABOUT:</span> WHAT WE PROVIDE TO
-          ASSIST
-        </h1>
-        <h2 className="text-center mt-4 text-[#9BA3B7]">
-          NOW - NO WORRIES ON ANYTHING JUST MAKE YOUR MUSIC PEACEFULLY - LEAVE
-          THE REST TO INDIA'S ONLY REAL MUSIC COMMUNITY.
-        </h2>
-        <div className="pt-16">
-          <h2 className="uppercase text-2xl font-semibold">OPH COMMUNITY</h2>
-          <h2 className="uppercase text-lg font-semibold mt-3 text-[#5DC9DE]">
-            One stop solution for artist journey to success.
-          </h2>
-          <ol className="list-none mt-4 space-y-2 ">
-            <h3 className="before:content-['-']  drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Fully Technology Driven Music Community Platform
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Personal Portal
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Live Data
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Live Ranking
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              {" "}
-              100% Ownership of Artist
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Network & Connection Platform
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              {" "}
-              Event Direct Access
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Pre - Booking Platform for Music Releases
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Key Performance Indicator (KPI) Installed in Platform
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Leader Board Function
-            </h3>
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Learning & Resources Platform
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              No Middleman - Direct Access with Collaborators
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              100% Artist Community Platform
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              0 Monthly & Yearly Charges
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              {" "}
-              Reward Winning Function Every Month
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              No Limit on Withdrawals
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              {" "}
-              Call & Chat Support
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Every Status Update on Artist Personal Portal
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              Lifetime Membership
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              100% Revenue from both Audio & Video will Go to the Artist
-            </h3>{" "}
-            <h3 className="before:content-['-'] drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] before:mr-2">
-              One Stop Solution for Every Music Artists Journey
-            </h3>
-          </ol>
-          <div className="relative">
-            <h2 className="mt-8 text-[#5DC9DE] text-2xl font-bold">
-              + Everything Included Mentioned below (Free of Cost by OPH
-              COMMUNITY) Only for our Talenteh3Indian Music Artist
-            </h2>
-          </div>
-          <h2 className="mt-8 text-2xl font-semibold">
-            1. Marketing Functions:
-          </h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>100% Google Ads marketing by the OPH Community</h3>
-            <h3>100% Facebook Ads marketing by the OPH Community</h3>
-            <h3>
-              All creatives and artist branding will be managed by the OPH
-              Community
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-
-          <h2 className="mt-8 text-2xl font-semibold">2. Creative Funhion</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>Teaser</h3>
-            <h3>Song Reel</h3>
-            <h3>Poster</h3>
-            <h3>Distribution Poster</h3>
-            <h3>Thumbnail</h3>
-            <h3>Artist Story</h3>
-          </ul>
-          <p className="text-gray-400 mt-4">
-            This will be{" "}
-            <span className="text-[#5DC9DE]">created by the OPH Community</span>
-          </p>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">
-            3. Distribution Audio Functions:
-          </h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              Distribution across all music platforms (including Indian
-              platforms)
-            </h3>
-            <h3>Artist profile linking on Instagram</h3>
-            <h3>
-              Creation of new profiles on Apple Music and Spotify (if the artist
-              doesn't already have one)
-            </h3>
-            <h3>Caller tunes will be made available</h3>
-            <h3>Image design will be handled by the OPH Community</h3>
-            <h3>
-              All data will be accessible through the Artist Portal, managed by
-              the OPH Community.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">4. Ownership:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              Full ownership will remain with the artist, with no interference.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">5. TV Release:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              The artist's music video will have the opportunity to be released
-              on TV platforms across various channels.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">6. Revenue Model:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              100% of the revenue from both audio and video will go to the
-              artist.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">
-            7. Withdrawal Threshold:
-          </h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              No limit or threshold on the withdrawal amount. Artists can
-              withdraw any amount, even as low as ₹100.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">8. Exposure:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              The artist's EPK and profile will be displayed on the official OPH
-              Community website, providing connections and networking
-              opportunities.
-            </h3>
-          </ul>
-          <h2 className="mt-8 text-2xl font-semibold">9. Support:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>Call Support</h3>
-            <h3>Chat Support</h3>
-            <h3>Ticket Raising System</h3>
-            <h3>Access To a Personal Port</h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <p className="underline text-[#5DC9DE] font-bold text-2xl ">
-            First Time Ever in India – Only for Limited Thousand Artist
-          </p>
-          <p className="mt-6">
-            One Time Artist Documentation Registration fees –{" "}
-            <span className="text-[#5DC9DE]">2,999 for lifetime Access</span>
-          </p>
-          <p className="mt-2">
-            Only Per Song Registration fees{" "}
-            <span className="text-[#5DC9DE]">– 799</span>
-          </p>
-          <h1 className="text-center mt-16 font-semibold px-4 lg:px-48 text-xl lg:text-xl uppercase">
-            Now – No hassle for Anything just Make your Music Peacefully –<br />{" "}
-            Rest live on India's Only Real Music Community
-          </h1>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-20 text-center text-xl font-bold">OPH COMMUNITY</h2>
-          <p className="text-gray-400 text-center mt-4">
-            One stop solution for artist journey to success.
-          </p>
-          {/* <p className="text-center px-2 py-3 rounded-full bg-cyan-300 text-black">
-              Lets Start
-             </p> */}
-          <div className="w-full flex justify-center">
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-200 text-sm">
+            Already have an account?{" "}
             <button
-              className="px-8 py-3 rounded-full text-black mt-5 bg-[#5DC9DE]"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} //scroll to top
+              onClick={() => navigate("/admin/signin")}
+              className="text-white hover:text-gray-300 font-medium underline"
             >
-              Lets Start
+              Sign In
             </button>
-          </div>
+          </p>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -18,18 +18,9 @@ const membershipForm = async (req, res) => {
       // Fetch professions from database instead of hardcoding
       const professionOptions = await professions.getAll();
 
-      const banking = [
-        { id: 1, bank_name: "State Bank of India" },
-        { id: 2, bank_name: "HDFC Bank" },
-        { id: 3, bank_name: "ICICI Bank" },
-        { id: 4, bank_name: "Axis Bank" },
-        { id: 5, bank_name: "Punjab National Bank" },
-        { id: 6, bank_name: "Bank of Baroda" },
-        { id: 7, bank_name: "Kotak Mahindra Bank" },
-        { id: 8, bank_name: "Canara Bank" },
-        { id: 9, bank_name: "IndusInd Bank" },
-        { id: 10, bank_name: "Union Bank of India" },
-      ];
+      // Fetch banks from database
+      const Banks = require('../model/banks');
+      const banking = await Banks.getBanks();
       const { ophid } = req.query;
       const OPH_ID = ophid;
 
@@ -50,8 +41,8 @@ const membershipForm = async (req, res) => {
 
       const panFrontUrl = artistDoc[0].PanFrontURL;
 
-      const bankname = parseInt(artistDoc[0].BankName); // Convert from string to number
-      const BankName = banking.find((b) => b.id === bankname)?.bank_name;
+      // BankName is now stored as string directly, no need to convert or lookup
+      const BankName = artistDoc[0].BankName;
 
       const bankDetails = {
         bank_name: BankName,

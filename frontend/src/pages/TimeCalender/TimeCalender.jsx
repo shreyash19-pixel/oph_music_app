@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lock, ChevronLeft, ChevronRight } from "lucide-react";
+// Removed unused imports: Lock, ChevronLeft, ChevronRight
 import axiosApi from "../../conf/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -32,7 +32,7 @@ export default function TimeCalendar() {
           }
         );
 
-        if (response.data.status=200) {
+        if (response.data.success === true) {
           const dateMap = {};
           setData(response.data.data)
           response.data.data.forEach((item) => {
@@ -93,7 +93,7 @@ export default function TimeCalendar() {
       const currentPath = location.pathname;
       navigate(currentPath, { replace: true });
     }
-  }, [location.state, navigate]);
+  }, [location.state, location.pathname, navigate]);
 
   // Helper function to check if a date is blocked
   const isDateBlocked = (year, month, day) => {
@@ -103,7 +103,7 @@ export default function TimeCalendar() {
       "0"
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
-    return blockedDatesInfo.hasOwnProperty(dateStr);
+    return Object.prototype.hasOwnProperty.call(blockedDatesInfo, dateStr);
 
     // const dateStr = new Date(Date.UTC(year, month, day))
     //   .toISOString()
@@ -131,6 +131,15 @@ export default function TimeCalendar() {
     );
     const checkDate = new Date(year, month, day);
     return checkDate <= oneYearFromNow;
+  };
+
+  // Helper function to check if a date is within 5 days of today
+  const isWithinFiveDays = (year, month, day) => {
+    const today = new Date();
+    const checkDate = new Date(year, month, day);
+    const timeDiff = checkDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return daysDiff <= 5 && daysDiff >= 0; // Only future dates within 5 days
   };
 
   // Month and day mappings
@@ -192,55 +201,7 @@ export default function TimeCalendar() {
     return days;
   };
 
-  const handlePrevMonth = () => {
-    const today = new Date();
-    const currentDate = new Date(currentYear, currentMonthIndex - 1); // Simulate previous month
-
-    // Only allow navigation if previous month is not in the past
-    if (
-      currentDate.getFullYear() > today.getFullYear() ||
-      (currentDate.getFullYear() === today.getFullYear() &&
-        currentDate.getMonth() >= today.getMonth())
-    ) {
-      if (currentMonthIndex === 0) {
-        setCurrentMonthIndex(11);
-        setCurrentYear((prev) => prev - 1);
-      } else {
-        setCurrentMonthIndex((prev) => prev - 1);
-      }
-    }
-  };
-
-  const handleNextMonth = () => {
-    // Create dates for comparison
-    const today = new Date();
-    const oneYearFromNow = new Date(
-      today.getFullYear() + 1,
-      today.getMonth(),
-      today.getDate()
-    );
-
-    // Calculate the first day of the next month
-    let nextYear = currentYear;
-    let nextMonth = currentMonthIndex + 1;
-
-    if (nextMonth > 11) {
-      nextMonth = 0;
-      nextYear += 1;
-    }
-
-    const nextMonthDate = new Date(nextYear, nextMonth, 1);
-
-    // Only allow navigation if next month starts before or on one year from now
-    if (nextMonthDate <= oneYearFromNow) {
-      if (currentMonthIndex === 11) {
-        setCurrentMonthIndex(0);
-        setCurrentYear((prev) => prev + 1);
-      } else {
-        setCurrentMonthIndex((prev) => prev + 1);
-      }
-    }
-  };
+  // Removed unused handlePrevMonth and handleNextMonth functions
 
   // Initialize to current month on component mount
   useEffect(() => {
@@ -261,7 +222,7 @@ export default function TimeCalendar() {
     "Saturday",
   ];
 
-  const UserAvatar = ({ artist }) => (
+  const UserAvatar = () => (
     <div className="flex items-center gap-2 mb-2">
       {/* Circle with Initial */}
       {/* Full name only on larger screens */}
@@ -294,6 +255,12 @@ export default function TimeCalendar() {
     if (dateInfo) {
       // if (dateInfo.artist.id === currentArtistId.artist.id) {
       if (isCurrentOwnerOfDate.oph_id === ophid) {
+        // Check if the date is within 5 days of today
+        if (isWithinFiveDays(year, month, day)) {
+          toast.error("You cannot change dates that are within 5 days of today");
+          return;
+        }
+        
         // It's the current artist's date - navigate to date change
         // const artistId = currentArtistId.artist.id;
 
@@ -323,12 +290,8 @@ export default function TimeCalendar() {
       currentMonthIndex,
       day
     );
-    const d = new Date(currentYear, currentMonthIndex, day);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(d.getDate()).padStart(2, "0")}`;
-    const artist = blockedDatesInfo[dateStr];
+    const isWithinFiveDaysRestriction = isWithinFiveDays(currentYear, currentMonthIndex, day);
+    // Removed unused variables: d, dateStr, artist
 
     // const dateStr = new Date(Date.UTC(currentYear, currentMonthIndex, day))
     //   .toISOString()
@@ -349,7 +312,9 @@ export default function TimeCalendar() {
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
           isBlocked && isCurrentMonth
-            ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
+            ? isWithinFiveDaysRestriction
+              ? "bg-[#FF6B6B]/30 border-[#FF6B6B] shadow-[#FF6B6B]/20 shadow-inner"
+              : "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
             : isCurrentMonth
             ? "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
             : "bg-gray-900/40 border-gray-700"
@@ -357,7 +322,7 @@ export default function TimeCalendar() {
         ${isPast ? "opacity-50" : ""}
         ${!isValidFutureDate ? " opacity-25" : ""}
         ${
-          !isPast && isValidFutureDate
+          !isPast && isValidFutureDate && !isWithinFiveDaysRestriction
             ? "cursor-pointer hover:opacity-80"
             : "cursor-not-allowed"
         }`}
@@ -381,12 +346,12 @@ export default function TimeCalendar() {
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="M3.25 6C3.25 2.82436 5.82436 0.25 9 0.25C12.1756 0.25 14.75 2.82436 14.75 6V7.11372C14.75 7.18052 14.7413 7.24529 14.7249 7.30693C16.161 7.83463 17.2803 8.99318 17.7553 10.4549C18 11.2081 18 12.1387 18 14C18 15.8613 18 16.7919 17.7553 17.5451C17.2607 19.0673 16.0673 20.2607 14.5451 20.7553C13.7919 21 12.8613 21 11 21H6.99998C5.13871 21 4.20808 21 3.45492 20.7553C1.93273 20.2607 0.739307 19.0673 0.244717 17.5451C0 16.7919 0 15.8613 0 14C0 12.1387 0 11.2081 0.244717 10.4549C0.719664 8.99318 1.83903 7.83463 3.27512 7.30693C3.25873 7.24529 3.25 7.18052 3.25 7.11372V6ZM4.75 7.03413C5.31973 7 6.03471 7 7 7H11C11.9653 7 12.6803 7 13.25 7.03413V6C13.25 3.65279 11.3472 1.75 9 1.75C6.65279 1.75 4.75 3.65279 4.75 6V7.03413ZM9 11.25C9.41421 11.25 9.75 11.5858 9.75 12V16C9.75 16.4142 9.41421 16.75 9 16.75C8.58579 16.75 8.25 16.4142 8.25 16V12C8.25 11.5858 8.58579 11.25 9 11.25Z"
-                fill="#EC4346"
+                fill={isWithinFiveDaysRestriction ? "#FF6B6B" : "#EC4346"}
               />
             </svg>
           )}
         </div>
-        {isBlocked && isCurrentMonth && <UserAvatar artist={artist} />}
+        {isBlocked && isCurrentMonth && <UserAvatar />}
       </div>
     );
   };
@@ -422,6 +387,10 @@ export default function TimeCalendar() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
                   <span>Booked</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#FF6B6B]"></div>
+                  <span>Locked (within 5 days)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>

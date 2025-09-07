@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
@@ -15,18 +15,7 @@ import axiosApi from "../../../../conf/axios";
 import SignatureCanvas from "react-signature-canvas";
 // import { fetchVideoForScreen } from "../../../../utils/fetchVideo";
 import MembershipForm from "../MembershipFrom";
-const banking = [
-  { id: 1, bank_name: "State Bank of India" },
-  { id: 2, bank_name: "HDFC Bank" },
-  { id: 3, bank_name: "ICICI Bank" },
-  { id: 4, bank_name: "Axis Bank" },
-  { id: 5, bank_name: "Punjab National Bank" },
-  { id: 6, bank_name: "Bank of Baroda" },
-  { id: 7, bank_name: "Kotak Mahindra Bank" },
-  { id: 8, bank_name: "Canara Bank" },
-  { id: 9, bank_name: "IndusInd Bank" },
-  { id: 10, bank_name: "Union Bank of India" },
-];
+// Removed hardcoded banking array - now fetched from API
 
 const DocumentationDetailsForm = () => {
   const [searchParams] = useSearchParams();
@@ -37,6 +26,19 @@ const DocumentationDetailsForm = () => {
 
   const [banks, setBanks] = useState([]);
   const signatureCanvasRef = useRef(null);
+
+  // Function to fetch banks from API
+  const fetchBanks = useCallback(async () => {
+    try {
+      const response = await axiosApi.get('/get_banks');
+      if (response.data.success) {
+        setBanks(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching banks:', error);
+      toast.error('Failed to load banks list');
+    }
+  }, []);
   const [isPlaying, setIsPlaying] = useState(false); // Track video play state
   const videoRef = useRef(null);
   const [video, setVideo] = useState(null);
@@ -110,7 +112,12 @@ const DocumentationDetailsForm = () => {
     if (ophid) {
       fetchDocumentationDetails();
     }
-  }, [ophid]);
+  }, [ophid, fetchDocumentationDetails]);
+
+  // Fetch banks when component mounts
+  useEffect(() => {
+    fetchBanks();
+  }, [fetchBanks]);
 
   const parseString = (accept) => {
     if (accept === "false") {
@@ -216,10 +223,8 @@ const DocumentationDetailsForm = () => {
       console.log(response);
       if (response.success && response.data.length > 0) {
         const doc = response.data[0];
-        const bankname = parseInt(doc.BankName); // Convert from string to number
-        const BankName = banking.find((b) => b.id === bankname)?.bank_name;
-
-        setBanks(BankName);
+        // BankName is now stored as string directly
+        const BankName = doc.BankName;
 
         const aadharFrontFile = doc.AadharFrontURL
           ? await urlToFile(doc.AadharFrontURL, "aadhar-front.png")
@@ -379,18 +384,15 @@ const DocumentationDetailsForm = () => {
         }
       }
 
-      // Get the selected bank's ID
-      const selectedBank = banking.find(
-        (bank) => bank.bank_name === formData.bankName,
-      );
-      if (!selectedBank) {
-        toast.error("Please select a valid bank");
+      // Validate bank name
+      if (!formData.bankName) {
+        toast.error("Please select a bank");
         return;
       }
 
       // Append bank details
       formDataToSend.append("OPH_ID", ophid);
-      formDataToSend.append("BankName", selectedBank.id);
+      formDataToSend.append("BankName", formData.bankName);
       formDataToSend.append("AccountHolderName", formData.accountHolder);
       formDataToSend.append("AccountNumber", formData.accountNumber);
       formDataToSend.append("IFSCCode", formData.ifscCode);
@@ -652,9 +654,9 @@ const DocumentationDetailsForm = () => {
                 required
               >
                 <option value="">Select Bank</option>
-                {banking.map((bank) => (
-                  <option key={bank.id} value={bank.bank_name}>
-                    {bank.bank_name}
+                {banks.map((bank) => (
+                  <option key={bank.id} value={bank.name}>
+                    {bank.name}
                   </option>
                 ))}
               </select>
