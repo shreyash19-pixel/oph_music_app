@@ -40,7 +40,8 @@ const SignInForm = () => {
           const path = `${response.step}`;
           navigate(path, {
             state: {
-              from: "Registeration",
+              from: "Registration",
+              user_type: response.artist_type
             },
           });
         }

@@ -38,32 +38,34 @@ const PaymentScreen = () => {
   const fetchCostingData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Check if this is an event registration
       if (from === "Event Registeration" && event_id) {
         const response = await axiosApi.get(`/event/${event_id}`);
-        
+
         if (response.data.success) {
           const eventData = response.data.data;
-          
+
           // Set output_user to "outside user"
           const isOutsideUser = "outside user";
-          
+
           // Calculate amount based on output_user
           const registrationFee = eventData.registrationFee_normal;
-          const finalAmount = (output_user === true || output_user === 1) 
-            ? registrationFee  // Full amount for outside users
-            : registrationFee / 2;  // Half amount for regular users
-          
+          const finalAmount =
+            output_user === true || output_user === 1
+              ? registrationFee // Full amount for outside users
+              : registrationFee / 2; // Half amount for regular users
+
           // Create a mock costing object for event data
           const eventCosting = {
             name: "Event Registeration",
             cost: finalAmount,
-            qr_image_path: (output_user === true || output_user === 1)
-              ? eventData.payment_qr || "/qr.png"
-              : eventData.payment_qr_discount || "/qr.png"
+            qr_image_path:
+              output_user === true || output_user === 1
+                ? eventData.payment_qr || "/qr.png"
+                : eventData.payment_qr_discount || "/qr.png",
           };
-          
+
           setMatchedCosting(eventCosting);
           console.log(
             `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${isOutsideUser})`
@@ -97,7 +99,7 @@ const PaymentScreen = () => {
             }
           } else {
             // Handle case when no 'from' is provided - default to Registration
-            if (!from || from === 'Registration') {
+            if (!from || from === "Registration") {
               // Check if user_type is special artist
               if (user_type === "Special artist") {
                 searchName = "special artist registration";
