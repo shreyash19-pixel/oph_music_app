@@ -43,11 +43,11 @@ export default function UploadSongs() {
     id: song.song_id,
     reject_reason: song.reject_reason,
     next_page: song.next_page,
-    projectType: song.project_type,
+    projectType: song.projectType,
     release_date: song.release_date
   })) : null;
 
-
+  
   const handleProjectClick = (projectType) => {
     ;
 
@@ -126,7 +126,8 @@ export default function UploadSongs() {
               ['draft', 'rejected'].includes(song.status) ? navigate(`${song.next_page}${song.id}`, {
                 state: {
                   songName: song.name,
-                  release_date: song.release_date
+                  release_date: song.release_date,
+                  project_type: song.projectType
                 }
               }) : e.preventDefault()
               localStorage.setItem("projectType", song.projectType)

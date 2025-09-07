@@ -12,14 +12,18 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const location = useLocation();
-  const [nextPage, setNextPage] = useState("");
-  const release_date = new Date(location.state.release_date).toLocaleDateString()
-  
-  const year = release_date.split("/")[2]
-  const month = release_date.split("/")[0]
-  const day = release_date.split("/")[1]
+  console.log(location);
 
-  const formattedDate = `${year}-${month}-${day}`
+  const [nextPage, setNextPage] = useState("");
+  const release_date = new Date(
+    location.state.release_date
+  ).toLocaleDateString();
+
+  const year = release_date.split("/")[2];
+  const month = release_date.split("/")[0];
+  const day = release_date.split("/")[1];
+
+  const formattedDate = `${year}-${month}-${day}`;
 
   const [songName, setSongName] = useState(location.state.songName);
   const projectType = localStorage.getItem("projectType") || "";
@@ -30,9 +34,8 @@ export default function VideoMetadataForm() {
     video_file: null,
     existing_thumbnails: [],
     existing_video_url: null,
-    reject_reason: null
+    reject_reason: null,
   });
-
 
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -156,7 +159,10 @@ export default function VideoMetadataForm() {
         },
       });
 
-      if (projectType === "paid in advance") {
+      if (
+        projectType === "paid in advance" &&
+        location.state.lyricalVid === false
+      ) {
         const response = await axiosApi.post(
           "/insert-calender-song-project",
           {
@@ -195,9 +201,23 @@ export default function VideoMetadataForm() {
         }
         return;
       }
+      else if(
+        projectType === "paid in advance" && location.state.lyricalVid === true
+      );
+      {
+        navigate("/auth/payment", {
+          state: {
+            from: "Song Registration",
+            booking_date: location.state.release_date,
+            song_id: contentId,
+            songName: location.state.songName,
+            project_type: location.state.project_type,
+            lyricalVid: location.state.lyricalVid,
+          },
+        });
+      }
 
       if (response.data.success) {
-
         if (nextPage === "repayment") {
           navigate("/auth/payment", {
             state: {
@@ -208,9 +228,8 @@ export default function VideoMetadataForm() {
               project_type: projectType,
               lyricalVid: location.state.lyricalVid,
             },
-          })
-        }
-        else if (nextPage === "payment") {
+          });
+        } else if (nextPage === "payment") {
           navigate("/auth/payment", {
             state: {
               from: "Song Registration",
@@ -220,9 +239,8 @@ export default function VideoMetadataForm() {
               project_type: location.state.project_type,
               lyricalVid: location.state.lyricalVid,
             },
-          })
-        }
-        else if(nextPage === "pending") {
+          });
+        } else if (nextPage === "pending") {
           navigate("/dashboard/pending", {
             state: {
               heading: "Your video details are under review",
@@ -461,19 +479,19 @@ export default function VideoMetadataForm() {
               {formData.thumbnails.length +
                 formData.existing_thumbnails.length <
                 3 && (
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                      multiple
-                    />
-                    <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
-                      <Plus className="w-8 h-8 text-gray-500" />
-                    </div>
-                  </label>
-                )}
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    multiple
+                  />
+                  <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
+                    <Plus className="w-8 h-8 text-gray-500" />
+                  </div>
+                </label>
+              )}
             </div>
           </div>
 
@@ -534,18 +552,22 @@ export default function VideoMetadataForm() {
           {/* Submit Button */}
           {formData.reject_reason === null && nextPage === "repayment" ? (
             <div
-              onClick={() => navigate("/auth/payment", {
-                state: {
-                  from: "Song Repayment",
-                  booking_date: formattedDate,
-                  song_id: contentId,
-                  songName: location.state.songName,
-                  project_type: projectType,
-                  lyricalVid: location.state.lyricalVid,
-                },
-              })}
+              onClick={() =>
+                navigate("/auth/payment", {
+                  state: {
+                    from: "Song Repayment",
+                    booking_date: formattedDate,
+                    song_id: contentId,
+                    songName: location.state.songName,
+                    project_type: projectType,
+                    lyricalVid: location.state.lyricalVid,
+                  },
+                })
+              }
               className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400 text-center"
-            >Pay now</div>
+            >
+              Pay now
+            </div>
           ) : (
             <button
               type="submit"
