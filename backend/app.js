@@ -42,6 +42,7 @@ const special_artist = require("./routes/special-artist");
 const special_artist_song = require("./routes/special-artist-songs");
 const contact_us = require("./routes/contact_us");
 const song_details = require("./routes/song_details")
+const navleaderboard = require("./routes/leaderboard")
 
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
@@ -150,6 +151,7 @@ app.use("/", special_artist);
 app.use("/", special_artist_song);
 app.use("/", contact_us);
 app.use("/", song_details);
+app.use("/", navleaderboard);
 //Admin Routes
 
 app.use("/", adminSignUp);
