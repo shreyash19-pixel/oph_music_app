@@ -232,7 +232,7 @@ const PaymentScreen = () => {
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
-              lyricalVid: lyricalVid,
+              
             },
             { headers: headers }
           );
