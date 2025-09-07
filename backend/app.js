@@ -44,6 +44,9 @@ const contact_us = require("./routes/contact_us");
 const song_details = require("./routes/song_details")
 const income = require("./routes/income");
 const banks = require("./routes/banks");
+const navleaderboard = require("./routes/leaderboard")
+
+
 //Admin route assignment
 const adminSignUp = require("./admin/routes/adminSignUp");
 const adminSignIn = require("./admin/routes/adminSignIn");
@@ -153,6 +156,8 @@ app.use("/", contact_us);
 app.use("/", song_details);
 app.use("/", income);
 app.use("/", banks);
+app.use("/", navleaderboard);
+
 //Admin Routes
 
 app.use("/", adminSignUp);

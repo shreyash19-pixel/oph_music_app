@@ -221,7 +221,7 @@ function Songs() {
                         );
                       }}
                     >
-                      <div>{artist.primary_artist}</div>
+                      <div>{artist.Song_name}</div>
                       <div className="text-sm text-gray-400">
                         {artist.secondary_artists
                           .map((art) => art.artist_name)
@@ -269,7 +269,7 @@ function Songs() {
           <tbody>
             {artistSongs &&
               Object.values(artistSongs)
-                .slice(0, 5)
+                .slice(5, )
                 .map((artist, index) => (
                   <tr key={index}>
                     <td className="py-4 px-2 lg:px-4">
@@ -277,7 +277,7 @@ function Songs() {
                     </td>
                     <td className="py-4 px-2 lg:px-4">
                       <div>
-                        <div>{artist.primary_artist}</div>
+                        <div>{artist.Song_name}</div>
                         <div className="text-sm text-gray-400">
                           {artist.secondary_artists
                             .map((art) => art.artist_name)

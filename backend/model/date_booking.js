@@ -75,7 +75,7 @@ const getAllBookings = async () => {
 };
 
 const getAllBookingsByID = async (ophid) => {
-  const [rows] = await db.execute("SELECT * FROM calender WHERE oph_id = ?", [
+  const [rows] = await db.execute("SELECT * FROM calender WHERE oph_id = ? AND song_name IS null", [
     ophid,
   ]);
 

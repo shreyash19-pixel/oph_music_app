@@ -3,15 +3,13 @@ import HeroSection from "./components/HeroSection";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import Select from "react-select";
+import axiosApi from "../../../conf/axios";
 import { Helmet } from "react-helmet";
 function Leaderboard() {
   const navigate = useNavigate();
-  const artistsData = useSelector(
-    (state) => state.leaderboard.history_leaderboard
-  );
-  console.log(artistsData);
 
-  const loading = useSelector((state) => state.leaderboard.loading);
+  const [artistsData, setArtistData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchArtist, setSearchArtist] = useState("");
   const artistRefs = useRef({});
   const [artistExists, setArtistExists] = useState([]);
@@ -25,24 +23,54 @@ function Leaderboard() {
   const [uniqueLocations, setUniqueLocations] = useState([]);
   const [uniqueStageNames, setUniqueStageNames] = useState([]);
   const [uniqueRanks, setUniqueRanks] = useState([]);
-  const [uniqueProfessions, setUniqueProfessions] = useState([]);
+  // const [uniqueProfessions, setUniqueProfessions] = useState([]);
+  const getCurrentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    const fetchArtist = async () => {
+      try {
+        const response = await axiosApi.get("/leaderboard/history");
+
+        if (response.data.success) {
+          setArtistData(response.data.data[getCurrentYear]);
+        }
+      } catch (err) {
+        console.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArtist();
+  }, []);
 
   const handleSearch = (artist_name) => {
+    console.log(artist_name);
+    
     if (artist_name.trim() === "") {
       setArtistExists([]);
       return;
     }
     const normalizedArtistName = artist_name.toLowerCase();
+    console.log(normalizedArtistName);
+    
     setSearchArtist(normalizedArtistName);
     const exists = Object.values(artistsData).map((month) =>
-      month.map((artist) =>
-        artist.stage_name.toLowerCase().includes(normalizedArtistName) ||
-        artist.name.toLowerCase().includes(normalizedArtistName)
+      month.map(
+        (artist) =>
+          artist.stage_name.toLowerCase().includes(normalizedArtistName)
+        // ||
+        // artist.name.toLowerCase().includes(normalizedArtistName)
           ? artist
           : null
       )
     );
+
+    console.log(exists);
+    
+
     const filteredArtists = exists.flat().filter((artist) => artist !== null);
+    console.log(filteredArtists);
+    
     setArtistExists(filteredArtists);
   };
 
@@ -59,27 +87,19 @@ function Leaderboard() {
     const locations = new Set();
     const stageNames = new Set();
     const ranks = new Set();
-    const professions = new Set();
 
     Object.values(artistsData)
       .flat()
       .forEach((artist) => {
         locations.add(artist.location);
         stageNames.add(artist.stage_name);
-        ranks.add(artist.rank);
-        console.log(artist, "artist.profession_name");
-        professions.add(artist.profession_name);
+        ranks.add(artist.ranks);
       });
 
     setUniqueLocations([...locations]);
     setUniqueStageNames([...stageNames]);
     setUniqueRanks([...ranks]);
-    setUniqueProfessions([...professions]);
   }, [artistsData]);
-
-  const handleProfileClick = (artistId) => {
-    navigate(`/artists/${artistId}`);
-  };
 
   const formatListeners = (views) => {
     if (views >= 1000000) {
@@ -109,9 +129,7 @@ function Leaderboard() {
             filters.location.includes(artist.location)) &&
           (filters.stageName.length === 0 ||
             filters.stageName.includes(artist.stage_name)) &&
-          (filters.rank.length === 0 || filters.rank.includes(artist.rank)) &&
-          (filters.profession.length === 0 ||
-            filters.profession.includes(artist.profession_name ))
+          (filters.rank.length === 0 || filters.rank.includes(artist.rank)) 
         );
       });
     setArtistExists(filteredArtists);
@@ -157,9 +175,14 @@ function Leaderboard() {
 
   return (
     <>
-    <Helmet>
-        <title>Top Independent Artist Platform | OPH Community Leaderboard</title>
-        <meta name="description" content="Find top-ranked independent artists epk on India’s top music networking platform for creators. Use filters by location and profession to connect and collaborate." />
+      <Helmet>
+        <title>
+          Top Independent Artist Platform | OPH Community Leaderboard
+        </title>
+        <meta
+          name="description"
+          content="Find top-ranked independent artists epk on India’s top music networking platform for creators. Use filters by location and profession to connect and collaborate."
+        />
       </Helmet>
       {loading && (
         <div className="text-center h-[90vh] w-full py-32">
@@ -213,14 +236,13 @@ function Leaderboard() {
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
-                    onClick={() => handleProfileClick(artist.artist_id)}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                       artistExists &&
                       artistExists.some(
                         (art) =>
                           art.stage_name.toLowerCase() ===
-                            artist.stage_name.toLowerCase() ||
-                          art.name.toLowerCase() === artist.name.toLowerCase()
+                            artist.stage_name.toLowerCase() 
+                            // || art.name.toLowerCase() === artist.name.toLowerCase()
                       )
                         ? "bg-[#6F4FA0] text-white"
                         : "hover:bg-gray-900/30"
@@ -239,15 +261,15 @@ function Leaderboard() {
                         }`}
                       >
                         {artist.rank < 10
-                          ? `0${artist.rank}`
-                          : `${artist.rank}`}
+                          ? `0${artist.ranks}`
+                          : `${artist.ranks}`}
                       </span>
                     </div>
 
                     <div className="flex-1">
                       <div className="w-10 h-10 rounded-full overflow-hidden">
                         <img
-                          src={artist.profile_img_url}
+                          src={artist.personal_photo}
                           alt={artist.stage_name}
                           className="w-full h-full object-cover"
                         />
@@ -261,22 +283,26 @@ function Leaderboard() {
                       {artist.location}
                     </div>
                     <div className="flex-1 text-center text-gray-300">
-                      {artist.total_songs}
+                      {artist.song_count}
                     </div>
                     <div className="flex-1 text-center text-gray-300">
-                      {formatListeners(artist.total_reach)}
+                      {formatListeners(artist.total_views)}
                     </div>
 
                     {/* Show the View Profile button on medium screens and above */}
                     <div className="flex-1 justify-center items-center w-full hidden sm:flex">
-                      <Link to={`/artists/${artist.artist_id}`}>
+                      <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                         <button
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={() =>
+                            navigate(
+                              `/public-artist-detail?id=${artist.OPH_ID}`
+                            )
+                          }
                           className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
                         >
                           View Profile
                         </button>
-                      </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -313,14 +339,14 @@ function Leaderboard() {
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
-                    onClick={() => handleProfileClick(artist.artist_id)}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                       artistExists &&
                       artistExists.some(
                         (art) =>
                           art.stage_name.toLowerCase() ===
-                            artist.stage_name.toLowerCase() ||
-                          art.name.toLowerCase() === artist.name.toLowerCase()
+                            artist.stage_name.toLowerCase() 
+                           // ||
+                           //art.name.toLowerCase() === artist.name.toLowerCase()
                       )
                         ? "bg-[#6F4FA0] text-white"
                         : "hover:bg-gray-900/30"
@@ -339,15 +365,15 @@ function Leaderboard() {
                         }`}
                       >
                         {artist.rank < 10
-                          ? `0${artist.rank}`
-                          : `${artist.rank}`}
+                          ? `0${artist.ranks}`
+                          : `${artist.ranks}`}
                       </span>
                     </div>
 
                     <div className="flex-1">
                       <div className="w-10 h-10 rounded-full overflow-hidden">
                         <img
-                          src={artist.profile_img_url}
+                          src={artist.personal_photo}
                           alt={artist.stage_name}
                           className="w-full h-full object-cover"
                         />
@@ -357,10 +383,10 @@ function Leaderboard() {
                       {artist.stage_name}
                     </div>
                     <div className="flex-1 text-center text-gray-300">
-                      {artist.total_songs}
+                      {artist.song_count}
                     </div>
                     <div className="flex-1 text-center text-gray-300">
-                      {formatListeners(artist.total_reach)}
+                      {formatListeners(artist.total_views)}
                     </div>
                   </div>
                 ))}
@@ -392,7 +418,7 @@ function Leaderboard() {
                 onChange={handleFilterChange}
               />
             </div>
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label className="block text-gray-300 mb-2">Profession</label>
               <Select
                 name="profession"
@@ -406,7 +432,7 @@ function Leaderboard() {
                 styles={customStyles}
                 onChange={handleFilterChange}
               />
-            </div>
+            </div> */}
 
             <div className="flex justify-end">
               <button
