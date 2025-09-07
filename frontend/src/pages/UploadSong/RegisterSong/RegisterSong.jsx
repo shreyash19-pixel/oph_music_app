@@ -20,7 +20,7 @@ export default function RegisterSongForm() {
   const [blockedDates, setBlockedDates] = useState([]); // Add state for blocked dates
   const [artistBlockedDates, setArtistBlockedDates] = useState([]); // Add state for blocked dates
   const [songReg, setSongReg] = useState(true);
-  const [lyricalVid, setLyricalVid] = useState(false);
+  const [lyrical_services, setLyricalVid] = useState(false);
   const [selectedPlans, setSelectedPlans] = useState([]);
   const [payableAmount, setPayableAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,7 @@ export default function RegisterSongForm() {
     p_line: "",
     cp_line: "",
     song_reg: songReg,
-    lyricalVid: lyricalVid,
+    lyrical_services: lyrical_services,
     // agreement: false,
     available_on_music_platforms: false, // Add new field for toggle button
     project_type: projectType,
@@ -100,11 +100,11 @@ export default function RegisterSongForm() {
   };
 
   const handleTotalPayment = () => {
-    if (songReg && lyricalVid) {
+    if (songReg && lyrical_services) {
       setPayableAmount(songRegAmount + lyricalVideoAmount);
-    } else if (songReg && !lyricalVid) {
+    } else if (songReg && !lyrical_services) {
       setPayableAmount(songRegAmount);
-    } else if (!songReg && lyricalVid) {
+    } else if (!songReg && lyrical_services) {
       setPayableAmount(lyricalVideoAmount);
     } else {
       setPayableAmount(0);
@@ -113,7 +113,7 @@ export default function RegisterSongForm() {
 
   useEffect(() => {
     handleTotalPayment();
-  }, [songReg, lyricalVid, songRegAmount, lyricalVideoAmount]);
+  }, [songReg, lyrical_services, songRegAmount, lyricalVideoAmount]);
 
   // Fetch costing data on component mount
   useEffect(() => {
@@ -262,7 +262,7 @@ export default function RegisterSongForm() {
           project_type: projectType,
           name: updatedFormData.name,
           release_date: updatedFormData.release_date,
-          lyricalVid: updatedFormData.lyricalVid,
+          lyricalVid: updatedFormData.lyrical_services,
           next_step: updatedFormData.next_step,
         },
         { headers: headers }
@@ -276,7 +276,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
-              lyricalVid: updatedFormData.lyricalVid,
+              lyrical_services: updatedFormData.lyrical_services,
             },
           }
         );
@@ -295,7 +295,7 @@ export default function RegisterSongForm() {
           project_type: projectType,
           name: updatedFormData.name,
           release_date: updatedFormData.release_date,
-          lyricalVid: updatedFormData.lyricalVid,
+          lyricalVid: updatedFormData.lyrical_services,
           available_on_music_platforms:
             updatedFormData.available_on_music_platforms,
           next_step: updatedFormData.next_step,
@@ -310,7 +310,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
-              lyricalVid: updatedFormData.lyricalVid,
+              lyrical_services: updatedFormData.lyrical_services,
             },
           }
         );
@@ -329,7 +329,7 @@ export default function RegisterSongForm() {
           project_type: projectType,
           name: updatedFormData.name,
           release_date: updatedFormData.release_date,
-          lyricalVid: updatedFormData.lyricalVid,
+          lyricalVid: updatedFormData.lyrical_services,
           available_on_music_platforms:
             updatedFormData.available_on_music_platforms,
           next_step: updatedFormData.next_step,
@@ -345,7 +345,7 @@ export default function RegisterSongForm() {
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
-              lyricalVid: updatedFormData.lyricalVid,
+              lyrical_services: updatedFormData.lyrical_services,
             },
           }
         );
@@ -367,7 +367,7 @@ export default function RegisterSongForm() {
     const updatedFormData = {
       ...formData,
       song_reg: songReg,
-      lyricalVid: lyricalVid,
+      lyrical_services: lyrical_services,
       cp_line: `${artistName} - ${stageName}`,
       p_line: `${artistName} - ${stageName}`,
       available_on_music_platforms:
@@ -791,8 +791,8 @@ export default function RegisterSongForm() {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={lyricalVid}
-                      onChange={() => setLyricalVid(!lyricalVid)}
+                      checked={lyrical_services}
+                      onChange={() => setLyricalVid(!lyrical_services)}
                       className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400"
                     />
                     <span>{lyricalVideoAmount} - Lyrical Video </span>

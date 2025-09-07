@@ -44,7 +44,8 @@ export default function UploadSongs() {
     reject_reason: song.reject_reason,
     next_page: song.next_page,
     projectType: song.projectType,
-    release_date: song.release_date
+    release_date: song.release_date,
+    lyrical_services: song.lyrical_services
   })) : null;
 
   
@@ -127,7 +128,8 @@ export default function UploadSongs() {
                 state: {
                   songName: song.name,
                   release_date: song.release_date,
-                  project_type: song.projectType
+                  project_type: song.projectType,
+                  lyrical_services: song.lyrical_services
                 }
               }) : e.preventDefault()
               localStorage.setItem("projectType", song.projectType)
