@@ -58,8 +58,10 @@ import ViewPodcasts from "./view/dashboard/websiteConfig/resource/ViewPodcasts";
 import UpdatePodcast from "./view/dashboard/websiteConfig/resource/UpdatePodcast";
 import ViewReels from "./view/dashboard/websiteConfig/resource/ViewReels";
 import ViewStories from "./view/dashboard/websiteConfig/resource/ViewStories";
+import ViewLearning from "./view/dashboard/websiteConfig/resource/ViewLearning";
 import UpdateStory from "./view/dashboard/websiteConfig/resource/UpdateStory";
 import UpdateReel from "./view/dashboard/websiteConfig/resource/UpdateReel";
+import UpdateLearning from "./view/dashboard/websiteConfig/resource/UpdateLearning";
 import AudioPlatform from "./view/dashboard/artistPortal/audioPlatform";
 import Audio_Metrics from "./view/dashboard/artistPortal/audioPlatform/Audio_Metrics";
 import EventPayment from "./view/dashboard/artistPortal/paymentAll/EventPayment";
@@ -298,6 +300,23 @@ function App() {
           />
 
           <Route
+            path="/allLearning"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <ViewLearning />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/update_podcast/:podcastId"
             element={
               <ProtectedRoute
@@ -344,6 +363,23 @@ function App() {
                 ]}
               >
                 <UpdateStory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/update_learning/:learningId"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.OPERATION_HEAD,
+                  ROLES.OPERATION_MEMBER,
+                ]}
+              >
+                <UpdateLearning />
               </ProtectedRoute>
             }
           />

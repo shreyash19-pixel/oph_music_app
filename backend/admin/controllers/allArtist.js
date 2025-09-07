@@ -1,5 +1,6 @@
 const details = require('../model/allArtist');
 const bucket = require("../../utils.js");
+const { saveNotification } = require("../../utils/notify");
 
 const getAllDetails = async (req, res) => {
   try {
@@ -108,6 +109,33 @@ const updateUserDetails = async (req, res) => {
     });
 
     const updatedUserDetails = await details.updateUserDetails(ophid, filteredData);
+    
+    // Create and save notification
+    const notificationPayload = {
+      ophid,
+      title: "Your User Profile has been Updated",
+      message: "Your profile details have been successfully updated by admin.",
+      link: `/dashboard/artist-detail?id=${ophid}` // Dynamic link with user's OPH ID
+    };
+
+    // Save notification to database
+    const notification = await saveNotification(notificationPayload);
+
+    // Emit notification via Socket.IO if user is online
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+
+    if (io && onlineUsers) {
+      const userSocketId = onlineUsers.get(ophid);
+      if (userSocketId) {
+        io.to(userSocketId).emit("Profile-update", notification);
+        console.log(`Emitted 'Profile-update' to ophid ${ophid}, socket ID: ${userSocketId}`);
+      } else {
+        console.log(`No active socket found for ophid: ${ophid}`);
+      }
+    } else {
+      console.warn("Socket IO or onlineUsers map is not initialized");
+    }
     
     res.status(200).json({ 
       success: true,
@@ -284,6 +312,33 @@ const updateProfessionalDetailsController = async (req, res) => {
 
     const updatedProfessionalDetails = await details.updateProfessionalDetails(ophid, professionalData);
     
+    // Create and save notification
+    const notificationPayload = {
+      ophid,
+      title: "Your Professional Profile has been Updated",
+      message: "Your professional details have been successfully updated by admin.",
+      link: `/dashboard/artist-detail?id=${ophid}` // Dynamic link with user's OPH ID
+    };
+
+    // Save notification to database
+    const notification = await saveNotification(notificationPayload);
+
+    // Emit notification via Socket.IO if user is online
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+
+    if (io && onlineUsers) {
+      const userSocketId = onlineUsers.get(ophid);
+      if (userSocketId) {
+        io.to(userSocketId).emit("Profile-update", notification);
+        console.log(`Emitted 'Profile-update' to ophid ${ophid}, socket ID: ${userSocketId}`);
+      } else {
+        console.log(`No active socket found for ophid: ${ophid}`);
+      }
+    } else {
+      console.warn("Socket IO or onlineUsers map is not initialized");
+    }
+    
     res.status(200).json({ 
       success: true,
       message: "Professional details updated successfully",
@@ -363,6 +418,33 @@ const updateDocumentationDetails = async (req, res) => {
 
     // Update database
     const updatedDocumentationDetails = await details.updateDocumentationDetails(ophid, documentationData);
+
+    // Create and save notification
+    const notificationPayload = {
+      ophid,
+      title: "Your Documentation has been Updated",
+      message: "Your documentation details have been successfully updated by admin.",
+      link: `/dashboard/artist-detail?id=${ophid}` // Dynamic link with user's OPH ID
+    };
+
+    // Save notification to database
+    const notification = await saveNotification(notificationPayload);
+
+    // Emit notification via Socket.IO if user is online
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+
+    if (io && onlineUsers) {
+      const userSocketId = onlineUsers.get(ophid);
+      if (userSocketId) {
+        io.to(userSocketId).emit("Profile-update", notification);
+        console.log(`Emitted 'Profile-update' to ophid ${ophid}, socket ID: ${userSocketId}`);
+      } else {
+        console.log(`No active socket found for ophid: ${ophid}`);
+      }
+    } else {
+      console.warn("Socket IO or onlineUsers map is not initialized");
+    }
 
     res.status(200).json({ 
       success: true,

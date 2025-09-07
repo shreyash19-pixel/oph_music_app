@@ -144,38 +144,112 @@ const UpdateReel = () => {
           />
 
           {/* Video Upload */}
-          <div>
-            <input
-              type="file"
-              name="video_url"
-              accept="video/*"
-              onChange={handleChange}
-              className="w-full border border-gray-300 px-4 py-2 rounded-xl"
-            />
-            {videoPreview && (
-              <video
-                src={videoPreview}
-                controls
-                className="w-full h-64 mt-2 rounded-xl border"
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Video File
+            </label>
+            <div className="relative">
+              <input
+                type="file"
+                name="video_url"
+                accept="video/*"
+                onChange={handleChange}
+                className="hidden"
+                id="video-upload"
               />
+              <label
+                htmlFor="video-upload"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <svg
+                    className="w-8 h-8 mb-4 text-gray-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 20 16"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.5C5.137 5.5 5.071 5.5 5 5.5a3 3 0 0 0 0 6h3Z"
+                    />
+                  </svg>
+                  <p className="mb-2 text-sm text-gray-500">
+                    <span className="font-semibold">Click to upload</span> video file
+                  </p>
+                  <p className="text-xs text-gray-500">MP4, AVI, MOV</p>
+                </div>
+              </label>
+            </div>
+            {videoPreview && (
+              <div className="mt-3">
+                <video
+                  src={videoPreview}
+                  controls
+                  className="w-full h-64 rounded-xl border border-gray-200 shadow-sm"
+                />
+                <p className="mt-2 text-sm text-green-600 font-medium">
+                  ✓ Video file selected
+                </p>
+              </div>
             )}
           </div>
 
           {/* Thumbnail Upload */}
-          <div>
-            <input
-              type="file"
-              name="thumbnail_url"
-              accept="image/*"
-              onChange={handleChange}
-              className="w-full border border-gray-300 px-4 py-2 rounded-xl"
-            />
-            {thumbnailPreview && (
-              <img
-                src={thumbnailPreview}
-                alt="Thumbnail Preview"
-                className="w-full h-48 object-contain mt-2 rounded-xl border"
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              Thumbnail Image
+            </label>
+            <div className="relative">
+              <input
+                type="file"
+                name="thumbnail_url"
+                accept="image/*"
+                onChange={handleChange}
+                className="hidden"
+                id="thumbnail-upload"
               />
+              <label
+                htmlFor="thumbnail-upload"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <svg
+                    className="w-8 h-8 mb-4 text-gray-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 20 16"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.5C5.137 5.5 5.071 5.5 5 5.5a3 3 0 0 0 0 6h3Z"
+                    />
+                  </svg>
+                  <p className="mb-2 text-sm text-gray-500">
+                    <span className="font-semibold">Click to upload</span> thumbnail
+                  </p>
+                  <p className="text-xs text-gray-500">PNG, JPG, JPEG</p>
+                </div>
+              </label>
+            </div>
+            {thumbnailPreview && (
+              <div className="mt-3">
+                <img
+                  src={thumbnailPreview}
+                  alt="Thumbnail Preview"
+                  className="w-full h-48 object-cover rounded-xl border border-gray-200 shadow-sm"
+                />
+                <p className="mt-2 text-sm text-green-600 font-medium">
+                  ✓ Thumbnail image selected
+                </p>
+              </div>
             )}
           </div>
 
