@@ -72,6 +72,9 @@ const PaymentScreen = () => {
             if (searchName === "release date change") {
               searchName = "release date change";
             }
+            if (searchName === "special artist registration") {
+              searchName = "special artist registration";
+            }
             // "registration" stays as "registration"
             // "song registration" stays as "song registration"
           }
@@ -265,7 +268,7 @@ const PaymentScreen = () => {
             oph_id: ophid,
             song_name: location.state.songName,
             project_type: location.state.project_type,
-            release_date: location.state.booking_date
+            release_date: location.state.booking_date,
           },
           {
             headers: {

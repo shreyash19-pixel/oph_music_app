@@ -85,6 +85,14 @@ const getTopArtists = async () => {
   return rows;
 };
 
+
+const getSpecialArtist = async () => {
+
+  const [rows] = await db.execute("SELECT * FROM application_status WHERE overall_status = 'completed'")
+  return rows
+
+}
+
 const getArtistProfile = async (ophid) => {
   const [rows] = await db.execute(
     "WITH CTEArtistProfile AS ( SELECT ud.ophid, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, sa.artist_name,ud.location, kpi.total_views, pd.Bio,sr.song_id ,sr.Song_name,ssm.youtube_views,ad.audio_url , sr.`status` song_registeration_status, ad.`status` audio_details_status , vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID WHERE ud.ophid = ?) SELECT * FROM CTEArtistProfile WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",

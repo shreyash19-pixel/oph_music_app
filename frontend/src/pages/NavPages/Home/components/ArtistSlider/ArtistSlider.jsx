@@ -27,6 +27,7 @@ const ArtistSlider = ({ rows = 1 }) => {
           `/get-top-artist`
         );
         setArtists(response.data.data.slice((currentPage - 1) * 6,6 * currentPage));
+        setArtists()
         setTotalPages(response.data.data.length);
       } catch (error) {
         console.error("Error fetching artists:", error);

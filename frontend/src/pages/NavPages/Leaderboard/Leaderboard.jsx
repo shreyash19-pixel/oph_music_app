@@ -58,19 +58,12 @@ function Leaderboard() {
       month.map(
         (artist) =>
           artist.stage_name.toLowerCase().includes(normalizedArtistName)
-        // ||
-        // artist.name.toLowerCase().includes(normalizedArtistName)
           ? artist
           : null
       )
     );
 
-    console.log(exists);
-    
-
-    const filteredArtists = exists.flat().filter((artist) => artist !== null);
-    console.log(filteredArtists);
-    
+    const filteredArtists = exists.flat().filter((artist) => artist !== null);    
     setArtistExists(filteredArtists);
   };
 
