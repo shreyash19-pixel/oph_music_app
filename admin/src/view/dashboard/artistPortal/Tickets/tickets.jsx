@@ -23,6 +23,7 @@
              data={tableData}
              showStatusIndicator={false}
              pageSize={10}
+             excludeColumns={"imageURL"}
              detailsUrl="/Tickets"
            />
          </ArtistSidebar>

@@ -122,7 +122,7 @@ const AdminSignInForm = () => {
           <button
             type="button"
             className="underline hover:text-[#609900] transition"
-            onClick={() => navigate("/auth/signup")}
+            onClick={() => navigate("/signup")}
           >
             Create Account
           </button>

@@ -84,7 +84,7 @@ export default function RegisterSongForm() {
         // Find Lyrical Video amount
         const lyricalVideoCost = costingData.find(
           (item) =>
-            item.name && item.name.toLowerCase().includes("lyrical video")
+            item.name && item.name.toLowerCase().includes("lyrics service")
         );
         if (lyricalVideoCost) {
           setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 499);

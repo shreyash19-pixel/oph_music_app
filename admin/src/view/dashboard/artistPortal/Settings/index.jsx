@@ -5,19 +5,25 @@ import ArtistSidebar from '../../../../components/ArtistSidebar';
 const Settings = () => {
   const [audioPlatforms, setAudioPlatforms] = useState([]);
   const [professions, setProfessions] = useState([]);
+  const [banks, setBanks] = useState([]);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddProfessionForm, setShowAddProfessionForm] = useState(false);
+  const [showAddBankForm, setShowAddBankForm] = useState(false);
   const [collapsedPlatforms, setCollapsedPlatforms] = useState(true);
   const [collapsedProfessions, setCollapsedProfessions] = useState(true);
+  const [collapsedBanks, setCollapsedBanks] = useState(true);
   const [newPlatform, setNewPlatform] = useState({ name: '' });
   const [newProfession, setNewProfession] = useState({ name: '' });
+  const [newBank, setNewBank] = useState({ name: '' });
   const [platformsLoaded, setPlatformsLoaded] = useState(false);
   const [professionsLoaded, setProfessionsLoaded] = useState(false);
+  const [banksLoaded, setBanksLoaded] = useState(false);
 
   useEffect(() => {
     fetchAudioPlatforms();
     fetchProfessions();
+    fetchBanks();
   }, []);
 
   const fetchAudioPlatforms = async () => {
@@ -51,6 +57,25 @@ const Settings = () => {
       setError('Failed to fetch professions');
     } finally {
       setProfessionsLoaded(true);
+    }
+  };
+
+  const fetchBanks = async () => {
+    try {
+      const response = await axiosApi.get('/get_banks');
+      
+      
+      if (response.data?.success) {
+        setBanks(response.data.data || []);
+        setError(null);
+      } else {
+        setError('Failed to fetch banks');
+      }
+    } catch (err) {
+      console.error('Error fetching banks:', err);
+      setError('Failed to fetch banks');
+    } finally {
+      setBanksLoaded(true);
     }
   };
 
@@ -120,6 +145,39 @@ const Settings = () => {
     setNewProfession((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleBankInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewBank((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddBank = async (e) => {
+    e.preventDefault();
+
+    if (!newBank.name.trim()) {
+      setError('Bank name is required');
+      return;
+    }
+
+    try {
+      const response = await axiosApi.post('/add_bank', {
+        name: newBank.name.trim()
+      });
+
+      if (response.data?.success) {
+        // Refresh the banks list
+        await fetchBanks();
+        setNewBank({ name: '' });
+        setShowAddBankForm(false);
+        setError(null);
+      } else {
+        setError('Failed to add bank');
+      }
+    } catch (err) {
+      console.error('Error adding bank:', err);
+      setError('Failed to add bank');
+    }
+  };
+
   // Optional: local delete handlers (since no backend endpoint provided)
   const handleDeletePlatform = async (id) => {
     try {
@@ -155,7 +213,24 @@ const Settings = () => {
     }
   };
 
-  if (!platformsLoaded || !professionsLoaded) {
+  const handleDeleteBank = async (id) => {
+    try {
+      const response = await axiosApi.delete(`/delete_bank/${id}`);
+      
+      if (response.data?.success) {
+        // Refresh the banks list
+        await fetchBanks();
+        setError(null);
+      } else {
+        setError('Failed to delete bank');
+      }
+    } catch (err) {
+      console.error('Error deleting bank:', err);
+      setError('Failed to delete bank');
+    }
+  };
+
+  if (!platformsLoaded || !professionsLoaded || !banksLoaded) {
     return (
       <div className="h-screen flex overflow-hidden relative bg-gray-50">
         <ArtistSidebar>
@@ -181,7 +256,7 @@ const Settings = () => {
                 Settings
               </h2>
               <p className="mt-2 text-gray-200">
-                Manage your music distribution platforms and professions
+                Manage your music distribution platforms, professions, and banks
               </p>
             </div>
 
@@ -474,6 +549,152 @@ const Settings = () => {
                        </table>
                      </div>
                    </div>
+              </>
+            )}
+          </div>
+
+          {/* Banks Section */}
+          <div>
+            {/* Section Header with Collapse */}
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCollapsedBanks(!collapsedBanks)}
+                  className="text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <svg
+                    className={`w-5 h-5 transform transition-transform ${collapsedBanks ? 'rotate-90' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Banks ({banks.length})
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  if (collapsedBanks) {
+                    setCollapsedBanks(false);
+                  }
+                  setShowAddBankForm(!showAddBankForm);
+                }}
+                className="px-6 py-3 bg-[#0d3c44] hover:bg-[#145058] text-white font-medium rounded-lg transition-colors duration-200 shadow-sm flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                {showAddBankForm ? 'Cancel' : 'Add Bank'}
+              </button>
+            </div>
+
+            {/* Collapsible Content */}
+            {!collapsedBanks && (
+              <>
+                {/* Add Bank Form */}
+                {showAddBankForm && (
+                  <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
+                    <h4 className="text-lg font-medium text-gray-800 mb-4">Add New Bank</h4>
+                    <form onSubmit={handleAddBank} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Bank Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={newBank.name}
+                          onChange={handleBankInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0d3c44] focus:border-transparent transition-colors"
+                          placeholder="e.g., State Bank of India, HDFC Bank"
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          type="submit"
+                          className="px-6 py-2 bg-[#0d3c44] hover:bg-[#145058] text-white font-medium rounded-lg transition-colors duration-200"
+                        >
+                          Add Bank
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAddBankForm(false);
+                            setCollapsedBanks(true);
+                          }}
+                          className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium rounded-lg transition-colors duration-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Banks Table */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden w-full">
+                  <div className="overflow-x-auto">
+                    <table className="w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Bank Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {banks.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
+                              <div className="flex flex-col items-center">
+                                <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                <p className="text-lg font-medium">No banks found</p>
+                                <p className="text-sm">Get started by adding your first bank</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          banks.map((bank) => (
+                            <tr key={bank.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {bank.name}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {bank.created_at ? new Date(bank.created_at).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'long',
+                                  year: 'numeric'
+                                }) : 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button
+                                  onClick={() => handleDeleteBank(bank.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </>
             )}
           </div>
