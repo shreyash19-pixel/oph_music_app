@@ -154,37 +154,54 @@ export default function IncomeWithdrawal() {
   //      );
   //    }
   // };
-
+const withdrawal_id = Math.floor(1000 + Math.random() * 9000).toString();
   const submitWithdraw = async (e) => {
     e.preventDefault();
-   if (!withdrawAmount || !ophid) return;
+
+    const availableAmount = 500; // 🟢 dummy available balance
+    // const availableAmount = parseFloat(income?.income || 0);  replace with this once API is fixed
+    const amount = parseFloat(withdrawAmount);
+
+    // Validation checks
+    if (!amount || amount <= 0) {
+      toast.error("Please enter a valid withdrawal amount");
+      return;
+    }
+
+    if (amount > availableAmount) {
+      toast.error(
+        `Withdrawal amount cannot exceed available balance (₹${availableAmount})`
+      );
+      return;
+    }
+
     try {
-     const payload = {
-       withdraw_amount: withdrawAmount,
-       ophID: ophid,
-     };
+      const payload = {
+        withdraw_amount: amount,
+        ophID: ophid,
+        withdrawal_id,
+      };
 
-     console.log("Sending payload:", payload);
+      console.log("Sending payload:", payload);
 
-     const res = await axiosApi.post(
-       "/sendWithdraw",
-       payload,
-       { headers: { ...headers } }
-     );
+      const res = await axiosApi.post("/sendWithdraw", payload, {
+        headers: { ...headers },
+      });
 
       if (res.status === 201) {
         toast.success("Withdrawal request submitted successfully");
         setWithdrawAmount("");
-        // Refresh income data after successful withdrawal
-        await fetchIncome();
-     } else {
-       throw new Error("Withdrawal failed");
-     }
+        await fetchIncome(); // refresh balance
+      } else {
+        throw new Error("Withdrawal failed");
+      }
     } catch (err) {
       console.error("Post Error:", err);
       toast.error(err.response?.data?.message || "Something went wrong");
     }
   };
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -288,16 +305,24 @@ export default function IncomeWithdrawal() {
           <div className="space-y-1">
             <p className="text-sm text-purple-200">Available Amount:</p>
             {income ? (
-              <p className="text-2xl font-bold">₹{parseFloat(income.income).toFixed(2)}</p>
+              <p className="text-2xl font-bold">
+                ₹{parseFloat(income.income).toFixed(2)}
+              </p>
             ) : (
-              <p className="text-2xl font-bold">₹0.00</p>
+              <p className="text-2xl font-bold">50.00</p>
             )}
           </div>
           {income && (
             <div className="mt-4 text-sm text-purple-200">
               <p>Total Songs: {income.total_song_count}</p>
-              <p>YouTube Revenue: ₹{parseFloat(income.total_youtube_revenue).toFixed(2)}</p>
-              <p>Audio Revenue: ₹{parseFloat(income.total_audio_revenue).toFixed(2)}</p>
+              <p>
+                YouTube Revenue: ₹
+                {parseFloat(income.total_youtube_revenue).toFixed(2)}
+              </p>
+              <p>
+                Audio Revenue: ₹
+                {parseFloat(income.total_audio_revenue).toFixed(2)}
+              </p>
             </div>
           )}
         </div>
@@ -305,7 +330,7 @@ export default function IncomeWithdrawal() {
         {/* Bank Details */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-cyan-400">Bank Details</h3>
-          
+
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
               <label className="text-sm text-gray-400">Bank Name:</label>
@@ -319,9 +344,7 @@ export default function IncomeWithdrawal() {
 
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
-              <label className="text-sm text-gray-400">
-                Account Holder:
-              </label>
+              <label className="text-sm text-gray-400">Account Holder:</label>
               {income && income.account_holder_name ? (
                 <p className="text-cyan-300">{income.account_holder_name}</p>
               ) : (
@@ -332,9 +355,7 @@ export default function IncomeWithdrawal() {
 
           <div className="space-y-2">
             <div className="flex flex-row items-center gap-2">
-              <label className="text-sm text-gray-400">
-                Account Number:
-              </label>
+              <label className="text-sm text-gray-400">Account Number:</label>
               {income && income.account_number ? (
                 <p className="text-cyan-300">{income.account_number}</p>
               ) : (
@@ -353,7 +374,6 @@ export default function IncomeWithdrawal() {
               )}
             </div>
           </div>
-
         </div>
 
         {/* Withdrawal Form */}

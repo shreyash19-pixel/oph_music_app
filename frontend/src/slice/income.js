@@ -42,7 +42,7 @@ export const getWithDrawHistory = createAsyncThunk('getWithDrawHistory', async (
 export const postWithdraw = createAsyncThunk('postWithdraw', async ({ data, headers }, { rejectWithValue }) => {
     try {
         const response = await axiosApi.post(
-          "http://localhost:5000/sendWithdraw",
+          "/sendWithdraw",
           data,
           {
             headers: headers,
