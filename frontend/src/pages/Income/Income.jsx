@@ -21,20 +21,47 @@ export default function IncomeWithdrawal() {
       const response = await axiosApi.get(`/get_income/${ophid}`);
       
       if (response.data && response.data.success && response.data.data) {
-        const incomeData = response.data.data[0]; // Get first result from array
-        // Use total_revenue as the income value
+        // Check if data array is empty
+        if (response.data.data.length === 0) {
+          setIncome({
+            income: 0,
+            distinct_song_count: 0,
+            total_song_count: 0,
+            total_youtube_revenue: 0,
+            total_audio_revenue: 0
+          });
+        } else {
+          const incomeData = response.data.data[0]; // Get first result from array
+          // Use total_revenue as the income value
+          setIncome({
+            income: incomeData.total_revenue || 0,
+            // Additional data from the API response
+            distinct_song_count: incomeData.distinct_song_count || 0,
+            total_song_count: incomeData.total_song_count || 0,
+            total_youtube_revenue: incomeData.total_youtube_revenue || 0,
+            total_audio_revenue: incomeData.total_audio_revenue || 0
+          });
+        }
+      } else {
         setIncome({
-          income: incomeData.total_revenue,
-          // Additional data from the API response
-          distinct_song_count: incomeData.distinct_song_count,
-          total_song_count: incomeData.total_song_count,
-          total_youtube_revenue: incomeData.total_youtube_revenue,
-          total_audio_revenue: incomeData.total_audio_revenue
+          income: 0,
+          distinct_song_count: 0,
+          total_song_count: 0,
+          total_youtube_revenue: 0,
+          total_audio_revenue: 0
         });
       }
     } catch (err) {
       console.error("Failed to fetch income:", err);
       toast.error("Failed to fetch income data");
+      // Set income to 0 on error
+      setIncome({
+        income: 0,
+        distinct_song_count: 0,
+        total_song_count: 0,
+        total_youtube_revenue: 0,
+        total_audio_revenue: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -157,7 +184,22 @@ export default function IncomeWithdrawal() {
 
   const submitWithdraw = async (e) => {
     e.preventDefault();
-   if (!withdrawAmount || !ophid) return;
+    if (!withdrawAmount || !ophid) return;
+
+    // Validate withdrawal amount against available income
+    const withdrawAmountNum = parseFloat(withdrawAmount);
+    const availableIncome = income ? parseFloat(income.income) : 0;
+
+    if (withdrawAmountNum <= 0) {
+      toast.error("Withdrawal amount must be greater than 0");
+      return;
+    }
+
+    if (withdrawAmountNum > availableIncome) {
+      toast.error(`Withdrawal amount cannot exceed available income of ₹${availableIncome.toFixed(2)}`);
+      return;
+    }
+
     try {
      const payload = {
        withdraw_amount: withdrawAmount,
@@ -363,17 +405,34 @@ export default function IncomeWithdrawal() {
               <label className="block text-sm text-gray-400 mb-2">
                 Withdraw Amount: <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  max={income ? income.income : undefined}
+                  className={`w-full bg-gray-800/50 border rounded-full p-3 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                    withdrawAmount && income && parseFloat(withdrawAmount) > parseFloat(income.income)
+                      ? 'border-red-500 focus:border-red-500'
+                      : 'border-gray-700 focus:border-cyan-400'
+                  }`}
+                  required
+                />
+                {withdrawAmount && income && parseFloat(withdrawAmount) > parseFloat(income.income) && (
+                  <p className="absolute -bottom-6 left-0 text-red-400 text-sm">
+                    Amount cannot exceed available income of ₹{parseFloat(income.income).toFixed(2)}
+                  </p>
+                )}
+              </div>
             </div>
             <button
               type="submit"
-              className="self-end px-6 py-3 bg-cyan-400 text-gray-900 rounded-lg font-medium hover:bg-cyan-300 transition-colors"
+              disabled={withdrawAmount && income && parseFloat(withdrawAmount) > parseFloat(income.income)}
+              className={`self-end px-6 py-3 rounded-lg font-medium transition-colors ${
+                withdrawAmount && income && parseFloat(withdrawAmount) > parseFloat(income.income)
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-cyan-400 text-gray-900 hover:bg-cyan-300'
+              }`}
             >
               Withdraw
             </button>
