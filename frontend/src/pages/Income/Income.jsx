@@ -202,7 +202,7 @@ const withdrawal_id = Math.floor(1000 + Math.random() * 9000).toString();
 
     try {
       const payload = {
-        withdraw_amount: amount,
+        withdraw_amount: withdrawAmountNum,
         ophID: ophid,
         withdrawal_id,
       };
