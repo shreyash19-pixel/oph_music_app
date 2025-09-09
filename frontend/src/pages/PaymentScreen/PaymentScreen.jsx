@@ -210,7 +210,7 @@ const PaymentScreen = () => {
         Transaction_ID: trans,
         Review: 0,
         Status: "under Review",
-        step: "i/auth/create-profile/personal-detals",
+        step: "/auth/create-profile/personal-detals",
         from: from,
         song_id: song_id,
         event_id: event_id,
