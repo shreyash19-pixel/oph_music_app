@@ -26,7 +26,7 @@ export const Contact = () => {
         excludeColumns = {"createdAt,updatedAt,user_pass,step_status,reject_reason,personal_photo,location,current_step,rejected_step"}
         pageSize={10}
         detailsUrl="/ContactUs"
-      />
+      />  
       </WebConfigSidebar>
       
     </div>

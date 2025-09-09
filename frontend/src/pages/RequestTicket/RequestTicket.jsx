@@ -94,37 +94,6 @@ export default function RequestTicketForm() {
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
 
-    // if (type === "file" && files.length > 0) {
-    //   const fileReaders = [];
-    //   const newAttachments = [];
-
-    //   for (let i = 0; i < files.length; i++) {
-    //     const reader = new FileReader();
-    //     fileReaders.push(reader);
-
-    //     reader.onloadend = () => {
-    //       newAttachments.push({
-    //         name: files[i].name,
-    //         data: reader.result, // Store file as Base64
-    //       });
-
-    //       if (newAttachments.length === files.length) {
-    //         setFormData((prev) => ({
-    //           ...prev,
-    //           attachments: newAttachments,
-    //         }));
-    //       }
-    //     };
-
-    //     reader.readAsDataURL(files[i]); // Convert file to Base64
-    //   }
-    // } else {
-    //   setFormData((prev) => ({
-    //     ...prev,
-    //     [name]: value,
-    //   }));
-    // }
-
      if (type === "file") {
        setFormData((prev) => ({
          ...prev,
@@ -138,6 +107,30 @@ export default function RequestTicketForm() {
      }
   };
 
+   useEffect(() => {
+     const fetchTickets = async () => {
+       if (!ophid) return; // wait until ophID is loaded
+
+       try {
+         const response = await axiosApi.get(`/getAllTickets?ophID=${ophid}`);
+         console.log(response);
+
+         const sanitized = response.data.data.map((ticket) => ({
+           ...ticket,
+           imageURL:
+             typeof ticket.imageURL === "string"
+               ? JSON.parse(ticket.imageURL)
+               : [],
+         }));
+
+         setTickets(sanitized);
+       } catch (err) {
+         console.error("Failed to fetch tickets:", err);
+       }
+     };
+
+     fetchTickets();
+   }, [ophid]); 
 
   const submitTicket = async (formData) => {
     if (isSubmittingRef.current) return;
@@ -155,34 +148,11 @@ export default function RequestTicketForm() {
       formDataObj.append("email", user?.email || "");
       formDataObj.append("ticketNumber", ticketNumber);
 
-      // Handle attachments properly
-      // formData.attachments.forEach((attachment) => {
-      //   // Convert Base64 to Blob
-      //   const byteString = atob(attachment.data.split(",")[1]);
-      //   const mimeString = attachment.data
-      //     .split(",")[0]
-      //     .split(":")[1]
-      //     .split(";")[0];
-      //   const ab = new ArrayBuffer(byteString.length);
-      //   const ia = new Uint8Array(ab);
-      //   for (let i = 0; i < byteString.length; i++) {
-      //     ia[i] = byteString.charCodeAt(i);
-      //   }
-      //   const blob = new Blob([ab], { type: mimeString });
-
-      //   // Create File object
-      //   const file = new File([blob], attachment.name, { type: mimeString });
-      //   formDataObj.append("attachments", file);
-      // });
 
      formData.attachments.forEach((file) => {
        formDataObj.append("attachment", file);
      });
 
-      // Only append payment_id if it exist (paid tickets)
-      // if (payment_id) {
-      //   formDataObj.append("payment_id", payment_id);
-      // }
 
       const response = await axiosApi.post(
         "/sendTicket",
@@ -214,7 +184,6 @@ export default function RequestTicketForm() {
           navigate("/dashboard/request-ticket", { replace: true });
         }
 
-        fetchTickets();
       }
     } catch (error) {
         toast.error("Ticket Submission Failed");
@@ -235,19 +204,6 @@ export default function RequestTicketForm() {
       return;
     }
 
-
-    // Find the selected category
-    // const selectedCategory = ticketCategories.find(
-    //   (cat) => String(cat.id) === String(formData.category)
-    // );
-    // const selectedCategory=ticketCategories[0];
-    // console.log("Selected Category:", selectedCategory);
-    // // check if it's a Genral Enquiry
-    // const isGeneralEnquiry = true;``
-    // console.log("Is General Enquiry:", isGeneralEnquiry);
-
-    // sessionStorage.setItem(TICKET_KEY, JSON.stringify(formData));
-      // If it's a General Enquiry, submit the ticket directly
       setIsSubmitting(true);
       try {
         await submitTicket(formData, null); // null payment_id for free tickets
@@ -334,30 +290,6 @@ export default function RequestTicketForm() {
   useEffect(() => {
     fetchTicketCategories();
   }, []);
-
-    useEffect(() => {
-      const fetchTickets = async () => {
-        if (!ophid) return; // wait until ophID is loaded
-
-        try {
-          const response = await axios.get(`/getAllTickets?ophID=${ophid}`);
-
-          const sanitized = response.data.data.map((ticket) => ({
-            ...ticket,
-            imageURL:
-              typeof ticket.imageURL === "string"
-                ? JSON.parse(ticket.imageURL)
-                : [],
-          }));
-
-          setTickets(sanitized);
-        } catch (err) {
-          console.error("Failed to fetch tickets:", err);
-        }
-      };
-
-      fetchTickets();
-    }, [ophid]); 
 
 
   return (
