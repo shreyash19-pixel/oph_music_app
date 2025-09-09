@@ -30,13 +30,13 @@ const DocumentationDetailsForm = () => {
   // Function to fetch banks from API
   const fetchBanks = useCallback(async () => {
     try {
-      const response = await axiosApi.get('/get_banks');
+      const response = await axiosApi.get("/get_banks");
       if (response.data.success) {
         setBanks(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching banks:', error);
-      toast.error('Failed to load banks list');
+      console.error("Error fetching banks:", error);
+      toast.error("Failed to load banks list");
     }
   }, []);
   const [isPlaying, setIsPlaying] = useState(false); // Track video play state
@@ -108,11 +108,74 @@ const DocumentationDetailsForm = () => {
   //   loadVideo();
   // }, []);
 
+  const fetchDocumentationDetails = async () => {
+    try {
+      if (!headers || !headers.Authorization) {
+        console.warn("Headers not ready yet");
+        return;
+      }
+
+      const response = await getDocumentationDetails(headers, ophid);
+      console.log(response);
+      if (response.success && response.data.length > 0) {
+        const doc = response.data[0];
+        // BankName is now stored as string directly
+        const BankName = doc.BankName;
+
+        const aadharFrontFile = doc.AadharFrontURL
+          ? await urlToFile(doc.AadharFrontURL, "aadhar-front.png")
+          : null;
+        const aadharBackFile = doc.AadharBackURL
+          ? await urlToFile(doc.AadharBackURL, "aadhar-back.png")
+          : null;
+        const panFrontFile = doc.PanFrontURL
+          ? await urlToFile(doc.PanFrontURL, "pan-front.png")
+          : null;
+        const signatureFile = doc.SignatureImageURL
+          ? await urlToFile(doc.SignatureImageURL, "signature.png")
+          : null;
+
+        const baseForm = {
+          aadharFront: aadharFrontFile
+            ? { file: aadharFrontFile, preview: doc.AadharFrontURL }
+            : null,
+          aadharBack: aadharBackFile
+            ? { file: aadharBackFile, preview: doc.AadharBackURL }
+            : null,
+          panFront: panFrontFile
+            ? { file: panFrontFile, preview: doc.PanFrontURL }
+            : null,
+          signature: signatureFile
+            ? { file: signatureFile, preview: doc.SignatureImageURL }
+            : null,
+          bankName: BankName || "",
+          accountHolder: doc.AccountHolderName || "",
+          accountNumber: doc.AccountNumber || "",
+          ifscCode: doc.IFSCCode || "",
+          agreementAccepted: doc.AgreementAccepted,
+          step_status: doc.step_status,
+          reject_reason: doc.reject_reason,
+        };
+
+        setFormData(baseForm);
+        setcheckSimilarData(baseForm);
+
+        if (response.data[0].reject_reason != null) {
+          setRejectReason(response.data[0].reject_reason);
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to fetch documentation details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (ophid) {
       fetchDocumentationDetails();
     }
-  }, [ophid, fetchDocumentationDetails]);
+  }, [ophid]);
 
   // Fetch banks when component mounts
   useEffect(() => {
@@ -212,69 +275,6 @@ const DocumentationDetailsForm = () => {
     return isSimilarity;
   };
 
-  const fetchDocumentationDetails = async () => {
-    try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers not ready yet");
-        return;
-      }
-
-      const response = await getDocumentationDetails(headers, ophid);
-      console.log(response);
-      if (response.success && response.data.length > 0) {
-        const doc = response.data[0];
-        // BankName is now stored as string directly
-        const BankName = doc.BankName;
-
-        const aadharFrontFile = doc.AadharFrontURL
-          ? await urlToFile(doc.AadharFrontURL, "aadhar-front.png")
-          : null;
-        const aadharBackFile = doc.AadharBackURL
-          ? await urlToFile(doc.AadharBackURL, "aadhar-back.png")
-          : null;
-        const panFrontFile = doc.PanFrontURL
-          ? await urlToFile(doc.PanFrontURL, "pan-front.png")
-          : null;
-        const signatureFile = doc.SignatureImageURL
-          ? await urlToFile(doc.SignatureImageURL, "signature.png")
-          : null;
-
-        const baseForm = {
-          aadharFront: aadharFrontFile
-            ? { file: aadharFrontFile, preview: doc.AadharFrontURL }
-            : null,
-          aadharBack: aadharBackFile
-            ? { file: aadharBackFile, preview: doc.AadharBackURL }
-            : null,
-          panFront: panFrontFile
-            ? { file: panFrontFile, preview: doc.PanFrontURL }
-            : null,
-          signature: signatureFile
-            ? { file: signatureFile, preview: doc.SignatureImageURL }
-            : null,
-          bankName: BankName || "",
-          accountHolder: doc.AccountHolderName || "",
-          accountNumber: doc.AccountNumber || "",
-          ifscCode: doc.IFSCCode || "",
-          agreementAccepted: doc.AgreementAccepted,
-          step_status: doc.step_status,
-          reject_reason: doc.reject_reason,
-        };
-
-        setFormData(baseForm);
-        setcheckSimilarData(baseForm);
-
-        if (response.data[0].reject_reason != null) {
-          setRejectReason(response.data[0].reject_reason);
-        }
-      }
-    } catch (error) {
-      toast.error("Failed to fetch documentation details");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -342,7 +342,7 @@ const DocumentationDetailsForm = () => {
         try {
           if (typeof formData.signature === "string") {
             const blob = await fetch(formData.signature).then((res) =>
-              res.blob(),
+              res.blob()
             );
 
             const randomString = Math.random().toString(36).substring(2, 10);
@@ -354,7 +354,7 @@ const DocumentationDetailsForm = () => {
           } else if (typeof formData.signature?.preview === "string") {
             formDataToSend.append(
               "SignatureImageURL",
-              formData.signature.preview,
+              formData.signature.preview
             );
           }
         } catch (error) {
@@ -406,7 +406,7 @@ const DocumentationDetailsForm = () => {
 
       const response = await updateDocumentationDetails(
         formDataToSend,
-        headers,
+        headers
       );
       const res = await axiosApi.post(`/increment-count/${ophid}`);
 
@@ -418,7 +418,7 @@ const DocumentationDetailsForm = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Failed to update documentation details",
+          "Failed to update documentation details"
       );
     } finally {
       setLoading(false);
