@@ -96,7 +96,8 @@ const ProfileStatus = () => {
           {/* Back to Home Button */}
           <button
             onClick={() => {
-              window.location.href = import.meta.env.VITE_PORTAL_URL;
+              localStorage.removeItem("token")
+              navigate("/auth/login")
             }}
             className="mt-8 z-[1000] px-16 py-3 bg-[#5DC9DE] hover:font-bold hover:cursor-pointer text-black rounded-full font-medium  transition-colors duration-200"
           >

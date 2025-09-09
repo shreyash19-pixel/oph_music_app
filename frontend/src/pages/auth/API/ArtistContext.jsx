@@ -10,7 +10,7 @@ export const ArtistProvider = ({ children }) => {
 
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [headers, setHeaders] = useState(
-    token ? { Authorization: `Bearer ${token}` } : null,
+    token ? { Authorization: `Bearer ${token}` } : null
   );
   const [ophid, setOphid] = useState(null);
   const [user, setUser] = useState(null);
@@ -82,9 +82,10 @@ export const ArtistProvider = ({ children }) => {
           "/terms-and-conditions",
         ];
 
-        // if (!openRoutes.includes(window.location.pathname)) {
-        //   navigate("/auth/login");
-        // }
+        if (!openRoutes.includes(window.location.pathname)) {
+          logout();
+          navigate("/auth/login");
+        }
         return;
       }
 
