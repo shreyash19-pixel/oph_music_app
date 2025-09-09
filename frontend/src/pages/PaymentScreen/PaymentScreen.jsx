@@ -20,7 +20,7 @@ const PaymentScreen = () => {
   const from = location.state.from;
   const song_id = location.state.song_id;
   const event_id = location.state.event_id;
-  const output_user = location.state.output_user;
+  const outside_user = location.state.outside_user;
   const user_type = location.state.user_type;
   const [oph_id, setoph_id] = useState("");
 
@@ -47,28 +47,26 @@ const PaymentScreen = () => {
           const eventData = response.data.data;
 
           // Set output_user to "outside user"
-          const isOutsideUser = "outside user";
-
+          
+          
           // Calculate amount based on output_user
           const registrationFee = eventData.registrationFee_normal;
-          const finalAmount =
-            output_user === true || output_user === 1
-              ? registrationFee // Full amount for outside users
-              : registrationFee / 2; // Half amount for regular users
-
+          const finalAmount = (outside_user === true || outside_user === 1) 
+            ? registrationFee  // Full amount for outside users
+            : registrationFee / 2;  // Half amount for regular users
+          
           // Create a mock costing object for event data
           const eventCosting = {
             name: "Event Registeration",
             cost: finalAmount,
-            qr_image_path:
-              output_user === true || output_user === 1
-                ? eventData.payment_qr || "/qr.png"
-                : eventData.payment_qr_discount || "/qr.png",
+            qr_image_path: (outside_user === true || outside_user === 1)
+              ? eventData.payment_qr || "/qr.png"
+              : eventData.payment_qr_discount || "/qr.png"
           };
 
           setMatchedCosting(eventCosting);
           console.log(
-            `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${isOutsideUser})`
+            `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${outside_user})`
           );
         }
       } else {
@@ -212,7 +210,7 @@ const PaymentScreen = () => {
         Transaction_ID: trans,
         Review: 0,
         Status: "under Review",
-        step: "/auth/create-profile/personal-details",
+        step: "/auth/create-profile/personal-detals",
         from: from,
         song_id: song_id,
         event_id: event_id,

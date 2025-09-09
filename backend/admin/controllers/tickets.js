@@ -1,5 +1,6 @@
 const ticketModel = require("../model/ticket");
 const { uploadToS3 } = require("../../utils"); // or your own local uploader
+const { saveNotification } = require("../../utils/notify");
 const createTicket = async (req, res) => {
   try {
     const {
@@ -92,14 +93,29 @@ const updateResolvedSummary = async (req, res) => {
   try {
     const summary = await ticketModel.updateResolvedSummary(ticketNumber, notes);
 
+    // Save notification to database
+    const notificationMessage = `Ticket #${ticketNumber} was updated with a resolution.`;
+    await saveNotification({
+      ophid,
+      message: notificationMessage,
+      title: "Ticket Updated",
+      link: `/dashboard/request-ticket`
+    });
+
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
     
-    const userSocketId = onlineUsers.get(ophid);
-    if (userSocketId && req.app.get("io")) {
-      req.app.get("io").to(userSocketId).emit("ticket-updated", {
-        ticketNumber,
-        message: `Ticket #${ticketNumber} was updated.`,
-        notes,
-      });
+    if (io && onlineUsers) {
+      const userSocketId = onlineUsers.get(ophid);
+      if (userSocketId) {
+        io.to(userSocketId).emit("ticket-updated", {
+          ticketNumber,
+          message: notificationMessage,
+          notes,
+        });
+      }
+    } else {
+      console.warn("Socket IO or onlineUsers map is not initialized");
     }
 
     return res.status(200).json({ success: true, data: summary });
