@@ -38,14 +38,14 @@ const PaymentScreen = () => {
   const fetchCostingData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Check if this is an event registration
       if (from === "Event Registeration" && event_id) {
         const response = await axiosApi.get(`/event/${event_id}`);
-        
+
         if (response.data.success) {
           const eventData = response.data.data;
-          
+
           // Set output_user to "outside user"
           
           
@@ -63,7 +63,7 @@ const PaymentScreen = () => {
               ? eventData.payment_qr || "/qr.png"
               : eventData.payment_qr_discount || "/qr.png"
           };
-          
+
           setMatchedCosting(eventCosting);
           console.log(
             `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${outside_user})`
@@ -97,9 +97,9 @@ const PaymentScreen = () => {
             }
           } else {
             // Handle case when no 'from' is provided - default to Registration
-            if (!from) {
+            if (!from || from === "Registration") {
               // Check if user_type is special artist
-              if (user_type === "special artist") {
+              if (user_type === "Special artist") {
                 searchName = "special artist registration";
               } else {
                 searchName = "registration";
@@ -311,7 +311,7 @@ const PaymentScreen = () => {
             oph_id: ophid,
             song_name: location.state.songName,
             project_type: location.state.project_type,
-            release_date: location.state.booking_date
+            release_date: location.state.booking_date,
           },
           {
             headers: {

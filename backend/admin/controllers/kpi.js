@@ -132,7 +132,7 @@ const getTopArtistsController = async (req, res) => {
   try {
 
     const response = await SongSocialMetrics.getTopArtists()
-    
+    // const specialArtisdt
     
     if (response) {
       return res.status(200).json({

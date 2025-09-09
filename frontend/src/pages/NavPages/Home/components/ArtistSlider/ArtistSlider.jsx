@@ -17,25 +17,29 @@ const ArtistSlider = ({ rows = 1 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [autoplay, setAutoplay] = useState(true);
+  const perPage = 6;
+
   const [currArtist, setCurrentArtist] = useState(null);
 
 
   useEffect(() => {
-    const fetchArtists = async () => {
+    const fetchArtists = async (page) => {
       try {
         const response = await axiosApi.get(
-          `/get-top-artist`
+          `/get-top-artist?page=${page}&per_page=${perPage}`
         );
-        setArtists(response.data.data.slice((currentPage - 1) * 6,6 * currentPage));
-        setTotalPages(response.data.data.length);
+        setArtists(response.data.data);
+        console.log("Ar",response.data.data)
+        setTotalPages(response.data.pagination);
       } catch (error) {
         console.error("Error fetching artists:", error);
       }
     };
 
-    fetchArtists()
-
-  }, []);
+    if (currentPage) {
+      fetchArtists(currentPage);
+    }
+  }, [currentPage]);
 
   const handleArtistClick = (id, index) => {    
     setCurrentArtist(id);

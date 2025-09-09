@@ -42,7 +42,7 @@ const signin = async (req, res) => {
         },
       },
       process.env.SECRET_KEY,
-      { expiresIn: "1h" },
+      { expiresIn: "1h" }
     );
 
     const result = await user_details.checkRejectedStep(dbUser.ophid);
@@ -71,6 +71,7 @@ const signin = async (req, res) => {
       token: token,
       ophid: dbUser.ophid,
       step: navTo,
+      artist_type: dbUser.artist_type,
     });
   } catch (err) {
     console.error("Login error:", err);

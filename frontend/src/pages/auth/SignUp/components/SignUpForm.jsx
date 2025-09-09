@@ -61,7 +61,7 @@ const SignUpForm = () => {
   useEffect(() => {
     if (location.state?.status === "cancelled") {
       toast.error(
-        "Payment is mandatory. Please complete the payment to continue.",
+        "Payment is mandatory. Please complete the payment to continue."
       );
       navigate("/auth/login", { replace: true, state: {} });
     } else if (location.state?.status === "success") {
@@ -159,7 +159,7 @@ const SignUpForm = () => {
           ? getFieldError(
               "confirmPassword",
               updatedFormData.confirmPassword,
-              updatedFormData,
+              updatedFormData
             )
           : errors.confirmPassword;
 
@@ -190,7 +190,8 @@ const SignUpForm = () => {
         localStorage.setItem("token", response.token);
         navigate("/auth/payment", {
           state: {
-            from: "Registeration",
+            from: "Registration",
+            user_type: formData.artistType,
           },
         });
       }
