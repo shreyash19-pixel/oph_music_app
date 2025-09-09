@@ -5,21 +5,23 @@ const createWithdrawRequest = async (req, res) => {
     const { ophID, withdraw_amount, withdrawal_id } = req.body;
 
     if (!ophID || !withdraw_amount || !withdrawal_id) {
-      return res
-        .status(400)
-        .json({ message: "ophID and withdraw_amount are required" });
+      return res.status(400).json({
+        message: "ophID, withdraw_amount, and withdrawal_id are required",
+      });
     }
 
-    
     const result = await withdrawModel.createWithdrawRequest(
       ophID,
       withdraw_amount,
       withdrawal_id
     );
-    res
-      .status(201)
-          .json({success : true , message: "Withdrawal request submitted successfully." , withdrwaw : result});
-      
+
+    res.status(201).json({
+      success: true,
+      message: "Withdrawal request submitted successfully.",
+      withdraw: result,
+    });
+
   } catch (error) {
     console.error("Error in withdrawController:", error);
     res.status(500).json({ message: "Internal server error" });
