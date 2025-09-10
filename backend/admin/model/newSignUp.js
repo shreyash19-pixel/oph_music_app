@@ -56,7 +56,7 @@ const getTransactionsByOphId = async (ophid) => {
   const [rows] = await db.execute(
     `SELECT Transaction_ID, CreatedAt
      FROM sign_up_payment
-     WHERE OPH_ID = ? AND \`From\` = 'Registeration'
+     WHERE OPH_ID = ? AND \`From\` = 'Registration'
      ORDER BY CreatedAt DESC`,
     [ophid]
   );
