@@ -9,12 +9,11 @@ import MusicBg from "../../../../public/assets/images/music_bg.png";
 import Elipse from "../../../../public/assets/images/elipse2.png";
 import ProfileFormHeader from "./components/ProfileFormHeader";
 
-const MembershipForm = ({ id }) => {
-  const [searchParams] = useSearchParams();
+const MembershipForm = () => {
   const [content, setContent] = useState("");
   const [error, setError] = useState(null);
 
-  const { artist, headers, ophid } = useArtist();
+  const { headers, ophid } = useArtist();
 
   const navigate = useNavigate();
 
@@ -41,7 +40,7 @@ const MembershipForm = ({ id }) => {
     if (ophid) {
       fetchMembershipForm();
     }
-  }, [ophid]);
+  }, [ophid, headers]);
 
   return (
 
@@ -84,7 +83,7 @@ const MembershipForm = ({ id }) => {
             <button
               onClick={() => {
                 toast.success("Documentation details updated successfully");
-                navigate(`/auth/profile-status?ophid=${ophid}`);
+                navigate("/auth/profile-status", { state: { ophid } });
               }}
               className="w-full my-4 bg-cyan-400 text-black rounded py-3 font-medium hover:bg-cyan-300 transition-colors duration-200"
             >

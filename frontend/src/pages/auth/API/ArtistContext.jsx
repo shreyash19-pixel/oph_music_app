@@ -126,13 +126,13 @@ export const ArtistProvider = ({ children }) => {
         navigate("/auth/create-profile/documentation-details");
         break;
       case 3:
-        navigate("/auth/profile-status?status=success");
+        navigate("/auth/profile-status", { state: { status: "success" } });
         break;
       case 4:
         navigate("/dashboard");
         break;
       case 5:
-        navigate("/auth/profile-status?status=rejected");
+        navigate("/auth/profile-status", { state: { status: "rejected" } });
         break;
       default:
         navigate("/auth/login");

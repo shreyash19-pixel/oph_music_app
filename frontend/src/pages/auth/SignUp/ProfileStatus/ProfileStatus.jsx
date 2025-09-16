@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useArtist } from "../../API/ArtistContext";
+// import { useArtist } from "../../API/ArtistContext";
 import ProfileFormHeader from "../components/ProfileFormHeader";
 import Review from "../../../../../public/assets/images/review.png";
 import MusicBg from "../../../../../public/assets/images/music_bg.png";
@@ -12,48 +12,55 @@ const ProfileStatus = () => {
   const [error, setError] = useState(null); // Error state
   const [artistData, setArtistData] = useState(null); // To store artist data from the API
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const status = queryParams.get("status"); // Getting 'status' from query params
+  const status = location.state?.status || null; // prefer router state
+  const ophidFromState = location.state?.ophid;
   const id = localStorage.getItem("artist_id");
-  const { artist } = useArtist(); // Custom hook for artist data (presumably)
+  // const { artist } = useArtist(); // Not needed here
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const run = async () => {
       try {
-        setLoading(true); // Start loading
-        console.log(id, "id"); // Log the artist ID
-  
-        const artistResponse = await axiosApi.get(`/artists/${id}`);
-        const artist = artistResponse.data;
-  
-        setArtistData(artist); // Store the response in state
-        setLoading(false); // Stop loading
-        console.log(artist);
+        setLoading(true);
+        const effectiveId = ophidFromState || id;
+        if (!effectiveId) {
+          setLoading(false);
+          return;
+        }
+        const url = `/auth/get-artist-detail/${effectiveId}`;
+        console.log("GET:", url);
+        const artistResponse = await axiosApi.get(url);
+        console.log("Response:", {
+          status: artistResponse?.status,
+          data: artistResponse?.data,
+          headers: artistResponse?.headers,
+        });
+        const artist = artistResponse;
+        console.log(artist,"artist");
         
-        console.log(artist.reject_reason, artist.data.onboarding_status)
-        // Redirect based on onboarding status and pass reject reason
-        if (artist.data.onboarding_status === 0 || artist.data.onboarding_status === 5) {
+        setArtistData(artist);
+        setLoading(false);
+
+        if (artist.data?.onboarding_status === 0 || artist.data?.onboarding_status === 5) {
           navigate("/auth/create-profile/personal-details", {
-            state: { rejectReason: artist.data.reject_reason || "No reason provided." },
+            state: { rejectReason: artist.data?.reject_reason || "No reason provided." },
           });
-        } else if (artist.data.onboarding_status === 1) {
+        } else if (artist.data?.onboarding_status === 1) {
           navigate("/auth/create-profile/professional-details", {
-            state: { rejectReason: artist.data.reject_reason || "No reason provided." },
+            state: { rejectReason: artist.data?.reject_reason || "No reason provided." },
           });
-        } else if (artist.data.onboarding_status === 2) {
+        } else if (artist.data?.onboarding_status === 2) {
           navigate("/auth/create-profile/documentation-details", {
-            state: { rejectReason: artist.data.reject_reason || "No reason provided." },
+            state: { rejectReason: artist.data?.reject_reason || "No reason provided." },
           });
         }
       } catch (error) {
-        setError(error); // Set error if the request fails
-        setLoading(false); // Stop loading
+        setError(error);
+        setLoading(false);
       }
     };
-  
-    // fetchData(); // Call the async function when component mounts
-  }, [id, navigate]); // Dependency array: runs when `id` or `navigate` changes
+    run();
+  }, [id, navigate, ophidFromState]);
   // Show a loading message while the request is in progress
   if (loading) {
     return <div>Loading...</div>;

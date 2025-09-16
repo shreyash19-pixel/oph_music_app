@@ -48,7 +48,7 @@ const Artist_new = () => {
           data={tableData}
           showStatusIndicator={false}
           excludeColumns={
-            "createdAt,updatedAt,user_pass,step_status,reject_reason,personal_photo,location,current_step,rejected_step,traffic"
+            "createdAt,updatedAt,user_pass,step_status,reject_reason,personal_photo,location,current_step,rejected_step,traffic,artist_story,artist_story_video,Notes"
           }
           pageSize={10}
           detailsUrl="/ArtistNew"

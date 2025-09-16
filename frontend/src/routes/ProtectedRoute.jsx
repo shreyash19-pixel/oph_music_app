@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (artist.onboarding_status !== 4) {
-    return <Navigate to="/auth/profile-status" />;
+    return <Navigate to="/auth/profile-status" replace />;
   }
 
   return children;
