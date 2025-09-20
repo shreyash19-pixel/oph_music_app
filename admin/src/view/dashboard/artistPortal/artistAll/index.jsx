@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, Download } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 const ArtistAll = () => {
@@ -16,8 +16,12 @@ const ArtistAll = () => {
   const fileInputRefs = useRef({});
   const signatureCanvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [isBrowser, setIsBrowser] = useState(false);
 
   useEffect(() => {
+    // Set browser flag
+    setIsBrowser(true);
+    
     // Initialize signature canvas
     const canvas = signatureCanvasRef.current;
     if (canvas) {
@@ -468,6 +472,81 @@ const ArtistAll = () => {
     }
   };
 
+  const downloadPDF = async () => {
+    try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || typeof window.document === 'undefined') {
+        console.error('Not in browser environment');
+        toast.error('Download feature is not available in this environment');
+        return;
+      }
+
+      if (!personal.full_name) {
+        toast.error('No artist name available for PDF download');
+        return;
+      }
+
+      console.log('Starting PDF download...');
+
+      // Show loading toast
+      const loadingToast = toast.loading('Downloading PDF...');
+
+      // Construct the PDF URL from AWS S3
+      const pdfFileName = `${personal.full_name.replace(/\s+/g, '_')}.pdf`;
+      const s3Bucket = import.meta.env.VITE_S3_BUCKET || "";
+      const s3Region = import.meta.env.VITE_S3_REGION || "";
+      const pdfUrl = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/pdfs/${pdfFileName}`;
+
+      console.log('PDF URL:', pdfUrl);
+
+      // Fetch the PDF file
+      const response = await fetch(pdfUrl);
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`PDF not found: ${response.status} ${response.statusText}`);
+      }
+
+      // Convert response to blob
+      const blob = await response.blob();
+      console.log('Blob created, size:', blob.size);
+      
+      // Force download by creating a blob with proper MIME type
+      const downloadBlob = new Blob([blob], { 
+        type: 'application/pdf',
+        name: pdfFileName 
+      });
+      
+      const url = URL.createObjectURL(downloadBlob);
+      console.log('Object URL created:', url);
+      
+      // Create download link with proper attributes
+      const tempLink = window.document.createElement('a');
+      tempLink.href = url;
+      tempLink.download = pdfFileName;
+      tempLink.style.display = 'none';
+      
+      // Add to DOM, click, and remove
+      window.document.body.appendChild(tempLink);
+      tempLink.click();
+      window.document.body.removeChild(tempLink);
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success('PDF downloaded successfully!');
+      
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error(`Failed to download PDF: ${error.message}`);
+    }
+  };
+
   const renderInput = (key, value, onChange, allData, lockKey, sectionIdx) => {
     const lower = key.toLowerCase();
     const isPhoto =
@@ -774,6 +853,9 @@ const ArtistAll = () => {
           sectionIdx={0}
           locks={locks}
           toggleLock={toggleLock}
+          onDownloadPDF={downloadPDF}
+          showDownloadButton={true}
+          isBrowser={isBrowser}
         />
 
         <Section
@@ -811,6 +893,9 @@ const Section = ({
   sectionIdx,
   locks,
   toggleLock,
+  onDownloadPDF,
+  showDownloadButton = false,
+  isBrowser = false,
 }) => (
   <div>
     <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">
@@ -846,7 +931,23 @@ const Section = ({
         );
       })}
     </div>
-    <div className="mt-6 text-right">
+    <div className="mt-6 flex justify-between items-center">
+      {showDownloadButton && onDownloadPDF && isBrowser && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            if (typeof window !== 'undefined' && typeof window.document !== 'undefined') {
+              onDownloadPDF();
+            } else {
+              console.error('Not in browser environment when button clicked');
+            }
+          }}
+          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+        >
+          <Download size={16} />
+          Download PDF
+        </button>
+      )}
       <button
         onClick={onSave}
         className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
