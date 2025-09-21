@@ -13,6 +13,7 @@ const payment = async (req, res) => {
       song_id,
       event_id,
       release_date,
+      old_release_date
     } = req.body;
     const ophid = OPH_ID;
 
@@ -33,7 +34,8 @@ const payment = async (req, res) => {
       from,
       song_id || null,
       event_id || null,
-      release_date || null
+      release_date || null,
+      old_release_date || null
     );
 
     if (dbResponse) {

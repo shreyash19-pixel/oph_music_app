@@ -285,6 +285,9 @@ export default function TimeCalendar() {
 
     const getCurrentGridStatus = data.find((d) => d.current_booking_date === dateStr)
 
+    // console.log(getCurrentGridStatus);
+    
+
     return (
       <div
         key={index}

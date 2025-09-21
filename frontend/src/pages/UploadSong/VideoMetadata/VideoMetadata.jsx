@@ -126,7 +126,8 @@ export default function VideoMetadataForm() {
       return;
     }
 
-    if (
+   if (
+      !location.state.lyrical_services &&
       !hasPaidForLyricalVideo &&
       !formData.video_file &&
       !formData.existing_video_url
@@ -193,7 +194,7 @@ export default function VideoMetadataForm() {
           if (paymentUpdateResponse.data.success) {
             navigate("/dashboard/success", {
               state: {
-                heading: "Your Event Spot has been booked Successfully.",
+                heading: "Your Song Registration has been done successfully!",
                 btnText: "Back to Home",
                 redirectTo: "/dashboard/events",
               },

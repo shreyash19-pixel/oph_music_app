@@ -49,7 +49,11 @@ const signin = async (req, res) => {
 
     const checkRejectedStep = result[0];
 
-    if (checkRejectedStep.user_status === "rejected") {
+    if(checkRejectedStep.user_status === "under review" && checkRejectedStep.professional_status === "under review" && checkRejectedStep.documentation_status === "under review")
+    {
+      navTo = "/auth/membership-form";
+    }
+    else if (checkRejectedStep.user_status === "rejected") {
       navTo = "/auth/create-profile/personal-details";
     } else if (checkRejectedStep.professional_status === "rejected") {
       navTo = "/auth/create-profile/professional-details";
