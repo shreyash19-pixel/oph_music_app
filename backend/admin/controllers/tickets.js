@@ -106,7 +106,7 @@ const updateResolvedSummary = async (req, res) => {
     const onlineUsers = req.app.get("onlineUsers");
     
     if (io && onlineUsers) {
-      const userSocketId = onlineUsers.get(ophid);
+      const userSocketId = onlineUsers.get(ophid);  
       if (userSocketId) {
         io.to(userSocketId).emit("ticket-updated", {
           ticketNumber,

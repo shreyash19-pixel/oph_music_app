@@ -172,13 +172,13 @@ const TvIndex = () => {
       const formData = new FormData();
       formData.append("song_id", tvData.song_id);
       if (audioInputRef.current?.files[0]) {
-        formData.append("audio", audioInputRef.current.files[0]);
+        formData.append("audio_url", audioInputRef.current.files[0]);
       }
       if (videoInputRef.current?.files[0]) {
-        formData.append("video", videoInputRef.current.files[0]);
+        formData.append("video_url", videoInputRef.current.files[0]);
       }
 
-      if (!formData.has("audio") && !formData.has("video")) {
+      if (!formData.has("audio_url") && !formData.has("video_url")) {
         toast.error("No file selected to update.");
         return;
       }
