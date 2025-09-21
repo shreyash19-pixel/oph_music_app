@@ -12,7 +12,7 @@ const getUniqueOphIdsWithRegistration = async () => {
        WHERE \`From\` = ? 
          AND OPH_ID IS NOT NULL 
          AND OPH_ID != ''
-         AND (Status = 'Under Revi' OR Status = 'Under Review')
+         AND (Status = 'Under Review' OR Status = 'under review')
        GROUP BY OPH_ID
      ) latest 
      ON t.OPH_ID = latest.OPH_ID 
@@ -20,8 +20,8 @@ const getUniqueOphIdsWithRegistration = async () => {
      WHERE t.\`From\` = ? 
        AND t.OPH_ID IS NOT NULL 
        AND t.OPH_ID != ''
-       AND (t.Status = 'Under Revi' OR t.Status = 'Under Review')`,
-    ["Registeration", "Registeration"]
+       AND (t.Status = 'Under Review' OR t.Status = 'under review')`,
+    ["Registration", "Registration"]
   );
   return rows;
 };
@@ -56,7 +56,7 @@ const getTransactionsByOphId = async (ophid) => {
   const [rows] = await db.execute(
     `SELECT Transaction_ID, CreatedAt
      FROM sign_up_payment
-     WHERE OPH_ID = ? AND \`From\` = 'Registeration'
+     WHERE OPH_ID = ? AND \`From\` = 'Registration'
      ORDER BY CreatedAt DESC`,
     [ophid]
   );

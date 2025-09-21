@@ -19,4 +19,12 @@ const checkRejectedStep = async (ophid) => {
   return rows;
 };
 
-module.exports = { findUserByEmail, checkRejectedStep };
+const getArtistDetail = async (ophid) => {
+  const [rows] = await db.execute(
+    "SELECT overall_status FROM application_status WHERE OPH_ID = ?",
+    [ophid],
+  );
+  return rows;
+};
+
+module.exports = { findUserByEmail, checkRejectedStep, getArtistDetail };

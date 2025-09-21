@@ -10,7 +10,7 @@ const Learnings = () => {
   const fetchLearnings = async () => {
     try {
       const token = localStorage.getItem('token') // Retrieve the token
-      const response = await axiosApi.get("/allPodcasts", {
+      const response = await axiosApi.get("/allLearning", {
         headers: {
           Authorization: `Bearer ${token}`, // Set the Authorization header
         },

@@ -28,14 +28,30 @@ const getAllUserDetailsWithAnyStepUnderReview = async () => {
   const [rows] = await db.execute(
     `
     SELECT *
-    FROM user_details
-    WHERE ophid IN (
+FROM user_details
+WHERE ophid IN (
+    -- Case 1: Under review in ALL 3 tables
+    SELECT ophid FROM user_details WHERE step_status = 'under review'
+    INTERSECT
+    SELECT OPH_ID FROM professional_details WHERE step_status = 'under review'
+    INTERSECT
+    SELECT OPH_ID FROM documentation_details WHERE step_status = 'under review'
+)
+
+UNION
+
+SELECT *
+FROM user_details
+WHERE form_fill_count > 3
+  AND ophid IN (
+      -- Case 2: Under review in ANY ONE table
       SELECT ophid FROM user_details WHERE step_status = 'under review'
-      INTERSECT
+      UNION
       SELECT OPH_ID FROM professional_details WHERE step_status = 'under review'
-      INTERSECT
+      UNION
       SELECT OPH_ID FROM documentation_details WHERE step_status = 'under review'
-    );
+  );
+
 
     `,
   );
@@ -99,6 +115,36 @@ const updateProfessionalStatus = async (ophid, status, reason) => {
   return [rows];
 };
 
+const getUserDetailsStepStatus = async (ophid) => {
+  const [rows] = await db.execute(
+    `
+    SELECT step_status FROM user_details WHERE ophid = ?
+    `,
+    [ophid],
+  );
+  return rows;
+};
+
+const getProfessionalDetailsStepStatus = async (ophid) => {
+  const [rows] = await db.execute(
+    `
+    SELECT step_status FROM professional_details WHERE OPH_ID = ?
+    `,
+    [ophid],
+  );
+  return rows;
+};
+
+const getDocumentationDetailsStepStatus = async (ophid) => {
+  const [rows] = await db.execute(
+    `
+    SELECT step_status FROM documentation_details WHERE OPH_ID = ?
+    `,
+    [ophid],
+  );
+  return rows;
+};
+
 module.exports = {
   getUserDetailsByOphId,
   getProfessionalDetailsByOphId,
@@ -108,4 +154,7 @@ module.exports = {
   updateProfessionalStatus,
   updateDocumentationStatus,
   getAllSales,
+  getUserDetailsStepStatus,
+  getProfessionalDetailsStepStatus,
+  getDocumentationDetailsStepStatus,
 };
