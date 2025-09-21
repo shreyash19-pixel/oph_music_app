@@ -93,14 +93,14 @@ const updateResolvedSummary = async (req, res) => {
     const summary = await ticketModel.updateResolvedSummary(ticketNumber, notes);
 
     
-    const userSocketId = onlineUsers.get(ophid);
-    if (userSocketId && req.app.get("io")) {
-      req.app.get("io").to(userSocketId).emit("ticket-updated", {
-        ticketNumber,
-        message: `Ticket #${ticketNumber} was updated.`,
-        notes,
-      });
-    }
+    // const userSocketId = onlineUsers.get(ophid);
+    // if (userSocketId && req.app.get("io")) {
+    //   req.app.get("io").to(userSocketId).emit("ticket-updated", {
+    //     ticketNumber,
+    //     message: `Ticket #${ticketNumber} was updated.`,
+    //     notes,
+    //   });
+    // }
 
     return res.status(200).json({ success: true, data: summary });
   } catch (error) {
