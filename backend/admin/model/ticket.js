@@ -47,7 +47,7 @@ const updateResolvedSummary = async (ticketNumber, notes) => {
     `UPDATE tickets SET notes = ?, status = 'Resolved' WHERE ticketNumber = ?`,
     [notes, ticketNumber]
   );
-  return rows;
+   return rows[0];
 };
 
 const getTicket = async (ticketNumber) => {

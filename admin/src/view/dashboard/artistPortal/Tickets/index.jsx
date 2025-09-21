@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../../../conf/axios";
 import { useParams } from "react-router-dom";
-import { useArtist } from "../../../../../../frontend/src/pages/auth/API/ArtistContext";
+// import { useArtist } from "../../../../../../frontend/src/pages/auth/API/ArtistContext";
 
 export default function AdminTicketList() {
   const [tickets, setTickets] = useState([]);
    const { ticketNumber } = useParams();
   const [loading, setLoading] = useState(true);
   const [summaryMap, setSummaryMap] = useState({});
-  const { ophid, headers } = useArtist(); 
+  // const { ophid, headers } = useArtist(); 
 
   useEffect(() => {
     axiosApi
@@ -44,7 +44,6 @@ export default function AdminTicketList() {
       .post("/resolveTicket", {
         ticketNumber,
         notes: summary,
-        ophid
       })
       .then(() => {
         alert("Ticket marked as resolved.");
