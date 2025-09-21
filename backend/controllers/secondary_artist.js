@@ -18,15 +18,6 @@ const insertSecondaryArtist = async (req, res) => {
     } = req.body
 
     const profileImg = req.file
-
-    if (!song_id || !artist_type || !artist_name || !legal_name || !spotify_url || !facebook_url || !instagram_url || !apple_music_url) {
-
-      return res.status(400).json({
-        success: false,
-        message: "Missing Details"
-      })
-    }
-
     let imageURL = ''
 
     if (profileImg) {
