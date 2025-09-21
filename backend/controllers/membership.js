@@ -17,6 +17,7 @@ const membershipForm = async (req, res) => {
     try {
       // Fetch professions from database instead of hardcoding
       const professionOptions = await professions.getAll();
+      
 
       // Fetch banks from database
       const Banks = require('../model/banks');
@@ -388,7 +389,7 @@ const membershipForm = async (req, res) => {
         <div class="row gap-10">
         <div class="form-group">
           <label class="field-name">Artist Membership Code</label>
-          <div class="field-value"> ${artist[0].ophid || ""} &nbsp;</div>
+          <div class="field-value"> &nbsp;</div>
         </div>
         <div class="form-group">
           <label class="field-name">Date</label>
@@ -447,7 +448,7 @@ const membershipForm = async (req, res) => {
                 <span>Profession</span>
                 <span class="mr-22">:</span>
             </span>
-            <span class="field-value w-60">${professionName || ""}</span>
+            <span class="field-value w-60">${artistProf[0].Profession || ""}</span>
         </div>
         <div class="field grid-template-columns-2">
             <span class="field-name d-flex justify-content-between align-items-center">
