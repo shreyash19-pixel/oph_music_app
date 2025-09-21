@@ -92,6 +92,45 @@ const ArtistNew = () => {
     }
   }, [ophid]);
 
+  useEffect(() => {
+    const mapStepToUiStatus = (stepStatus) => {
+      if (!stepStatus) return null; // Pending in UI
+      const normalized = String(stepStatus).toLowerCase();
+      if (normalized === "completed") return "Accepted";
+      if (normalized === "rejected") return "Rejected";
+      return null; // 'under review' or any other -> Pending
+    };
+
+    const fetchStatuses = async () => {
+      if (!ophid) return;
+      try {
+        const [personalRes, professionalRes, documentationRes] = await Promise.all([
+          axiosApi.get(`/user-details-step-status/${ophid}`),
+          axiosApi.get(`/professional-details-step-status/${ophid}`),
+          axiosApi.get(`/documentation-details-step-status/${ophid}`),
+        ]);
+
+        const personalRows = personalRes?.data?.userDetails || [];
+        const professionalRows = professionalRes?.data?.professionalDetails || [];
+        const documentationRows = documentationRes?.data?.documentationDetails || [];
+
+        const personalStep = personalRows[0]?.step_status;
+        const professionalStep = professionalRows[0]?.step_status;
+        const documentationStep = documentationRows[0]?.step_status;
+
+        setStatuses({
+          Personal: mapStepToUiStatus(personalStep),
+          Professional: mapStepToUiStatus(professionalStep),
+          Documentation: mapStepToUiStatus(documentationStep),
+        });
+      } catch (error) {
+        console.error("Error fetching section statuses:", error);
+      }
+    };
+
+    fetchStatuses();
+  }, [ophid]);
+
   const handleAction = (section, type) => {
     setConfirmAction({ section, type });
   };

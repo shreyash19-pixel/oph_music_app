@@ -88,7 +88,7 @@ const ProfessionalDetailsForm = () => {
     ExperienceYearly: 0,
     experienceMonths: 0,
     songsPlanned: 0,
-    songPlanningDuration: "monthly",
+    songPlanningDuration: "",
   });
 
   const [checkSimilarData, setcheckSimilarData] = useState({
@@ -102,7 +102,7 @@ const ProfessionalDetailsForm = () => {
     ExperienceYearly: 0,
     experienceMonths: 0,
     songsPlanned: 0,
-    songPlanningDuration: "monthly",
+    songPlanningDuration: "",
   });
   // console.log(formData,"formdata");
 
@@ -176,7 +176,7 @@ const ProfessionalDetailsForm = () => {
           appleMusicUrl: artist.AppleMusicLink || "",
           ExperienceYearly: Math.floor((artist.ExperienceMonthly || 0) / 12),
           experienceMonths: (artist.ExperienceMonthly || 0) % 12,
-          songPlanningDuration: artist.SongsPlanningType || 0,
+          songPlanningDuration: artist.SongsPlanningType || "",
           songsPlanned: artist.SongsPlanningCount || 0,
           step_status: artist.step_status,
           url: artist.VideoURL,
@@ -192,7 +192,7 @@ const ProfessionalDetailsForm = () => {
           appleMusicUrl: artist.AppleMusicLink || "",
           ExperienceYearly: Math.floor((artist.ExperienceMonthly || 0) / 12),
           experienceMonths: (artist.ExperienceMonthly || 0) % 12,
-          songPlanningDuration: artist.SongsPlanningType || 0,
+          songPlanningDuration: artist.SongsPlanningType || "",
           songsPlanned: artist.SongsPlanningCount || 0,
           step_status: artist.step_status,
           url: artist.VideoURL,
@@ -224,6 +224,11 @@ const ProfessionalDetailsForm = () => {
     }
     if (!formData.bio && !videoBio) {
       toast.error("Please add your bio");
+      setLoading(false);
+      return;
+    }
+    if (!shouldHideSongsPlanned && !formData.songPlanningDuration) {
+      toast.error("Please select song planning duration");
       setLoading(false);
       return;
     }
@@ -473,7 +478,7 @@ const ProfessionalDetailsForm = () => {
                 className="w-full h-[150px]  border-l-[1px] border-t-[1px] border-r-[1px] backdrop-blur-md border-[#757475] px-4 py-2 text-white bg-[rgba(30,30,30,0.7)] rounded-2xl outline-none shadow-inner
                    focus:ring-2 focus:bg-[rgb(93 ,201,222,0.5)] outline-none  focus:border-[#5DC8DF]  transition duration-200"
                 placeholder="About you..."
-                row={6}
+                rows={6}
                 value={formData.bio}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, bio: e.target.value }))
@@ -666,15 +671,16 @@ const ProfessionalDetailsForm = () => {
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          songPlanningDuration: e.target.value || "monthly", // Update with selected value
+                          songPlanningDuration: e.target.value, // Update with selected value
                         }))
                       }
                       className="w-full h-12 border-l-[1px] border-t-[1px] border-r-[1px] backdrop-blur-md border-[#757475] px-4 text-white bg-[rgba(30,30,30,0.7)] rounded-full outline-none shadow-inner
        focus:ring-2 focus:bg-[rgb(93 ,201,222,0.5)] outline-none  focus:border-[#5DC8DF]  transition duration-200"
                     >
+                      <option value="">Select One</option>
                       <option value="monthly">Per Monthly</option>
                       <option value="quarterly">Per Quarterly</option>
-                      <option value="yearly">Per Yearlyy</option>
+                      <option value="yearly">Per Yearly</option>
                     </select>
                   </div>
                 </>

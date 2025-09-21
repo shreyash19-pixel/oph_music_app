@@ -108,9 +108,31 @@ const updateStatus = async (req, res) => {
   }
 };
 
+const getUserDetailsStepStatus = async (req, res) => {
+  const { ophid } = req.params;
+  const userDetails = await userDetailsModel.getUserDetailsStepStatus(ophid);
+  res.status(200).json({ userDetails });
+};  
+
+const getProfessionalDetailsStepStatus = async (req, res) => {
+  const { ophid } = req.params;
+  const professionalDetails = await userDetailsModel.getProfessionalDetailsStepStatus(ophid);
+  res.status(200).json({ professionalDetails });
+};
+
+const getDocumentationDetailsStepStatus = async (req, res) => {
+  const { ophid } = req.params;
+  const documentationDetails = await userDetailsModel.getDocumentationDetailsStepStatus(ophid);
+  res.status(200).json({ documentationDetails });
+};
+
+
 module.exports = {
   getAllDetailsUnderReview,
   getAllUserDetailsIfAnyStepUnderReview,
   updateStatus,
   getAllSales,
+  getUserDetailsStepStatus,
+  getProfessionalDetailsStepStatus,
+  getDocumentationDetailsStepStatus,
 };
