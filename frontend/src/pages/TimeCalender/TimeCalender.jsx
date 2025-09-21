@@ -310,7 +310,7 @@ export default function TimeCalendar() {
             );
           }
         }}
-        className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
+        className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] cursor-pointer hover:opacity-80 ${
           isBlocked && isCurrentMonth
             ? isWithinFiveDaysRestriction
               ? "bg-[#FF6B6B]/30 border-[#FF6B6B] shadow-[#FF6B6B]/20 shadow-inner"
@@ -321,11 +321,7 @@ export default function TimeCalendar() {
         }
         ${isPast ? "opacity-50" : ""}
         ${!isValidFutureDate ? " opacity-25" : ""}
-        ${
-          !isPast && isValidFutureDate && !isWithinFiveDaysRestriction
-            ? "cursor-pointer hover:opacity-80"
-            : "cursor-not-allowed"
-        }`}
+        `}
       >
         <div className="flex justify-between items-start">
           <span

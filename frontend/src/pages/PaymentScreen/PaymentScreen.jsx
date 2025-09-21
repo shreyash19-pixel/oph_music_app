@@ -215,7 +215,8 @@ const PaymentScreen = () => {
         song_id: song_id,
         event_id: event_id,
         release_date:
-          location.state.date || location.state.booking_date || null,
+          location.state.date || location.state.booking_date || null || location.state.new_booking_date,
+        old_release_date: location.state.old_booking_date || null,
         lyricalVid: lyrical_services,
       };
 
@@ -262,7 +263,7 @@ const PaymentScreen = () => {
           if (CalenderRes.data.success) {
             navigate("/dashboard/success", {
               state: {
-                heading: "Your date blocked successfully!",
+                heading: "Date Changed Successfully",
                 btnText: "View Calendar",
                 redirectTo: "/dashboard/time-calendar",
               },

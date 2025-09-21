@@ -220,6 +220,15 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         )
       );
     }
+  } else if (from === "Release date change") {
+    if (decision === "rejected" || decision === "approved") {
+      rows.push(
+        await db.execute(
+          "UPDATE sign_up_payment SET Status = ?, reject_reason = ? WHERE release_date = ?",
+          [decision, isReasonEmpty, release_date]
+        )
+      );
+    }
   } else if (from === "Song Registration") {
     if (decision === "rejected" || decision === "approved") {
       rows.push(

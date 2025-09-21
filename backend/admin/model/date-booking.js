@@ -48,7 +48,7 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date) => {
 
 const getAllBookings = async () => {
   const [rows] = await db.execute(
-    "SELECT c.*, sup.`Status` FROM calender c LEFT JOIN sign_up_payment sup ON c.current_booking_date = sup.release_date WHERE c.song_name IS null "
+    "SELECT DISTINCT c.*, sup.`Status` FROM calender c LEFT JOIN sign_up_payment sup ON c.current_booking_date = sup.release_date WHERE c.song_name IS null AND `From` = 'Date booking' OR `From` = 'Release date change'"
   );
 
   const rowsWithIST = rows.map((row) => ({
