@@ -34,31 +34,25 @@ const updateTvStatus = async (song_id, status, reason) => {
   return result;
 };
 
-const updateTvFiles = async (song_id, audio, video) => {
-  let query = "UPDATE tvPublishing SET";
-  const updates = [];
-  const values = [];
+const updateTvFiles = async (song_id, updates) => {
+  const keys = Object.keys(updates);
 
-  if (audio !== undefined) {
-    updates.push(" audio = ? ");
-    values.push(audio);
-  }
-
-  if (video !== undefined) {
-    updates.push(" video = ? ");
-    values.push(video);
-  }
-
-  if (updates.length === 0) {
+  if (keys.length === 0) {
     throw new Error("No file provided to update");
   }
 
-  query += updates.join(", ") + " WHERE song_id = ?";
+  // Build SET clause dynamically
+  const setClause = keys.map((key) => `${key} = ?`).join(", ");
+  const values = keys.map((key) => updates[key]);
   values.push(song_id);
+
+  const query = `UPDATE tvPublishing SET ${setClause} WHERE song_id = ?`;
 
   const [result] = await db.execute(query, values);
   return result;
 };
+
+
 
 const getOphIdFromSongId = async (song_id) => {
   const [rows] = await db.execute(

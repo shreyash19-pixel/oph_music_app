@@ -2,6 +2,7 @@
    import axiosApi from "../../../../conf/axios";
    import SearchableDynamicTable from "../../../../components/SearchableDynamicTable";
    import ArtistSidebar from "../../../../components/ArtistSidebar";
+
  
    const Tvpublishing = () => {
      const [tableData, setTableData] = useState([]);

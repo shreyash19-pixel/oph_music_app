@@ -84,9 +84,9 @@ const getAllTickets = async (req, res) => {
 };
 
 const updateResolvedSummary = async (req, res) => {
-  const { ticketNumber, notes, ophid } = req.body;
+  const { ticketNumber, notes} = req.body;
 
-  if (!ticketNumber || !notes || !ophid) {
+  if (!ticketNumber || !notes ) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -106,7 +106,7 @@ const updateResolvedSummary = async (req, res) => {
     const onlineUsers = req.app.get("onlineUsers");
     
     if (io && onlineUsers) {
-      const userSocketId = onlineUsers.get(ophid);
+      const userSocketId = onlineUsers.get(ophid);  
       if (userSocketId) {
         io.to(userSocketId).emit("ticket-updated", {
           ticketNumber,
