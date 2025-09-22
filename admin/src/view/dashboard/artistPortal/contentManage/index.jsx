@@ -10,6 +10,12 @@ const ContentManage = () => {
   const [loading, setLoading] = useState(true);
   const hasInteracted = useRef({ Content: false, Audio: false, Video: false });
 
+  const languages = [
+    { name: "English", id: 1 },
+    { name: "Hindi", id: 2 },
+    { name: "Marathi", id: 3 },
+  ];
+
   const [content, setContent] = useState({
     project_type: "",
     video_type: "",
@@ -211,10 +217,8 @@ const ContentManage = () => {
         formData.append('video_file', videoData.video_file);
       }
 
-      // Handle existing images
-      if (videoData.images && videoData.images.length > 0) {
-        formData.append('image_url', JSON.stringify(videoData.images));
-      }
+      // Handle existing images - always send current list (can be empty)
+      formData.append('image_url', JSON.stringify(videoData.images || []));
 
       // Add new image files if provided
       if (videoData.image_files && videoData.image_files.length > 0) {
@@ -247,7 +251,7 @@ const ContentManage = () => {
           setVideo(prev => ({ ...prev, video: response.data.video_url }));
         }
         if (response.data.image_urls) {
-          setVideo(prev => ({ ...prev, images: response.data.image_urls }));
+          setVideo(prev => ({ ...prev, images: response.data.image_urls, image_files: [] }));
         }
       } else {
         throw new Error(response.data.message || "Video update failed");
@@ -297,6 +301,7 @@ const ContentManage = () => {
           ]}
           onChange={handleSectionChange("Audio", setAudio)}
           updateFunction={updateAudioSection}
+          languages={languages}
           renderExtra={() =>
             audio.secondary_artists?.length > 0 && (
               <div className="mt-4 space-y-4">
@@ -513,7 +518,7 @@ const ContentManage = () => {
   );
 };
 
-const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderExtra }) => {
+const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderExtra, languages = [] }) => {
   const [unlockFields, setunlockFields] = useState({
     Content: {},
     Audio: {},
@@ -554,7 +559,8 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
     ...data,
     audio_file: null,
     video_file: null,
-    image_files: []
+    image_files: [],
+    images: data.images || [] // Include images array for Video section
   });
 
   const toggleLock = (field) => {
@@ -599,6 +605,25 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
     if (!hasChanges) {
       if (data.audio_file || data.video_file || (data.image_files && data.image_files.length > 0)) {
         hasChanges = true;
+      }
+    }
+
+    // Check for image array changes (for Video section)
+    if (!hasChanges && section === "Video" && data.images) {
+      const initialImages = initialData.images || [];
+      const currentImages = data.images || [];
+      
+      // Check if arrays are different length or have different content
+      if (initialImages.length !== currentImages.length) {
+        hasChanges = true;
+      } else {
+        // Check if any image URLs are different
+        for (let i = 0; i < initialImages.length; i++) {
+          if (initialImages[i] !== currentImages[i]) {
+            hasChanges = true;
+            break;
+          }
+        }
       }
     }
 
@@ -727,6 +752,16 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
                   )}
                 </div>
               ) : (
+                // Special handling: show language name based on id for Audio section
+                section === "Audio" && field === "language" ? (
+                  <input
+                    type="text"
+                    name={field}
+                    value={(languages.find(l => String(l.id) === String(data.language))?.name) || data.language || ""}
+                    readOnly={true}
+                    className={`w-full p-2 border rounded-md text-black bg-gray-100`}
+                  />
+                ) : (
                 <input
                   type="text"
                   name={field}
@@ -737,6 +772,7 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
                     isReadOnly ? "bg-gray-100" : "bg-white"
                   }`}
                 />
+                )
               )}
 
               {field !== "release_date" && (

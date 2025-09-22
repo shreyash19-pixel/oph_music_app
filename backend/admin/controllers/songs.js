@@ -402,18 +402,41 @@ const updateVideoSection = async (req, res) => {
 
     // Handle thumbnail images upload
     let imageUrls = [];
-    
-    // First, get existing images from database to preserve them
-    const existingVideoData = await songsModel.getVideoDetails(songId);
-    if (existingVideoData && existingVideoData.image_url) {
+
+    // Determine the base set of images to preserve:
+    // Prefer images provided by the client (videoData.image_url),
+    // otherwise fall back to what currently exists in the DB.
+    if (videoData.image_url !== undefined) {
       try {
-        const existingImages = JSON.parse(existingVideoData.image_url);
-        if (Array.isArray(existingImages)) {
-          imageUrls = existingImages;
+        const parsedFromClient = typeof videoData.image_url === 'string'
+          ? JSON.parse(videoData.image_url)
+          : videoData.image_url;
+        if (Array.isArray(parsedFromClient)) {
+          imageUrls = parsedFromClient;
+        } else if (typeof parsedFromClient === 'string' && parsedFromClient) {
+          imageUrls = [parsedFromClient];
         }
       } catch (e) {
-        // If not JSON, treat as single image
-        imageUrls = [existingVideoData.image_url];
+        // If client sent a non-JSON string, treat as single image string
+        if (typeof videoData.image_url === 'string' && videoData.image_url) {
+          imageUrls = [videoData.image_url];
+        }
+      }
+    }
+
+    // If client didn't send image_url, use DB value
+    if (imageUrls.length === 0 && videoData.image_url === undefined) {
+      const existingVideoData = await songsModel.getVideoDetails(songId);
+      if (existingVideoData && existingVideoData.image_url) {
+        try {
+          const existingImages = JSON.parse(existingVideoData.image_url);
+          if (Array.isArray(existingImages)) {
+            imageUrls = existingImages;
+          }
+        } catch (e) {
+          // If not JSON, treat as single image
+          imageUrls = [existingVideoData.image_url];
+        }
       }
     }
 
