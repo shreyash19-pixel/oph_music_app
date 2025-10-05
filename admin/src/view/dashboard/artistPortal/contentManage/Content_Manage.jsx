@@ -48,7 +48,7 @@ const Content_Manage = () => {
           data={tableData}
           showStatusIndicator={false}
           pageSize={10}
-          excludeColumns={"availability_on_music_platform, current_page,song_register_journey,audio_song_name,language,genre,sub_genre,mood,lyrics,primary_artist,featuring,lyricist,composer,producer,audio_url,audio_reject_reason,audio_status,credits,image_url,video_url,created_at,video_reject_reason,video_status,payment"}
+          excludeColumns={" current_page,song_register_journey,audio_song_name,language,genre,sub_genre,mood,lyrics,primary_artist,featuring,lyricist,composer,producer,audio_url,audio_reject_reason,audio_status,credits,image_url,video_url,created_at,video_reject_reason,video_status,payment"}
           detailsUrl="/ContentManage"
         />
         </ArtistSidebar>
