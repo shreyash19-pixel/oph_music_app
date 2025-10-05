@@ -8,8 +8,22 @@ const insertPayment = async (
   From,
   song_id,
   event_id,
-  release_date
+  release_date,
+  old_release_date
 ) => {
+  if (From === "Release date change") {
+    await db.execute(
+      "UPDATE sign_up_payment SET reject_for = ?, release_date = ? WHERE release_date = ? AND (`From` = ? OR `From` = ?)",
+      [
+        old_release_date,
+        null,
+        old_release_date,
+        "Date booking",
+        "Release date change",
+      ]
+    );
+  }
+
   const [result] = await db.execute(
     "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     [
@@ -45,14 +59,7 @@ const songRepayment = async (
 ) => {
   let rows = [];
 
-  console.log(
-    OPH_ID,
-    Transaction_ID,
-    Review,
-    Status,
-    song_id,
-    release_date
-  );
+  console.log(OPH_ID, Transaction_ID, Review, Status, song_id, release_date);
 
   rows.push(
     await db.execute(
@@ -61,11 +68,19 @@ const songRepayment = async (
     )
   );
 
-
   rows.push(
     await db.execute(
       "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [OPH_ID, Transaction_ID, Review, Status, 'Song Registration', song_id,event_id, release_date]
+      [
+        OPH_ID,
+        Transaction_ID,
+        Review,
+        Status,
+        "Song Registration",
+        song_id,
+        event_id,
+        release_date,
+      ]
     )
   );
 

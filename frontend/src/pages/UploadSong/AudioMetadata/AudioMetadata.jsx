@@ -148,7 +148,7 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
             placeholder="Legal name"
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             onChange={(e) => setLegalName(e.target.value)}
-            required
+            
           />
         </div>
 
@@ -174,7 +174,7 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
               className="hidden"
               id="profile-image"
               accept="image/*"
-              required
+              
             />
             <label
               htmlFor="profile-image"
@@ -194,7 +194,7 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
             placeholder="Instagram"
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             onChange={(e) => setInstagram(e.target.value)}
-            required
+            
           />
         </div>
 

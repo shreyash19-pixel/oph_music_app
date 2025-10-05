@@ -100,7 +100,14 @@ export default function RegisterSongForm() {
   };
 
   const handleTotalPayment = () => {
-    if (songReg && lyrical_services) {
+    if (projectType === "paid in advance" && !lyrical_services) {
+      setPayableAmount(0);
+    }
+    else if(projectType === "paid in advance" && lyrical_services)
+    {
+      setPayableAmount(lyricalVideoAmount);
+    }
+    else if (songReg && lyrical_services) {
       setPayableAmount(songRegAmount + lyricalVideoAmount);
     } else if (songReg && !lyrical_services) {
       setPayableAmount(songRegAmount);
@@ -774,7 +781,7 @@ export default function RegisterSongForm() {
 
               <div className="space-y-2">
                 <label className="block">Payment Plans:</label>
-                <div className="flex items-center justify-between">
+               {projectType !== "paid in advance" && (<div className="flex items-center justify-between">
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -785,7 +792,7 @@ export default function RegisterSongForm() {
                     />
                     <span>{songRegAmount} - Song Registration fees </span>
                   </label>
-                </div>
+                </div>) }
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2">
@@ -829,7 +836,7 @@ export default function RegisterSongForm() {
               type="submit"
               className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
             >
-              Pay & Continue
+              Continue
             </button>
           </form>
         </div>

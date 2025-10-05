@@ -1,5 +1,4 @@
 const { insertSongDetails, getAudioMeta, getSecondaryArtist, setNextPage, checkVideoDetailsStatus } = require("../model/audio_details");
-const { uploadToS3 } = require("../utils");
 const bucket = require("../utils.js");
 
 const insertSongDetailsController = async (req, res) => {
@@ -17,7 +16,7 @@ const insertSongDetailsController = async (req, res) => {
       next_step
     } = req.body;
 
-    if (!OPH_ID || !song_id || !Song_name || !languages || !genre || !sub_genre || !mood || !lyrics || !primary_artist || !next_step) {
+    if (!OPH_ID || !song_id || !Song_name || !languages || !genre || !sub_genre || !mood || !primary_artist || !next_step) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
