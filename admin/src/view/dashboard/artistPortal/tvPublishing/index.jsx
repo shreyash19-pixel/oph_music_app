@@ -329,24 +329,7 @@
         </div>
 
         {/* Approve / Reject buttons */}
-        {selectedStatus === "Submitted" ? (
-          <div className="mb-6 flex gap-4">
-            <button
-              onClick={() => handleSubmitDecision("Accepted")}
-              className="px-6 py-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700"
-              disabled={submitting || locked || !unlock}
-            >
-              {submitting ? "Processing..." : "Approve"}
-            </button>
-            <button
-              onClick={() => handleSubmitDecision("Rejected")}
-              className="px-6 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700"
-              disabled={submitting || locked || !unlock}
-            >
-              {submitting ? "Processing..." : "Reject"}
-            </button>
-          </div>
-        ) : (
+        {selectedStatus === "Accepted" || selectedStatus === "Rejected" ? (
           <div className="mb-6 text-gray-700 font-semibold flex items-center gap-2">
             <span className="text-lg">
               {selectedStatus === "Accepted" ? "✅" : "❌"}
@@ -363,6 +346,23 @@
                 {selectedStatus.toLowerCase()}.
               </span>
             </span>
+          </div>
+        ) : (
+          <div className="mb-6 flex gap-4">
+            <button
+              onClick={() => handleSubmitDecision("Accepted")}
+              className="px-6 py-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700"
+              disabled={submitting || locked || !unlock}
+            >
+              {submitting ? "Processing..." : "Approve"}
+            </button>
+            <button
+              onClick={() => handleSubmitDecision("Rejected")}
+              className="px-6 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700"
+              disabled={submitting || locked || !unlock}
+            >
+              {submitting ? "Processing..." : "Reject"}
+            </button>
           </div>
         )}
 
