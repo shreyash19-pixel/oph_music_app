@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../../../conf/axios";
 import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 // import { useArtist } from "../../../../../../frontend/src/pages/auth/API/ArtistContext";
 
 export default function AdminTicketList() {
@@ -38,19 +39,25 @@ export default function AdminTicketList() {
 
   const handleResolve = (ticketNumber) => {
     const summary = summaryMap[ticketNumber];
-    if (!summary) return alert("Please write a summary before submitting.");
+    if (!summary) return toast.error("Please write a summary before submitting.");
+
+    const ticket = tickets.find(t => t.ticketNumber === ticketNumber);
+    if (!ticket) return toast.error("Ticket not found.");
+
+    console.log("Resolving ticket:", { ticketNumber, ophID: ticket.ophID, summary });
 
     axiosApi
       .post("/resolveTicket", {
         ticketNumber,
         notes: summary,
+        ophID: ticket.ophID,
       })
       .then(() => {
-        alert("Ticket marked as resolved.");
+        toast.success("Ticket marked as resolved.");
       })
       .catch((err) => {
         console.error("Error resolving ticket:", err);
-        alert("Failed to mark as resolved.");
+        toast.error("Failed to mark as resolved.");
       });
   };
 

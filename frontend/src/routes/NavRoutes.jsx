@@ -28,7 +28,7 @@ const NavRoutes = () => {
       <Routes>
         <Route path="/" element={<NavLayout />}>
           <Route path="/home" element={<Home />} />
-          <Route path="contact" element={<Contact />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="events/online-music-events" element={<Events />} />
           <Route path="events/:id" element={<IndividualEvent />} />
           <Route path="payment" element={<PaymentScreen />} />
@@ -36,7 +36,7 @@ const NavRoutes = () => {
           <Route path="/public-artist-detail" element={<ArtistDetail />} />
           <Route path="artists/:id" element={<MusicPlayerProfile />} />
           <Route
-            path="leaderboard/top-music-networking-platform-for-creators/"
+            path="/leaderboard/top-music-networking-platform-for-creators"
             element={<Leaderboard />}
           />
           <Route

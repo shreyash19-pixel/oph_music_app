@@ -6,6 +6,12 @@ import { toast } from "react-hot-toast";
 const ContentNew = () => {
   const { ophid, songId } = useParams();
 
+  const languages = [
+    { name: "English", id: 1 },
+    { name: "Hindi", id: 2 },
+    { name: "Marathi", id: 3 },
+  ];
+
   const [content, setContent] = useState({});
   const [audio, setAudio] = useState({});
   const [video, setVideo] = useState({});
@@ -214,6 +220,7 @@ const ContentNew = () => {
             "song_name", "language", "genre", "sub_genre", "mood", "lyrics", "primary_artist",
             "audio_url",
           ]}
+          languages={languages}
           statuses={statuses}
           reasons={reasons}
           setReasons={setReasons}
@@ -315,6 +322,7 @@ const SectionBlock = ({
   fields,
   renderExtra,
   showActions = true,
+  languages = [],
   statuses,
   reasons,
   setReasons,
@@ -355,12 +363,22 @@ const SectionBlock = ({
                 Your browser does not support the audio element.
               </audio>
             ) : (
-              <input
-                type="text" // ← forces DD MMM YYYY to show properly
-                value={data[field]}
-                readOnly
-                className="w-full p-2 border rounded-md text-black bg-gray-100"
-              />
+              // Special handling: show language name based on id for Audio section
+              section === "Audio" && field === "language" ? (
+                <input
+                  type="text"
+                  value={(languages.find(l => String(l.id) === String(data.language))?.name) || data.language || ""}
+                  readOnly
+                  className="w-full p-2 border rounded-md text-black bg-gray-100"
+                />
+              ) : (
+                <input
+                  type="text" // ← forces DD MMM YYYY to show properly
+                  value={data[field]}
+                  readOnly
+                  className="w-full p-2 border rounded-md text-black bg-gray-100"
+                />
+              )
             )}
           </Field>
         ))}

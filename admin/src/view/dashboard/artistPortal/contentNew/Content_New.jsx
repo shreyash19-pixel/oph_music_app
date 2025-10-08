@@ -47,7 +47,7 @@ const Content_New = () => {
           data={tableData}
           showStatusIndicator={false}
           pageSize={10}
-          excludeColumns="availability_on_music_platform,current_page,status,reject_reason,Lyrics_services"
+          excludeColumns="current_page,status,reject_reason,Lyrics_services"
           detailsUrl="/ContentNew"
         />
       </ArtistSidebar>

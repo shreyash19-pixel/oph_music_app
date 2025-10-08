@@ -84,9 +84,9 @@ const getAllTickets = async (req, res) => {
 };
 
 const updateResolvedSummary = async (req, res) => {
-  const { ticketNumber, notes} = req.body;
+  const { ticketNumber, notes, ophID} = req.body;
 
-  if (!ticketNumber || !notes ) {
+  if (!ticketNumber || !notes || !ophID) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -96,7 +96,7 @@ const updateResolvedSummary = async (req, res) => {
     // Save notification to database
     const notificationMessage = `Ticket #${ticketNumber} was updated with a resolution.`;
     await saveNotification({
-      ophid,
+      ophid: ophID,
       message: notificationMessage,
       title: "Ticket Updated",
       link: `/dashboard/request-ticket`
@@ -106,7 +106,7 @@ const updateResolvedSummary = async (req, res) => {
     const onlineUsers = req.app.get("onlineUsers");
     
     if (io && onlineUsers) {
-      const userSocketId = onlineUsers.get(ophid);  
+      const userSocketId = onlineUsers.get(ophID);  
       if (userSocketId) {
         io.to(userSocketId).emit("ticket-updated", {
           ticketNumber,

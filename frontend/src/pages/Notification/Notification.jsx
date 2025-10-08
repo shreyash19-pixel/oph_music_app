@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import Noti from "../../../public/assets/images/noti.png";
 
 const Notification = () => {
-  const { headers, ophid } = useArtist();
+  const { headers, ophid, setHasNewNotification } = useArtist();
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -16,13 +17,15 @@ const Notification = () => {
           headers,
         });
         setNotifications(data);
+        // user has viewed notifications page; clear red dot
+        setHasNewNotification(false);
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
       }
     };
 
     fetchNotifications();
-  }, [ophid]);
+  }, [ophid, headers, setHasNewNotification]);
 
   const handleNotificationClick = async (note) => {
     if (note.read_status) {
@@ -83,6 +86,16 @@ const Notification = () => {
         </div>
       </div>
     );
+  };
+
+  NotificationItem.propTypes = {
+    note: PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      title: PropTypes.string.isRequired,
+      message: PropTypes.string,
+      link: PropTypes.string,
+      read_status: PropTypes.bool,
+    }).isRequired,
   };
 
   // Split notifications

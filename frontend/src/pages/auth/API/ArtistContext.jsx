@@ -14,6 +14,7 @@ export const ArtistProvider = ({ children }) => {
   );
   const [ophid, setOphid] = useState(null);
   const [user, setUser] = useState(null);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
 
   // Decode token and extract artist ID
   useEffect(() => {
@@ -50,17 +51,25 @@ export const ArtistProvider = ({ children }) => {
 
   console.log(ophid);
 
-  useSocketRegistration(ophid);
+  useSocketRegistration(ophid, () => setHasNewNotification(true));
   // Validate token on mount and redirect if needed
   useEffect(() => {
     const verifyToken = () => {
+      console.groupCollapsed("[Auth] verifyToken");
+      console.time("verifyToken");
+      const rawPathname = window.location.pathname;
+      // normalize: strip trailing slashes for consistent matching
+      const normalizedPathname = rawPathname.replace(/\/+$/, "") || "/";
+      console.log("pathname:", rawPathname, "-> normalized:", normalizedPathname);
       const storedToken = localStorage.getItem("token");
+      console.log("token:", storedToken);
 
       if (
         !storedToken ||
         storedToken === "undefined" ||
         storedToken === "null"
       ) {
+        console.log("No valid token found");
         const openRoutes = [
           "/home",
           "/auth/login",
@@ -70,6 +79,10 @@ export const ArtistProvider = ({ children }) => {
           "/auth/signin",
           "/auth/signup/payment-callback",
           "/auth/reset-password",
+          "/events/online-music-events",
+          "/contact",
+          "/leaderboard",
+          "/leaderboard/top-music-networking-platform-for-creators",
           "/resources/music-learning-education",
           "/find-your-collaborator",
           "/public-artist-detail",
@@ -82,10 +95,24 @@ export const ArtistProvider = ({ children }) => {
           "/terms-and-conditions",
         ];
 
-        if (!openRoutes.includes(window.location.pathname)) {
-          logout();
-          navigate("/auth/login");
+        // normalize open routes (strip trailing slashes)
+        const openRoutesNormalized = openRoutes.map((r) => r.replace(/\/+$/, "") || "/");
+        console.log("openRoutes count:", openRoutesNormalized.length);
+        const isOpen = openRoutesNormalized.includes(normalizedPathname);
+        console.log("routeIsOpen:", isOpen);
+
+        if (!isOpen) {
+          console.warn("Route not open. Scheduling redirect to /auth/login in 1500ms");
+          setTimeout(() => {
+            console.warn("Redirecting now: /auth/login");
+            logout();
+            navigate("/auth/login");
+          }, 1500);
+        } else {
+          console.log("Route is open, no redirect needed");
         }
+        console.timeEnd("verifyToken");
+        console.groupEnd();
         return;
       }
 
@@ -107,8 +134,13 @@ export const ArtistProvider = ({ children }) => {
         setUser(decodedToken);
       } catch (error) {
         console.error("Token validation error:", error);
-        logout();
+        console.warn("Scheduling logout redirect in 1500ms due to token error");
+        setTimeout(() => {
+          logout();
+        }, 3000);
       }
+      console.timeEnd("verifyToken");
+      console.groupEnd();
     };
 
     verifyToken();
@@ -156,17 +188,24 @@ export const ArtistProvider = ({ children }) => {
   };
 
   const logout = () => {
+    console.groupCollapsed("[Auth] logout");
+    console.log("Clearing auth & scheduling navigation in 500ms");
     localStorage.removeItem("token");
     setToken(null);
     setHeaders(null);
     setUser(null);
     setOphid(null);
-    navigate("/auth/login");
-    window.location.reload(); // optional, depending on your flow
+    setTimeout(() => {
+      console.log("Navigating to /auth/login now");
+      navigate("/auth/login");
+      // Give the console a moment to flush logs before reload
+      setTimeout(() => window.location.reload(), 200);
+    }, 500);
+    console.groupEnd();
   };
 
   return (
-    <ArtistContext.Provider value={{ logout, login, headers, ophid, user }}>
+    <ArtistContext.Provider value={{ logout, login, headers, ophid, user, hasNewNotification, setHasNewNotification }}>
       {children}
     </ArtistContext.Provider>
   );
