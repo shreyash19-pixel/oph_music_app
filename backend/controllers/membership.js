@@ -3,6 +3,7 @@ const personal_details = require("../model/personal_details");
 const prof_details = require("../model/professional_details");
 const professions = require("../model/professions");
 const puppeteer = require("puppeteer");
+const chromium = require("@sparticuz/chromium");
 const fs = require("fs");
 const { uploadToS3, uploadToS3Form } = require("../utils");
 const { log } = require("console");
@@ -556,7 +557,7 @@ const membershipForm = async (req, res) => {
             <input type="checkbox" ${artistProf[0]?.VideoURL ? "checked" : ""} disabled>
           </div>
           <div>
-            <div class="field-value mb-16">${artistProf[0]?.VideoURL?.split("/")[artist[0]?.VideoURL?.split("/").length - 1] || ""}</div>
+            <div class="field-value mb-16">${(artistProf[0]?.VideoURL && artistProf[0]?.VideoURL.split("/").pop()) || ""}</div>
           </div>
         </div>
 
@@ -1712,64 +1713,71 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
     </html>
     `;
       // Generate HTML
+      
+      // --- REFACTOR START ---
+      // The PDF generation and upload process should happen BEFORE sending a response.
+      // This ensures that if any part of it fails, we can send a proper error to the client.
 
-      res.send(html);
       try {
-        const browser = await puppeteer.launch();
+        // 1. Generate PDF
+        // Use @sparticuz/chromium for server environments like Render
+        const browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+          ignoreHTTPSErrors: true,
+        });
         const page = await browser.newPage();
-
-        // Set the HTML content
         await page.setContent(html, { waitUntil: "networkidle0" });
-
-        // Generate PDF as buffer
         const pdfBuffer = await page.pdf({
           format: "A4",
           printBackground: true,
-          margin: {
-            top: "10mm",
-            bottom: "10mm",
-            left: "10mm",
-            right: "10mm",
-          },
+          margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
         });
-
         await browser.close();
 
+        // 2. Prepare for S3 Upload
         const fileName = `${artist[0].full_name.replace(/\s+/g, "_")}.pdf`;
         const s3Key = `pdfs/${fileName}`;
 
-        // Check if file exists
+        // 3. Check if an old version of the file exists and delete it
         try {
           await s3.send(new HeadObjectCommand({
             Bucket: bucketName,
             Key: s3Key,
           }));
-
-          // If no error, file exists — delete it
+          // If the command above succeeds, the file exists. Let's delete it.
+          console.log(`Deleting existing PDF from S3: ${s3Key}`);
           await s3.send(new DeleteObjectCommand({
             Bucket: bucketName,
             Key: s3Key,
           }));
         } catch (err) {
           if (err.name !== "NotFound") {
-            console.error("Error checking/deleting existing file:", err.message);
-            throw err;
+            // Log the error but don't block the upload of the new file
+            console.warn("Could not delete existing file from S3, proceeding with upload:", err.message);
           }
-          // If NotFound, ignore — file does not exist
+          // If 'NotFound', it's the desired state, so we do nothing.
         }
+
+        // 4. Upload the new PDF to S3
         const file = {
           originalname: fileName,
           buffer: pdfBuffer,
           mimetype: "application/pdf",
         };
-        try {
-          const s3Url = await uploadToS3Form(file, "pdfs");
+        const s3Url = await uploadToS3Form(file, "pdfs");
+        console.log(`Successfully uploaded PDF to S3: ${s3Url}`);
 
-        } catch (err) {
-          console.error("Upload failed:", err.message);
-        }
+        // 5. Finally, send the HTML response to the client
+        res.send(html);
+        // --- REFACTOR END ---
+
       } catch (error) {
-        console.error(error);
+        console.error("Error during PDF generation or S3 upload:", error);
+        // If PDF generation or upload fails, send a server error response.
+        return res.status(500).send("Failed to generate or save the membership PDF.");
       }
     } catch (error) {
       console.error("Error generating membership form:", error);

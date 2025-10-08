@@ -42,6 +42,7 @@ function Navbar() {
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
             onClick={() => {
+              console.log("Events link clicked - navigating to /events/online-music-events");
               navigate("/events/online-music-events");
               // https://ophcommunity.com/events
             }}
@@ -178,54 +179,39 @@ function Navbar() {
         <ul className="flex flex-col space-y-4 p-4">
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              (window.location.href = import.meta.env.VITE_WEBSITE_URL)
-            }
+            onClick={() => navigate("/home")}
           >
             Home
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              (window.location.href =
-                import.meta.env.VITE_WEBSITE_URL + "events")
-            }
+            onClick={() => navigate("/events/online-music-events")}
           >
             Events
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              (window.location.href =
-                import.meta.env.VITE_WEBSITE_URL + "artists")
-            }
+            onClick={() => navigate("/find-your-collaborator")}
           >
             Artists
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
             onClick={() =>
-              (window.location.href =
-                import.meta.env.VITE_WEBSITE_URL + "leaderboard")
+              navigate("/leaderboard/top-music-networking-platform-for-creators/")
             }
           >
             Leaderboard
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              (window.location.href =
-                import.meta.env.VITE_WEBSITE_URL + "resources")
-            }
+            onClick={() => navigate("/resources/music-learning-education")}
           >
             Resources
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              (window.location.href =
-                import.meta.env.VITE_WEBSITE_URL + "contact")
-            }
+            onClick={() => navigate("/contact")}
           >
             Contact
           </li>

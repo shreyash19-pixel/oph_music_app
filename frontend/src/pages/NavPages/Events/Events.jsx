@@ -6,6 +6,7 @@ import { ToastContainer } from "react-toastify";
 import { Helmet } from "react-helmet";
 
 function Events() {
+  console.log("Events component is rendering...");
   const [professions, setProfessions] = useState([]);
   // const fetchProfessions = async () => {
   //   try {
@@ -19,6 +20,23 @@ function Events() {
   // useEffect(() => {
   //   fetchProfessions();
   // }, []);
+  
+  useEffect(() => {
+    console.log("Events component mounted");
+    console.log("Current pathname:", window.location.pathname);
+    console.log("Token in localStorage:", localStorage.getItem("token"));
+    
+    // Add a delay to see if component unmounts
+    const timer = setTimeout(() => {
+      console.log("Events component still mounted after 2 seconds");
+    }, 2000);
+    
+    return () => {
+      console.log("Events component unmounting");
+      clearTimeout(timer);
+    };
+  }, []);
+  
   return (
     <div className="relative ">
       <Helmet>

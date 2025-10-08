@@ -6,28 +6,24 @@ import axiosApi from "../../conf/axios";
 
 const NavbarRight = () => {
   const navigate = useNavigate();
-  const { ophid, headers } = useArtist(); // get ophid + headers
+  const { ophid, headers, hasNewNotification, setHasNewNotification } = useArtist(); // get ophid + headers + notif flag
   const [artist, setArtist] = useState(null);
 
-  // Fetch artist details (for personal_photo & stage_name)
-  const fetchArtist = async () => {
-    try {
-      if (!ophid || !headers) return;
-      const response = await axiosApi.get("/artist-spotlight/artist-info", {
-        headers,
-        params: { ophid },
-      });
-
-        if (response.data.success) {
-        
-        setArtist(response.data.data[0]); // first artist record
-      }
-    } catch (error) {
-      console.error("Failed to fetch artist data:", error);
-    }
-  };
-
   useEffect(() => {
+    const fetchArtist = async () => {
+      try {
+        if (!ophid || !headers) return;
+        const response = await axiosApi.get("/artist-spotlight/artist-info", {
+          headers,
+          params: { ophid },
+        });
+        if (response.data.success) {
+          setArtist(response.data.data[0]); // first artist record
+        }
+      } catch (error) {
+        console.error("Failed to fetch artist data:", error);
+      }
+    };
     fetchArtist();
   }, [ophid, headers]);
 
@@ -44,11 +40,17 @@ const NavbarRight = () => {
 
       {/* Notifications Button */}
       <button
-        onClick={() => navigate("/dashboard/notifications")}
-        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"
+        onClick={() => {
+          setHasNewNotification(false);
+          navigate("/dashboard/notifications");
+        }}
+        className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"
         title="Notifications"
       >
         <Bell className="text-white w-7 h-7" />
+        {hasNewNotification ? (
+          <span className="absolute top-1.5 right-1.5 inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-black" />
+        ) : null}
       </button>
 
       {/* Profile Avatar */}

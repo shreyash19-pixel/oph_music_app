@@ -180,9 +180,7 @@ function Leaderboard() {
       {loading && (
         <div className="text-center h-[90vh] w-full py-32">
           <div className="animate-spin rounded-full w-12 h-12 border-b-2 border-[#5DC9DE] mx-auto"></div>
-          <p className="mt-2 text-[#5DC9DE]">
-            🎤 "Warming up the mic... Almost there!"
-          </p>
+          <p className="mt-2 text-[#5DC9DE]">Warming up... Almost there!</p>
         </div>
       )}
       {!loading && (
@@ -225,7 +223,7 @@ function Leaderboard() {
               <div className="space-y-2">
                 {artists.map((artist, index) => (
                   <div
-                    key={artist.artist_id}
+                    key={`${title}-${artist.artist_id || artist.OPH_ID || artist.stage_name || index}`}
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
@@ -328,7 +326,7 @@ function Leaderboard() {
               <div className="space-y-2">
                 {artists.map((artist, index) => (
                   <div
-                    key={artist.artist_id}
+                    key={`${title}-mobile-${artist.artist_id || artist.OPH_ID || artist.stage_name || index}`}
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }

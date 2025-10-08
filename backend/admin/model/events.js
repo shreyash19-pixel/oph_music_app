@@ -61,7 +61,7 @@ const insertEvent = async (eventData) => {
 };
 
 const getAllEventsWithStatus = async () => {
-  const [rows] = await db.execute(
+  const [rows] = await db.query(
     `SELECT
       event_id,
       EventName,
