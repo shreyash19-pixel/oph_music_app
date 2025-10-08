@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { socket } from "./socket"; // shared socket instance
 import toast from "react-hot-toast";
 
-const useSocketRegistration = (OPH_ID) => {
+const useSocketRegistration = (OPH_ID, onNewNotification) => {
   useEffect(() => {
     if (!OPH_ID) {
       console.warn("No OPH_ID provided to socket registration.");
@@ -34,6 +34,7 @@ const useSocketRegistration = (OPH_ID) => {
         position: "top-right",
         icon: "🎶",
       });
+      if (typeof onNewNotification === "function") onNewNotification();
     };
 
     const handlePaymentUpdate = (data) => {
@@ -44,6 +45,7 @@ const useSocketRegistration = (OPH_ID) => {
         position: "top-right",
         icon: "💳",
       });
+      if (typeof onNewNotification === "function") onNewNotification();
     };
 
     const handleProfileUpdate = (data) => {
@@ -54,6 +56,7 @@ const useSocketRegistration = (OPH_ID) => {
         position: "top-right",
         icon: "👤",
       });
+      if (typeof onNewNotification === "function") onNewNotification();
     };
     const handleTVUpdate = (data) => {
       console.log("Received TV-update event:", data);
@@ -63,6 +66,7 @@ const useSocketRegistration = (OPH_ID) => {
         position: "top-right",
         icon: "🎥",
       });
+      if (typeof onNewNotification === "function") onNewNotification();
     };
 
     socket.on("Music-update", handleTicketUpdate);
@@ -73,12 +77,12 @@ const useSocketRegistration = (OPH_ID) => {
     // Cleanup on unmount
     return () => {
       socket.off("connect", registerIfConnected);
-      socket.off("ticket-updated", handleTicketUpdate);
-      socket.off("payment-updated", handlePaymentUpdate);
-      socket.off("profile-update", handleProfileUpdate);
+      socket.off("Music-update", handleTicketUpdate);
+      socket.off("Payment-update", handlePaymentUpdate);
+      socket.off("Profile-update", handleProfileUpdate);
       socket.off("TV-update", handleTVUpdate);
     };
-  }, [OPH_ID]);
+  }, [OPH_ID, onNewNotification]);
 };
 
 export default useSocketRegistration;

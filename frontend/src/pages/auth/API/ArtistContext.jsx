@@ -14,6 +14,7 @@ export const ArtistProvider = ({ children }) => {
   );
   const [ophid, setOphid] = useState(null);
   const [user, setUser] = useState(null);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
 
   // Decode token and extract artist ID
   useEffect(() => {
@@ -50,7 +51,7 @@ export const ArtistProvider = ({ children }) => {
 
   console.log(ophid);
 
-  useSocketRegistration(ophid);
+  useSocketRegistration(ophid, () => setHasNewNotification(true));
   // Validate token on mount and redirect if needed
   useEffect(() => {
     const verifyToken = () => {
@@ -204,7 +205,7 @@ export const ArtistProvider = ({ children }) => {
   };
 
   return (
-    <ArtistContext.Provider value={{ logout, login, headers, ophid, user }}>
+    <ArtistContext.Provider value={{ logout, login, headers, ophid, user, hasNewNotification, setHasNewNotification }}>
       {children}
     </ArtistContext.Provider>
   );
