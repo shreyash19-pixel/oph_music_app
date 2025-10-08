@@ -557,7 +557,7 @@ const membershipForm = async (req, res) => {
             <input type="checkbox" ${artistProf[0]?.VideoURL ? "checked" : ""} disabled>
           </div>
           <div>
-            <div class="field-value mb-16">${artistProf[0]?.VideoURL?.split("/")[artist[0]?.VideoURL?.split("/").length - 1] || ""}</div>
+            <div class="field-value mb-16">${(artistProf[0]?.VideoURL && artistProf[0]?.VideoURL.split("/").pop()) || ""}</div>
           </div>
         </div>
 
