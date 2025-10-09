@@ -1,32 +1,6 @@
 const db = require("../../DB/connect");
 
 const SongSocialMetrics = {
-  //   insertMetrics: async (metrics) => {
-  //     const {
-  //       song_id,
-  //       youtube_views,
-  //       youtube_engagement,
-  //       youtube_avg_view_duration,
-  //       youtube_revenue,
-  //       insta_engagement,
-  //     } = metrics;
-
-  //     const [result] = await db.execute(
-  //       `INSERT INTO song_social_metrics
-  //         (song_id, youtube_views, youtube_engagement, youtube_avg_view_duration, youtube_revenue, insta_engagement)
-  //        VALUES (?, ?, ?, ?, ?, ?)`,
-  //       [
-  //         song_id,
-  //         youtube_views,
-  //         youtube_engagement,
-  //         youtube_avg_view_duration,
-  //         youtube_revenue,
-  //         insta_engagement,
-  //       ]
-  //     );
-  //     return result;
-  //   },
-
   updateMetrics: async (metrics) => {
     const {
       song_id,
@@ -52,7 +26,7 @@ const SongSocialMetrics = {
         youtube_avg_view_duration,
         youtube_revenue,
         insta_engagement,
-      ],
+      ]
     );
 
     return result;
@@ -68,17 +42,25 @@ const SongSocialMetrics = {
   getMetricById: async (id) => {
     const [rows] = await db.query(
       `SELECT * FROM song_social_metrics WHERE song_id = ?`,
-      [id],
+      [id]
     );
     return rows[0];
   },
 
- getMetricByOph: async (OPH_ID) => {
+  getMetricByOph: async (OPH_ID) => {
     const [rows] = await db.query(
       `SELECT * FROM song_social_metrics WHERE OPH_ID = ?`,
-      [OPH_ID],
+      [OPH_ID]
     );
     return rows;
+  },
+
+  getVideoyId: async (id) => {
+    const [rows] = await db.query(
+      `SELECT * FROM video_details WHERE song_id = ?`,
+      [id]
+    );
+    return rows[0];
   },
 };
 

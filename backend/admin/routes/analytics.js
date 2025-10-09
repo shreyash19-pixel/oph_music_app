@@ -18,4 +18,6 @@ router.get("/getMetricByOph", controller.getMetricByOph);
 
 router.get("/leaderboard_data", controller.kpi);
 
+router.get("/getVideoyId/:id", controller.getVideoyId);
+
 module.exports = router;
