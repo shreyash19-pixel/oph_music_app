@@ -1,12 +1,13 @@
 const db = require("../DB/connect");
 
 const getSpeicalArtistSongStatus = async (ophid) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM special_artist_songs WHERE ophid = ?",
+    [ophid]
+  );
 
-    const [rows] = await db.execute("SELECT * FROM special_artist_songs WHERE ophid = ?", [ophid])
-
-    return rows;
-
-}
+  return rows;
+};
 
 const insertSpecialArtistSongs = async (
   ophid,
@@ -22,15 +23,35 @@ const insertSpecialArtistSongs = async (
     [ophid, song_name, views, credits, duration, proof, audio_url]
   );
 
-  const [getDetails] = await db.execute("SELECT song_id FROM special_artist_songs WHERE ophid = ?", [ophid])  
-  
-  const songMap = {}
+  const [getDetails] = await db.execute(
+    "SELECT song_id FROM special_artist_songs WHERE ophid = ?",
+    [ophid]
+  );
+
+  const songMap = {};
 
   songMap[ophid] = {
-    song_id: getDetails[0].song_id
-  }
+    song_id: getDetails[0].song_id,
+  };
 
   return songMap;
 };
 
-module.exports = { insertSpecialArtistSongs, getSpeicalArtistSongStatus };
+const getSongCount = async (ophid) => {
+  const [count] = await db.execute(
+    `WITH CTECount 
+AS 
+(SELECT ophid, COUNT(*) cnt FROM special_artist_songs GROUP BY ophid)
+SELECT cnt FROM CTECount WHERE ophid = ?`,
+    [ophid]
+  );
+
+
+  return count;
+};
+
+module.exports = {
+  insertSpecialArtistSongs,
+  getSpeicalArtistSongStatus,
+  getSongCount,
+};

@@ -9,6 +9,15 @@ const getSpecialArtistStatus = async (ophid) => {
   return rows;
 };
 
+const getSpecialArtistPic = async (ophid) => {
+  const [rows] = await db.execute(
+    "SELECT personal_photo FROM user_details WHERE ophid = ?",
+    [ophid]
+  );
+
+  return rows;
+};
+
 const editSpecialArtistDetails = async (updates, len) => {
   let rows = [];
 
@@ -51,4 +60,4 @@ const editSpecialArtistDetails = async (updates, len) => {
   return rows;
 };
 
-module.exports = { editSpecialArtistDetails, getSpecialArtistStatus };
+module.exports = { editSpecialArtistDetails, getSpecialArtistStatus, getSpecialArtistPic };

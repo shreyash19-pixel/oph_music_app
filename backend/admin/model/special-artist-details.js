@@ -7,7 +7,7 @@ const getSpecialArtistRequestedDetails = async () => {
 
 const getIndividualSpecialArtistDetails = async (ophid, field) => {
   const [rows] = await db.execute(
-    "SELECT * FROM special_artist_details WHERE ophid = ? AND field = ?",
+    "SELECT * FROM special_artist_details WHERE ophid = ? AND field = ? AND status = 'under review'",
     [ophid, field]
   );
   return rows;
