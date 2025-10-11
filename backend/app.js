@@ -70,6 +70,7 @@ const specialArtistSong = require("./admin/routes/special-artist-songs");
 const allData = require("./admin/routes/allData");
 const costing = require("./admin/routes/costing");
 const songRelease = require("./admin/routes/song_release");
+const supportingNumbers = require("./admin/routes/supporting_numbers");
 
 // ✅ Middleware order is important
 app.use(
@@ -182,7 +183,7 @@ app.use("/", allData);
 app.use("/", costing);
 app.use("/", specialArtistSong);
 app.use("/", songRelease);
-
+app.use("/", supportingNumbers);
 // ✅ Start server
 server.listen(port, () => {
   console.log(`Server is listening on port ${port}...`);
