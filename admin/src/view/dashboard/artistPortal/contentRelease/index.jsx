@@ -37,6 +37,7 @@ const ContentReleaseInd = () => {
         setContent({
           song_name: song.song_name || "",
           primary_artist: song.primary_artist || "",
+          featuring_artist: res.data.specialArtist || "",
           release_time: song.release_time || "",
           youtube_release_time: song.youtube_release_time || "",
           spotify_release_time: song.spotify_release_time || "",
@@ -63,7 +64,7 @@ const ContentReleaseInd = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log(releaseData);
-    
+
     if (
       !releaseData.release_time ||
       !releaseData.youtube_release_time ||
@@ -92,7 +93,7 @@ const ContentReleaseInd = () => {
           youtube_release_time: releaseData.youtube_release_time,
           spotify_release_time: releaseData.spotify_release_time,
           apple_release_time: releaseData.apple_release_time,
-          instagram_release_time : releaseData.instagram_release_time,
+          instagram_release_time: releaseData.instagram_release_time,
           facebook_release_time: releaseData.facebook_release_time,
           share_url: releaseData.share_url,
           youtube_url: releaseData.youtube_url,
@@ -135,6 +136,7 @@ const ContentReleaseInd = () => {
           fields={[
             "song_name",
             "primary_artist",
+            "featuring_artist",
             "release_time",
             "youtube_release_time",
             "spotify_release_time",
@@ -208,24 +210,42 @@ const SectionBlock = ({
         .filter((field) => data[field] !== null && data[field] !== undefined)
         .map((field) => (
           <Field key={field} label={field}>
-            {field === "song_name" || field === "primary_artist" ? (
+            {field === "song_name" ||
+            field === "primary_artist" ||
+            field === "featuring_artist" ? (
               <textarea
                 value={data[field]}
                 readOnly
                 className="w-full p-2 border rounded-md text-black bg-gray-100"
               />
-            ) : (
+            ) : field === "youtube_release_time" ||
+              field === "spotify_release_time" ||
+              field === "apple_release_time" ||
+              field === "instagram_release_time" ||
+              field === "facebook_release_time" ||
+              field === "release_time"
+              ? (
               <input
-                type="text" // ← forces DD MMM YYYY to show properly
+                type="time"
                 value={releaseData[field]}
                 className="w-full p-2 border rounded-md text-black bg-gray-100"
                 onChange={(e) =>
-                  setReleaseData((prev) => {
-                    return {
-                      ...prev,
-                      [field]: e.target.value,
-                    };
-                  })
+                  setReleaseData((prev) => ({
+                    ...prev,
+                    [field]: e.target.value,
+                  }))
+                }
+              />
+            ) : (
+              <input
+                type="text"
+                value={releaseData[field]}
+                className="w-full p-2 border rounded-md text-black bg-gray-100"
+                onChange={(e) =>
+                  setReleaseData((prev) => ({
+                    ...prev,
+                    [field]: e.target.value,
+                  }))
                 }
               />
             )}

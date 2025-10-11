@@ -55,13 +55,10 @@ const VerifyBookingDates = () => {
       });
 
       if (response.data.success) {
-        
-        if(dec === 'rejected')
-        {
-          toast.error("Date rejected")
-        }
-        else{
-          toast.success("Date approved")
+        if (dec === "rejected") {
+          toast.error("Date rejected");
+        } else {
+          toast.success("Date approved");
         }
         navigate("/calendar");
       }
@@ -89,6 +86,23 @@ const VerifyBookingDates = () => {
           <p>
             <strong>For : </strong>
             {transactions.From}
+          </p>
+
+          <p>
+            <strong>From : </strong>
+            {new Date(transactions.previous_booking_date).toLocaleDateString(
+              "en-IN",
+              {
+                timeZone: "Asia/Kolkata",
+              }
+            )}{" "}
+            to {" "}
+            {new Date(transactions.current_booking_date).toLocaleDateString(
+              "en-IN",
+              {
+                timeZone: "Asia/Kolkata",
+              }
+            )}
           </p>
 
           {confirmReject && (

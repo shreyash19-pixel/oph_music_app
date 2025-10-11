@@ -84,7 +84,7 @@ const getTopSearchedArtists = async (searchQuery) => {
 };
 
 const getTopArtists = async () => {
-  const [rows] = await db.execute(`SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid`);
+  const [rows] = await db.execute(`SELECT kpi.OPH_ID, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid  LEFT JOIN professional_details pf ON ud.ophid = pf.OPH_ID `);
   return rows;
 };
 

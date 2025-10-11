@@ -15,6 +15,21 @@ const getIndividualSongReleaseList = async (ophid, songId) => {
   return rows;
 };
 
+const getSpecialArtist = async (songId) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM secondary_artist WHERE song_id = ?",
+    [songId]
+  );
+  console.log(rows);
+
+  if (rows.length > 0) {
+    const featuredArtist = rows.map((row) => row.artist_name).join(", ");
+    return featuredArtist;
+  }
+
+  return "";
+};
+
 const setSongReleaseDetails = async (
   ophid,
   songId,
@@ -58,4 +73,5 @@ module.exports = {
   getSongReleaseList,
   getIndividualSongReleaseList,
   setSongReleaseDetails,
+  getSpecialArtist,
 };
