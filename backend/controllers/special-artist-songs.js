@@ -1,6 +1,7 @@
 const {
   insertSpecialArtistSongs,
   getSpeicalArtistSongStatus,
+  getSongCount,
 } = require("../model/special-artist-song");
 const { uploadToS3 } = require("../utils.js");
 
@@ -69,10 +70,15 @@ const insertSpecialArtistSongsController = async (req, res) => {
       audioURL
     );
 
+    const songCount = await getSongCount(ophid);
+
+    console.log(songCount);
+
     return res.status(201).json({
       success: true,
       message: "Data inserted successfully",
       data: response,
+      songCnt: songCount.length === 0 ? 0 : songCount[0].cnt,
     });
   } catch (err) {
     console.error(err);

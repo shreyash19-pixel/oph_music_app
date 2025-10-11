@@ -20,10 +20,13 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
   const [uploading, setUploading] = useState(false);
   const { contentId } = useParams();
   const { headers } = useArtist();
+  const [loading, setLoading] = useState(false);
+
   console.log(location);
-  
+
   const handleSubmitSecondary = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     // Regex for Instagram and Spotify URLs
     // const instagramRegex =
@@ -87,6 +90,7 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
 
       if (response.data.success) {
         onArtistAdd(artistType, data);
+        setLoading(false);
         onClose();
       }
     } catch (error) {
@@ -113,6 +117,14 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
 
     setProfileImage(file);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xl text-gray-700">
+        Loading artist data...
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 p-6 bg-gray-900/50 rounded-xl border border-gray-700">
@@ -148,7 +160,6 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
             placeholder="Legal name"
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             onChange={(e) => setLegalName(e.target.value)}
-            
           />
         </div>
 
@@ -174,7 +185,6 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
               className="hidden"
               id="profile-image"
               accept="image/*"
-              
             />
             <label
               htmlFor="profile-image"
@@ -194,7 +204,6 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
             placeholder="Instagram"
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             onChange={(e) => setInstagram(e.target.value)}
-            
           />
         </div>
 
@@ -256,7 +265,6 @@ export default function AudioMetadataForm() {
   const [audioFileUrl, setAudioFileUrl] = useState(null);
   const location = useLocation();
   console.log(location);
-  
 
   const [songName, setSongName] = useState(location.state.songName);
   const [showSecondaryForm, setShowSecondaryForm] = useState(false);
@@ -273,7 +281,7 @@ export default function AudioMetadataForm() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
-  const [nextPage, setNextPage] = useState(false)
+  const [nextPage, setNextPage] = useState(false);
 
   // const [subgenre, setSubgenre] = useState("");
 
@@ -405,26 +413,20 @@ export default function AudioMetadataForm() {
     setShowSecondaryForm(false);
   };
 
-
   const checkVideoStaus = async () => {
-
-    try{
+    try {
       const response = await axiosApi.get("/check-video-status", {
         headers: headers,
-        params : {contentId}
-      })
+        params: { contentId },
+      });
 
-      if(response.data.success)
-      {
-        setNextPage(response.data.data)
+      if (response.data.success) {
+        setNextPage(response.data.data);
       }
+    } catch (err) {
+      console.error(err.message);
     }
-    catch(err)
-    {
-      console.error(err.message)
-    }
-
-  }
+  };
 
   const handleArtistRemove = async (
     artistType,
@@ -475,7 +477,7 @@ export default function AudioMetadataForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // setIsLoading(true);
+    setIsLoading(true);
     if (isSubmitting) return;
 
     try {
@@ -554,23 +556,25 @@ export default function AudioMetadataForm() {
 
       if (response.status === 201) {
         setIsLoading(false);
-        nextPage === 'video' ?  navigate(
-          `/dashboard/upload-song/video-metadata/${response.data.song_id}`,
-          {
-            state: {
-              songName: location.state.songName,
-              release_date: location.state.release_date,
-              project_type: location.state.project_type,
-              lyrical_services: location.state.lyrical_services,
-            },
-          }
-        ) : navigate('/dashboard/pending', {
-          state:{
-            heading: "Your audio details are under review",
-            btnText: "Upload a new song",
-            redirectTo: "/dashboard/upload-song"
-          }
-        })
+        nextPage === "video"
+          ? navigate(
+              `/dashboard/upload-song/video-metadata/${response.data.song_id}`,
+              {
+                state: {
+                  songName: location.state.songName,
+                  release_date: location.state.release_date,
+                  project_type: location.state.project_type,
+                  lyrical_services: location.state.lyrical_services,
+                },
+              }
+            )
+          : navigate("/dashboard/pending", {
+              state: {
+                heading: "Your audio details are under review",
+                btnText: "Upload a new song",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
@@ -579,8 +583,7 @@ export default function AudioMetadataForm() {
     }
   };
 
-  const checkIfDateIsAvail = () => {  
-      
+  const checkIfDateIsAvail = () => {
     const check = checkBookingDates.find((date) => {
       const formattedDate = new Date(
         location.state.release_date
@@ -588,9 +591,12 @@ export default function AudioMetadataForm() {
         timeZone: "Asia/Kolkata",
       });
 
-      const formattedReleaseDate = new Date(date.date).toLocaleDateString("en-IN", {
-        timeZone: "Asia/Kolkata",
-      });
+      const formattedReleaseDate = new Date(date.date).toLocaleDateString(
+        "en-IN",
+        {
+          timeZone: "Asia/Kolkata",
+        }
+      );
 
       if (formattedReleaseDate === formattedDate && date.ophid !== ophid) {
         return date;
@@ -614,15 +620,13 @@ export default function AudioMetadataForm() {
       });
 
       if (response.data.success) {
-        const date = response.data.data.map(
-          (data) => {
-            return {
-              date: data.current_booking_date,
-              ophid: data.oph_id
-            }
-          }
-        );
-        
+        const date = response.data.data.map((data) => {
+          return {
+            date: data.current_booking_date,
+            ophid: data.oph_id,
+          };
+        });
+
         setCheckBookingDates(date);
       }
     } catch (err) {
@@ -721,7 +725,7 @@ export default function AudioMetadataForm() {
   useEffect(() => {
     checkAlreadyBookedDate();
     fetchAudioMetadata();
-    checkVideoStaus()
+    checkVideoStaus();
   }, [contentId, headers]);
 
   async function getAudioAsBlob(url) {
@@ -755,10 +759,11 @@ export default function AudioMetadataForm() {
   if (navigateToSongReg) {
     navigate("/dashboard/error", {
       state: {
-        heading: "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
+        heading:
+          "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
         btnText: "Song registration",
         redirectTo: "/dashboard/upload-song/register-song",
-        songName: songName
+        songName: songName,
       },
     });
   }

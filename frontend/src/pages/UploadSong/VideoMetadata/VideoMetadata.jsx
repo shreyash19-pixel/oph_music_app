@@ -126,7 +126,7 @@ export default function VideoMetadataForm() {
       return;
     }
 
-   if (
+    if (
       !location.state.lyrical_services &&
       !hasPaidForLyricalVideo &&
       !formData.video_file &&
@@ -170,7 +170,7 @@ export default function VideoMetadataForm() {
             oph_id: ophid,
             song_name: location.state.songName,
             project_type: projectType,
-            release_date: location.state.release_date
+            release_date: location.state.release_date,
           },
           {
             headers: {
@@ -181,6 +181,7 @@ export default function VideoMetadataForm() {
         );
 
         if (response.data.success) {
+          setIsLoading(false);
           const paymentUpdateResponse = await axiosApi.post(
             "/insert-songid-payment",
             { ophid: ophid, song_id: contentId },
@@ -202,9 +203,9 @@ export default function VideoMetadataForm() {
           }
         }
         return;
-      }
-      else if(
-        projectType === "paid in advance" && location.state.lyrical_services === true
+      } else if (
+        projectType === "paid in advance" &&
+        location.state.lyrical_services === true
       );
       {
         navigate("/auth/payment", {
@@ -215,12 +216,13 @@ export default function VideoMetadataForm() {
             songName: location.state.songName,
             project_type: location.state.project_type,
             lyrical_services: location.state.lyrical_services,
-            backPath : `/dashboard/upload-song/video-metadata/${contentId}`
+            backPath: `/dashboard/upload-song/video-metadata/${contentId}`,
           },
         });
       }
 
       if (response.data.success) {
+        setIsLoading(false);
         if (nextPage === "repayment") {
           navigate("/auth/payment", {
             state: {
@@ -230,7 +232,7 @@ export default function VideoMetadataForm() {
               songName: location.state.songName,
               project_type: projectType,
               lyrical_services: location.state.lyrical_services,
-              backPath : `/dashboard/upload-song/video-metadata/${contentId}`
+              backPath: `/dashboard/upload-song/video-metadata/${contentId}`,
             },
           });
         } else if (nextPage === "payment") {
@@ -242,7 +244,7 @@ export default function VideoMetadataForm() {
               songName: location.state.songName,
               project_type: location.state.project_type,
               lyrical_services: location.state.lyrical_services,
-              backPath : `/dashboard/upload-song/video-metadata/${contentId}`
+              backPath: `/dashboard/upload-song/video-metadata/${contentId}`,
             },
           });
         } else if (nextPage === "pending") {

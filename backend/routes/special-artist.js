@@ -6,7 +6,8 @@ const upload = multer({ storage: multer.memoryStorage() }); // For S3 upload
 
 const {
   editSpecialArtistDetailsController,
-  getSpecialArtistStatusController
+  getSpecialArtistStatusController,
+  getSpecialArtistPicController,
 } = require("../controllers/special-artist");
 
 router.post(
@@ -21,7 +22,15 @@ router.post(
   editSpecialArtistDetailsController
 );
 
-router.get("/get-special-artist-status", authMiddleware, getSpecialArtistStatusController)
-
+router.get(
+  "/get-special-artist-status",
+  authMiddleware,
+  getSpecialArtistStatusController
+);
+router.get(
+  "/get-special-artist-pic",
+  authMiddleware,
+  getSpecialArtistPicController
+);
 
 module.exports = router;

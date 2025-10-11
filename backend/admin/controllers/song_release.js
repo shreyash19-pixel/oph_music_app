@@ -2,6 +2,7 @@ const {
   getSongReleaseList,
   getIndividualSongReleaseList,
   setSongReleaseDetails,
+  getSpecialArtist
 } = require("../model/song_release");
 
 const getSongReleaseListController = async (req, res) => {
@@ -36,11 +37,14 @@ const getIndividualSongReleaseListController = async (req, res) => {
 
     const response = await getIndividualSongReleaseList(ophid, songId);
 
+    const specialArtist = await getSpecialArtist(songId);
+
     if (response) {
       return res.status(200).json({
         success: true,
         message: "Data fetched Successfully",
         data: response,
+        specialArtist: specialArtist
       });
     }
   } catch (err) {

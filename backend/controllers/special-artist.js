@@ -1,42 +1,65 @@
-const { editSpecialArtistDetails, getSpecialArtistStatus } = require("../model/special-artisit");
+const {
+  editSpecialArtistDetails,
+  getSpecialArtistStatus,
+  getSpecialArtistPic
+} = require("../model/special-artisit");
 const { uploadToS3 } = require("../utils");
 
 const getSpecialArtistStatusController = async (req, res) => {
+  try {
+    const { ophid } = req.query;
 
-
-  try{
-    const {ophid} = req.query
-
-    if(!ophid)
-    {
+    if (!ophid) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields"
-      })
+        message: "Missing required fields",
+      });
     }
 
-    const response = await getSpecialArtistStatus(ophid)
+    const response = await getSpecialArtistStatus(ophid);
 
-    if(response)
-    {
+    if (response) {
       return res.status(200).json({
         success: true,
         message: "Data fetched successfully",
-        data: response
-      })
+        data: response,
+      });
     }
-
-  }
-  catch(err)
-  {
+  } catch (err) {
     return res.status(500).json({
       success: false,
-      message: err.message
-    })
+      message: err.message,
+    });
   }
+};
 
-}
+const getSpecialArtistPicController = async (req, res) => {
+  try {
+    const { ophid } = req.query;
 
+    if (!ophid) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const response = await getSpecialArtistPic(ophid);
+
+    if (response) {
+      return res.status(200).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: response,
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 const editSpecialArtistDetailsController = async (req, res) => {
   try {
@@ -126,19 +149,16 @@ const editSpecialArtistDetailsController = async (req, res) => {
       }
     }
 
-    if(updates.length > 0)
-    {
-        const response = await editSpecialArtistDetails(updates, updates.length)
+    if (updates.length > 0) {
+      const response = await editSpecialArtistDetails(updates, updates.length);
 
-        if(response)
-        {
-            return res.status(201).json({
-                success: true,
-                message: "Data inserted successfully"
-            })
-        }
+      if (response) {
+        return res.status(201).json({
+          success: true,
+          message: "Data inserted successfully",
+        });
+      }
     }
-
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -147,4 +167,8 @@ const editSpecialArtistDetailsController = async (req, res) => {
   }
 };
 
-module.exports = { editSpecialArtistDetailsController, getSpecialArtistStatusController };
+module.exports = {
+  editSpecialArtistDetailsController,
+  getSpecialArtistStatusController,
+  getSpecialArtistPicController
+};

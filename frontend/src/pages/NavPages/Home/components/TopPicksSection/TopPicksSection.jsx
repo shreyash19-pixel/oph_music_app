@@ -122,7 +122,7 @@ const TopPicksSection = () => {
           {Array.isArray(artistData) &&
             artistData
               .slice() // make a safe copy
-              .sort((a, b) => a.rank - b.rank)
+              .sort((a, b) => a.ranks - b.ranks)
               .slice(0, 3)
               .map((artist, index) => (
                 <div
@@ -133,33 +133,35 @@ const TopPicksSection = () => {
                     {/* Rank Badge */}
                     <div
                       className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
-                        artist.rank
+                        artist.ranks
                       )} w-16 h-16 flex items-center justify-center rounded-lg -rotate-12`}
                     >
                       <span className="text-black text-4xl font-bold">
-                        {artist.rank}
+                        {artist.ranks}
                       </span>
                     </div>
 
                     {/* Artist Profile */}
                     <div
-                      className="relative h-64 hover:cursor-pointer"
-                      onClick={() => navigate(`/artists/${artist.id}`)}
+                      className="relative h-80 hover:cursor-pointer"
+                      onClick={() =>
+                        navigate(`/public-artist-detail?id=${artist.OPH_ID}`)
+                      }
                     >
-                      <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />
                       <Image
-                        src={artist.personal_photo || "/default-avatar.png"} // <-- fallback path
-                        fallback={<Shimmer width={300} height={100} />}
+                        src={artist.personal_photo || "/default-avatar.png"}
+                        fallback={<Shimmer width={400} height={300} />}
                         alt={artist.name || "Artist"}
                         NativeImgProps={{
                           className: "w-full h-full object-cover",
                         }}
                       />
-                      <div className="absolute bottom-0 left-0 p-6 text-white">
+                      <div className="absolute bottom-0 left-0 p-6 text-white z-10">
                         <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
                           {artist.name}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-300">
                           Stage Name:{" "}
                           <span className="text-[#5DC9DE]">
                             {artist.stage_name}

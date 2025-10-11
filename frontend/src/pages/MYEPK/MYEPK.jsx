@@ -171,36 +171,6 @@ const MYEPK = () => {
     link.click();
     document.body.removeChild(link);
   };
-
-  const [professions, setProfessions] = useState([]);
-
-  // Fetch professions from API
-  const fetchProfessions = async () => {
-    try {
-      const response = await axiosApi.get("/get_professions");
-      if (response.data && response.data.success) {
-        setProfessions(response.data.data || []);
-      } else {
-        console.error("Failed to fetch professions:", response.data?.message);
-      }
-    } catch (error) {
-      console.error("Error fetching professions:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchProfessions();
-  }, []);
-
-  const setProfession = (prof) => {
-    const profession = professions.find((p) => {
-      if (parseInt(prof) === p.id) {
-        return p;
-      }
-    });
-    return profession ? profession.name : "Unknown";
-  };
-
   return (
     <>
       {isLoading && (
@@ -227,7 +197,7 @@ const MYEPK = () => {
           <div
             className="absolute inset-0  bg-black"
             style={{
-              backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 1) 100%), url(${artist.photos[0]})`,
+              backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 1) 100%), url(${artist.photos[artist.photos.length - 1]})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
@@ -282,7 +252,7 @@ const MYEPK = () => {
                 <p className="text-gray-400 mb-2">
                   Profession:{" "}
                   <span className="font-bold text-white">
-                    {setProfession(artist.profession)}
+                    {artist.profession}
                   </span>
                 </p>
                 <p className="text-gray-400 mb-2">
@@ -294,7 +264,7 @@ const MYEPK = () => {
                 {artist.total_content > 0 && (
                   <p className="text-primary mb-2 font-bold">
                     {artist.total_content}{" "}
-                    {artist.total_content > 1 ? "Songs" : "Song"} 
+                    {artist.total_content > 1 ? "Songs" : "Song"}
                     {/* {artist.total_views > 0 && "— " + formatListeners(artist.total_views)} */}
                   </p>
                 )}
@@ -405,9 +375,11 @@ const MYEPK = () => {
                 className="absolute right-0 bottom-0 cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate("/dashboard/epk-management", {state: {
-                    photo: artist.photos[0]
-                  }});
+                  navigate("/dashboard/epk-management", {
+                    state: {
+                      photo: artist.photos[0],
+                    },
+                  });
                 }}
               >
                 <img src={Edit} className="w-[55px] h-[55px]" />
@@ -415,7 +387,7 @@ const MYEPK = () => {
             </div>
 
             {/* Songs Table */}
-            {artist.songs.length > 0 && artist.songs[0].song_name !== null && artist.songs[0].status === 'approved' ? (
+            {artist.songs.length > 0 ? (
               <table
                 table
                 className="w-full mb-12 text-xs sm:text-sm lg:text-base table-auto"
@@ -432,73 +404,84 @@ const MYEPK = () => {
                 </thead>
 
                 <tbody>
-                  {artist?.songs.map((song, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-gray-800 hover:bg-gray-800/50 text-white"
-                    >
-                      {/* # */}
-                      <td className="py-3 px-1 text-center">
-                        <div className="flex justify-center items-center h-full w-full">
-                          {index + 1}
-                        </div>
-                      </td>
+                  {artist?.songs.map(
+                    (song, index) =>
+                      song.song_status === "approved" && (
+                        <tr
+                          key={index}
+                          className="border-b border-gray-800 hover:bg-gray-800/50 text-white"
+                        >
+                          {/* # */}
+                          <td className="py-3 px-1 text-center">
+                            <div className="flex justify-center items-center h-full w-full">
+                              {index + 1}
+                            </div>
+                          </td>
 
-                      {/* Song name + artist */}
-                      <td className="py-3 px-1 text-center">
-                        <div className="flex flex-col items-center justify-center h-full w-full">
-                          <span className="font-medium break-words">
-                            {song.song_name}
-                          </span>
-                          <span className="text-gray-400 text-[11px] sm:text-xs">
-                            {song.primary_artist}
-                          </span>
-                        </div>
-                      </td>
+                          {/* Song name + artist */}
+                          <td className="py-3 px-1 text-center">
+                            <div className="flex flex-col items-center justify-center h-full w-full">
+                              <span className="font-medium break-words">
+                                {song.song_name}
+                              </span>
+                              <span className="text-gray-400 text-[11px] sm:text-xs">
+                                {song.primary_artist}
+                              </span>
+                            </div>
+                          </td>
 
-                      {/* Plays */}
-                      <td className="py-3 px-1 text-center">
-                        <div className="flex justify-center items-center h-full w-full">
-                          {song.total_song_views >0 ?  song.total_song_views : "—"}
-                        </div>
-                      </td>
+                          {/* Plays */}
+                          <td className="py-3 px-1 text-center">
+                            <div className="flex justify-center items-center h-full w-full">
+                              {song.total_song_views > 0
+                                ? song.total_song_views
+                                : "—"}
+                            </div>
+                          </td>
 
-                      {/* Time */}
-                      <td className="py-3 px-1 text-center">
-                        <div className="flex justify-center items-center h-full w-full">
-                          <SongDuration url={song.audio_file_url} /> 
-                        </div>
-                      </td>
+                          {/* Time */}
+                          <td className="py-3 px-1 text-center">
+                            <div className="flex justify-center items-center h-full w-full">
+                              <SongDuration url={song.audio_file_url} />
+                            </div>
+                          </td>
 
-                      {/* Play button */}
-                      <td className="py-3 px-1 text-center">
-                        <div className="flex justify-center items-center h-full w-full">
-                          <button
-                            className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#6F4FA0]"
-                            onClick={() => handlePlayPause(song)}
-                          >
-                            {playingSongId === song.id && !audioRef?.paused ? (
-                              <FaPause className="text-white" size={13} />
-                            ) : (
-                              <FaPlay className="text-white ml-1" size={13} />
-                            )}
-                          </button>
-                        </div>
-                      </td>
+                          {/* Play button */}
+                          <td className="py-3 px-1 text-center">
+                            <div className="flex justify-center items-center h-full w-full">
+                              <button
+                                className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#6F4FA0]"
+                                onClick={() => handlePlayPause(song)}
+                              >
+                                {playingSongId === song.id &&
+                                !audioRef?.paused ? (
+                                  <FaPause className="text-white" size={13} />
+                                ) : (
+                                  <FaPlay
+                                    className="text-white ml-1"
+                                    size={13}
+                                  />
+                                )}
+                              </button>
+                            </div>
+                          </td>
 
-                      {/* Download button */}
-                      <td className="py-3 px-1 text-center">
-                        <div className="flex justify-center items-center h-full w-full">
-                          <button
-                            className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#5DC9DE]"
-                            onClick={() => handleSongDownload(song, song.name)}
-                          >
-                            <IoIosArrowRoundDown className="text-black" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          {/* Download button */}
+                          <td className="py-3 px-1 text-center">
+                            <div className="flex justify-center items-center h-full w-full">
+                              <button
+                                className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#5DC9DE]"
+                                onClick={() =>
+                                  handleSongDownload(song, song.name)
+                                }
+                              >
+                                <IoIosArrowRoundDown className="text-black" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                  )}
                 </tbody>
               </table>
             ) : (

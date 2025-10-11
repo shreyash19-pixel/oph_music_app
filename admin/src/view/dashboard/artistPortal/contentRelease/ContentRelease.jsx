@@ -31,7 +31,7 @@ const ContentRelease = () => {
           showStatusIndicator={false}
           pageSize={10}
           detailsUrl="/ContentRelease"
-          excludeColumns={["youtube_release_time", "spotify_release_time", "apple_release_time", "instagram_release_time", "facebook_release_time", "share_url", "release_time"]}
+          excludeColumns={["youtube_release_time", "spotify_release_time", "apple_release_time", "instagram_release_time", "facebook_release_time", "share_url", "release_time", "youtube_url", "spotify_url", "apple_url", "instagram_url", "facebook_url"]}
         />
       </ArtistSidebar>
     </div>
