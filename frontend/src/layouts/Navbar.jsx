@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
+export const NavbarContext = createContext();
 import logo from "/logo.svg";
 import { Link, useNavigate } from "react-router-dom";
 import { useArtist } from "../pages/auth/API/ArtistContext";
@@ -9,6 +10,9 @@ function Navbar() {
   const [verified, setVerified] = useState(false);
   const { headers, logout, login } = useArtist();
   const [reload, setReload] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const openSignup = () => setShowSignup(true);
+  const closeSignup = () => setShowSignup(false);
 
   useEffect(() => {
     if (!headers || !headers.Authorization) {
@@ -42,7 +46,9 @@ function Navbar() {
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
             onClick={() => {
-              console.log("Events link clicked - navigating to /events/online-music-events");
+              console.log(
+                "Events link clicked - navigating to /events/online-music-events"
+              );
               navigate("/events/online-music-events");
               // https://ophcommunity.com/events
             }}
@@ -61,7 +67,7 @@ function Navbar() {
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
             onClick={() => {
               navigate(
-                "/leaderboard/top-music-networking-platform-for-creators/",
+                "/leaderboard/top-music-networking-platform-for-creators/"
               );
               // window.location.href =
               //   import.meta.env.VITE_WEBSITE_URL + "leaderboard";
@@ -198,7 +204,9 @@ function Navbar() {
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
             onClick={() =>
-              navigate("/leaderboard/top-music-networking-platform-for-creators/")
+              navigate(
+                "/leaderboard/top-music-networking-platform-for-creators/"
+              )
             }
           >
             Leaderboard
@@ -233,11 +241,14 @@ function Navbar() {
                   Login
                 </button>
               </Link>
-              <Link to={"/auth/signup"}>
-                <button className="w-full bg-primary text-[#181B24] font-bold uppercase rounded-full">
-                  Sign Up
-                </button>
-              </Link>
+                <Link to={"/auth/signup"}>
+                  <button
+                    id="signup-btn"
+                    className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
+                  >
+                    Sign Up
+                  </button>
+                </Link>
             </div>
           )}
         </div>
