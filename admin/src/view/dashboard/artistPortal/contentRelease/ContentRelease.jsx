@@ -11,24 +11,24 @@ const ContentRelease = () => {
       try {
         let res = await axiosApi.get("/get-song-release-list");
 
-        res = res.data.data.map((item) => {
+        // Process the response data
+        const mappedData = res.data.data.map((item) => {
           if ("release_date" in item) {
             return {
               ...item,
               release_date: item.release_date
-                ? new Date(item.release_time).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
+                ? new Date(item.release_date).toLocaleDateString("en-IN", {
+                    timeZone: "Asia/Kolkata",
                   })
                 : "N/A",
             };
           }
-          // If the key doesn't exist, return item as is
+          // Return unchanged if key not found
           return item;
         });
 
-        setTableData(res.data.data);
+        // ✅ Use the processed array directly
+        setTableData(mappedData);
       } catch (err) {
         console.error("Error fetching data", err);
       }
