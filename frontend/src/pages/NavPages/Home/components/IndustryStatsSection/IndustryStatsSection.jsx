@@ -1,13 +1,45 @@
-import React from "react";
-import Elipse from "../../../../../../public/assets/images/elipse.png";
+import React, { useEffect, useState } from "react";
+import axiosApi from "../../../../../conf/axios";
 
 const IndustryStats = () => {
-  // Dummy test data
-  const stats = [
-    { id: 1, value: "10,000+", param: "num_of_artist_connections" },
-    { id: 2, value: "5,000+", param: "num_of_songs" },
-    { id: 3, value: "1M+", param: "num_of_audience" },
-  ];
+  const [stats, setStats] = useState([
+    { id: 1, value: "0", param: "num_of_artist_connections" },
+    { id: 2, value: "0", param: "num_of_songs" },
+    { id: 3, value: "0", param: "num_of_audience" },
+  ]);
+
+  useEffect(() => {
+    const fetchSupportingNumbers = async () => {
+      try {
+        const response = await axiosApi.get("/getsupport");
+        const numbers = response.data.data?.[0]; // grab first item in array
+        console.log("ni", numbers);
+        if (numbers) {
+          setStats([
+            {
+              id: 1,
+              value: numbers.total_artists.toLocaleString() + "+",
+              param: "num_of_artist_connections",
+            },
+            {
+              id: 2,
+              value: numbers.total_songs.toLocaleString() + "+",
+              param: "num_of_songs",
+            },
+            {
+              id: 3,
+              value: numbers.total_audience.toLocaleString() + "M+",
+              param: "num_of_audience",
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching supporting numbers:", err);
+      }
+    };
+
+    fetchSupportingNumbers();
+  }, []);
 
   return (
     <div className="bg-black relative px-4 lg:px-16 xl:px-16 text-white py-24 w-full">

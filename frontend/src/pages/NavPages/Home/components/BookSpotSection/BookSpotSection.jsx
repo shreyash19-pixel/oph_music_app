@@ -3,7 +3,7 @@ import React from "react";
 const BookSpot = () => {
   return (
     <div
-      className="relative  pt-10 pb-10  flex text-white"
+      className="relative  pt-10 pb-20  flex text-white"
       style={{
         backgroundImage: `linear-gradient(rgb(0 0 0 / 91%) 0%, rgb(150 150 150 / 51%) 30%, rgb(137 137 137 / 0%) 100%), url(/assets/images/bookSpotBg.png)`,
         backgroundSize: "cover",
