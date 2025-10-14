@@ -35,7 +35,6 @@ function Home() {
       <PodcastSlider />
       <div className=" lg:px-10 px-6 xl:px-16">
       <div className="container w-full  h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
-
        </div>
       <ArtistSlider />
       <div className=" lg:px-10 px-6 xl:px-16">

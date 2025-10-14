@@ -106,7 +106,7 @@ const SidebarNav = ({ onClose }) => {
   const menuItems = [
     { icon: <TiHome />, label: "Home", to: "/dashboard", type : "Independent artist, Special artist"},
     {
-      icon: <img src = {EPK} className="w-[24px] h-[24px]" />,
+      icon: <img src = {EPK} className="w-[24px] h-[24px]" />,  
       label: "MY EPK",
       to: "/dashboard/my-epk",
       type : "Special artist"
