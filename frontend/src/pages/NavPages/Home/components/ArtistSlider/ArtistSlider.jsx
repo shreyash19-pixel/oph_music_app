@@ -21,7 +21,6 @@ const ArtistSlider = ({ rows = 1 }) => {
 
   const [currArtist, setCurrentArtist] = useState(null);
 
-
   useEffect(() => {
     const fetchArtists = async (page) => {
       try {
@@ -29,7 +28,7 @@ const ArtistSlider = ({ rows = 1 }) => {
           `/get-top-artist?page=${page}&per_page=${perPage}`
         );
         setArtists(response.data.data);
-        console.log("Ar",response.data.data)
+        console.log("Ar", response.data.data);
         setTotalPages(response.data.pagination);
       } catch (error) {
         console.error("Error fetching artists:", error);
@@ -41,7 +40,7 @@ const ArtistSlider = ({ rows = 1 }) => {
     }
   }, [currentPage]);
 
-  const handleArtistClick = (id, index) => {    
+  const handleArtistClick = (id, index) => {
     setCurrentArtist(id);
     setSelectedArtist(id);
     setAutoplay(false);
@@ -166,7 +165,7 @@ const ArtistSlider = ({ rows = 1 }) => {
                   className="group relative pointer-events-auto"
                   onTouchEnd={(e) => {
                     //  e.preventDefault();
-                     handleArtistClick(artist.OPH_ID, index);
+                    handleArtistClick(artist.OPH_ID, index);
                   }}
                 >
                   <div className="flex justify-center overflow-hidden">
@@ -181,24 +180,28 @@ const ArtistSlider = ({ rows = 1 }) => {
                       }
                       alt={artist.stage_name}
                       NativeImgProps={{
-                        className: ` w-[200px] md:w rounded-full h-[200px] md:h-full object-cover ${artist.OPH_ID === currArtist
-                            ? "border-4 border-primary"
-                            : ""
-                          }`,
+                        className: `
+      w-[200px] h-[200px] 
+      rounded-full 
+      object-cover 
+      ${artist.OPH_ID === currArtist ? "border-4 border-primary" : ""}
+    `,
                       }}
                     />
                   </div>
                   <div
                     className="flex flex-col text-center items-center justify-end p-4"
                     onMouseUp={(e) => {
-                      if (e.button === 0) handleArtistClick(artist.OPH_ID, index);
+                      if (e.button === 0)
+                        handleArtistClick(artist.OPH_ID, index);
                     }}
                   >
                     <a
-                      className={`text-lg font-semibold ${artist.OPH_ID === currArtist
+                      className={`text-lg font-semibold ${
+                        artist.OPH_ID === currArtist
                           ? "text-[#5DC9DE]"
                           : "text-white"
-                        }`}
+                      }`}
                       onClick={(e) => {
                         e.preventDefault();
                         handleArtistClick(artist.OPH_ID, index);
@@ -207,16 +210,17 @@ const ArtistSlider = ({ rows = 1 }) => {
                       {artist.stage_name}
                     </a>
                     <p
-                      className={`text-sm ${artist.OPH_ID === currArtist
+                      className={`text-sm ${
+                        artist.OPH_ID === currArtist
                           ? "text-white"
                           : "text-gray-400"
-                        }`}
+                      }`}
                     >
                       {artist.total_views >= 1000000
                         ? `${(artist.total_views / 1000000).toFixed(1)}M`
                         : artist.total_views >= 1000
-                          ? `${(artist.total_views / 1000).toFixed(1)}K`
-                          : artist.total_views}{" "}
+                        ? `${(artist.total_views / 1000).toFixed(1)}K`
+                        : artist.total_views}{" "}
                       + Listeners
                     </p>
                   </div>

@@ -2,6 +2,18 @@ const SongSocialMetrics = require("../model/analytics");
 const db = require("../../DB/connect");
 const { readFromS3 } = require("../../utils");
 
+const getVideoyId = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const data = await SongSocialMetrics.getVideoyId(id);
+    res.status(200).json(data);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch metric", details: err.message });
+  }
+};
+
 const createMetrics = async (req, res) => {
   try {
     const data = req.body;
@@ -116,6 +128,7 @@ const kpi = async (req, res) => {
 };
 
 module.exports = {
+  getVideoyId,
   createMetrics,
   updateMetrics,
   getAllMetrics,

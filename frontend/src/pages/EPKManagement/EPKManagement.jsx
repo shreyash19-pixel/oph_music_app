@@ -9,6 +9,7 @@ import { useArtist } from "../auth/API/ArtistContext";
 const EPKManagement = () => {
   const navigate = useNavigate();
   const { ophid, headers } = useArtist();
+
   const [status, setStatus] = useState([]);
   const [formData, setFormData] = useState({
     bio: "",
@@ -20,7 +21,10 @@ const EPKManagement = () => {
     terms: false,
   });
 
-  const location = useLocation()
+  const [pic, setPic] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const location = useLocation();
 
   const handleUploads = (e, field) => {
     const file = e.target.files[0];
@@ -33,9 +37,34 @@ const EPKManagement = () => {
     }
   };
 
+  const getSpecialArtistProfile = async () => {
+    if (!headers || !headers.Authorization) {
+      console.warn("Headers are not ready yet");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axiosApi.get("/get-special-artist-pic", {
+        headers: headers,
+        params: { ophid },
+      });
+
+      if (response.data.success) {
+        setPic(response.data.data[0].personal_photo);
+        console.log(response.data.data);
+      }
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatus = async () => {
     if (!headers || !headers.Authorization) {
       console.warn("Headers are not ready yet");
+      setLoading(false);
       return;
     }
 
@@ -50,15 +79,19 @@ const EPKManagement = () => {
       }
     } catch (err) {
       console.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     getStatus();
+    getSpecialArtistProfile();
   }, [ophid, headers]);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     if (!formData.terms) {
       toast.error("Please accept terms and conditions");
@@ -106,24 +139,32 @@ const EPKManagement = () => {
         );
 
         if (response.data.success) {
-          navigate('/dashboard/pending', {
+          setLoading(false);
+          navigate("/dashboard/pending", {
             state: {
               heading: "Your request is under review",
               btnText: "Back to Home",
-              redirectTo: "/dashboard"
-            }
-          })
+              redirectTo: "/dashboard",
+            },
+          });
         }
-      }
-      catch (err) {
+      } catch (err) {
         console.error(err.message);
-
+      } finally {
+        setLoading(false);
       }
-
     } else {
       toast.error("Please edit atleast one field");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xl text-gray-700">
+        Loading artist data...
+      </div>
+    );
+  }
 
   return (
     <div className="ml-[63px] mr-[63px]">
@@ -276,10 +317,12 @@ const EPKManagement = () => {
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-[43px]">
-              <img
-                src={location.state.photo}
-                className="w-32 h-32 rounded-full border-4 border-[#5DC9DE] object-cover"
-              />
+              {pic != "" && (
+                <img
+                  src={pic}
+                  className="w-32 h-32 rounded-full border-4 border-[#5DC9DE] object-cover"
+                />
+              )}
 
               <div className="flex flex-col gap-[17px]">
                 <p className="text-white font-medium text-[35px]">
@@ -395,8 +438,8 @@ hover:bg-[#5A3F85] "
         </button>
       </form>
 
-      {status.length > 0 &&
-        (<section className="mb-[20px]">
+      {status.length > 0 && (
+        <section className="mb-[20px]">
           <h1 className="font-extrabold text-[55px] mt-[55px]">Status</h1>
 
           <table className="w-full border-collapse mt-[41px]">
@@ -409,27 +452,26 @@ hover:bg-[#5A3F85] "
               </tr>
             </thead>
             <tbody>
-              {
-                status.map((stat, index) => (
-                  <tr key={index}>
-                    <td className="py-[12px] font-bold text-[16px]">
-                      {new Date(stat.date).toLocaleDateString()}
-                    </td>
-                    <td className="py-[12px] font-bold text-[16px]">
-                      {stat.field} update
-                    </td>
-                    <td className="py-[12px] font-bold text-[16px]">
-                      {stat.status}
-                    </td>
-                    <td className="py-[12px] font-bold text-[16px]">
-                      {stat.reason || "-"}
-                    </td>
-                  </tr>
-                ))}
+              {status.map((stat, index) => (
+                <tr key={index}>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {new Date(stat.date).toLocaleDateString()}
+                  </td>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {stat.field} update
+                  </td>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {stat.status}
+                  </td>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {stat.reason || "-"}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-        </section>)
-      }
+        </section>
+      )}
     </div>
   );
 };

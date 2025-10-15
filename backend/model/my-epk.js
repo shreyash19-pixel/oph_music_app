@@ -40,14 +40,18 @@ const getSpecialArtistDetails = async (ophid) => {
       };
     } else {
       songMap[ophid].songs.push({
-        song_name: row.Song_name,
-        primary_artist: row.primary_artist,
-        total_song_views: row.total_views,
-        duration_in_minutes: row.avg_view_duration,
+        song_name: row.song_name,
+        primary_artist: row.full_name,
+        total_song_views: row.views,
         audio_file_url: row.audio_url,
+         song_status: row.status,
       });
     }
   });
+
+
+  console.log(songMap[ophid]);
+  
 
   return songMap[ophid];
 };

@@ -16,8 +16,10 @@ const AddNewSong = () => {
   });
   const [status, setStatus] = useState([]);
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const { headers, ophid } = useArtist();
+  const [loading, setLoading] = useState(false);
+  const [songCount, setSongCount] = useState(0);
 
   // handle input change
   const handleChange = (e) => {
@@ -47,13 +49,7 @@ const AddNewSong = () => {
     else if (!timeRegex.test(formData.time))
       newErrors.time = "Invalid time format (use mm:ss or hh:mm:ss)";
 
-    // simple URL validation
-    const urlRegex =
-      /^(https?:\/\/)([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-    if (!formData.proof.trim()) newErrors.proof = "Proof link is required";
-    else if (!urlRegex.test(formData.proof))
-      newErrors.proof = "Invalid URL format";
-
+    // simple URL validatio
     if (!formData.audioFile) newErrors.audioFile = "Audio file is required";
     if (!formData.terms)
       newErrors.terms = "You must agree to terms and conditions";
@@ -77,6 +73,8 @@ const AddNewSong = () => {
 
       if (response.data.success) {
         setStatus(response.data.data);
+
+        setSongCount(response.data.songCnt);
       }
     } catch (err) {
       console.error(err.message);
@@ -90,6 +88,7 @@ const AddNewSong = () => {
   // handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     if (validate()) {
       const sendFormData = new FormData();
@@ -114,19 +113,29 @@ const AddNewSong = () => {
 
         if (response.data.success) {
           const data = Object.values(response.data.data);
-          
+          console.log(response.data.songCnt);
+          setLoading(false);
           navigate("/auth/payment", {
             state: {
               from: "Special artist song registration",
               song_id: data.song_id,
+              songCnt: songCount,
             },
-          })
+          });
         }
       } catch (err) {
         console.error(err.message);
       }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xl text-gray-700">
+        Loading artist data...
+      </div>
+    );
+  }
 
   return (
     <div className="ml-[63px] mr-[63px]">
@@ -217,10 +226,8 @@ const AddNewSong = () => {
             onChange={handleChange}
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             placeholder="Add your link here"
+            required
           />
-          {errors.proof && (
-            <p className="text-red-500 text-sm">{errors.proof}</p>
-          )}
         </div>
 
         {/* Audio File */}
@@ -295,10 +302,10 @@ const AddNewSong = () => {
             <thead>
               <tr className="border-b border-b-[#FFFFFF33] text-left">
                 <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
-                <th className="pb-[14px] text-[15px] font-semibold">SONG NAME</th>
                 <th className="pb-[14px] text-[15px] font-semibold">
-                  STATUS
+                  SONG NAME
                 </th>
+                <th className="pb-[14px] text-[15px] font-semibold">STATUS</th>
                 <th className="pb-[14px] text-[15px] font-semibold">REASON</th>
               </tr>
             </thead>
@@ -307,12 +314,13 @@ const AddNewSong = () => {
                 <tr>
                   <td className="py-[12px] font-bold text-[16px]">
                     {new Date(stat.date).toLocaleDateString()}
-
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.song_name}
                   </td>
-                  <td className="py-[12px] font-bold text-[16px]">{stat.status}</td>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {stat.status}
+                  </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.reject_reason ? stat.reject_reason : "-"}
                   </td>

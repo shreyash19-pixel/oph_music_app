@@ -18,8 +18,9 @@ export default function AnalyticsDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [videoData, setVideoData] = useState(null);
   const chartsPerPage = 3;
-  
+
   const [analyticsData, setAnalyticsData] = useState({
     viewsData: [],
     engagementData: [],
@@ -94,6 +95,38 @@ export default function AnalyticsDashboard() {
     fetchContent();
   }, [ophid]);
 
+useEffect(() => {
+  const fetchBySongId = async () => {
+    if (!selectedContent || !selectedContent[0]?.song_id) return; // ✅ Wait until a song is selected
+
+    const songId = selectedContent[0].song_id;
+
+    try {
+      console.log("Fetching video data for song:", songId);
+      setIsLoading(true);
+
+      const response = await axiosApi.get(`/getVideoyId/${songId}`);
+      console.log("res", response.data);
+
+      if (response.status = 200) {
+        setVideoData(response.data); // ✅ store separately for reuse
+        console.log("✅ Fetched content by song ID:", response.data);
+      } else {
+        console.warn("⚠️ No data found for this song ID:", songId);
+        setVideoData(null); 
+      }
+    } catch (error) {
+      console.error("❌ Error fetching data by song_id:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchBySongId();
+}, [selectedContent]);
+  
+ console.log("Video Data Available:", videoData);
+
 
   const submitMetric = (contents.dbMetrics || [])
     .concat(contents.s3Metrics || [])
@@ -141,7 +174,7 @@ export default function AnalyticsDashboard() {
         value: c.youtube_views,
         valueEngagement: c.youtube_engagement,
         valueDuration: parseDuration(c.youtube_avg_view_duration),
-        valueInstagram: c.insta_engagement
+        valueInstagram: c.insta_engagement,
       }))
     : selectedContent
     ? [
@@ -153,35 +186,35 @@ export default function AnalyticsDashboard() {
           valueEngagement: selectedContent.youtube_engagement,
           valueInstagram: selectedContent.insta_engagement,
           valueDuration: parseDuration(
-          selectedContent.youtube_avg_view_duration
+            selectedContent.youtube_avg_view_duration
           ),
         },
       ]
-      : [];
-  
-   const AudiochartData = Array.isArray(selectedContent)
-     ? selectedContent.map((c) => ({
-        name: c.audio_platform_name,
-         date: c.audioDate
-           ? new Date(c.audioDate).toLocaleDateString()
-           : "Unknown Date",
-         value: c.audio_platform_streams,
-       }))
-     : selectedContent
-     ? [
-         {
-           name:selectedContent.audio_platform_name,
-           date: selectedContent.audioDate
-             ? new Date(selectedContent.audioDate).toLocaleDateString()
-             : "Unknown Date",
-           value: selectedContent.audio_platform_streams,
-         },
-       ]
-     : [];
+    : [];
 
-const totalDurationSeconds = chartData.reduce(
-  (sum, d) => sum + (d.valueDuration || 0),
-  0
+  const AudiochartData = Array.isArray(selectedContent)
+    ? selectedContent.map((c) => ({
+        name: c.audio_platform_name,
+        date: c.audioDate
+          ? new Date(c.audioDate).toLocaleDateString()
+          : "Unknown Date",
+        value: c.audio_platform_streams,
+      }))
+    : selectedContent
+    ? [
+        {
+          name: selectedContent.audio_platform_name,
+          date: selectedContent.audioDate
+            ? new Date(selectedContent.audioDate).toLocaleDateString()
+            : "Unknown Date",
+          value: selectedContent.audio_platform_streams,
+        },
+      ]
+    : [];
+
+  const totalDurationSeconds = chartData.reduce(
+    (sum, d) => sum + (d.valueDuration || 0),
+    0
   );
 
   const engagementMetric = Array.isArray(selectedContent)
@@ -191,14 +224,14 @@ const totalDurationSeconds = chartData.reduce(
   const InstagramMetric = Array.isArray(selectedContent)
     ? selectedContent.reduce((sum, c) => sum + (c.insta_engagement || 0), 0)
     : selectedContent?.insta_engagement || 0;
-  
+
   const AudioMetric = Array.isArray(selectedContent)
     ? selectedContent.reduce(
         (sum, c) => sum + (c.audio_platform_streams || 0),
         0
       )
     : selectedContent?.audio_platform_streams || 0;
-  
+
   const uniqueSongs = Array.from(
     new Map(submitMetric.map((c) => [c.song_id, c])).values()
   );
@@ -215,17 +248,15 @@ const totalDurationSeconds = chartData.reduce(
     return sum;
   }, 0);
 
-    const filterByDuration = (data, dateField) => {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - selectedDuration);
-      return data.filter(
-        (d) => d[dateField] && new Date(d[dateField]) >= cutoff
-      );
+  const filterByDuration = (data, dateField) => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - selectedDuration);
+    return data.filter((d) => d[dateField] && new Date(d[dateField]) >= cutoff);
   };
-  
-   const filteredChartData = filterByDuration(chartData, "name");
+
+  const filteredChartData = filterByDuration(chartData, "name");
   const filteredAudioChartData = filterByDuration(AudiochartData, "date");
-  
+
   const getPaginatedCharts = (charts) => {
     const start = currentPage * chartsPerPage;
     return charts.slice(start, start + chartsPerPage);
@@ -233,21 +264,17 @@ const totalDurationSeconds = chartData.reduce(
 
   const totalPages = (charts) => Math.ceil(charts.length / chartsPerPage);
 
-
-
-
   console.log("DEBUG selectedContent:", selectedContent);
 
   // console.log("testline", chartData.name, chartData.value);
 
-console.log(
-  "testLine",
-  AudiochartData.map((d) => ({
-    date: d.date,
-    value: d.value,
-  }))
-);
-
+  console.log(
+    "testLine",
+    AudiochartData.map((d) => ({
+      date: d.date,
+      value: d.value,
+    }))
+  );
 
   console.log(
     "test",
@@ -385,12 +412,13 @@ console.log(
             {selectedStream !== "Audio Platform" && (
               <div className="overflow-hidden flex items-stretch justify-start">
                 <div className="relative">
-                  {selectedContent?.[0]?.video_url ? (
+                  {videoData?.video_url ? (
                     <video
-                      src={selectedContent[0].video_url}
+                      src={videoData.video_url}
                       poster={
-                        selectedContent?.[0]?.image_url ||
-                        "/assets/images/ytVideoBg.png"
+                        videoData?.image_url
+                          ? JSON.parse(videoData.image_url)[0] // safely extract the actual URL
+                          : "/assets/images/ytVideoBg.png"
                       }
                       controls
                       className="w-[400px] h-[200px] object-cover rounded-lg"
@@ -400,8 +428,9 @@ console.log(
                   ) : (
                     <img
                       src={
-                        selectedContent?.[0]?.image_url ||
-                        "/assets/images/ytVideoBg.png"
+                        videoData?.image_url
+                          ? JSON.parse(videoData.image_url)[0]
+                          : "/assets/images/ytVideoBg.png"
                       }
                       alt="Video thumbnail"
                       className="w-[400px] h-[200px] object-cover rounded-lg"
@@ -429,7 +458,8 @@ console.log(
                   </p>
 
                   <p className="text-gray-400 text-sm">
-                    {selectedContent?.[0]?.credits || "No description available"}
+                    {selectedContent?.[0]?.credits ||
+                      "No description available"}
                   </p>
                 </div>
               </div>

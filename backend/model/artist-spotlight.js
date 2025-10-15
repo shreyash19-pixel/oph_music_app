@@ -36,12 +36,11 @@ const getSongsRankingsById = async (ophid) => {
         LEFT JOIN video_details vd ON sr.song_id = vd.song_id 
         LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id 
         LEFT JOIN sign_up_payment sup ON sr.song_id = sup.song_id
-        WHERE sr.OPH_ID = 'OPH-CAN-IA-07'
+        WHERE sr.OPH_ID = ?
       ) 
       SELECT * FROM CTESongStatus 
       WHERE 
-        song_register_status = 'Approved' 
-        AND audio_details_status = 'approved' 
+        audio_details_status = 'approved' 
         AND video_details_status = 'approved'
         AND payment_status = 'approved'
     `,

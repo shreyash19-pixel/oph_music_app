@@ -183,7 +183,7 @@ const updateStatusPayment = async (ophId, songId, status) => {
 const getTransactionDetails = async (release_date) => {
   try {
     const [rows] = await db.execute(
-      "SELECT OPH_ID, Transaction_ID, `From`, song_id, Status FROM sign_up_payment WHERE release_date = ?",
+      "SELECT sp.OPH_ID, Transaction_ID, `From`, song_id, Status , c.* FROM sign_up_payment sp join calender c ON sp.release_date = c.current_booking_date  WHERE release_date = ?",
       [release_date]
     );
     return rows;
