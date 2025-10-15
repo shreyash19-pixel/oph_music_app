@@ -14,6 +14,10 @@ router.get("/song-registration-details", allDataCont.getSongApplicationStatus);
 router.get("/tv-publishing-excel", allDataCont.getTvPublishing);
 router.get("/withdrawals-excel", allDataCont.getWithdrawals);
 router.get("/tickets-excel", allDataCont.getTickets);
+router.get("/event-participants-excel", allDataCont.downloadEventParticipants);
+router.get("/contact-us-excel", allDataCont.downloadContactUs);
+router.get("/special-artist-details-excel", allDataCont.downloadSpecialArtistDetails);
+router.get("/songs-register-excel", allDataCont.downloadSongsRegister);
 
 
 module.exports = router;

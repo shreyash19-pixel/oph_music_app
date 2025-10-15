@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 
 const EventManagement = () => {
   const { event_id } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     EventName: "",
     dateTime: null,
@@ -28,6 +29,7 @@ const EventManagement = () => {
   const [paymentQrPreview, setPaymentQrPreview] = useState(null);
   const [paymentQrDiscountPreview, setPaymentQrDiscountPreview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Fetch existing event data
   useEffect(() => {
@@ -137,6 +139,19 @@ const EventManagement = () => {
       console.error("Update Error:", err);
       toast.error("Failed to update event. Please try again.");
     }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const res = await axiosApi.delete(`/delete-event/${event_id}`);
+      console.log("Delete Success:", res.data);
+      toast.success("Event deleted successfully!");
+      navigate("/AllEvents"); // Navigate back to events list
+    } catch (err) {
+      console.error("Delete Error:", err);
+      toast.error("Failed to delete event. Please try again.");
+    }
+    setShowDeleteConfirm(false);
   };
 
   const CustomDateInput = React.forwardRef(
@@ -376,12 +391,49 @@ const EventManagement = () => {
             </label>
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-[#0d3c44] text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-[#0b3239] transition-all duration-150"
-          >
-            Update Event
-          </button>
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              className="flex-1 bg-[#0d3c44] text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-[#0b3239] transition-all duration-150"
+            >
+              Update Event
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex-1 bg-red-600 text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-red-700 transition-all duration-150"
+            >
+              Delete Event
+            </button>
+          </div>
+
+          {/* Delete Confirmation Dialog */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+                <h3 className="text-xl font-bold text-[#0d3c44] mb-4">
+                  Confirm Delete
+                </h3>
+                <p className="text-gray-700 mb-6">
+                  Are you sure you want to delete "{formData.EventName}"? This action cannot be undone.
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-700 transition-all duration-150"
+                  >
+                    Yes, Delete
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 bg-gray-300 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-150"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -73,6 +73,28 @@ const ticketsDetails = async () => {
   return rows;
 };
 
+const eventParticipantsDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM event_participants");
+  return rows;
+};
+
+
+const contactDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM contact_us");
+  return rows;
+};
+
+const epkDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM special_artist_details");
+  return rows;
+};
+
+
+const SongRegistrationDetails = async () => {
+  const [rows] = await db.execute("SELECT * FROM songs_register");
+  return rows;
+};
+
 module.exports = {
   getAllApplicationStatus,
   getAllUserDetails,
@@ -83,6 +105,9 @@ module.exports = {
   songRegistrationDetails,
   tvpublishingDetails,
   withdrawalsDetails,
-  ticketsDetails
-
+  ticketsDetails,
+  eventParticipantsDetails,
+  contactDetails, 
+  epkDetails,
+  SongRegistrationDetails
 };

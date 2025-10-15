@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
 
 const formatViews = (views) => {
   if (!views && views !== 0) return "0 views";
@@ -19,17 +20,18 @@ const IndividualPodcast = () => {
 
   console.log(id, "1");
 
-  const fetchPodcast = async () => {
+  const fetchPodcast = useCallback(async () => {
     if (!id) return;
     const response = await axiosApi.get(`/podcast/${id}`);
 
     setContent(response.data.data);
-  };
+  }, [id]);
+  
   // Example: Fetch content data (remove if you set it from props or Redux)
   useEffect(() => {
     // if (!id) return;
     fetchPodcast();
-  }, [id]);
+  }, [fetchPodcast]);
 
   const togglePlayPause = () => {
     if (!videoRef.current) return;
@@ -50,7 +52,6 @@ const IndividualPodcast = () => {
       <div className="relative w-full aspect-video mb-8 rounded-xl overflow-hidden md:p-12">
         <video
           controls
-          download={false}
           controlsList="nodownload"
           ref={videoRef}
           src={content.video_url}
@@ -119,8 +120,7 @@ const IndividualPodcast = () => {
       <button
         className="bg-[#5DC9DE] hover:font-bold text-black px-6 py-3 rounded-full font-medium transition-colors mb-12"
         onClick={() => {
-          window.location.href =
-            import.meta.env.VITE_PORTAL_URL + "/auth/signup";
+          navigate("/auth/signup");
         }}
       >
         Book Your Spot - Sign Up Now

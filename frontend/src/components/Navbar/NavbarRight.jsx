@@ -42,6 +42,7 @@ const NavbarRight = () => {
       <button
         onClick={() => {
           setHasNewNotification(false);
+          localStorage.removeItem("hasNewNotification");
           navigate("/dashboard/notifications");
         }}
         className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"

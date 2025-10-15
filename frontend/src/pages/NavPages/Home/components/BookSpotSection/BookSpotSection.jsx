@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const BookSpot = () => {
+  const navigate = useNavigate();
   return (
     <div
       className="relative  pt-10 pb-10  flex text-white"
@@ -33,8 +35,7 @@ const BookSpot = () => {
 
         <button
           onClick={() => {
-            window.location.href =
-              import.meta.env.VITE_PORTAL_URL + "/auth/signup";
+            navigate("/auth/signup");
           }}
           className="bg-[#5DC9DE] hover:font-bold transition delay-300 text-black font-semibold py-3 px-8 rounded-full "
         >

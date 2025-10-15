@@ -119,9 +119,6 @@ const WebConfigSidebar = ({ children }) => {
   const handleGoHome = () => {
     navigate("/");
   };
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   useEffect(() => {
     const updateHeight = () => {
@@ -135,6 +132,10 @@ const WebConfigSidebar = ({ children }) => {
       window.removeEventListener("scroll", updateHeight);
     };
   }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   if (!user) {
     return (
@@ -161,7 +162,7 @@ const WebConfigSidebar = ({ children }) => {
     <div
       ref={containerRef}
       style={{ height: docHeight }}
-      className={`h-screen flex overflow-hidden relative bg-gray-50 ${
+      className={`h-screen flex overflow-y-auto relative bg-gray-50 ${
         sidebarOpen ? "w-64" : "w-128"
       }`}
     >

@@ -1,20 +1,12 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import { FaFacebook } from "react-icons/fa6";
 import { AiFillInstagram } from "react-icons/ai";
 import { FaLinkedin } from "react-icons/fa";
 import { BsTwitterX } from "react-icons/bs";
-import { useState, useEffect } from "react";
 
 function Footer() {
-  const [userData, setUserData] = useState(null);
-
-  useEffect(() => {
-    const storedData = localStorage.getItem("userData");
-    if (storedData) {
-      setUserData(JSON.parse(storedData));
-    }
-  }, []);
+  const navigate = useNavigate();
 
   return (
     <div className="w-full h-auto lg:px-16 px-2 flex flex-col bg-[url('/assets/images/contact/footer.png')] bg-cover bg-center relative">
@@ -31,7 +23,7 @@ function Footer() {
           <div className="w-full flex justify-center lg:justify-end pt-3 sm:pt-12">
             <button
               onClick={() => {
-                window.location.href = import.meta.env.VITE_PORTAL_URL + "/auth/signup";
+                navigate("/auth/signup");
               }}
               className="bg-primary h-14 text-black font-semibold py-3 px-6 sm:px-8 rounded-full hover:font-bold transition"
             >
@@ -43,7 +35,7 @@ function Footer() {
         {/* Middle Navigation Section */}
         <div className="w-full flex flex-col lg:flex-row justify-between items-center">
           <div className="text-md text-center lg:text-left text-[#9BA3B7] w-full lg:w-1/3 px-8 lg:px-0 py-3">
-          OPH COMMUNITY: India's First Decentralized Music Platform. A Best Platform for Independent Artists 2025
+          OPH COMMUNITY: India&apos;s First Decentralized Music Platform. A Best Platform for Independent Artists 2025
           </div>
           <ul className="hidden lg:flex space-x-12 justify-end text-white w-1/2">
             <li><Link to="/" className="hover:text-gray-300">Home</Link></li>
