@@ -785,7 +785,10 @@ export default function AudioMetadataForm() {
       {isLoading && (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
-          <p className="mt-2 text-cyan-400">Loading Analytics...</p>
+          <p className="mt-2 text-cyan-400">
+            OPH Community is delighted to have you here! Joining the OPH
+            Community will be one of the best decisions you ever make.
+          </p>
         </div>
       )}
       {!isLoading && (
