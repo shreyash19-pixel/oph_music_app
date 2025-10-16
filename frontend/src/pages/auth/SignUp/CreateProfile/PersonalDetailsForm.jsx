@@ -46,7 +46,11 @@ const indianStates = [
 
 const PersonalDetailsForm = () => {
   const navigate = useNavigate();
+  console.log("asdsdsadad");
+
   const { headers, ophid } = useArtist();
+  console.log(headers, ophid);
+
   // const [isPlaying, setIsPlaying] = useState(false); // Track video play state
   // const videoRef = useRef(null);
   // const [video, setVideo] = useState(null);
@@ -99,10 +103,9 @@ const PersonalDetailsForm = () => {
   });
 
   useEffect(() => {
-    if (ophid) {
-      fetchPersonalDetails();
-    }
-  }, [ophid]);
+    fetchPersonalDetails();
+    console.log("Sadasdasdasdas");
+  }, [ophid, headers]);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -128,6 +131,7 @@ const PersonalDetailsForm = () => {
     try {
       if (!headers || !headers.Authorization) {
         console.warn("Headers not ready yet");
+        setLoading(false);
         return;
       }
 
@@ -307,7 +311,7 @@ const PersonalDetailsForm = () => {
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update personal details",
+        error.response?.data?.message || "Failed to update personal details"
       );
     } finally {
       setLoading(false);

@@ -6,6 +6,8 @@ import useSocketRegistration from "../../../../hook/useSocketRegistration";
 const ArtistContext = createContext();
 
 export const ArtistProvider = ({ children }) => {
+  console.log("sdhsaddh");
+  
   const navigate = useNavigate();
 
   const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -26,6 +28,8 @@ export const ArtistProvider = ({ children }) => {
 
         setUser(decoded);
         const id = decoded.userData?.artist?.id;
+        console.log(id);
+
         if (id) {
           setOphid(id);
         }
@@ -47,9 +51,8 @@ export const ArtistProvider = ({ children }) => {
 
   useEffect(() => {
     console.log("👤 User state changed:", user);
+    console.log(ophid);
   }, [user]);
-
-  console.log(ophid);
 
   useSocketRegistration(ophid, () => setHasNewNotification(true));
   // Validate token on mount and redirect if needed
@@ -60,7 +63,12 @@ export const ArtistProvider = ({ children }) => {
       const rawPathname = window.location.pathname;
       // normalize: strip trailing slashes for consistent matching
       const normalizedPathname = rawPathname.replace(/\/+$/, "") || "/";
-      console.log("pathname:", rawPathname, "-> normalized:", normalizedPathname);
+      console.log(
+        "pathname:",
+        rawPathname,
+        "-> normalized:",
+        normalizedPathname
+      );
       const storedToken = localStorage.getItem("token");
       console.log("token:", storedToken);
 
@@ -96,13 +104,17 @@ export const ArtistProvider = ({ children }) => {
         ];
 
         // normalize open routes (strip trailing slashes)
-        const openRoutesNormalized = openRoutes.map((r) => r.replace(/\/+$/, "") || "/");
+        const openRoutesNormalized = openRoutes.map(
+          (r) => r.replace(/\/+$/, "") || "/"
+        );
         console.log("openRoutes count:", openRoutesNormalized.length);
         const isOpen = openRoutesNormalized.includes(normalizedPathname);
         console.log("routeIsOpen:", isOpen);
 
         if (!isOpen) {
-          console.warn("Route not open. Scheduling redirect to /auth/login in 1500ms");
+          console.warn(
+            "Route not open. Scheduling redirect to /auth/login in 1500ms"
+          );
           setTimeout(() => {
             console.warn("Redirecting now: /auth/login");
             logout();
@@ -205,7 +217,17 @@ export const ArtistProvider = ({ children }) => {
   };
 
   return (
-    <ArtistContext.Provider value={{ logout, login, headers, ophid, user, hasNewNotification, setHasNewNotification }}>
+    <ArtistContext.Provider
+      value={{
+        logout,
+        login,
+        headers,
+        ophid,
+        user,
+        hasNewNotification,
+        setHasNewNotification,
+      }}
+    >
       {children}
     </ArtistContext.Provider>
   );
