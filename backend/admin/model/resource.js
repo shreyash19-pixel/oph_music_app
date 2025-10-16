@@ -175,10 +175,10 @@ const Resource = {
 
       const [result] = await db.query(
         `INSERT INTO resource_reels
-         (id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          id,
+          
           title,
           video_url,
           thumbnail_url,
@@ -267,10 +267,10 @@ const Resource = {
 
       const [result] = await db.query(
         `INSERT INTO resource_story
-         (id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          id,
+          
           title,
           video_url,
           thumbnail_url,
