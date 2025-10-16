@@ -46,11 +46,9 @@ const indianStates = [
 
 const PersonalDetailsForm = () => {
   const navigate = useNavigate();
-  console.log("asdsdsadad");
-
+  console.log();
+  
   const { headers, ophid } = useArtist();
-  console.log(headers, ophid);
-
   // const [isPlaying, setIsPlaying] = useState(false); // Track video play state
   // const videoRef = useRef(null);
   // const [video, setVideo] = useState(null);
@@ -105,6 +103,7 @@ const PersonalDetailsForm = () => {
   useEffect(() => {
     fetchPersonalDetails();
     console.log("Sadasdasdasdas");
+    
   }, [ophid, headers]);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -131,7 +130,6 @@ const PersonalDetailsForm = () => {
     try {
       if (!headers || !headers.Authorization) {
         console.warn("Headers not ready yet");
-        setLoading(false);
         return;
       }
 
@@ -172,7 +170,7 @@ const PersonalDetailsForm = () => {
       }
     } catch (error) {
       console.error("Error fetching personal details:", error);
-      toast.error(error.message || "Failed to fetch personal details");
+      // toast.error(error.message || "Failed to fetch personal details");
 
       // If it's an authentication error, redirect to login
       if (

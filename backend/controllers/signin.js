@@ -52,9 +52,10 @@ const signin = async (req, res) => {
     if (
       checkRejectedStep.user_status === "under review" &&
       checkRejectedStep.professional_status === "under review" &&
-      checkRejectedStep.documentation_status === "under review"
+      checkRejectedStep.documentation_status === "under review" &&
+      checkRejectedStep.payment_status === "under review"
     ) {
-      navTo = "/auth/membership-form";
+      navTo = "/auth/profile-status";
     } else if (checkRejectedStep.user_status === "rejected") {
       navTo = "/auth/create-profile/personal-details";
     } else if (checkRejectedStep.professional_status === "rejected") {
@@ -63,13 +64,6 @@ const signin = async (req, res) => {
       navTo = "/auth/create-profile/documentation-details";
     } else if (checkRejectedStep.payment_status === "rejected") {
       navTo = "/auth/payment";
-    } else if (
-      checkRejectedStep.user_status === "under review" &&
-      checkRejectedStep.professional_status === "under review" &&
-      checkRejectedStep.documentation_status === "under review" &&
-      checkRejectedStep.payment_status === "under review"
-    ) {
-      navTo = "/auth/profile-status";
     } else if (
       checkRejectedStep.user_status === "under review" ||
       checkRejectedStep.professional_status === "under review" ||
