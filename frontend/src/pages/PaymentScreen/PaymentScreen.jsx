@@ -267,6 +267,7 @@ const PaymentScreen = () => {
               oph_id: ophid,
               old_booking_date: location.state.old_booking_date,
               new_booking_date: location.state.new_booking_date,
+              reason : location.state.reason,
             },
             { headers: headers }
           );

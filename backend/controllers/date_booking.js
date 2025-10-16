@@ -64,7 +64,10 @@ exports.insertSongAndProjectController = async (req, res) => {
 
 exports.updateBooking = async (req, res) => {
   try {
-    const { oph_id, old_booking_date, new_booking_date } = req.body;
+    const { oph_id, old_booking_date, new_booking_date, reason } = req.body;
+
+    console.log(reason);
+    
 
     if (!oph_id) {
       return res.status(400).json({ error: "oph_id is required" });
@@ -74,12 +77,14 @@ exports.updateBooking = async (req, res) => {
       oph_id,
       old_booking_date
     );
-
+    console.log(getExistingBookingDate);
+    
     if (getExistingBookingDate) {
       const updatedExistingBookingDate = await bookingModel.updateBooking(
         oph_id,
         old_booking_date,
-        new_booking_date
+        new_booking_date,
+        reason
       );
 
       if (updatedExistingBookingDate) {

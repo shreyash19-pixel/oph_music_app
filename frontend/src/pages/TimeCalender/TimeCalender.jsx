@@ -17,7 +17,7 @@ export default function TimeCalendar() {
   const navigate = useNavigate();
   const location = useLocation();
   const toastShownRef = useRef(false); // Ref to track if toast has been shown
-  const [data, setData] = useState([])
+  const [data, setData] = useState([]);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
@@ -34,18 +34,16 @@ export default function TimeCalendar() {
 
         if (response.data.success === true) {
           const dateMap = {};
-          setData(response.data.data)
+          setData(response.data.data);
           response.data.data.forEach((item) => {
             const d = new Date(item.current_booking_date);
             const localDateStr = `${d.getFullYear()}-${String(
               d.getMonth() + 1
             ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
             dateMap[localDateStr] = {
-              content: item.content,
-              artist: item.artist,
+              content: item.oph_id,
+              artist: item.full_name,
             };
-
-            console.log(localDateStr);
 
             // const date = item.current_booking_date.split("T")[0];
             // dateMap[date] = {
@@ -54,8 +52,7 @@ export default function TimeCalendar() {
             // };
           });
 
-          console.log(dateMap);
-          
+
           setBlockedDatesInfo(dateMap);
         } else {
           console.error("API did not return success:", response.data);
@@ -208,7 +205,7 @@ export default function TimeCalendar() {
     const today = new Date();
     setCurrentMonthIndex(today.getMonth());
     setCurrentYear(today.getFullYear());
-  }, []);
+  }, [data]);
 
   const calendarDays = generateCalendarDays();
 
@@ -222,11 +219,15 @@ export default function TimeCalendar() {
     "Saturday",
   ];
 
-  const UserAvatar = () => (
+  const UserAvatar = ({ fullName }) => (
     <div className="flex items-center gap-2 mb-2">
       {/* Circle with Initial */}
+      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-400 text-gray-900 font-bold">
+        {fullName?.charAt(0)?.toUpperCase() || "?"}
+      </div>
+
       {/* Full name only on larger screens */}
-      {/* <span className="text-sm hidden lg:block">{artist.artist.name}</span> */}
+      <span className="text-sm hidden lg:block">{fullName}</span>
     </div>
   );
 
@@ -244,23 +245,26 @@ export default function TimeCalendar() {
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
     const isCurrentOwnerOfDate = data.find((da) => {
-      if(da.current_booking_date === dateStr)
-      {
-        return da
-      } 
-    })
+      if (da.current_booking_date === dateStr) {
+        return da;
+      }
+    });
 
-    const dateInfo = blockedDatesInfo[dateStr]
+    const dateInfo = blockedDatesInfo[dateStr];
+
+   
 
     if (dateInfo) {
       // if (dateInfo.artist.id === currentArtistId.artist.id) {
       if (isCurrentOwnerOfDate.oph_id === ophid) {
         // Check if the date is within 5 days of today
         if (isWithinFiveDays(year, month, day)) {
-          toast.error("You cannot change dates that are within 5 days of today");
+          toast.error(
+            "You cannot change dates that are within 5 days of today"
+          );
           return;
         }
-        
+
         // It's the current artist's date - navigate to date change
         // const artistId = currentArtistId.artist.id;
 
@@ -282,21 +286,29 @@ export default function TimeCalendar() {
   };
 
   // Update renderCalendarCell to include click handler
-  const renderCalendarCell = ({ day, isCurrentMonth }, index) => {
+  const renderCalendarCell = ({ day, isCurrentMonth }, index, weekindex) => {
     const isBlocked = isDateBlocked(currentYear, currentMonthIndex, day);
+
+    
+
     const isPast = isDateInPast(currentYear, currentMonthIndex, day);
     const isValidFutureDate = isWithinOneYear(
       currentYear,
       currentMonthIndex,
       day
     );
-    const isWithinFiveDaysRestriction = isWithinFiveDays(currentYear, currentMonthIndex, day);
+    const isWithinFiveDaysRestriction = isWithinFiveDays(
+      currentYear,
+      currentMonthIndex,
+      day
+    );
     // Removed unused variables: d, dateStr, artist
 
-    // const dateStr = new Date(Date.UTC(currentYear, currentMonthIndex, day))
-    //   .toISOString()
-    //   .split("T")[0];
-    // const artist = blockedDatesInfo[dateStr];
+    const dateStr = new Date(Date.UTC(currentYear, currentMonthIndex, day))
+      .toISOString()
+      .split("T")[0];
+    const artist = blockedDatesInfo[dateStr];
+
     return (
       <div
         key={index}
@@ -347,7 +359,9 @@ export default function TimeCalendar() {
             </svg>
           )}
         </div>
-        {isBlocked && isCurrentMonth && <UserAvatar />}
+        {isBlocked && isCurrentMonth && (
+          <UserAvatar fullName={artist.artist} />
+        )}
       </div>
     );
   };
