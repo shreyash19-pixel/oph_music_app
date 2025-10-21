@@ -650,9 +650,9 @@ const getbookingsDetails = async (req, res) => {
           date = new Date(dateString);
         }
         
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = date.toLocaleDateString('en-GB', { month: 'short' });
-        const year = date.getFullYear();
+        const day = date.getUTCDate().toString().padStart(2, '0');
+        const month = date.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' });
+        const year = date.getUTCFullYear();
         return `${day} ${month} ${year}`;
       };
 
