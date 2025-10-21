@@ -39,7 +39,9 @@ const payment = async (req, res) => {
     );
 
     if (dbResponse) {
-      if (from === "Registeration") {
+      console.log("in response", step);
+      
+      if (from === "Registration") {
         await setCurrentStep(step, ophid);
       }
 

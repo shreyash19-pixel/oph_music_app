@@ -100,6 +100,7 @@ export default function DateChangeForm() {
           amount: 100,
           heading: "Payment Required",
           from: "Release date change",
+          reason: formData.reason,
         },
       });
 

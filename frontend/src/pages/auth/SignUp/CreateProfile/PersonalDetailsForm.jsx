@@ -46,6 +46,8 @@ const indianStates = [
 
 const PersonalDetailsForm = () => {
   const navigate = useNavigate();
+  console.log();
+  
   const { headers, ophid } = useArtist();
   // const [isPlaying, setIsPlaying] = useState(false); // Track video play state
   // const videoRef = useRef(null);
@@ -99,10 +101,10 @@ const PersonalDetailsForm = () => {
   });
 
   useEffect(() => {
-    if (ophid) {
-      fetchPersonalDetails();
-    }
-  }, [ophid]);
+    fetchPersonalDetails();
+    console.log("Sadasdasdasdas");
+    
+  }, [ophid, headers]);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -168,7 +170,7 @@ const PersonalDetailsForm = () => {
       }
     } catch (error) {
       console.error("Error fetching personal details:", error);
-      toast.error(error.message || "Failed to fetch personal details");
+      // toast.error(error.message || "Failed to fetch personal details");
 
       // If it's an authentication error, redirect to login
       if (
@@ -307,7 +309,7 @@ const PersonalDetailsForm = () => {
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update personal details",
+        error.response?.data?.message || "Failed to update personal details"
       );
     } finally {
       setLoading(false);
