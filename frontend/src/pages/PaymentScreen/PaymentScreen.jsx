@@ -221,7 +221,7 @@ const PaymentScreen = () => {
         Transaction_ID: trans,
         Review: 0,
         Status: "under Review",
-        step: "/auth/create-profile/personal-detals",
+        step: "/auth/create-profile/personal-details",
         from: from,
         song_id: song_id,
         event_id: event_id,
@@ -267,6 +267,7 @@ const PaymentScreen = () => {
               oph_id: ophid,
               old_booking_date: location.state.old_booking_date,
               new_booking_date: location.state.new_booking_date,
+              reason : location.state.reason,
             },
             { headers: headers }
           );

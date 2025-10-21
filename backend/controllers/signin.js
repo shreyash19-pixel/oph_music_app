@@ -49,11 +49,14 @@ const signin = async (req, res) => {
 
     const checkRejectedStep = result[0];
 
-    if(checkRejectedStep.user_status === "under review" && checkRejectedStep.professional_status === "under review" && checkRejectedStep.documentation_status === "under review")
-    {
-      navTo = "/auth/membership-form";
-    }
-    else if (checkRejectedStep.user_status === "rejected") {
+    if (
+      checkRejectedStep.user_status === "under review" &&
+      checkRejectedStep.professional_status === "under review" &&
+      checkRejectedStep.documentation_status === "under review" &&
+      checkRejectedStep.payment_status === "under review"
+    ) {
+      navTo = "/auth/profile-status";
+    } else if (checkRejectedStep.user_status === "rejected") {
       navTo = "/auth/create-profile/personal-details";
     } else if (checkRejectedStep.professional_status === "rejected") {
       navTo = "/auth/create-profile/professional-details";
@@ -67,7 +70,7 @@ const signin = async (req, res) => {
       checkRejectedStep.documentation_status === "under review" ||
       checkRejectedStep.payment_status === "under review"
     ) {
-      navTo = "/auth/profile-status";
+      navTo = dbUser.current_step;
     } else if (checkRejectedStep.overall_status === "completed") {
       navTo = "/dashboard";
     } else {
@@ -95,6 +98,5 @@ const getArtistDetail = async (req, res) => {
   const artistDetail = await user_details.getArtistDetail(ophid);
   return res.status(200).json({ success: true, data: artistDetail });
 };
-
 
 module.exports = { signin, getArtistDetail };

@@ -96,13 +96,18 @@ const VerifyBookingDates = () => {
                 timeZone: "Asia/Kolkata",
               }
             )}{" "}
-            to {" "}
+            to{" "}
             {new Date(transactions.current_booking_date).toLocaleDateString(
               "en-IN",
               {
                 timeZone: "Asia/Kolkata",
               }
             )}
+          </p>
+
+          <p>
+            <strong>Reason : </strong>
+            {transactions.reason}
           </p>
 
           {confirmReject && (
