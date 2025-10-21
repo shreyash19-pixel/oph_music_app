@@ -16,7 +16,9 @@ export const ArtistProvider = ({ children }) => {
   );
   const [ophid, setOphid] = useState(null);
   const [user, setUser] = useState(null);
-  const [hasNewNotification, setHasNewNotification] = useState(false);
+  const [hasNewNotification, setHasNewNotification] = useState(() => {
+    return localStorage.getItem("hasNewNotification") === "true";
+  });
 
   // Decode token and extract artist ID
   useEffect(() => {
@@ -54,7 +56,12 @@ export const ArtistProvider = ({ children }) => {
     console.log(ophid);
   }, [user]);
 
-  useSocketRegistration(ophid, () => setHasNewNotification(true));
+  console.log(ophid);
+
+  useSocketRegistration(ophid, () => {
+    setHasNewNotification(true);
+    localStorage.setItem("hasNewNotification", "true");
+  });
   // Validate token on mount and redirect if needed
   useEffect(() => {
     const verifyToken = () => {
@@ -94,7 +101,7 @@ export const ArtistProvider = ({ children }) => {
           "/resources/music-learning-education",
           "/find-your-collaborator",
           "/public-artist-detail",
-          "/content/:id",
+          "/content",
           "/success",
           "/privacy-policy",
           "/cancellation-policy",
@@ -108,7 +115,12 @@ export const ArtistProvider = ({ children }) => {
           (r) => r.replace(/\/+$/, "") || "/"
         );
         console.log("openRoutes count:", openRoutesNormalized.length);
-        const isOpen = openRoutesNormalized.includes(normalizedPathname);
+        
+        // Check if route is open (including dynamic routes)
+        const isOpen = openRoutesNormalized.includes(normalizedPathname) || 
+                      normalizedPathname.startsWith("/content/") ||
+                      normalizedPathname.startsWith("/artists/") ||
+                      normalizedPathname.startsWith("/events/");
         console.log("routeIsOpen:", isOpen);
 
         if (!isOpen) {
@@ -203,10 +215,12 @@ export const ArtistProvider = ({ children }) => {
     console.groupCollapsed("[Auth] logout");
     console.log("Clearing auth & scheduling navigation in 500ms");
     localStorage.removeItem("token");
+    localStorage.removeItem("hasNewNotification");
     setToken(null);
     setHeaders(null);
     setUser(null);
     setOphid(null);
+    setHasNewNotification(false);
     setTimeout(() => {
       console.log("Navigating to /auth/login now");
       navigate("/auth/login");

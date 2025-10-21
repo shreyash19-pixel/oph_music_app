@@ -79,7 +79,7 @@ import ContentReleaseInd from "./view/dashboard/artistPortal/contentRelease/inde
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         {/* <ToastContainer position="top-right" autoClose={3000} /> */}
         <Routes>
           {/* ---------- PUBLIC ---------- */}

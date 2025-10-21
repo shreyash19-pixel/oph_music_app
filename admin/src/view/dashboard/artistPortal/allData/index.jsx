@@ -132,9 +132,17 @@ const AllData = () => {
       color: 'bg-pink-500 hover:bg-pink-600'
     },
     {
-      id: 'Song Registration Details',
-      label: 'Download Song Registration Details',
-      description: 'Artist spotlight and featured content',
+      id: 'Songs Register',
+      label: 'Download Songs Register Data',
+      description: 'Songs register data',
+      endpoint: '/songs-register-excel',
+      icon: '',
+      color: 'bg-pink-500 hover:bg-pink-600'
+    },
+    {
+      id: 'Song Registration Application Status',
+      label: 'Download Song Registration Application Status',
+      description: 'Song registration application status',
       endpoint: '/song-registration-details',
       icon: '',
       color: 'bg-orange-500 hover:bg-orange-600'
@@ -163,7 +171,30 @@ const AllData = () => {
       icon: '',
       color: 'bg-red-500 hover:bg-red-600'
     },
-    
+    {
+      id: 'Event Participants',
+      label: 'Download Event Participants Data',
+      description: 'Event participants data',
+      endpoint: '/event-participants-excel',
+      icon: '',
+      color: 'bg-blue-500 hover:bg-blue-600'
+    },
+    {
+      id: 'Contact Us',
+      label: 'Download Contact Us Data',
+      description: 'Contact us data',
+      endpoint: '/contact-us-excel',
+      icon: '',
+      color: 'bg-green-500 hover:bg-green-600'
+    },
+    {
+      id: 'Special Artist Details',
+      label: 'Download Special Artist Details Data',
+      description: 'Special artist details data',
+      endpoint: '/special-artist-details-excel',
+      icon: '',
+      color: 'bg-purple-500 hover:bg-purple-600'
+    }
   ];
 
   return (

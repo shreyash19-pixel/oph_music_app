@@ -80,6 +80,294 @@ const downloadApplicationStatus = async (req, res) => {
   }
 };
 
+const downloadEventParticipants = async (req, res) => {
+  try {
+    const rows = await allDataCont.eventParticipantsDetails(); // your DB fetch function
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No event participants found" });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Event Participants");
+
+    worksheet.columns = [
+      { header: "ID", key: "id", width: 10 },
+      { header: "OPH_ID", key: "OPH_ID", width: 20 },
+      { header: "Event ID", key: "event_id", width: 15 },
+      { header: "Status", key: "status", width: 20 },
+      { header: "Created At", key: "createdAt", width: 25 },
+      { header: "Updated At", key: "updatedAt", width: 25 },
+    ];
+
+    // Format date in a readable way
+    const formatDate = (date) => {
+      if (!date) return "";
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).format(new Date(date));
+    };
+
+    // Add data rows and apply conditional styling
+    rows.forEach((row) => {
+      const newRow = worksheet.addRow({
+        ...row,
+        createdAt: formatDate(row.createdAt),
+        updatedAt: formatDate(row.updatedAt),
+      });
+
+      const statusCell = newRow.getCell("status");
+      if (row.status === "rejected") {
+        statusCell.font = { color: { argb: "FF0000" }, bold: true }; // red
+      } else if (row.status === "accepted") {
+        statusCell.font = { color: { argb: "228B22" }, bold: true }; // green
+      } else if (row.status === "under review") {
+        statusCell.font = { color: { argb: "FF8C00" }, bold: true }; // orange
+      }
+    });
+
+    // Set headers for download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=event_participants.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Event Participants Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
+
+const downloadContactUs = async (req, res) => {
+  try {
+    const rows = await allDataCont.contactDetails(); // your DB fetch function
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No contact entries found" });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Contact Us");
+
+    worksheet.columns = [
+      { header: "ID", key: "id", width: 10 },
+      { header: "Name", key: "name", width: 25 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Phone", key: "phone", width: 15 },
+      { header: "Instagram Handle", key: "instagram_handle", width: 35 },
+      { header: "Description", key: "description", width: 50 },
+      { header: "Created At", key: "created_at", width: 25 },
+    ];
+
+    // Date formatter for created_at
+    const formatDate = (date) => {
+      if (!date) return "";
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).format(new Date(date));
+    };
+
+    // Add rows
+    rows.forEach((row) => {
+      worksheet.addRow({
+        ...row,
+        created_at: formatDate(row.created_at),
+      });
+    });
+
+    // Optional styling for headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
+
+    // Response headers for Excel download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=contact_us.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Contact Us Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
+
+const downloadSpecialArtistDetails = async (req, res) => {
+  try {
+    const rows = await allDataCont.epkDetails(); // your DB fetch function
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No special artist details found" });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Special Artist Details");
+
+    worksheet.columns = [
+      { header: "OPH_ID", key: "ophid", width: 20 },
+      { header: "Field", key: "field", width: 40 },
+      { header: "Status", key: "status", width: 20 },
+      { header: "Reason", key: "reason", width: 40 },
+      { header: "Content", key: "content", width: 50 },
+      { header: "Date", key: "date", width: 20 },
+    ];
+
+    // Date formatter
+    const formatDate = (date) => {
+      if (!date) return "";
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(date));
+    };
+
+    // Add rows and apply conditional styling
+    rows.forEach((row) => {
+      const newRow = worksheet.addRow({
+        ...row,
+        date: formatDate(row.date),
+      });
+
+      const statusCell = newRow.getCell("status");
+
+      // Apply color-coded styles for status
+      if (row.status === "rejected") {
+        statusCell.font = { color: { argb: "FF0000" }, bold: true }; // Red
+      } else if (row.status === "approved") {
+        statusCell.font = { color: { argb: "228B22" }, bold: true }; // Green
+      } else if (row.status === "under review") {
+        statusCell.font = { color: { argb: "FF8C00" }, bold: true }; // Orange
+      }
+    });
+
+    // Style headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
+
+    // Response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=special_artist_details.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Special Artist Details Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
+
+const downloadSongsRegister = async (req, res) => {
+  try {
+    const rows = await allDataCont.SongRegistrationDetails(); // your DB fetch function
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No songs found" });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Songs Register");
+
+    worksheet.columns = [
+      { header: "Song ID", key: "song_id", width: 10 },
+      { header: "OPH_ID", key: "OPH_ID", width: 20 },
+      { header: "Project Type", key: "project_type", width: 25 },
+      { header: "Song Name", key: "Song_name", width: 40 },
+      { header: "Release Date", key: "release_date", width: 20 },
+      { header: "Lyrics Services", key: "Lyrics_services", width: 20 },
+      { header: "Available on Music Platform", key: "availability_on_music_platform", width: 25 },
+      { header: "Status", key: "status", width: 20 },
+    ];
+
+    // Date formatter
+    const formatDate = (date) => {
+      if (!date) return "";
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(date));
+    };
+
+    // Add rows and apply conditional formatting
+    rows.forEach((row) => {
+      const newRow = worksheet.addRow({
+        song_id: row.song_id,
+        OPH_ID: row.OPH_ID,
+        project_type: row.project_type,
+        Song_name: row.Song_name,
+        release_date: formatDate(row.release_date),
+        Lyrics_services: row.Lyrics_services ? "Yes" : "No",
+        availability_on_music_platform: row.availability_on_music_platform,
+        status: row.status,
+      });
+
+      // Apply color coding based on status
+      const statusCell = newRow.getCell("status");
+      switch (row.status) {
+        case "Approved":
+          statusCell.font = { color: { argb: "228B22" }, bold: true }; // green
+          break;
+        case "Rejected":
+          statusCell.font = { color: { argb: "FF0000" }, bold: true }; // red
+          break;
+        case "Pending":
+          statusCell.font = { color: { argb: "FF8C00" }, bold: true }; // orange
+          break;
+        case "Draft":
+          statusCell.font = { color: { argb: "808080" }, italic: true }; // gray
+          break;
+      }
+    });
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
+
+    // Set response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=songs_register.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Songs Register Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
 
 
 const downloadUserDetails = async (req, res) => {
@@ -346,29 +634,33 @@ const getbookingsDetails = async (req, res) => {
 
     // Add rows
     rows.forEach((row) => {
+      const formatDate = (dateString) => {
+        if (!dateString) return null;
+        // Handle different date formats
+        let date;
+        if (typeof dateString === 'string') {
+          // If it's a string like "2025-10-17", parse it directly
+          if (dateString.includes('-') && !dateString.includes('T')) {
+            const [year, month, day] = dateString.split('-');
+            date = new Date(year, month - 1, day); // month is 0-indexed
+          } else {
+            date = new Date(dateString);
+          }
+        } else {
+          date = new Date(dateString);
+        }
+        
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = date.toLocaleDateString('en-GB', { month: 'short' });
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+      };
+
       worksheet.addRow({
         oph_id: row.oph_id,
-        current_booking_date: row.current_booking_date
-          ? new Date(row.current_booking_date).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-          : null,
-        previous_booking_date: row.previous_booking_date
-          ? new Date(row.previous_booking_date).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-          : null,
-        original_booking_date: row.original_booking_date
-          ? new Date(row.original_booking_date).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-          : null,
+        current_booking_date: formatDate(row.current_booking_date),
+        previous_booking_date: formatDate(row.previous_booking_date),
+        original_booking_date: formatDate(row.original_booking_date),
         song_name: row.song_name,
         project_type: row.project_type,
       });
@@ -640,5 +932,9 @@ module.exports = {
   getSongApplicationStatus,
   getTvPublishing,
   getWithdrawals,
-  getTickets
+  getTickets,
+  downloadEventParticipants,
+  downloadContactUs,
+  downloadSpecialArtistDetails,
+  downloadSongsRegister
 };

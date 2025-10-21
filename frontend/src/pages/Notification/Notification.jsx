@@ -19,6 +19,7 @@ const Notification = () => {
         setNotifications(data);
         // user has viewed notifications page; clear red dot
         setHasNewNotification(false);
+        localStorage.removeItem("hasNewNotification");
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
       }

@@ -7,6 +7,7 @@ import ContactBG from '../../../../../public/assets/images/music_bg.png'
 import Glow from '../../../../../public/assets/images/contact-elipise.png'
 
 const instagramRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
+const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/;
 
 function HeroSection() {
   const [modal,setModal] = useState(false)
@@ -46,12 +47,15 @@ function HeroSection() {
     }
     console.log(formData.instagram_handle);
     console.log(instagramRegex.test(formData.instagram_handle));
+    console.log(instagramUrlRegex.test(formData.instagram_handle));
     
+    // Check if it's either a valid Instagram username or Instagram URL
+    const isValidInstagram = instagramRegex.test(formData.instagram_handle) || 
+                           instagramUrlRegex.test(formData.instagram_handle);
     
-    
-    if (!instagramRegex.test(formData.instagram_handle)) {
+    if (!isValidInstagram) {
       toast.error(
-        "Invalid Instagram URL! Please enter a valid profile link.",
+        "Invalid Instagram! Please enter a valid Instagram username or profile link.",
         {
           position: "top-right",
           autoClose: 4000,
@@ -198,7 +202,7 @@ function HeroSection() {
                 value={formData.instagram_handle}
                 onChange={handleChange}
                 className="w-full px-4 py-2 rounded-full bg-gray-800 border border-gray-700 text-gray-100 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                placeholder="instahandle"
+                placeholder="username or https://instagram.com/username"
                 required
               />
             </div>

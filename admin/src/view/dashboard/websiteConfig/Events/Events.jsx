@@ -11,7 +11,6 @@ const Events = () => {
     const fetchData = async () => {
       const res = await axiosApi.get("/events");
       setTableData(res.data.data);
-      console.log(res.data.data);
     };
 
     fetchData();

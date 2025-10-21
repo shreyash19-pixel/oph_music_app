@@ -139,10 +139,45 @@ const updateEvent = async (req, res) => {
   }
 };
 
+const deleteEvent = async (req, res) => {
+  try {
+    const idParam = req.params.id || req.params.event_id;
+    const eventId = parseInt(idParam, 10);
+    if (!eventId || eventId <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event id" });
+    }
+
+    // Check if event exists before deleting
+    const existingEvent = await Event.getEventById(eventId);
+    if (!existingEvent) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Event not found" });
+    }
+
+    const result = await Event.deleteEvent(eventId);
+    
+    res.status(200).json({ 
+      success: true, 
+      message: "Event deleted successfully", 
+      result 
+    });
+  } catch (err) {
+    console.error("Error deleting event:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete event" 
+    });
+  }
+};
+
 module.exports = {
   fetchAllEvents,
   createEvent,
   fetchAllEventsWithStatus,
   getEventById,
   updateEvent,
+  deleteEvent,
 };

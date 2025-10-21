@@ -19,5 +19,6 @@ router.put("/update-event/:id", upload.fields([
   { name: 'payment_qr', maxCount: 1 },
   { name: 'payment_qr_discount', maxCount: 1 }
 ]), events.updateEvent);
+router.delete("/delete-event/:id", events.deleteEvent);
 
 module.exports = router;

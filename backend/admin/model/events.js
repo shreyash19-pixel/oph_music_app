@@ -172,10 +172,19 @@ const updateEvent = async (eventId, eventData) => {
   return result;
 };
 
+const deleteEvent = async (eventId) => {
+  const [result] = await db.execute(
+    `DELETE FROM OphData.events WHERE event_id = ?`,
+    [eventId]
+  );
+  return result;
+};
+
 module.exports = {
   getAllEvents,
   insertEvent,
   getAllEventsWithStatus,
   getEventById,
   updateEvent,
+  deleteEvent,
 };

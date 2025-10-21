@@ -27,11 +27,13 @@ body::before {
   filter: blur(30px);
   z-index: -1;
 }
+
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .membership-form-container {
   background-color: #1e1e1e;
   color: white;
