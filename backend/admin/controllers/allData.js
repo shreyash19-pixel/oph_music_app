@@ -640,9 +640,9 @@ const getbookingsDetails = async (req, res) => {
         let date;
         if (typeof dateString === 'string') {
           // If it's a string like "2025-10-17", parse it directly
-          if (dateString.includes('-') && !dateString.includes('T')) {
-            const [year, month, day] = dateString.split('-');
-            date = new Date(year, month - 1, day); // month is 0-indexed
+        if (dateString.includes('-') && !dateString.includes('T')) {
+          const [year, month, day] = dateString.split('-');
+          date = new Date(Date.UTC(year, month - 1, day)); // Use UTC to avoid timezone issues
           } else {
             date = new Date(dateString);
           }
