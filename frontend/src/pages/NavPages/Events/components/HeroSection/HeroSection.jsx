@@ -9,7 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import axiosApi from "../../../../../conf/axios";
 
 const instagramRegex =
-  /^(https?:\/\/)?(www\.)?instagram\.com\/([a-zA-Z0-9._]+)\/?/;
+ /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
 
 export default function HeroSection({ professions = [] }) {
   const navigate = useNavigate();
@@ -196,45 +196,30 @@ export default function HeroSection({ professions = [] }) {
 
       setIsSubmitting(true);
       try {
-        const resp = await axiosApi.post(
-          `/events/bookings/${bookingEventId}`,
-          form,
-        );
-        // handle different response shapes defensively
-        if (resp?.status === 201 || resp?.status === 200) {
-          toast.success("Registration successful", {
-            position: "top-right",
-            theme: "dark",
-            transition: Bounce,
-          });
-          setIsModalOpen(false);
+        const current = upcomingEvents.find((e) => e.id === bookingEventId) || {};
+        
+        toast.success("Redirecting to payment...", {
+          position: "top-right",
+          theme: "dark",
+          transition: Bounce,
+        });
+        setIsModalOpen(false);
 
-          const current =
-            upcomingEvents.find((e) => e.id === bookingEventId) || {};
-          // navigate to payment (guard against missing response shapes)
-          navigate("/payment", {
-            state: {
-              amount: current.fees ?? 0,
-              returnPath: `/events/online-music-events`,
-              event_id: current.id,
-              heading: "Event Registration Fee",
-              eventId: bookingEventId,
-              planIds: [current.raw?.payment_plan_id].filter(Boolean),
-              bookingId: resp.data?.id ?? resp.data ?? null,
-              event_booking_id: Array.isArray(resp.data)
-                ? resp.data?.[0]?.id
-                : resp.data?.id,
-            },
-          });
-        } else {
-          toast.error("Something went wrong during registration", {
-            position: "top-right",
-            theme: "dark",
-          });
-        }
+        // Navigate to payment screen
+        navigate("/auth/payment", {
+          state: {
+            OPH_ID: `${form.first_name} ${form.last_name}`.trim(),
+          
+            event_id: current.id,
+            returnPath: "/dashboard/events",
+            heading: "Complete Event Registration",
+            from: "Event Registeration",
+            outside_user: true,
+          },
+        });
       } catch (err) {
-        console.error("Registration error:", err);
-        toast.error("Registration failed", {
+        console.error("Navigation error:", err);
+        toast.error("Failed to redirect to payment", {
           position: "top-right",
           theme: "dark",
         });

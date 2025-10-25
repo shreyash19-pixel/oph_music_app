@@ -43,14 +43,17 @@ const PaymentScreen = () => {
       if (from === "Event Registeration" && event_id) {
         const response = await axiosApi.get(`/event/${event_id}`);
 
-        if (response.data.success) {
+        if (response.status === 200) {
           const eventData = response.data.data;
+          console.log(eventData);
 
           // Set output_user to "outside user"
           
           
           // Calculate amount based on output_user
           const registrationFee = eventData.registrationFee_normal;
+          console.log(outside_user);
+          console.log(registrationFee);
           const finalAmount = (outside_user === true || outside_user === 1) 
             ? registrationFee  // Full amount for outside users
             : registrationFee / 2;  // Half amount for regular users
