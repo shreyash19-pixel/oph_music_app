@@ -2,7 +2,7 @@ const db = require("../DB/connect");
 
 const getSpecialArtistDetails = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT ud.full_name, pd.PhotoURLs, ud.stage_name, pd.VideoURL, ud.personal_photo, pd.Profession, ud.location, pd.Bio, pd.FacebookLink, pd.InstagramLink, sps.song_name, sps.audio_url, sps.views, sps.status FROM user_details ud LEFT JOIN professional_details pd on ud.ophid = pd.OPH_ID LEFT JOIN special_artist_songs sps ON ud.ophid = sps.ophid WHERE ud.ophid = ?",
+    "SELECT ud.full_name, ud.artist_story_video, pd.PhotoURLs, ud.stage_name, pd.VideoURL, ud.personal_photo, pd.Profession, ud.location, pd.Bio, pd.FacebookLink, pd.InstagramLink, sps.song_id, sps.song_name, sps.audio_url, sps.views, sps.status FROM user_details ud LEFT JOIN professional_details pd on ud.ophid = pd.OPH_ID LEFT JOIN special_artist_songs sps ON ud.ophid = sps.ophid WHERE ud.ophid = ?",
     [ophid]
   );
 
@@ -17,6 +17,7 @@ const getSpecialArtistDetails = async (ophid) => {
     if (!songMap[ophid]) {
       songMap[ophid] = {
         name: row.full_name,
+        artist_story_video: row.artist_story_video,
         photos: JSON.parse(row.PhotoURLs),
         stage_name: row.stage_name,
         video_bio: row.VideoURL,
@@ -30,28 +31,28 @@ const getSpecialArtistDetails = async (ophid) => {
         instagram_url: row.InstagramLink,
         songs: [
           {
+            id: row.song_id,
             song_name: row.song_name,
             primary_artist: row.full_name,
             total_song_views: row.views,
-            audio_file_url: row.audio_url,
+            audio_url: row.audio_url,
             song_status: row.status,
           },
         ],
       };
     } else {
       songMap[ophid].songs.push({
+        id: row.song_id,
         song_name: row.song_name,
         primary_artist: row.full_name,
         total_song_views: row.views,
-        audio_file_url: row.audio_url,
-         song_status: row.status,
+        audio_url: row.audio_url,
+        song_status: row.status,
       });
     }
   });
 
-
   console.log(songMap[ophid]);
-  
 
   return songMap[ophid];
 };

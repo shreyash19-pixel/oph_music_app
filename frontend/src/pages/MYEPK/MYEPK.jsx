@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Play, ChevronDown, Pause } from "lucide-react";
 import {
   Link,
   useNavigate,
@@ -23,8 +24,7 @@ const MYEPK = () => {
   const [showButton, setShowButton] = useState(true);
   const [videoElement, setVideoElement] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
-  const audioRef = useRef(null);
-  const [playingSongId, setPlayingSongId] = useState(null);
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
@@ -33,6 +33,9 @@ const MYEPK = () => {
   const videoRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [relatedArtists, setRelatedArtists] = useState([]);
+
+  const [audio, setAudio] = useState(null);
+  const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
 
   const { headers, ophid } = useArtist();
 
@@ -116,41 +119,30 @@ const MYEPK = () => {
   };
 
   const handlePlayPause = (song) => {
-    const current = audioRef.current;
-    if (current && playingSongId === song.song_id) {
+    if (playingSongId === song.id) {
       // Toggle play/pause for the same song
-      if (!current.paused) {
-        current.pause();
+      if (!audio?.paused) {
+        audio?.pause();
         setPlayingSongId(null);
       } else {
-        current.play();
-        setPlayingSongId(song.song_id);
+        audio?.play()?.catch((error) => {
+          console.error("Audio play failed:", error);
+        });
+        setPlayingSongId(song.id);
       }
     } else {
       // New song selected
-      if (current) {
-        current.pause();
+      if (audio) {
+        audio.pause();
       }
-      const newAudio = new Audio(song.audio_file_url);
-      audioRef.current = newAudio;
-      newAudio.play();
-      setPlayingSongId(song.song_id);
-
-      // Handle when the song ends
-      newAudio.onended = () => {
-        setPlayingSongId(null);
-      };
+      const newAudio = new Audio(song.audio_url);
+      newAudio.play().catch((error) => {
+        console.error("Audio play failed:", error);
+      });
+      setAudio(newAudio);
+      setPlayingSongId(song.id);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      setPlayingSongId(null);
-    };
-  }, []);
 
   const formatListeners = (views) => {
     if (views >= 1000000) {
@@ -197,7 +189,9 @@ const MYEPK = () => {
           <div
             className="absolute inset-0  bg-black"
             style={{
-              backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 1) 100%), url(${artist.photos[artist.photos.length - 1]})`,
+              backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 1) 100%), url(${
+                artist.photos[artist.photos.length - 1]
+              })`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
@@ -272,6 +266,7 @@ const MYEPK = () => {
 
                 <div className="flex justify-center sm:justify-normal gap-4">
                   <a
+                    target="_blank"
                     href={artist.facebook_url}
                     className="text-white hover:text-white"
                   >
@@ -282,6 +277,7 @@ const MYEPK = () => {
                     />
                   </a>
                   <a
+                    target="_blank"
                     href={artist.instagram_url}
                     className="text-white w-10 h-10 object-cover hover:text-white"
                   >
@@ -291,7 +287,7 @@ const MYEPK = () => {
                       className="opacity-70 hover:opacity-100"
                     />
                   </a>
-                  <a
+                  {/* <a
                     href={artist.linkedin_url || ""}
                     className="text-white w-10 h-10 object-cover hover:text-white"
                   >
@@ -310,14 +306,14 @@ const MYEPK = () => {
                       alt="Social"
                       className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
                     />
-                  </a>
+                  </a> */}
 
                   <div>
-                    {artist?.video_bio ? (
+                    {artist?.artist_story_video ? (
                       <>
                         {/* Image trigger */}
                         <a
-                          href={artist.video_bio}
+                          href={artist.artist_story_video}
                           className="text-white hover:text-white"
                           onClick={handleModalOpen}
                         >
@@ -348,7 +344,7 @@ const MYEPK = () => {
                                   className="w-full h-full rounded-lg"
                                 >
                                   <source
-                                    src={artist.video_bio}
+                                    src={artist.artist_story_video}
                                     type="video/mp4"
                                   />
                                   Your browser does not support the video tag.
@@ -399,7 +395,7 @@ const MYEPK = () => {
                     <th className="pb-3 px-1 text-center">PLAYS</th>
                     <th className="pb-3 px-1 text-center">TIME</th>
                     <th className="pb-3 px-1 text-center">PLAY</th>
-                    <th className="pb-3 px-1 text-center">DOWNLOAD</th>
+                    {/* <th className="pb-3 px-1 text-center">DOWNLOAD</th> */}
                   </tr>
                 </thead>
 
@@ -442,7 +438,7 @@ const MYEPK = () => {
                           {/* Time */}
                           <td className="py-3 px-1 text-center">
                             <div className="flex justify-center items-center h-full w-full">
-                              <SongDuration url={song.audio_file_url} />
+                              <SongDuration url={song.audio_url} />
                             </div>
                           </td>
 
@@ -450,24 +446,20 @@ const MYEPK = () => {
                           <td className="py-3 px-1 text-center">
                             <div className="flex justify-center items-center h-full w-full">
                               <button
-                                className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#6F4FA0]"
+                                className="p-2 bg-[#6F4FA0] rounded-full hover:bg-[#6F4FA0] transition-colors"
                                 onClick={() => handlePlayPause(song)}
                               >
-                                {playingSongId === song.id &&
-                                !audioRef?.paused ? (
-                                  <FaPause className="text-white" size={13} />
+                                {playingSongId === song.id && !audio?.paused ? (
+                                  <Pause className="w-4 h-4" />
                                 ) : (
-                                  <FaPlay
-                                    className="text-white ml-1"
-                                    size={13}
-                                  />
+                                  <Play className="w-4 h-4" />
                                 )}
                               </button>
                             </div>
                           </td>
 
                           {/* Download button */}
-                          <td className="py-3 px-1 text-center">
+                          {/* <td className="py-3 px-1 text-center">
                             <div className="flex justify-center items-center h-full w-full">
                               <button
                                 className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#5DC9DE]"
@@ -478,7 +470,7 @@ const MYEPK = () => {
                                 <IoIosArrowRoundDown className="text-black" />
                               </button>
                             </div>
-                          </td>
+                          </td> */}
                         </tr>
                       )
                   )}
