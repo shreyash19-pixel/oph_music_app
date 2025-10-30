@@ -3,7 +3,7 @@ const songRegModel = require("../model/songs_register");
 
 exports.insertNewSongRegDetails = async (req, res) => {
   try {
-    const { oph_id, project_type, name, release_date, lyricalVid, next_step } = req.body;
+    const { oph_id, project_type, name, release_date, lyricalVid, next_step, videoType, } = req.body;
 
     if (!oph_id || !project_type || !name || !release_date || !next_step) {
       return res.status(400).json({
@@ -19,7 +19,8 @@ exports.insertNewSongRegDetails = async (req, res) => {
       release_date,
       lyricalVid === false ? "base" : "base + lyrics",
       lyricalVid === false ? 0 : 1,
-      next_step
+      next_step,
+      videoType
     );
 
     if (RegSongRes) {
@@ -40,7 +41,7 @@ exports.insertNewSongRegDetails = async (req, res) => {
 
 exports.insertHybridSongRegDetails = async (req, res) => {
   try {
-    const { oph_id, project_type, name, release_date, lyricalVid, available_on_music_platforms, next_step } = req.body;
+    const { oph_id, project_type, name, release_date, lyricalVid, available_on_music_platforms, next_step, projectsType, videoType } = req.body;
 
     console.log(req.body);
 
@@ -59,7 +60,9 @@ exports.insertHybridSongRegDetails = async (req, res) => {
       lyricalVid === false ? "base" : "base + lyrics",
       lyricalVid === false ? 0 : 1,
       available_on_music_platforms,
-      next_step
+      next_step,
+      projectsType,
+      videoType
     );
 
     if (RegSongRes) {

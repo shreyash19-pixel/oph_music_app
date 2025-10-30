@@ -17,18 +17,22 @@ const insertNewSong = async (
   release_date,
   payment,
   Lyrics_services,
-  next_step
+  next_step,
+  videoType
 ) => {
   const [result] = await db.execute(
     `INSERT INTO songs_register 
-      (OPH_ID, project_type, Song_name, release_date, payment, Lyrics_services, current_page)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+      (OPH_ID, project_type, Song_name, release_date, payment, Lyrics_services, current_page, video_type)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE 
       project_type = VALUES(project_type),
       release_date = VALUES(release_date),
       payment = VALUES(payment),
       Lyrics_services = VALUES(Lyrics_services),
-      current_page = VALUES(current_page)`,
+      current_page = VALUES(current_page),
+      video_type = VALUES(video_type)
+      `,
+      
     [
       OPH_ID,
       project_type,
@@ -37,6 +41,7 @@ const insertNewSong = async (
       payment,
       Lyrics_services,
       next_step,
+      videoType
     ]
   );
 
@@ -51,19 +56,24 @@ const insertHybridSong = async (
   payment,
   Lyrics_services,
   available_on_music_platforms,
-  next_step
+  next_step,
+  projectsType,
+  videoType
 ) => {
   const [result] = await db.execute(
     `INSERT INTO songs_register 
-      (OPH_ID, project_type, Song_name, release_date, payment, Lyrics_services, availability_on_music_platform, current_page)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (OPH_ID, project_type, Song_name, release_date, payment, Lyrics_services, availability_on_music_platform, current_page, projects_type, video_type)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)
     ON DUPLICATE KEY UPDATE 
       project_type = VALUES(project_type),
       release_date = VALUES(release_date),
       payment = VALUES(payment),
       Lyrics_services = VALUES(Lyrics_services),
       availability_on_music_platform = VALUES(availability_on_music_platform),
-      current_page = VALUES(current_page)`,
+      current_page = VALUES(current_page),
+      projects_type = VALUES(projects_type),
+      video_type = VALUES(video_type)
+      `,
     [
       OPH_ID,
       project_type,
@@ -73,6 +83,8 @@ const insertHybridSong = async (
       Lyrics_services,
       available_on_music_platforms,
       next_step,
+      projectsType,
+      videoType
     ]
   );
 

@@ -32,6 +32,8 @@ export default function RegisterSongForm() {
   const [agreement, setAgreement] = useState(false);
   const artistName = user?.userData.artist.name;
   const stageName = user?.userData.artist.stage_name;
+  const [projectsType, setProjectsType] = useState("");
+  const [videoType, setVideoType] = useState("");
 
   const projectType = localStorage.getItem("projectType");
   localStorage.setItem("projectType", projectType);
@@ -56,6 +58,48 @@ export default function RegisterSongForm() {
       }));
     }
   }, [ophid]);
+
+  const handleProjectTypeChange = (e) => {
+    const { id, checked } = e.target;
+    let newValue = "";
+
+    if (checked) {
+      // If checked, include the id
+      if (projectsType) {
+        newValue = `${projectsType} + ${id}`;
+      } else {
+        newValue = id;
+      }
+    } else {
+      // If unchecked, remove it from string
+      newValue = projectsType
+        .split(" + ")
+        .filter((val) => val !== id)
+        .join(" + ");
+    }
+
+    setProjectsType(newValue);
+  };
+
+  const handleVideoTypeChange = (e) => {
+    const { id, checked } = e.target;
+    let newValue = "";
+
+    if (checked) {
+      if (videoType) {
+        newValue = `${videoType} + ${id}`;
+      } else {
+        newValue = id;
+      }
+    } else {
+      newValue = videoType
+        .split(" + ")
+        .filter((val) => val !== id)
+        .join(" + ");
+    }
+
+    setVideoType(newValue);
+  };
 
   // Function to fetch costing data
   const fetchCostingData = async () => {
@@ -102,12 +146,9 @@ export default function RegisterSongForm() {
   const handleTotalPayment = () => {
     if (projectType === "paid in advance" && !lyrical_services) {
       setPayableAmount(0);
-    }
-    else if(projectType === "paid in advance" && lyrical_services)
-    {
+    } else if (projectType === "paid in advance" && lyrical_services) {
       setPayableAmount(lyricalVideoAmount);
-    }
-    else if (songReg && lyrical_services) {
+    } else if (songReg && lyrical_services) {
       setPayableAmount(songRegAmount + lyricalVideoAmount);
     } else if (songReg && !lyrical_services) {
       setPayableAmount(songRegAmount);
@@ -271,6 +312,7 @@ export default function RegisterSongForm() {
           release_date: updatedFormData.release_date,
           lyricalVid: updatedFormData.lyrical_services,
           next_step: updatedFormData.next_step,
+          videoType: videoType,
         },
         { headers: headers }
       );
@@ -306,6 +348,8 @@ export default function RegisterSongForm() {
           available_on_music_platforms:
             updatedFormData.available_on_music_platforms,
           next_step: updatedFormData.next_step,
+          projectsType: projectsType,
+          videoType: videoType,
         },
         { headers: headers }
       );
@@ -340,6 +384,8 @@ export default function RegisterSongForm() {
           available_on_music_platforms:
             updatedFormData.available_on_music_platforms,
           next_step: updatedFormData.next_step,
+          projectsType: projectsType,
+          videoType: videoType,
         },
         { headers: headers }
       );
@@ -646,6 +692,65 @@ export default function RegisterSongForm() {
               />
             </div>
 
+            {/* Project Type (only shown when paid in advance) */}
+            {projectType === "paid in advance" && (
+              <div className="space-y-2">
+                <label className="block">
+                  Project Type: <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="checkbox"
+                      id="New"
+                      onChange={handleProjectTypeChange}
+                      checked={projectsType.includes("New")}
+                    />
+                    <label htmlFor="New">New</label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="checkbox"
+                      id="Hybrid"
+                      onChange={handleProjectTypeChange}
+                      checked={projectsType.includes("Hybrid")}
+                    />
+                    <label htmlFor="Hybrid">Hybrid</label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Video Type */}
+            <div className="space-y-2 mb-2">
+              <label className="block">
+                Music video or lyrical video
+                <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-4">
+                <div className="flex gap-2">
+                  <input
+                    type="checkbox"
+                    id="Music Video"
+                    onChange={handleVideoTypeChange}
+                    checked={videoType.includes("Music Video")}
+                  />
+                  <label htmlFor="Music Video">Music Video</label>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="checkbox"
+                    id="Lyrical Video"
+                    onChange={handleVideoTypeChange}
+                    checked={videoType.includes("Lyrical Video")}
+                  />
+                  <label htmlFor="Lyrical Video">Lyrical Video</label>
+                </div>
+              </div>
+            </div>
+
             {/* Toggle Button for Hybrid Projects */}
             {projectType !== "new project" && (
               <div className="space-y-2">
@@ -781,18 +886,20 @@ export default function RegisterSongForm() {
 
               <div className="space-y-2">
                 <label className="block">Payment Plans:</label>
-               {projectType !== "paid in advance" && (<div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={songReg}
-                      onChange={() => setSongReg(!songReg)}
-                      className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400"
-                      disabled={songReg}
-                    />
-                    <span>{songRegAmount} - Song Registration fees </span>
-                  </label>
-                </div>) }
+                {projectType !== "paid in advance" && (
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={songReg}
+                        onChange={() => setSongReg(!songReg)}
+                        className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400"
+                        disabled={songReg}
+                      />
+                      <span>{songRegAmount} - Song Registration fees </span>
+                    </label>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2">
