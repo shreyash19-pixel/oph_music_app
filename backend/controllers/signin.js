@@ -56,14 +56,14 @@ const signin = async (req, res) => {
       checkRejectedStep.payment_status === "under review"
     ) {
       navTo = "/auth/profile-status";
+    } else if (checkRejectedStep.payment_status === "rejected") {
+      navTo = "/auth/payment";
     } else if (checkRejectedStep.user_status === "rejected") {
       navTo = "/auth/create-profile/personal-details";
     } else if (checkRejectedStep.professional_status === "rejected") {
       navTo = "/auth/create-profile/professional-details";
     } else if (checkRejectedStep.documentation_status === "rejected") {
       navTo = "/auth/create-profile/documentation-details";
-    } else if (checkRejectedStep.payment_status === "rejected") {
-      navTo = "/auth/payment";
     } else if (
       checkRejectedStep.user_status === "under review" ||
       checkRejectedStep.professional_status === "under review" ||

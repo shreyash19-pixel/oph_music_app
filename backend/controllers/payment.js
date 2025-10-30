@@ -1,5 +1,6 @@
 const paymentInfo = require("../model/payment");
 const { setCurrentStep } = require("../model/common/set_step.js");
+const user_details = require("../model/signin.js");
 
 const payment = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ const payment = async (req, res) => {
       song_id,
       event_id,
       release_date,
-      old_release_date
+      old_release_date,
     } = req.body;
     const ophid = OPH_ID;
 
@@ -40,7 +41,42 @@ const payment = async (req, res) => {
 
     if (dbResponse) {
       console.log("in response", step);
-      
+
+      const result = await user_details.checkRejectedStep(OPH_ID);
+
+      const checkRejectedStep = result[0];
+
+      if (
+        checkRejectedStep.user_status === "under review" &&
+        checkRejectedStep.professional_status === "under review" &&
+        checkRejectedStep.documentation_status === "under review" &&
+        checkRejectedStep.payment_status === "under review"
+      ) {
+        navTo = "/auth/profile-status";
+      }
+      else if (checkRejectedStep.payment_status === "rejected") {
+        navTo = "/auth/payment";
+      } else if (checkRejectedStep.user_status === "rejected") {
+        navTo = "/auth/create-profile/personal-details";
+      } else if (checkRejectedStep.professional_status === "rejected") {
+        navTo = "/auth/create-profile/professional-details";
+      } else if (checkRejectedStep.documentation_status === "rejected") {
+        navTo = "/auth/create-profile/documentation-details";
+      } else if (checkRejectedStep.payment_status === "rejected") {
+        navTo = "/auth/payment";
+      } else if (
+        checkRejectedStep.user_status === "under review" ||
+        checkRejectedStep.professional_status === "under review" ||
+        checkRejectedStep.documentation_status === "under review" ||
+        checkRejectedStep.payment_status === "under review"
+      ) {
+        navTo = step;
+      } else if (checkRejectedStep.overall_status === "completed") {
+        navTo = "/dashboard";
+      } else {
+        navTo = step;
+      }
+
       if (from === "Registration") {
         await setCurrentStep(step, ophid);
       }
@@ -48,7 +84,7 @@ const payment = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Payment ID sent for verification",
-        step: step,
+        step: navTo,
       });
     }
 

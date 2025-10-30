@@ -397,7 +397,13 @@ const DocumentationDetailsForm = () => {
       formDataToSend.append("AccountNumber", formData.accountNumber);
       formDataToSend.append("IFSCCode", formData.ifscCode);
       formDataToSend.append("AgreementAccepted", formData.agreementAccepted);
-      formDataToSend.append("step", "/auth/membership-form");
+      let stepPath;
+      if (formData.step_status === "under review") {
+        stepPath = "/auth/membership-form";
+      } else if (formData.step_status === "rejected") {
+        stepPath = `/auth/profile-status`;
+      }
+      formDataToSend.append("step", stepPath);
 
       const formDataObj = {};
       formDataToSend.forEach((value, key) => {
@@ -412,7 +418,8 @@ const DocumentationDetailsForm = () => {
 
       if (response.success) {
         toast.success("Documentation details updated successfully");
-        navigate("/auth/membership-form");
+        const path = `${response.step}`;
+        navigate(path);
         // setShowMembershipForm(true); // Show MembershipForm
       }
     } catch (error) {

@@ -282,7 +282,7 @@ const PersonalDetailsForm = () => {
       if (formData.step_status === "under review") {
         stepPath = "/auth/create-profile/professional-details";
       } else if (formData.step_status === "rejected") {
-        stepPath = `/auth/membership-form`;
+        stepPath = `/auth/profile-status`;
       } else {
         stepPath = "/auth/create-profile/professional-details";
       }
