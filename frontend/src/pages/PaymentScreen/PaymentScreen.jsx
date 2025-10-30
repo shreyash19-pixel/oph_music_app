@@ -206,8 +206,10 @@ const PaymentScreen = () => {
   useEffect(() => {
     if (ophid) {
       setoph_id(ophid);
+    } else if (location.state?.OPH_ID) {
+      setoph_id(location.state.OPH_ID);
     }
-  }, [ophid]);
+  }, [ophid, location.state?.OPH_ID]);
 
   useEffect(() => {
     fetchCostingData();
@@ -217,10 +219,9 @@ const PaymentScreen = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
       const formData = {
-        OPH_ID: ophid,
+        OPH_ID: oph_id,
         Transaction_ID: trans,
         Review: 0,
         Status: "under Review",
@@ -244,7 +245,7 @@ const PaymentScreen = () => {
           const CalenderRes = await axiosApi.post(
             "/booking",
             {
-              oph_id: ophid,
+              oph_id: oph_id,
               booking_date: location.state.date,
               song_name: null,
               project_type: null,
@@ -267,7 +268,7 @@ const PaymentScreen = () => {
           const CalenderRes = await axiosApi.post(
             "/change-release-date",
             {
-              oph_id: ophid,
+              oph_id: oph_id,
               old_booking_date: location.state.old_booking_date,
               new_booking_date: location.state.new_booking_date,
               reason : location.state.reason,
@@ -296,7 +297,7 @@ const PaymentScreen = () => {
           const CalenderRes = await axiosApi.post(
             "/booking",
             {
-              oph_id: ophid,
+              oph_id: oph_id,
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
@@ -356,6 +357,8 @@ const PaymentScreen = () => {
         });
       } else if (response.data.success && from === "Event Registeration") {
         {
+          console.log(oph_id,"test oph_id");
+          
           const eventResponse = await axiosApi.post(
             "/event_part",
             { OPH_ID: oph_id, event_id: location.state.event_id },
