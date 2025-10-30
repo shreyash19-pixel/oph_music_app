@@ -663,11 +663,11 @@ const getbookingsDetails = async (req, res) => {
           }
         }
         
-        // Format the date as "28 Jan 2026"
+        // Format the date as "28 Jan 2026" in IST to avoid off-by-one due to UTC
         if (date && !isNaN(date.getTime())) {
-          const dayStr = date.getDate().toString().padStart(2, '0');
-          const monthStr = date.toLocaleDateString('en-GB', { month: 'short' });
-          const yearStr = date.getFullYear();
+          const dayStr = new Intl.DateTimeFormat('en-GB', { day: '2-digit', timeZone: 'Asia/Kolkata' }).format(date);
+          const monthStr = new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'Asia/Kolkata' }).format(date);
+          const yearStr = new Intl.DateTimeFormat('en-GB', { year: 'numeric', timeZone: 'Asia/Kolkata' }).format(date);
           return `${dayStr} ${monthStr} ${yearStr}`;
         }
         
