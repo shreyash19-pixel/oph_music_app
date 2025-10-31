@@ -8,18 +8,22 @@ import { Helmet } from "react-helmet";
 function Events() {
   console.log("Events component is rendering...");
   const [professions, setProfessions] = useState([]);
-  // const fetchProfessions = async () => {
-  //   try {
-  //     const response = await axiosApi.get("/professions");
-  //     setProfessions(response.data.data);
-  //     console.log(professions);
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
-  // useEffect(() => {
-  //   fetchProfessions();
-  // }, []);
+  
+  const fetchProfessions = async () => {
+    try {
+      const response = await axiosApi.get("/get_professions");
+      if (response.data.success) {
+        setProfessions(response.data.data);
+        console.log("Professions loaded:", response.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching professions:", err);
+    }
+  };
+  
+  useEffect(() => {
+    fetchProfessions();
+  }, []);
   
   useEffect(() => {
     console.log("Events component mounted");
