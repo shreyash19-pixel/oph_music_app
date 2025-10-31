@@ -164,8 +164,11 @@ const ProfessionalDetailsForm = () => {
 
         const artist = data[0];
 
+        console.log(artist);
+
         // Find profession ID by name for form display
-        const professionId = professions.find(p => p.name === artist.Profession)?.id || "";
+        const professionId =
+          professions.find((p) => p.name === artist.Profession)?.id || "";
         setFormData({
           profession: professionId,
           bio: artist.Bio || "",
@@ -247,8 +250,13 @@ const ProfessionalDetailsForm = () => {
       // Append all text fields
       formDataToSend.append("OPH_ID", ophid);
       // Find the profession name by ID and send the name as text
-      const selectedProfession = professions.find(p => p.id == formData.profession);
-      formDataToSend.append("Profession", selectedProfession ? selectedProfession.name : "");
+      const selectedProfession = professions.find(
+        (p) => p.id == formData.profession
+      );
+      formDataToSend.append(
+        "Profession",
+        selectedProfession ? selectedProfession.name : ""
+      );
       formDataToSend.append("Bio", formData.bio);
       formDataToSend.append("SpotifyLink", formData.spotifyUrl);
       formDataToSend.append("InstagramLink", formData.instagramUrl);
@@ -259,7 +267,7 @@ const ProfessionalDetailsForm = () => {
       if (formData.step_status === "under review") {
         stepPath = "/auth/create-profile/documentation-details";
       } else if (formData.step_status === "rejected") {
-        stepPath = `/auth/membership-form`;
+        stepPath = `/auth/profile-status`;
       }
       formDataToSend.append("step", stepPath);
 
@@ -276,7 +284,7 @@ const ProfessionalDetailsForm = () => {
         formDataToSend.append("SongsPlanningCount", formData.songsPlanned);
         formDataToSend.append(
           "SongsPlanningType",
-          formData.songPlanningDuration,
+          formData.songPlanningDuration
         );
       }
 
@@ -314,12 +322,12 @@ const ProfessionalDetailsForm = () => {
       const res = await axiosApi.post(`/increment-count/${ophid}`);
       if (response.success) {
         toast.success("Professional details updated successfully");
-        navigate("/auth/create-profile/documentation-details");
+        const path = `${response.step}`;
+        navigate(path);
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message ||
-          "Failed to update professional details",
+        error.response?.data?.message || "Failed to update professional details"
       );
     } finally {
       setLoading(false);
@@ -456,7 +464,9 @@ const ProfessionalDetailsForm = () => {
                   disabled={professionsLoading}
                 >
                   <option value="">
-                    {professionsLoading ? "Loading professions..." : "Select Profession"}
+                    {professionsLoading
+                      ? "Loading professions..."
+                      : "Select Profession"}
                   </option>
                   {professions.map((profession) => (
                     <option key={profession.id} value={profession.id}>

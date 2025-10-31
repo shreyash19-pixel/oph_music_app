@@ -394,7 +394,7 @@ const PaymentScreen = () => {
           });
         }
       } else if (response.data.success) {
-        const path = `/auth/create-profile/personal-details`;
+        const path = response.data.step;
         navigate(path);
       }
     } catch (err) {
