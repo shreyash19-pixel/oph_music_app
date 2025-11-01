@@ -42,8 +42,25 @@ const getDocumentationDetails = async () => {
 };
 
 const paymentDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM sign_up_payment");
-  return rows;
+  try {
+    const result = await db.execute("SELECT * FROM sign_up_payment");
+    // mysql2 execute returns [rows, fields] tuple
+    if (Array.isArray(result) && result.length > 0) {
+      const [rows] = result;
+      return Array.isArray(rows) ? rows : [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching payment details:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+    });
+    return [];
+  }
 };
 
 

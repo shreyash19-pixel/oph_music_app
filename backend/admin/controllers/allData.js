@@ -559,6 +559,12 @@ const getSignUpPayments = async (req, res) => {
   try {
     const rows = await allDataCont.paymentDetails();
 
+    // Ensure rows is an array
+    if (!Array.isArray(rows)) {
+      console.error("Payment details query returned non-array result:", rows);
+      return res.status(500).json({ error: "Failed to fetch payment details" });
+    }
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Sign Up Payments");
 
