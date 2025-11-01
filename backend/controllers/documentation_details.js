@@ -30,17 +30,19 @@ const insertDocumentationController = async (req, res) => {
     const user = userRows[0];
     const files = req.files;
 
+    // Preserve existing values if no new file is uploaded
     const AadharFrontURL = files?.AadharFrontURL
       ? await uploadToS3(files.AadharFrontURL[0], `allUsers/${OPH_ID}/kyc/aadhar`)
-      : aadharFrontFromBody || null;
+      : user.AadharFrontURL || null;
 
     const AadharBackURL = files?.AadharBackURL
       ? await uploadToS3(files.AadharBackURL[0], `allUsers/${OPH_ID}/kyc/aadhar`)
-      : aadharBackFromBody || null;
+      : user.AadharBackURL || null;
 
+    // PAN card is optional - preserve existing value if no new file is uploaded
     const PanFrontURL = files?.PanFrontURL
       ? await uploadToS3(files.PanFrontURL[0], `allUsers/${OPH_ID}/kyc/pan`)
-      : panFrontFromBody || null;
+      : user.PanFrontURL || null;
 
     const SignatureImageURL = files?.SignatureImageURL
       ? await uploadToS3(files.SignatureImageURL[0], "kyc/signature")

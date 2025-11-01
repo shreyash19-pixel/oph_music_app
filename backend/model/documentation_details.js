@@ -31,7 +31,7 @@ const insertDocumentationDetails = async (
     ON DUPLICATE KEY UPDATE
       AadharFrontURL = VALUES(AadharFrontURL),
       AadharBackURL = VALUES(AadharBackURL),
-      PanFrontURL = VALUES(PanFrontURL),
+      PanFrontURL = COALESCE(VALUES(PanFrontURL), PanFrontURL),
       SignatureImageURL = VALUES(SignatureImageURL),
       BankName = VALUES(BankName),
       AccountHolderName = VALUES(AccountHolderName),
