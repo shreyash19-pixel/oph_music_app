@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-// import { useArtist } from "../../API/ArtistContext";
+import { useArtist } from "../../API/ArtistContext";
 import ProfileFormHeader from "../components/ProfileFormHeader";
 import Review from "../../../../../public/assets/images/review.png";
 import MusicBg from "../../../../../public/assets/images/music_bg.png";
@@ -17,6 +17,7 @@ const ProfileStatus = () => {
   const id = localStorage.getItem("artist_id");
   // const { artist } = useArtist(); // Not needed here
   const navigate = useNavigate();
+  const { logout } = useArtist();
 
   useEffect(() => {
     const run = async () => {
@@ -103,8 +104,7 @@ const ProfileStatus = () => {
           {/* Back to Home Button */}
           <button
             onClick={() => {
-              localStorage.removeItem("token")
-              navigate("/auth/login")
+              logout();
             }}
             className="mt-8 z-[1000] px-16 py-3 bg-[#5DC9DE] hover:font-bold hover:cursor-pointer text-black rounded-full font-medium  transition-colors duration-200"
           >

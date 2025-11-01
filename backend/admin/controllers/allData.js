@@ -636,24 +636,43 @@ const getbookingsDetails = async (req, res) => {
     rows.forEach((row) => {
       const formatDate = (dateString) => {
         if (!dateString) return null;
-        // Handle different date formats
+        
+        // Handle Date objects and ISO strings
         let date;
-        if (typeof dateString === 'string') {
-          // If it's a string like "2025-10-17", parse it directly
-          if (dateString.includes('-') && !dateString.includes('T')) {
+        if (dateString instanceof Date) {
+          date = dateString;
+        } else if (typeof dateString === 'string') {
+          // Handle simple date format like "2025-12-06"
+          if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
             const [year, month, day] = dateString.split('-');
-            date = new Date(year, month - 1, day); // month is 0-indexed
-          } else {
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          }
+          // Handle ISO format like "2026-01-28T18:30:00.000Z"
+          else if (dateString.includes('T') && dateString.includes('Z')) {
             date = new Date(dateString);
           }
-        } else {
-          date = new Date(dateString);
+          // Handle format like "1/28/26" and convert to "28 Jan 2026"
+          else if (dateString.includes('/')) {
+            const parts = dateString.split('/');
+            if (parts.length === 3) {
+              const [month, day, year] = parts;
+              // Convert 2-digit year to 4-digit year
+              const fullYear = parseInt(year) < 50 ? 2000 + parseInt(year) : 1900 + parseInt(year);
+              date = new Date(fullYear, parseInt(month) - 1, parseInt(day));
+            }
+          }
         }
         
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = date.toLocaleDateString('en-GB', { month: 'short' });
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
+        // Format the date as "28 Jan 2026" in IST to avoid off-by-one due to UTC
+        if (date && !isNaN(date.getTime())) {
+          const dayStr = new Intl.DateTimeFormat('en-GB', { day: '2-digit', timeZone: 'Asia/Kolkata' }).format(date);
+          const monthStr = new Intl.DateTimeFormat('en-GB', { month: 'short', timeZone: 'Asia/Kolkata' }).format(date);
+          const yearStr = new Intl.DateTimeFormat('en-GB', { year: 'numeric', timeZone: 'Asia/Kolkata' }).format(date);
+          return `${dayStr} ${monthStr} ${yearStr}`;
+        }
+        
+        // Return as-is for other formats
+        return dateString;
       };
 
       worksheet.addRow({
