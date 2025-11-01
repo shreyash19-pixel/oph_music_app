@@ -279,7 +279,7 @@ const PersonalDetailsForm = () => {
       formDataToSend.append("email", formData.email);
       let stepPath;
 
-      if (formData.step_status === "under review") {
+      if (formData.step_status === "under review" || formData.step_status === null) {
         stepPath = "/auth/create-profile/professional-details";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/profile-status`;

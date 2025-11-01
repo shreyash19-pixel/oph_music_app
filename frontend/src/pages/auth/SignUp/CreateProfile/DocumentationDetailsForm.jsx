@@ -398,7 +398,7 @@ const DocumentationDetailsForm = () => {
       formDataToSend.append("IFSCCode", formData.ifscCode);
       formDataToSend.append("AgreementAccepted", formData.agreementAccepted);
       let stepPath;
-      if (formData.step_status === "under review") {
+      if (formData.step_status === "under review" || formData.step_status === null) {
         stepPath = "/auth/membership-form";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/profile-status`;

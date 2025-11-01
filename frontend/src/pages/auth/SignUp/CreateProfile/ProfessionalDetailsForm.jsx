@@ -264,7 +264,7 @@ const ProfessionalDetailsForm = () => {
       formDataToSend.append("AppleMusicLink", formData.appleMusicUrl);
       let stepPath;
       console.log(formData.step_status);
-      if (formData.step_status === "under review") {
+      if (formData.step_status === "under review" || formData.step_status === null) {
         stepPath = "/auth/create-profile/documentation-details";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/profile-status`;
