@@ -97,6 +97,15 @@ const WebsiteConfig = () => {
         ROLES.SUPER_ADMIN,
       ],
     },
+    {
+      label: "Setting",
+      route: "/websiteConfig_Setting",
+      roles: [
+        ROLES.ADMINISTRATIVE_HEAD,
+        ROLES.ADMINISTRATIVE_MEMBER,
+        ROLES.SUPER_ADMIN,
+      ],
+    },
   ];
 
   const { user, loading } = useAuth();
