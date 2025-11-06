@@ -81,6 +81,21 @@ const MusicPlayerProfile2 = () => {
     };
   }, []);
 
+  // Listen for pauseAllAudio event to pause audio when video plays
+  useEffect(() => {
+    const handlePauseAllAudio = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setPlayingSongId(null);
+      }
+    };
+
+    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    return () => {
+      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
+    };
+  }, []);
+
   const settings = {
     dots: true,
     infinite: true,

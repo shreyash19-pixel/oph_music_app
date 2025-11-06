@@ -67,11 +67,12 @@ const ProfessionalDetailsForm = () => {
   const handlePause = () => setIsPlaying(false);
 
   const togglePlayPause = () => {
-    if (videoRef.current) {
+    const video = videoRef.current?.videoElement || videoRef.current;
+    if (video) {
       if (isPlaying) {
-        videoRef.current.pause();
+        video.pause();
       } else {
-        videoRef.current.play();
+        video.play();
       }
     }
   };
@@ -414,23 +415,16 @@ const ProfessionalDetailsForm = () => {
         <div className=" mt-20 min-h-[calc(100vh-70px)] text-white p-6 flex flex-col items-center  mx-auto">
           <div className="relative flex justify-center">
             {video && (
-              <video
+              <CustomVideoPlayer
                 ref={videoRef}
                 src={video.value}
+                className="w-[800px] h-[50vh] object-cover"
+                showPlayButtonOverlay={!isPlaying}
+                pauseOtherVideos={true}
                 onPlay={handlePlay}
                 onPause={handlePause}
-                onClick={togglePlayPause}
-                className="w-[800px] h-[50vh]  object-cover "
-                controls={false} // Disable default controls
+                onPlayButtonClick={togglePlayPause}
               />
-            )}
-            {!isPlaying && (
-              <button
-                onClick={togglePlayPause}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none"
-              >
-                <img src={PlayBtn} alt="Play" className="w-32 h-32" />
-              </button>
             )}
           </div>
           <h2 className="text-cyan-400 uppercase text-2xl mt-4 font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
@@ -514,12 +508,11 @@ const ProfessionalDetailsForm = () => {
 
             <div className="relative mb-8">
               {videoUrl && (
-                <div className="w-full aspect-video rounded-lg overflow-hidden">
-                  <CustomVideoPlayer
-                    src={videoUrl}
-                    className="w-full h-full rounded-lg"
-                  />
-                </div>
+                <CustomVideoPlayer
+                  src={videoUrl}
+                  className="w-full rounded-lg"
+                  pauseOtherVideos={true}
+                />
               )}
             </div>
 

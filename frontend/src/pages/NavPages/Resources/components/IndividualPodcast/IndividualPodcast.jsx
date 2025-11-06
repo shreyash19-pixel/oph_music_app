@@ -16,6 +16,7 @@ const IndividualPodcast = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [content, setContent] = useState({});
+  const videoRef = useRef(null);
 
   console.log(id, "1");
 
@@ -37,9 +38,11 @@ const IndividualPodcast = () => {
       {/* Video */}
       <div className="relative w-full aspect-video mb-8 rounded-xl overflow-hidden md:p-12">
         <CustomVideoPlayer
+          ref={videoRef}
           src={content.video_url}
           poster={content.thumbnail_url}
-          className="w-full h-full rounded-xl"
+          className="w-full h-full"
+          pauseOtherVideos={true}
           showPlayButtonOverlay={true}
         />
       </div>

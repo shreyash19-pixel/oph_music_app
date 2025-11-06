@@ -1,8 +1,9 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute, FaExpand, FaCompress } from "react-icons/fa";
 import { FaBackward, FaForward } from "react-icons/fa";
+import { pauseAllAudio } from "../../utils/pauseAllAudio";
 
-const CustomVideoPlayer = ({
+const CustomVideoPlayer = forwardRef(({
   src,
   poster,
   className = "",
@@ -11,7 +12,9 @@ const CustomVideoPlayer = ({
   onPause,
   showPlayButtonOverlay = false,
   onPlayButtonClick,
-}) => {
+  pauseOtherVideos = true,
+  id,
+}, ref) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const progressRef = useRef(null);
@@ -23,6 +26,25 @@ const CustomVideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef(null);
+  const wasPlayingBeforeSeek = useRef(false);
+
+  // Expose video ref methods
+  useImperativeHandle(ref, () => ({
+    play: () => videoRef.current?.play(),
+    pause: () => videoRef.current?.pause(),
+    get currentTime() {
+      return videoRef.current?.currentTime || 0;
+    },
+    set currentTime(value) {
+      if (videoRef.current) {
+        videoRef.current.currentTime = value;
+      }
+    },
+    get paused() {
+      return videoRef.current?.paused ?? true;
+    },
+    videoElement: videoRef.current,
+  }));
 
   // Format time in MM:SS format
   const formatTime = (time) => {
@@ -55,6 +77,17 @@ const CustomVideoPlayer = ({
     if (!video) return;
 
     if (video.paused) {
+      // Pause all other videos and audio when this video plays
+      if (pauseOtherVideos) {
+        pauseAllAudio();
+        const allVideos = document.querySelectorAll('video');
+        allVideos.forEach((v) => {
+          if (v !== video && !v.paused) {
+            v.pause();
+          }
+        });
+      }
+      
       video
         .play()
         .then(() => {
@@ -228,18 +261,39 @@ const CustomVideoPlayer = ({
     >
       <video
         ref={videoRef}
+        id={id}
         src={src}
         poster={poster}
         className="w-full h-full object-cover"
         onContextMenu={handleContextMenu}
         onClick={handleVideoClick}
-        onPlay={() => {
+        onPlay={(e) => {
+          // Pause all other videos and audio when this video plays
+          if (pauseOtherVideos) {
+            pauseAllAudio();
+            const allVideos = document.querySelectorAll('video');
+            allVideos.forEach((v) => {
+              if (v !== e.target && !v.paused) {
+                v.pause();
+              }
+            });
+          }
           setIsPlaying(true);
           onPlay?.();
         }}
         onPause={() => {
           setIsPlaying(false);
           onPause?.();
+        }}
+        onSeeking={(e) => {
+          // Track if video was playing before seek
+          wasPlayingBeforeSeek.current = !e.target.paused;
+        }}
+        onSeeked={(e) => {
+          // After seeking/dragging timeline, resume if it was playing before
+          if (wasPlayingBeforeSeek.current && e.target.paused) {
+            e.target.play().catch(() => {});
+          }
         }}
         autoPlay={autoPlay}
         playsInline
@@ -365,7 +419,8 @@ const CustomVideoPlayer = ({
       </div>
     </div>
   );
-};
+});
 
 export default CustomVideoPlayer;
+CustomVideoPlayer.displayName = 'CustomVideoPlayer';
 

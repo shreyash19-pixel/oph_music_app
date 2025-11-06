@@ -10,9 +10,11 @@ import Story from "../../../../public/assets/images/story.png";
 import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
 import { SongDuration } from "../../ArtistSpotlight/ArtistSpotlight";
-import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showButton, setShowButton] = useState(true);
+  const [videoElement, setVideoElement] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
   const audioRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
@@ -20,6 +22,8 @@ const ArtistDetail = () => {
   const id = searchParams.get("id");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlayingVid, setIsPlayingVid] = useState(false);
+  const videoRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [relatedArtists, setRelatedArtists] = useState([]);
 
@@ -102,6 +106,24 @@ const ArtistDetail = () => {
     setIsOpen(false);
   };
 
+  const handlePlayPauseVideo = () => {
+    const video = videoRef.current?.videoElement || videoRef.current;
+    if (video) {
+      if (video.paused) {
+        // Pause audio when video starts playing
+        if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause();
+          setPlayingSongId(null);
+        }
+        video.play();
+        setShowButton(false);
+      } else {
+        video.pause();
+        setShowButton(true);
+      }
+      setIsPlaying(!video.paused);
+    }
+  };
 
   const handlePlayPause = (song) => {
     const current = audioRef.current;
@@ -111,10 +133,20 @@ const ArtistDetail = () => {
         current.pause();
         setPlayingSongId(null);
       } else {
+        // Pause video when audio starts playing
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+          setShowButton(true);
+        }
         current.play();
         setPlayingSongId(song.song_id);
       }
     } else {
+      // Pause video when audio starts playing
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+        setShowButton(true);
+      }
       // New song selected
       if (current) {
         current.pause();
@@ -137,6 +169,21 @@ const ArtistDetail = () => {
         audioRef.current.pause();
       }
       setPlayingSongId(null);
+    };
+  }, []);
+
+  // Listen for pauseAllAudio event to pause audio when video plays
+  useEffect(() => {
+    const handlePauseAllAudio = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setPlayingSongId(null);
+      }
+    };
+
+    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    return () => {
+      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
     };
   }, []);
 
@@ -239,17 +286,27 @@ const ArtistDetail = () => {
             {/* Profile Section */}
             <div className="grid grid-cols-3 gap-8 mb-12">
               <div className="w-full sm:col-span-1 col-span-3 h-full relative">
-                <div className="relative group rounded-xl overflow-hidden aspect-[4/3]">
-                  <CustomVideoPlayer
-                    src={artist.video_bio}
-                    poster={
-                      artist.personal_photo ||
-                      "/assets/images/struggleSectionThumbnail.png"
+                <CustomVideoPlayer
+                  ref={videoRef}
+                  src={artist.video_bio}
+                  poster={
+                    artist.personal_photo ||
+                    "/assets/images/struggleSectionThumbnail.png"
+                  }
+                  className="w-full rounded-xl overflow-hidden aspect-[4/3]"
+                  showPlayButtonOverlay={showButton}
+                  pauseOtherVideos={true}
+                  onPlay={() => {
+                    setShowButton(false);
+                    // Pause audio when video starts playing
+                    if (audioRef.current && !audioRef.current.paused) {
+                      audioRef.current.pause();
+                      setPlayingSongId(null);
                     }
-                    className="w-full h-full rounded-xl"
-                    showPlayButtonOverlay={true}
-                  />
-                </div>
+                  }}
+                  onPause={() => setShowButton(true)}
+                  onPlayButtonClick={handlePlayPauseVideo}
+                />
               </div>
 
               <div className="flex flex-col col-span-3 sm:col-span-2">
@@ -344,17 +401,12 @@ const ArtistDetail = () => {
 
                               {/* Video */}
                               <div className="aspect-w-16 aspect-h-9">
-                                <video
-                                  controls
-                                  autoPlay
+                                <CustomVideoPlayer
+                                  src={artist.video_bio}
                                   className="w-full h-full rounded-lg"
-                                >
-                                  <source
-                                    src={artist.video_bio}
-                                    type="video/mp4"
-                                  />
-                                  Your browser does not support the video tag.
-                                </video>
+                                  autoPlay
+                                  pauseOtherVideos={true}
+                                />
                               </div>
                             </div>
                           </div>

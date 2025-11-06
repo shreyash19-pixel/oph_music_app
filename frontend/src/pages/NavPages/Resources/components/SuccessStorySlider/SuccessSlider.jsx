@@ -16,6 +16,7 @@ function SuccessSlider({ searchText, title }) {
   const videoRefs = useRef([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
+  const [isPlaying, setIsPlaying] = useState(true);
   const [allSuccess, setAllSuccess] = useState([]);
 
   useEffect(() => {
@@ -49,14 +50,6 @@ function SuccessSlider({ searchText, title }) {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
     setIsPlaying(true);
-    setTimeout(() => {
-      const video = document.getElementById("video-player");
-      if (video) {
-        video.play().catch((error) => {
-          console.error("Autoplay failed:", error);
-        });
-      }
-    }, 300);
   };
 
   const closeModal = () => {
@@ -65,19 +58,7 @@ function SuccessSlider({ searchText, title }) {
     setIsPlaying(false);
   };
 
-  const togglePlayPause = (e) => {
-    e.stopPropagation();
-    const video = document.getElementById("video-player");
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsPlaying(true);
-      } else {
-        video.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
+  const modalVideoRef = useRef(null);
 
   const handleMouseDown = () => {
     setIsDragging(false);
@@ -303,11 +284,16 @@ function SuccessSlider({ searchText, title }) {
               >
                 &times;
               </button>
-              <div className="relative w-full h-full aspect-video">
+              <div className="relative h-auto w-auto">
                 <CustomVideoPlayer
+                  ref={modalVideoRef}
+                  id="video-player-success"
                   src={selectedVideo}
-                  className="rounded-lg w-full h-full"
-                  autoPlay={true}
+                  className="rounded-lg w-full"
+                  autoPlay
+                  pauseOtherVideos={true}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                 />
               </div>
             </div>

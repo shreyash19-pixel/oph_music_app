@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
 import axiosApi from "../../../../../conf/axios";
 import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
@@ -17,6 +17,7 @@ function ReelsSlider({ searchText, title }) {
   const videoRefs = useRef([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
+  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     const fetchReels = async () => {
@@ -48,12 +49,16 @@ function ReelsSlider({ searchText, title }) {
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
+    setIsPlaying(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVideo("");
+    setIsPlaying(false);
   };
+
+  const modalVideoRef = useRef(null);
 
   const handleMouseDown = () => {
     setIsDragging(false);
@@ -252,11 +257,16 @@ function ReelsSlider({ searchText, title }) {
               >
                 &times;
               </button>
-              <div className="relative w-full h-full aspect-video">
+              <div className="relative w-full h-full">
                 <CustomVideoPlayer
+                  ref={modalVideoRef}
+                  id="video-player-reels"
                   src={selectedVideo}
                   className="rounded-lg w-full h-full"
-                  autoPlay={true}
+                  autoPlay
+                  pauseOtherVideos={true}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                 />
               </div>
             </div>

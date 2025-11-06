@@ -18,6 +18,8 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const dispatch = useDispatch();
   const location = useLocation();
 
+  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
+  const videoRef = useRef(null);
   const [video, setVideo] = useState(Video);
 
   // const fetchVideo = async () => {
@@ -214,14 +216,37 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
               ✕
             </button>
 
-            {/* Video */}
-            <div className="relative w-full h-auto max-h-[70vh] aspect-video">
-              <CustomVideoPlayer
-                src={video}
-                className="w-full h-full rounded-lg"
-                autoPlay={true}
+            {/* Play button */}
+            <button
+              onClick={() => {
+                const video = document.getElementById("video-player");
+                console.log(video);
+                
+                if (video.paused) {
+                  console.log("hello");
+                  video.play();
+                } else {
+                  video.pause();
+                }
+              }}
+              className="absolute inset-0 flex items-center justify-center z-40"
+            >
+              <img
+                src="/assets/images/play_button.png"
+                alt="Play"
+                className="w-[100px] hidden" // Initially hidden
+                id="play-button"
               />
-            </div>
+            </button>
+
+            {/* Video */}
+            <CustomVideoPlayer
+              id="video-player"
+              src={video}
+              className="w-full h-auto max-h-[70vh] rounded-lg"
+              autoPlay
+              pauseOtherVideos={true}
+            />
           </div>
         </div>
       )}

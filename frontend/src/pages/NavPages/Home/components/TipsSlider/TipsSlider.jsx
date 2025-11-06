@@ -4,14 +4,16 @@ import { Image, Shimmer } from "react-shimmer";
 import "./TipsSlider.css";
 import Struggle from "../../../../../../public/assets/images/struggle.png";
 import Elipse3 from "../../../../../../public/assets/images/elipse3.png";
-import axiosApi from "../../../../../conf/axios"; // ✅ adjust import if needed
+import axiosApi from "../../../../../conf/axios";
 import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const TipsSlider = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [tips, setTips] = useState([]); // ✅ local state instead of Redux
+  const videoRef = useRef(null);
 
   // ✅ Fetch podcasts data
   useEffect(() => {
@@ -75,12 +77,17 @@ const TipsSlider = () => {
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
+    setIsPlaying(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVideo("");
+    setIsPlaying(false);
   };
+
+  const modalVideoRef = useRef(null);
+
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -163,11 +170,15 @@ const TipsSlider = () => {
               &times;
             </button>
 
-            <div className="relative w-full h-full aspect-video">
+            <div className="relative">
               <CustomVideoPlayer
+                ref={modalVideoRef}
                 src={selectedVideo}
-                className="w-full h-full rounded-lg"
-                autoPlay={true}
+                className="w-full h-auto rounded-lg"
+                autoPlay
+                pauseOtherVideos={true}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
               />
             </div>
           </div>

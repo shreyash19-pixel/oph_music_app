@@ -18,6 +18,7 @@ function PodcastSlider({ searchText, title }) {
   const [playingIndex, setPlayingIndex] = useState(null);
   const [isPlayButtonClicked, setIsPlayButtonClicked] = useState(false);
   const videoRefs = useRef([]);
+  const wasPlayingBeforeSeek = useRef(false);
   const [allPodcasts, setAllPodcasts] = useState([]);
 
   useEffect(() => {
@@ -62,16 +63,24 @@ function PodcastSlider({ searchText, title }) {
 
     setIsPlayButtonClicked(true);
 
-    videoRefs.current.forEach((video, idx) => {
-      if (video && idx !== index) {
-        video.pause();
-        video.currentTime = 0;
+    videoRefs.current.forEach((videoRef, idx) => {
+      if (videoRef && idx !== index) {
+        const video = videoRef.videoElement || videoRef;
+        if (video && video.pause) {
+          video.pause();
+          if (video.currentTime !== undefined) {
+            video.currentTime = 0;
+          }
+        }
       }
     });
 
     setPlayingIndex(index);
     if (videoRefs.current[index]) {
-      videoRefs.current[index].play();
+      const video = videoRefs.current[index].videoElement || videoRefs.current[index];
+      if (video && video.play) {
+        video.play();
+      }
     }
 
     setTimeout(() => {
@@ -81,19 +90,28 @@ function PodcastSlider({ searchText, title }) {
 
   const handleVideoPlay = (index) => {
     if (!isPlayButtonClicked) {
-      videoRefs.current.forEach((video, idx) => {
-        if (video && idx !== index) {
-          video.pause();
-          video.currentTime = 0;
+      // Pause all other videos on the page (but not the current one)
+      videoRefs.current.forEach((videoRef, idx) => {
+        if (videoRef && idx !== index) {
+          const video = videoRef.videoElement || videoRef;
+          if (video && video.pause) {
+            video.pause();
+            if (video.currentTime !== undefined) {
+              video.currentTime = 0;
+            }
+          }
         }
       });
     }
   };
 
   const stopAllVideos = () => {
-    videoRefs.current.forEach((video) => {
-      if (video) {
-        video.pause();
+    videoRefs.current.forEach((videoRef) => {
+      if (videoRef) {
+        const video = videoRef.videoElement || videoRef;
+        if (video && video.pause) {
+          video.pause();
+        }
       }
     });
     setPlayingIndex(null);
@@ -181,14 +199,20 @@ function PodcastSlider({ searchText, title }) {
               <div key={index} className="px-2 lg:px-4 w-full">
                 <div className="rounded-xl overflow-hidden relative">
                   {playingIndex === index ? (
-                    <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto rounded-xl overflow-hidden">
-                      <CustomVideoPlayer
-                        src={podcast.video_url}
-                        className="w-full h-full rounded-xl"
-                        autoPlay={true}
-                        onPause={() => setPlayingIndex(null)}
-                      />
-                    </div>
+                    <CustomVideoPlayer
+                      ref={(el) => (videoRefs.current[index] = el?.videoElement || el)}
+                      src={podcast.video_url}
+                      poster={podcast.thumbnail_url}
+                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] rounded-xl mx-auto"
+                      autoPlay
+                      pauseOtherVideos={true}
+                      onPlay={() => {
+                        if (!isPlayButtonClicked) {
+                          handleVideoPlay(index);
+                        }
+                      }}
+                      onPause={() => {}}
+                    />
                   ) : (
                     <div className="relative cursor-pointer overflow-hidden">
                       <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto">
@@ -249,14 +273,20 @@ function PodcastSlider({ searchText, title }) {
               <div key={index} className="px-2 lg:px-4 w-full">
                 <div className="rounded-xl overflow-hidden relative">
                   {playingIndex === index ? (
-                    <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto rounded-xl overflow-hidden">
-                      <CustomVideoPlayer
-                        src={podcast.video_url}
-                        className="w-full h-full rounded-xl"
-                        autoPlay={true}
-                        onPause={() => setPlayingIndex(null)}
-                      />
-                    </div>
+                    <CustomVideoPlayer
+                      ref={(el) => (videoRefs.current[index] = el?.videoElement || el)}
+                      src={podcast.video_url}
+                      poster={podcast.thumbnail_url}
+                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] rounded-xl mx-auto"
+                      autoPlay
+                      pauseOtherVideos={true}
+                      onPlay={() => {
+                        if (!isPlayButtonClicked) {
+                          handleVideoPlay(index);
+                        }
+                      }}
+                      onPause={() => {}}
+                    />
                   ) : (
                     <div className="relative cursor-pointer overflow-hidden">
                       <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto">
