@@ -8,6 +8,7 @@ import { changeSelectedEvent } from "../../../../slice/events";
 import SongDetails from "../../../SongDetails/SongDetails";
 import SongCard from "../../../../components/SongCard";
 import Video from '../../../../assets/videos/video.mp4'
+import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const [videoModal, setVideoModal] = useState(false);
@@ -17,8 +18,6 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const dispatch = useDispatch();
   const location = useLocation();
 
-  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
-  const videoRef = useRef(null);
   const [video, setVideo] = useState(Video);
 
   // const fetchVideo = async () => {
@@ -215,47 +214,14 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
               ✕
             </button>
 
-            {/* Play button */}
-            <button
-              onClick={() => {
-                const video = document.getElementById("video-player");
-                console.log(video);
-                
-                if (video.paused) {
-                  console.log("hello");
-                  video.play();
-                } else {
-                  video.pause();
-                }
-              }}
-              className="absolute inset-0 flex items-center justify-center z-40"
-            >
-              <img
-                src="/assets/images/play_button.png"
-                alt="Play"
-                className="w-[100px] hidden" // Initially hidden
-                id="play-button"
-              />
-            </button>
-
             {/* Video */}
-            <video
-              id="video-player"
-              className="w-full h-auto max-h-[70vh] rounded-lg"
-              autoPlay
-              playsInline
-              onPause={() =>
-                document
-                  .getElementById("play-button")
-                  .classList.remove("hidden")
-              }
-              onPlay={() =>
-                document.getElementById("play-button").classList.add("hidden")
-              }
-            >
-              <source src={video} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            <div className="relative w-full h-auto max-h-[70vh] aspect-video">
+              <CustomVideoPlayer
+                src={video}
+                className="w-full h-full rounded-lg"
+                autoPlay={true}
+              />
+            </div>
           </div>
         </div>
       )}

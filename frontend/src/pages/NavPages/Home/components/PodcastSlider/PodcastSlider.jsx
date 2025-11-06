@@ -9,6 +9,7 @@ import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Link, useNavigate } from "react-router-dom";
 import { Image, Shimmer } from "react-shimmer";
 import toast from "react-hot-toast";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 function PodcastSlider({ searchText, title }) {
   const navigate = useNavigate();
@@ -180,15 +181,14 @@ function PodcastSlider({ searchText, title }) {
               <div key={index} className="px-2 lg:px-4 w-full">
                 <div className="rounded-xl overflow-hidden relative">
                   {playingIndex === index ? (
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
-                      src={podcast.video_url}
-                      controls
-                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] object-cover rounded-xl mx-auto"
-                      onEnded={() => setPlayingIndex(null)}
-                      onPlay={() => handleVideoPlay(index)}
-                      autoPlay
-                    />
+                    <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto rounded-xl overflow-hidden">
+                      <CustomVideoPlayer
+                        src={podcast.video_url}
+                        className="w-full h-full rounded-xl"
+                        autoPlay={true}
+                        onPause={() => setPlayingIndex(null)}
+                      />
+                    </div>
                   ) : (
                     <div className="relative cursor-pointer overflow-hidden">
                       <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto">
@@ -249,15 +249,14 @@ function PodcastSlider({ searchText, title }) {
               <div key={index} className="px-2 lg:px-4 w-full">
                 <div className="rounded-xl overflow-hidden relative">
                   {playingIndex === index ? (
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
-                      src={podcast.video_url}
-                      controls
-                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] object-cover rounded-xl mx-auto"
-                      onEnded={() => setPlayingIndex(null)}
-                      onPlay={() => handleVideoPlay(index)}
-                      autoPlay
-                    />
+                    <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto rounded-xl overflow-hidden">
+                      <CustomVideoPlayer
+                        src={podcast.video_url}
+                        className="w-full h-full rounded-xl"
+                        autoPlay={true}
+                        onPause={() => setPlayingIndex(null)}
+                      />
+                    </div>
                   ) : (
                     <div className="relative cursor-pointer overflow-hidden">
                       <div className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] mx-auto">

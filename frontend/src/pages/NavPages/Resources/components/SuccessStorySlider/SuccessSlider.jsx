@@ -7,6 +7,7 @@ import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 function SuccessSlider({ searchText, title }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -15,7 +16,6 @@ function SuccessSlider({ searchText, title }) {
   const videoRefs = useRef([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
-  const [isPlaying, setIsPlaying] = useState(true);
   const [allSuccess, setAllSuccess] = useState([]);
 
   useEffect(() => {
@@ -303,14 +303,11 @@ function SuccessSlider({ searchText, title }) {
               >
                 &times;
               </button>
-              <div className="relative h-auto w-auto">
-                <video
-                  id="video-player"
+              <div className="relative w-full h-full aspect-video">
+                <CustomVideoPlayer
                   src={selectedVideo}
-                  className="rounded-lg w-full"
-                  autoPlay
-                  playsInline
-                  controls
+                  className="rounded-lg w-full h-full"
+                  autoPlay={true}
                 />
               </div>
             </div>

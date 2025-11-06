@@ -5,14 +5,13 @@ import "./TipsSlider.css";
 import Struggle from "../../../../../../public/assets/images/struggle.png";
 import Elipse3 from "../../../../../../public/assets/images/elipse3.png";
 import axiosApi from "../../../../../conf/axios"; // ✅ adjust import if needed
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const TipsSlider = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
-  const [isPlaying, setIsPlaying] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [tips, setTips] = useState([]); // ✅ local state instead of Redux
-  const videoRef = useRef(null);
 
   // ✅ Fetch podcasts data
   useEffect(() => {
@@ -76,33 +75,12 @@ const TipsSlider = () => {
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
-    setIsPlaying(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVideo("");
-    setIsPlaying(false);
   };
-
-  const togglePlayPause = (e) => {
-    e.stopPropagation();
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (isModalOpen && videoRef.current) {
-      videoRef.current.play();
-    }
-  }, [isModalOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -185,22 +163,12 @@ const TipsSlider = () => {
               &times;
             </button>
 
-            <div className="relative">
-              <video
-                ref={videoRef}
+            <div className="relative w-full h-full aspect-video">
+              <CustomVideoPlayer
                 src={selectedVideo}
-                className="w-full h-auto rounded-lg"
-                autoPlay
-                playsInline
+                className="w-full h-full rounded-lg"
+                autoPlay={true}
               />
-              {!isPlaying && (
-                <button
-                  onClick={togglePlayPause}
-                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white text-6xl rounded-full w-20 h-20 mx-auto my-auto"
-                >
-                  ▶
-                </button>
-              )}
             </div>
           </div>
         </div>

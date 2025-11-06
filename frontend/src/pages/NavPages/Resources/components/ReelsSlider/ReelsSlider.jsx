@@ -7,6 +7,7 @@ import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 function ReelsSlider({ searchText, title }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -16,7 +17,6 @@ function ReelsSlider({ searchText, title }) {
   const videoRefs = useRef([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
-  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     const fetchReels = async () => {
@@ -48,35 +48,11 @@ function ReelsSlider({ searchText, title }) {
   const openModal = (videoUrl) => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
-    setIsPlaying(true);
-    setTimeout(() => {
-      const video = document.getElementById("video-player");
-      if (video) {
-        video.play().catch((error) => {
-          console.error("Autoplay failed:", error);
-        });
-      }
-    }, 300);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedVideo("");
-    setIsPlaying(false);
-  };
-
-  const togglePlayPause = (e) => {
-    e.stopPropagation();
-    const video = document.getElementById("video-player");
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsPlaying(true);
-      } else {
-        video.pause();
-        setIsPlaying(false);
-      }
-    }
   };
 
   const handleMouseDown = () => {
@@ -276,14 +252,11 @@ function ReelsSlider({ searchText, title }) {
               >
                 &times;
               </button>
-              <div className="relative w-full h-full">
-                <video
-                  id="video-player"
+              <div className="relative w-full h-full aspect-video">
+                <CustomVideoPlayer
                   src={selectedVideo}
                   className="rounded-lg w-full h-full"
-                  autoPlay
-                  playsInline
-                  controls
+                  autoPlay={true}
                 />
               </div>
             </div>

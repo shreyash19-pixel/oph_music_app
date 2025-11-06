@@ -9,22 +9,18 @@ import Insta from "../../../../../public/assets/images/instagram.png";
 import Story from "../../../../../public/assets/images/story.png";
 import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
+import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 const MusicPlayerProfile = () => {
   const [artist, setArtist] = useState({});
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showButton, setShowButton] = useState(true);
-  const [videoElement, setVideoElement] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
   const [audio, setAudio] = useState(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const { id } = useParams();
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPlayingVid, setIsPlayingVid] = useState(false);
-  const videoRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [relatedArtists, setRelatedArtists] = useState([]);
- const [artistProfession, setArtistProfession] = useState("");  
+  const [artistProfession, setArtistProfession] = useState("");  
   const handleImageClick = (src) => {
     setSelectedImage(src);
   };
@@ -108,18 +104,6 @@ const MusicPlayerProfile = () => {
     setIsOpen(false);
   };
 
-  const handlePlayPauseVideo = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setShowButton(false); // Hide button when playing
-      } else {
-        videoRef.current.pause();
-        setShowButton(true); // Show button when paused
-      }
-      setIsPlaying(!videoRef.current.paused);
-    }
-  };
 
   const handlePlayPause = (song) => {
     if (audio && playingSongId === song.id) {
@@ -226,30 +210,16 @@ const MusicPlayerProfile = () => {
             {/* Profile Section */}
             <div className="grid grid-cols-3 gap-8 mb-12">
               <div className="w-full sm:col-span-1 col-span-3 h-full relative">
-                <div className="relative group">
-                  <video
-                    ref={videoRef}
+                <div className="relative group rounded-xl overflow-hidden aspect-[4/3]">
+                  <CustomVideoPlayer
                     src={artist.video_bio}
-                    className="w-full rounded-xl object-cover overflow-hidden aspect-[4/3] cursor-pointer"
                     poster={
                       artist.profile_img_url ||
                       "/assets/images/struggleSectionThumbnail.png"
                     }
-                    onClick={handlePlayPauseVideo} // Click on video to play/pause
-                    onPlay={() => setShowButton(false)} // Hide button on play
-                    onPause={() => setShowButton(true)} // Show button on pause
+                    className="w-full h-full rounded-xl"
+                    showPlayButtonOverlay={true}
                   />
-                  {/* Play Button Overlay */}
-                  {showButton && (
-                    <div className="absolute overflow-hidden rounded-xl inset-0 flex items-center justify-center bg-black/30">
-                      <button
-                        className="rounded-full p-4 bg-[#5DC9DE] hover:bg-cyan-300 transition-colors"
-                        onClick={handlePlayPauseVideo}
-                      >
-                        <FaPlay className="text-white text-2xl" />
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
 

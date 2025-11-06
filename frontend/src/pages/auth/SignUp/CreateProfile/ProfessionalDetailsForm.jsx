@@ -16,6 +16,7 @@ import Elipse from "../../../../../public/assets/images/elipse2.png";
 import axiosApi from "../../../../conf/axios";
 import { data, useNavigate, useSearchParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const ProfessionalDetailsForm = () => {
   const { headers, ophid } = useArtist();
@@ -513,7 +514,12 @@ const ProfessionalDetailsForm = () => {
 
             <div className="relative mb-8">
               {videoUrl && (
-                <video src={videoUrl} className="w-full rounded-lg" controls />
+                <div className="w-full aspect-video rounded-lg overflow-hidden">
+                  <CustomVideoPlayer
+                    src={videoUrl}
+                    className="w-full h-full rounded-lg"
+                  />
+                </div>
               )}
             </div>
 
