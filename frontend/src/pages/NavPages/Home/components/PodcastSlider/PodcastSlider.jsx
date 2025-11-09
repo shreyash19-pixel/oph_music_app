@@ -24,7 +24,7 @@ function PodcastSlider({ searchText, title }) {
       try {
         const response = await axiosApi.get("/allPodcasts");
         const sortedData = (response.data.data || []).sort(
-          (a, b) => b.views - a.views,
+          (a, b) => b.views - a.views
         );
         setAllPodcasts(sortedData);
       } catch (err) {
@@ -40,7 +40,7 @@ function PodcastSlider({ searchText, title }) {
   const filteredPodcasts = useMemo(() => {
     if (searchText) {
       return allPodcasts.filter((podcast) =>
-        podcast.title.toLowerCase().includes(searchText.toLowerCase()),
+        podcast.title.toLowerCase().includes(searchText.toLowerCase())
       );
     }
     return allPodcasts;
