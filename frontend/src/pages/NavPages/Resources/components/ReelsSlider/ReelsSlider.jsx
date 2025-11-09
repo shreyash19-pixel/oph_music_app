@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
 import axiosApi from "../../../../../conf/axios";
 import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 function ReelsSlider({ searchText, title }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -49,14 +50,6 @@ function ReelsSlider({ searchText, title }) {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
     setIsPlaying(true);
-    setTimeout(() => {
-      const video = document.getElementById("video-player");
-      if (video) {
-        video.play().catch((error) => {
-          console.error("Autoplay failed:", error);
-        });
-      }
-    }, 300);
   };
 
   const closeModal = () => {
@@ -65,19 +58,7 @@ function ReelsSlider({ searchText, title }) {
     setIsPlaying(false);
   };
 
-  const togglePlayPause = (e) => {
-    e.stopPropagation();
-    const video = document.getElementById("video-player");
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsPlaying(true);
-      } else {
-        video.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
+  const modalVideoRef = useRef(null);
 
   const handleMouseDown = () => {
     setIsDragging(false);
@@ -277,13 +258,15 @@ function ReelsSlider({ searchText, title }) {
                 &times;
               </button>
               <div className="relative w-full h-full">
-                <video
-                  id="video-player"
+                <CustomVideoPlayer
+                  ref={modalVideoRef}
+                  id="video-player-reels"
                   src={selectedVideo}
                   className="rounded-lg w-full h-full"
                   autoPlay
-                  playsInline
-                  controls
+                  pauseOtherVideos={true}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                 />
               </div>
             </div>

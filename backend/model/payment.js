@@ -9,7 +9,8 @@ const insertPayment = async (
   song_id,
   event_id,
   release_date,
-  old_release_date
+  old_release_date,
+  amount
 ) => {
   if (From === "Release date change") {
     await db.execute(
@@ -25,7 +26,7 @@ const insertPayment = async (
   }
 
   const [result] = await db.execute(
-    "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
       OPH_ID,
       Transaction_ID,
@@ -35,6 +36,7 @@ const insertPayment = async (
       song_id,
       event_id,
       release_date,
+      amount || null,
     ]
   );
   return result;
@@ -55,7 +57,8 @@ const songRepayment = async (
   Status,
   song_id,
   event_id,
-  release_date
+  release_date,
+  amount
 ) => {
   let rows = [];
 
@@ -70,7 +73,7 @@ const songRepayment = async (
 
   rows.push(
     await db.execute(
-      "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         OPH_ID,
         Transaction_ID,
@@ -80,6 +83,7 @@ const songRepayment = async (
         song_id,
         event_id,
         release_date,
+        amount || null,
       ]
     )
   );

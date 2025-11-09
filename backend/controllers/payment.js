@@ -15,6 +15,7 @@ const payment = async (req, res) => {
       event_id,
       release_date,
       old_release_date,
+      amount,
     } = req.body;
     const ophid = OPH_ID;
 
@@ -36,7 +37,8 @@ const payment = async (req, res) => {
       song_id || null,
       event_id || null,
       release_date || null,
-      old_release_date || null
+      old_release_date || null,
+      amount || null
     );
 
     if (dbResponse) {
@@ -139,6 +141,7 @@ const songRepaymentController = async (req, res) => {
       song_id,
       event_id,
       release_date,
+      amount,
     } = req.body;
 
     if (
@@ -162,7 +165,8 @@ const songRepaymentController = async (req, res) => {
       Status,
       song_id || null,
       event_id || null,
-      release_date
+      release_date,
+      amount || null
     );
 
     if (response) {

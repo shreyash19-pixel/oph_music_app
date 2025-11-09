@@ -18,6 +18,7 @@ import { useArtist } from "../../pages/auth/API/ArtistContext";
 import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
 import { SongDuration } from "../ArtistSpotlight/ArtistSpotlight";
+import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 const MYEPK = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -94,6 +95,21 @@ const MYEPK = () => {
     }
   }, [headers, ophid]);
 
+  // Listen for pauseAllAudio event to pause audio when video plays
+  useEffect(() => {
+    const handlePauseAllAudio = () => {
+      if (audio && !audio.paused) {
+        audio.pause();
+        setPlayingSongId(null);
+      }
+    };
+
+    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    return () => {
+      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
+    };
+  }, [audio]);
+
   const [isOpen, setIsOpen] = useState(false);
 
   const handleModalOpen = (e) => {
@@ -106,15 +122,21 @@ const MYEPK = () => {
   };
 
   const handlePlayPauseVideo = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setShowButton(false); // Hide button when playing
+    const video = videoRef.current?.videoElement || videoRef.current;
+    if (video) {
+      if (video.paused) {
+        // Pause audio when video starts playing
+        if (audio && !audio.paused) {
+          audio.pause();
+          setPlayingSongId(null);
+        }
+        video.play();
+        setShowButton(false);
       } else {
-        videoRef.current.pause();
-        setShowButton(true); // Show button when paused
+        video.pause();
+        setShowButton(true);
       }
-      setIsPlaying(!videoRef.current.paused);
+      setIsPlaying(!video.paused);
     }
   };
 
@@ -125,12 +147,22 @@ const MYEPK = () => {
         audio?.pause();
         setPlayingSongId(null);
       } else {
+        // Pause video when audio starts playing
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+          setShowButton(true);
+        }
         audio?.play()?.catch((error) => {
           console.error("Audio play failed:", error);
         });
         setPlayingSongId(song.id);
       }
     } else {
+      // Pause video when audio starts playing
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+        setShowButton(true);
+      }
       // New song selected
       if (audio) {
         audio.pause();
@@ -215,31 +247,27 @@ const MYEPK = () => {
             {/* Profile Section */}
             <div className="grid grid-cols-3 gap-8 mb-12 relative">
               <div className="w-full sm:col-span-1 col-span-3 h-full relative">
-                <div className="relative group">
-                  <video
-                    ref={videoRef}
-                    src={artist.video_bio}
-                    className="w-full rounded-xl object-cover overflow-hidden aspect-[4/3] cursor-pointer"
-                    poster={
-                      artist.personal_photo ||
-                      "/assets/images/struggleSectionThumbnail.png"
+                <CustomVideoPlayer
+                  ref={videoRef}
+                  src={artist.video_bio}
+                  poster={
+                    artist.personal_photo ||
+                    "/assets/images/struggleSectionThumbnail.png"
+                  }
+                  className="w-full rounded-xl overflow-hidden aspect-[4/3]"
+                  showPlayButtonOverlay={showButton}
+                  pauseOtherVideos={true}
+                  onPlay={() => {
+                    setShowButton(false);
+                    // Pause audio when video starts playing
+                    if (audio && !audio.paused) {
+                      audio.pause();
+                      setPlayingSongId(null);
                     }
-                    onClick={handlePlayPauseVideo} // Click on video to play/pause
-                    onPlay={() => setShowButton(false)} // Hide button on play
-                    onPause={() => setShowButton(true)} // Show button on pause
-                  />
-                  {/* Play Button Overlay */}
-                  {showButton && (
-                    <div className="absolute overflow-hidden rounded-xl inset-0 flex items-center justify-center bg-black/30">
-                      <button
-                        className="rounded-full p-4 bg-[#5DC9DE] hover:bg-cyan-300 transition-colors"
-                        onClick={handlePlayPauseVideo}
-                      >
-                        <FaPlay className="text-white text-2xl" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                  }}
+                  onPause={() => setShowButton(true)}
+                  onPlayButtonClick={handlePlayPauseVideo}
+                />
               </div>
 
               <div className="flex flex-col col-span-3 sm:col-span-2">
@@ -338,17 +366,12 @@ const MYEPK = () => {
 
                               {/* Video */}
                               <div className="aspect-w-16 aspect-h-9">
-                                <video
-                                  controls
-                                  autoPlay
+                                <CustomVideoPlayer
+                                  src={artist.artist_story_video}
                                   className="w-full h-full rounded-lg"
-                                >
-                                  <source
-                                    src={artist.artist_story_video}
-                                    type="video/mp4"
-                                  />
-                                  Your browser does not support the video tag.
-                                </video>
+                                  autoPlay
+                                  pauseOtherVideos={true}
+                                />
                               </div>
                             </div>
                           </div>

@@ -92,6 +92,21 @@ const TopPicksSection = () => {
     };
   }, [audio]);
 
+  // Listen for pauseAllAudio event to pause audio when video plays
+  useEffect(() => {
+    const handlePauseAllAudio = () => {
+      if (audio && !audio.paused) {
+        audio.pause();
+        setPlayingSongId(null);
+      }
+    };
+
+    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    return () => {
+      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
+    };
+  }, [audio]);
+
   function rankToColor(rank) {
     const val = {
       1: "bg-emerald-400",

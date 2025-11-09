@@ -22,7 +22,7 @@ const Events = () => {
           <SearchableDynamicTable
             title="Events"
             data={tableData}
-            includeColumns={["EventName","dateTime","location","description","long_desc","registrationStart","registrationEnd","winnerReward","image"]}
+            includeColumns={["event_id","EventName","dateTime","location","description","long_desc","registrationStart","registrationEnd","winnerReward","image"]}
             showStatusIndicator={false}
             pageSize={10}
             detailsUrl="/event_management"

@@ -3,6 +3,7 @@ import Chart from "../../components/Chart/Chart";
 import React,{ useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
+import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 export default function AnalyticsDashboard() {
   const { ophid, headers } = useArtist();
@@ -413,18 +414,16 @@ useEffect(() => {
               <div className="overflow-hidden flex items-stretch justify-start">
                 <div className="relative">
                   {videoData?.video_url ? (
-                    <video
+                    <CustomVideoPlayer
                       src={videoData.video_url}
                       poster={
                         videoData?.image_url
-                          ? JSON.parse(videoData.image_url)[0] // safely extract the actual URL
+                          ? JSON.parse(videoData.image_url)[0]
                           : "/assets/images/ytVideoBg.png"
                       }
-                      controls
                       className="w-[400px] h-[200px] object-cover rounded-lg"
-                    >
-                      Sorry, your browser doesn’t support embedded videos.
-                    </video>
+                      pauseOtherVideos={true}
+                    />
                   ) : (
                     <img
                       src={
