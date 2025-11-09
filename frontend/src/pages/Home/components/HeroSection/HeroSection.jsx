@@ -8,6 +8,7 @@ import { changeSelectedEvent } from "../../../../slice/events";
 import SongDetails from "../../../SongDetails/SongDetails";
 import SongCard from "../../../../components/SongCard";
 import Video from '../../../../assets/videos/video.mp4'
+import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const [videoModal, setVideoModal] = useState(false);
@@ -239,23 +240,13 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
             </button>
 
             {/* Video */}
-            <video
+            <CustomVideoPlayer
               id="video-player"
+              src={video}
               className="w-full h-auto max-h-[70vh] rounded-lg"
               autoPlay
-              playsInline
-              onPause={() =>
-                document
-                  .getElementById("play-button")
-                  .classList.remove("hidden")
-              }
-              onPlay={() =>
-                document.getElementById("play-button").classList.add("hidden")
-              }
-            >
-              <source src={video} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+              pauseOtherVideos={true}
+            />
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { FaPlay, FaPause } from "react-icons/fa";
 import Music2 from "../../../../../../public/assets/images/music2.png";
 import Elipse from "../../../../../../public/assets/images/elipse.png";
 import { Link } from "react-router-dom";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const StruggleEndsSection = () => {
   const [highlightedStory, setHighlightedStory] = useState(null);
@@ -38,7 +39,7 @@ const StruggleEndsSection = () => {
   };
 
   const handlePlayPause = () => {
-    const video = videoRef.current;
+    const video = videoRef.current?.videoElement || videoRef.current;
     if (video) {
       if (video.paused) {
         video.play();
@@ -72,30 +73,16 @@ const StruggleEndsSection = () => {
             <div className="grid md:grid-cols-2 gap-8 items-center p-6 md:p-0">
               {/* Left Video Section */}
               <div className="relative group">
-                <video
+                <CustomVideoPlayer
                   ref={videoRef}
                   src={highlightedStory.video_file_url}
-                  className="w-full h-[300px] sm:h-[400px] rounded-xl object-cover aspect-[4/3] pointer-events-none"
                   poster={highlightedStory.photos?.[0] || "/assets/images/struggleSectionThumbnail.png"}
+                  className="w-full h-[300px] sm:h-[400px] rounded-xl aspect-[4/3]"
+                  showPlayButtonOverlay={!isPlaying}
+                  pauseOtherVideos={true}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                 />
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-50 pointer-events-auto">
-                  <button
-                    type="button"
-                    className="rounded-full p-4 transition-colors bg-transparent"
-                    onClick={handlePlayPause}
-                  >
-                    {isPlaying ? (
-                      <FaPause className="text-white text-2xl" />
-                    ) : (
-                      <img
-                        src="/assets/images/playButton.png"
-                        alt="Play"
-                        className="w-32 h-32 opacity-80 hover:opacity-100 transition-opacity"
-                      />
-                    )}
-                  </button>
-                </div>
               </div>
 
               {/* Right Content Section */}

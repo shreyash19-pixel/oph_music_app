@@ -5,6 +5,7 @@ import axiosApi from "../../../conf/axios";
 import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
+import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 export default function VideoMetadataForm() {
   const navigate = useNavigate();
@@ -511,10 +512,10 @@ export default function VideoMetadataForm() {
               {formData.existing_video_url && !formData.video_file && (
                 <div className="mb-2">
                   <p className="text-sm text-gray-400">Existing video file:</p>
-                  <video
+                  <CustomVideoPlayer
                     src={formData.existing_video_url}
                     className="w-full mt-2 rounded-lg"
-                    controls
+                    pauseOtherVideos={true}
                   />
                 </div>
               )}
