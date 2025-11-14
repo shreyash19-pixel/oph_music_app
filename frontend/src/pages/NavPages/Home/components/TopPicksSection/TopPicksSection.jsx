@@ -5,6 +5,7 @@ import { FaPlay, FaPause } from "react-icons/fa";
 import { Image, Shimmer } from "react-shimmer";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios"; // ✅ adjust path if needed
+import { navigateToArtistDetail } from "../../../../../utils/artistHash";
 
 const TopPicksSection = () => {
   const navigate = useNavigate();
@@ -160,7 +161,7 @@ const TopPicksSection = () => {
                     <div
                       className="relative h-80 hover:cursor-pointer"
                       onClick={() =>
-                        navigate(`/public-artist-detail?id=${artist.OPH_ID}`)
+                        navigateToArtistDetail(navigate, artist.OPH_ID)
                       }
                     >
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />

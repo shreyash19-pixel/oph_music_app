@@ -1,4 +1,5 @@
 const {newReleases, getArtistDetail, getReleatedArtists, getUpcomingSong} = require("../model/home")
+const {getOphIdFromHash} = require("../model/artist_hash_mapping")
 
 
 const newReleasesController = async (req, res) => {
@@ -28,20 +29,31 @@ const newReleasesController = async (req, res) => {
 const getArtistDetailController = async (req, res) => {
 
     try{
-        const {id} = req.query
+        const {id, hash} = req.query
 
-        console.log(id);
-        
+        let ophId = id;
 
-        if(!id)
+        // If hash is provided, lookup OPH_ID from hash
+        if(hash) {
+            ophId = await getOphIdFromHash(hash);
+            
+            if(!ophId) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Invalid or expired hash"
+                })
+            }
+        }
+
+        if(!ophId)
         {
             return res.status(400).json({
                 success: false,
-                message: "Missing required field"
+                message: "Missing required field (id or hash)"
             })
         }
 
-        const response = await getArtistDetail(id)
+        const response = await getArtistDetail(ophId)
 
         if(response)
         {

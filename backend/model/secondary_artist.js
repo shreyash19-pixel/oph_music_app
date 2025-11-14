@@ -116,10 +116,34 @@ const getSecondaryArtistsByOphId = async (OPH_ID) => {
   return rows;
 };
 
+/**
+ * Get all secondary artists for a song_id (excluding song_id and created_at)
+ */
+const getSecondaryArtistsBySongId = async (song_id) => {
+  const [rows] = await db.execute(
+    `SELECT 
+      artist_type,
+      artist_name,
+      Legal_name,
+      artistPictureUrl,
+      SpotifyLink,
+      InstagramLink,
+      FacebookLink,
+      AppleMusicLink
+    FROM secondary_artist
+    WHERE song_id = ?
+    ORDER BY artist_type, artist_name`,
+    [song_id]
+  );
+
+  return rows;
+};
+
 module.exports = {
   insertSecondaryArtist,
   updateSecondaryArtist,
   removeSecondaryArtist,
   getByOphIdAndType,
   getSecondaryArtistsByOphId,
+  getSecondaryArtistsBySongId,
 };

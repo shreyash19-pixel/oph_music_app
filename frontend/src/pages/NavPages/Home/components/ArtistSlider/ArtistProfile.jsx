@@ -4,6 +4,7 @@ import axiosApi from "../../../../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Elipse from "../../../../../../public/assets/images/elipse.png";
 import { SongDuration } from "../../../../ArtistSpotlight/ArtistSpotlight";
+import { navigateToArtistDetail } from "../../../../../utils/artistHash";
 
 const ArtistProfile = ({ id }) => {
   const navigate = useNavigate();
@@ -257,7 +258,7 @@ const ArtistProfile = ({ id }) => {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                navigate(`/public-artist-detail?id=${id}`);
+                navigateToArtistDetail(navigate, id);
               }}
               className="underline hover:cursor-pointer text-lg text-[#5DC9DE] block"
             >

@@ -188,6 +188,29 @@ const getSecondaryArtistsByOphId = async (req, res) => {
   }
 };
 
+// -----------------------------------------------------------------------------
+// GET /secondary-artists-by-song/:songId  ➜ list all secondary artists for a song_id
+// -----------------------------------------------------------------------------
+const getSecondaryArtistsBySongId = async (req, res) => {
+  try {
+    const { songId } = req.params;
+    
+    if (!songId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "songId is required" });
+    }
+
+    const data = await secondaryArtist.getSecondaryArtistsBySongId(songId);
+
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, error: error.message });
+  }
+};
+
 // const user = await secondaryArtist.getSecondaryArtistsByOphId(OPH_ID);
 // if (user.length === 0) {
 //   return res.status(404).json({
@@ -203,4 +226,5 @@ module.exports = {
   updateSecondaryArtist,
   removeSecondaryArtist,
   getSecondaryArtistsByOphId,
+  getSecondaryArtistsBySongId,
 };
