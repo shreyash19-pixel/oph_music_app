@@ -240,6 +240,10 @@ const CustomVideoPlayer = forwardRef(({
 
   // Handle video click to play/pause
   const handleVideoClick = (e) => {
+    // Don't handle click if it's on the overlay or controls
+    if (e.target.closest('.absolute.inset-0.flex') || e.target.closest('.absolute.bottom-0')) {
+      return;
+    }
     if (e.target === videoRef.current) {
       togglePlayPause();
     }
@@ -303,16 +307,24 @@ const CustomVideoPlayer = forwardRef(({
 
       {/* Play Button Overlay (when video is paused) */}
       {showPlayButtonOverlay && !isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              togglePlayPause();
-              onPlayButtonClick?.();
+              e.preventDefault();
+              const video = videoRef.current;
+              if (video && video.paused) {
+                togglePlayPause();
+                onPlayButtonClick?.();
+              }
             }}
-            className="rounded-full p-4 bg-[#5DC9DE] hover:bg-cyan-300 transition-colors z-10"
+            className="z-30 pointer-events-auto hover:opacity-80 transition-opacity"
           >
-            <FaPlay className="text-white text-2xl" />
+            <img
+              src="/assets/images/play_button.png"
+              className="w-[100px] sm:w-[150px]"
+              alt="Play Button"
+            />
           </button>
         </div>
       )}

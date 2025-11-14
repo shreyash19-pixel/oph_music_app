@@ -10,6 +10,7 @@ import Story from "../../../../public/assets/images/story.png";
 import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
 import { SongDuration } from "../../ArtistSpotlight/ArtistSpotlight";
+import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -19,7 +20,8 @@ const ArtistDetail = () => {
   const audioRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const [searchParams] = useSearchParams();
-  const id = searchParams.get("id");
+  const hash = searchParams.get("hash");
+  const id = searchParams.get("id"); // Keep for backward compatibility
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlayingVid, setIsPlayingVid] = useState(false);
@@ -64,7 +66,9 @@ const ArtistDetail = () => {
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
     try {
-      const response = await axiosApi.get(`/get-nav-artist-detail?id=${id}`);
+      // Use hash if available, otherwise fall back to id for backward compatibility
+      const param = hash ? `hash=${hash}` : `id=${id}`;
+      const response = await axiosApi.get(`/get-nav-artist-detail?${param}`);
       setArtist(response.data.data);
     } catch (err) {
       console.log(err);
@@ -88,8 +92,10 @@ const ArtistDetail = () => {
   };
 
   useEffect(() => {
-    fetchIndividualArtist();
-  }, [id]);
+    if (hash || id) {
+      fetchIndividualArtist();
+    }
+  }, [hash, id]);
 
   useEffect(() => {
     fetchRankedArtists();
@@ -305,7 +311,6 @@ const ArtistDetail = () => {
                     }
                   }}
                   onPause={() => setShowButton(true)}
-                  onPlayButtonClick={handlePlayPauseVideo}
                 />
               </div>
 
