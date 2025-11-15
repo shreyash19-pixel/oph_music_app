@@ -1,16 +1,18 @@
 const ticketModel = require("../model/ticket");
-const { uploadToS3 } = require("../../utils");
+const { uploadToS3 } = require("../../utils"); // or your own local uploader
 const { saveNotification } = require("../../utils/notify");
-
-//
-// ─── CREATE TICKET ───────────────────────────────────────────────────────────────
-//
 const createTicket = async (req, res) => {
   try {
-    const { ophID, name, email, subject, description, category, ticketNumber } =
-      req.body;
-
-    // ✅ Validate all required fields
+    const {
+      ophID,
+      name,
+      email,
+      subject,
+      description,
+      category,
+      ticketNumber,
+      uploadedPhotoURLs = [],
+    } = req.body;
     if (
       !ophID ||
       !name ||
@@ -26,34 +28,15 @@ const createTicket = async (req, res) => {
       });
     }
 
-    // ✅ Normalize file input (support single or multiple uploads)
-    let photoFiles = req.files?.attachment || [];
-    if (!Array.isArray(photoFiles)) {
-      photoFiles = photoFiles ? [photoFiles] : [];
+    const photoFiles = req.files?.attachment || [];
+    console.log("photo",photoFiles);
+    // const uploadedPhotoURLs = [];
+
+    for (const file of photoFiles) {
+      const url = await uploadToS3(file, `tickets/${ophID}/attachments`);
+      uploadedPhotoURLs.push(url);
     }
 
-    // ✅ Upload all attachments in parallel (faster + safer)
-    const uploadedPhotoURLs = await Promise.all(
-      photoFiles.map(async (file) => {
-        try {
-          const url = await uploadToS3(file, `tickets/${ophID}/attachments`);
-          return url;
-        } catch (err) {
-          console.error(`Failed to upload ${file.originalname}:`, err);
-          return null; // mark failed uploads as null
-        }
-      })
-    );
-
-    // ✅ Keep only valid URLs
-    const validURLs = uploadedPhotoURLs.filter(
-      (u) => typeof u === "string" && u.startsWith("http")
-    );
-
-    // ✅ Stringify safely before inserting into DB
-    const safePhotoJSON = JSON.stringify(validURLs);
-
-    // ✅ Save ticket to DB
     const result = await ticketModel.createTicket(
       ophID,
       name,
@@ -62,12 +45,12 @@ const createTicket = async (req, res) => {
       description,
       category,
       ticketNumber,
-      safePhotoJSON
+      JSON.stringify(uploadedPhotoURLs)
     );
 
     res.status(201).json({
       success: true,
-      message: "Ticket submitted successfully",
+      message: "Ticket submitted",
       ticket: result,
     });
   } catch (error) {
@@ -76,31 +59,28 @@ const createTicket = async (req, res) => {
   }
 };
 
-//
-// ─── GET ALL TICKETS ─────────────────────────────────────────────────────────────
-//
 const getAllTickets = async (req, res) => {
   const { ophID } = req.query;
-
   if (!ophID) {
     return res
       .status(400)
       .json({ success: false, message: "Missing OPH ID in query" });
-  }
-
-  try {
-    const tickets = await ticketModel.getAllTickets(ophID);
-    res.status(200).json({ success: true, data: tickets });
-    console.log("Fetched tickets for:", ophID);
-  } catch (error) {
-    console.error("Error fetching tickets:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+  } else {
+    try {
+      const tickets = await ticketModel.getAllTickets(ophID);
+      res.status(200).json({ success: true, data: tickets });
+      console.log("req.query:", tickets);
+      console.log("Controller - ophID:", ophID);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      console.log("Controller - ophID:", ophID);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
   }
 };
 
-//
-// ─── UPDATE RESOLVED SUMMARY ─────────────────────────────────────────────────────
-//
 const updateResolvedSummary = async (req, res) => {
   const { ticketNumber, notes, ophID } = req.body;
 
@@ -114,7 +94,7 @@ const updateResolvedSummary = async (req, res) => {
       notes
     );
 
-    // ✅ Save notification to DB
+    // Save notification to database
     const notificationMessage = `Ticket #${ticketNumber} was updated with a resolution.`;
     await saveNotification({
       ophid: ophID,
@@ -123,7 +103,6 @@ const updateResolvedSummary = async (req, res) => {
       link: `/dashboard/request-ticket`,
     });
 
-    // ✅ Emit socket event if user is online
     const io = req.app.get("io");
     const onlineUsers = req.app.get("onlineUsers");
 
@@ -149,9 +128,6 @@ const updateResolvedSummary = async (req, res) => {
   }
 };
 
-//
-// ─── GET TICKET SUMMARIES ────────────────────────────────────────────────────────
-//
 const getTicketSummaries = async (req, res) => {
   try {
     const tickets = await ticketModel.getTicketSummaries();
@@ -162,31 +138,28 @@ const getTicketSummaries = async (req, res) => {
   }
 };
 
-//
-// ─── GET SINGLE TICKET BY NUMBER ────────────────────────────────────────────────
-//
 const getTicket = async (req, res) => {
   const { ticketNumber } = req.query;
-
   if (!ticketNumber) {
     return res
       .status(400)
       .json({ success: false, message: "Missing ticketNumber in query" });
-  }
-
-  try {
-    const ticket = await ticketModel.getTicket(ticketNumber);
-    res.status(200).json({ success: true, data: ticket });
-    console.log("Fetched ticket:", ticketNumber);
-  } catch (error) {
-    console.error("Error fetching ticket:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+  } else {
+    try {
+      const tv = await ticketModel.getTicket(ticketNumber);
+      res.status(200).json({ success: true, data: tv });
+      console.log("req.query:", tv);
+      console.log("Controller - ticketNumber:", ticketNumber);
+    } catch (error) {
+      console.error("Error fetching tv based on ticketNumber:", error);
+      console.log("Controller - ticketNumber:", ticketNumber);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
   }
 };
 
-//
-// ─── EXPORT MODULE ──────────────────────────────────────────────────────────────
-//
 module.exports = {
   createTicket,
   getAllTickets,

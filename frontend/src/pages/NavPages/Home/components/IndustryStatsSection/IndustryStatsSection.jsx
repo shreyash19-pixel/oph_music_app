@@ -28,7 +28,7 @@ const IndustryStats = () => {
             },
             {
               id: 3,
-              value: numbers.total_audience.toLocaleString() + "M+",
+              value: numbers.total_audience.toLocaleString() + "+",
               param: "num_of_audience",
             },
           ]);
