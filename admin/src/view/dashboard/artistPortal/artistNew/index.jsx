@@ -239,6 +239,8 @@ const ArtistNew = () => {
               video: artist.video,
               experience_yearly: artist.experience_yearly,
               experience_monthly: artist.experience_monthly,
+              songs_planning_count: artist.songs_planning_count,
+              songs_planning_type: artist.songs_planning_type,
               photos,
             }}
             reason={professionalReason}

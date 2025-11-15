@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import arrowLeftIc from "/assets/images/arrowLeftIc.svg";
 import arrowRightIc from "/assets/images/arrowRightIc.svg";
 import axiosApi from "../../../../conf/axios";
+import { navigateToArtistDetail } from "../../../../utils/artistHash";
 
 const MusicPlayerProfile2 = () => {
   const navigate = useNavigate();
@@ -192,7 +193,7 @@ const MusicPlayerProfile2 = () => {
 
                 <div
                   className="relative h-64 hover:cursor-pointer"
-                  onClick={() => navigate(`/public-artist-detail?id=${artist.ophid}`)}
+                  onClick={() => navigateToArtistDetail(navigate, artist.ophid)}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
                   <Image

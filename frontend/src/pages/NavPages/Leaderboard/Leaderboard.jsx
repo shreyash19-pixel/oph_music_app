@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Select from "react-select";
 import axiosApi from "../../../conf/axios";
 import { Helmet } from "react-helmet";
+import { navigateToArtistDetail } from "../../../utils/artistHash";
 function Leaderboard() {
   const navigate = useNavigate();
 
@@ -285,9 +286,7 @@ function Leaderboard() {
                       <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                         <button
                           onClick={() =>
-                            navigate(
-                              `/public-artist-detail?id=${artist.OPH_ID}`
-                            )
+                            navigateToArtistDetail(navigate, artist.OPH_ID)
                           }
                           className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
                         >
