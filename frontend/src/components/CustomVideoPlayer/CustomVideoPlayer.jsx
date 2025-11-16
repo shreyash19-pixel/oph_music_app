@@ -275,7 +275,7 @@ const CustomVideoPlayer = forwardRef(({
           // Pause all other videos and audio when this video plays
           if (pauseOtherVideos) {
             pauseAllAudio();
-            const allVideos = document.querySelectorAll('video');
+            const allVideos = document.querySelectorAll("video");
             allVideos.forEach((v) => {
               if (v !== e.target && !v.paused) {
                 v.pause();
@@ -356,6 +356,7 @@ const CustomVideoPlayer = forwardRef(({
               onClick={togglePlayPause}
               className="text-white hover:text-[#5DC9DE] transition-colors"
               aria-label={isPlaying ? "Pause" : "Play"}
+              title={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
                 <FaPause className="text-xl" />
@@ -369,6 +370,7 @@ const CustomVideoPlayer = forwardRef(({
               onClick={skipBackward}
               className="text-white hover:text-[#5DC9DE] transition-colors"
               aria-label="Skip backward 10 seconds"
+              title="Backward 10s"
             >
               <FaBackward className="text-lg" />
             </button>
@@ -378,6 +380,7 @@ const CustomVideoPlayer = forwardRef(({
               onClick={skipForward}
               className="text-white hover:text-[#5DC9DE] transition-colors"
               aria-label="Skip forward 10 seconds"
+              title="forward 10s"
             >
               <FaForward className="text-lg" />
             </button>
@@ -388,6 +391,7 @@ const CustomVideoPlayer = forwardRef(({
                 onClick={toggleMute}
                 className="text-white hover:text-[#5DC9DE] transition-colors"
                 aria-label={isMuted ? "Unmute" : "Mute"}
+                title={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted ? (
                   <FaVolumeMute className="text-lg" />
@@ -418,7 +422,7 @@ const CustomVideoPlayer = forwardRef(({
             <button
               onClick={toggleFullscreen}
               className="text-white hover:text-[#5DC9DE] transition-colors"
-              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
               {isFullscreen ? (
                 <FaCompress className="text-lg" />
