@@ -109,19 +109,43 @@ export default function RequestTicketForm() {
 
    useEffect(() => {
      const fetchTickets = async () => {
-       if (!ophid) return; // wait until ophID is loaded
+       if (!ophid) return;
 
        try {
          const response = await axiosApi.get(`/getAllTickets?ophID=${ophid}`);
-         console.log(response);
+         console.log("Response", response.data.data);
 
-         const sanitized = response.data.data.map((ticket) => ({
-           ...ticket,
-           imageURL:
-             typeof ticket.imageURL === "string"
-               ? JSON.parse(ticket.imageURL)
-               : [],
-         }));
+         const sanitized = response.data.data.map((ticket) => {
+           let parsedImages = [];
+
+           try {
+             // Try to parse JSON safely
+             if (
+               typeof ticket.imageURL === "string" &&
+               ticket.imageURL.trim() !== ""
+             ) {
+               parsedImages = JSON.parse(ticket.imageURL);
+
+               // If it’s a single string (not array), convert it into array
+               if (typeof parsedImages === "string") {
+                 parsedImages = [parsedImages];
+               }
+
+               // If parsed value isn’t array (like null or object), fallback to []
+               if (!Array.isArray(parsedImages)) {
+                 parsedImages = [];
+               }
+             }
+           } catch (err) {
+             console.warn("Error parsing imageURL:", ticket.imageURL, err);
+             parsedImages = [];
+           }
+
+           return {
+             ...ticket,
+             imageURL: parsedImages,
+           };
+         });
 
          setTickets(sanitized);
        } catch (err) {
@@ -130,7 +154,7 @@ export default function RequestTicketForm() {
      };
 
      fetchTickets();
-   }, [ophid]); 
+   }, [ophid]);
 
   const submitTicket = async (formData) => {
     if (isSubmittingRef.current) return;

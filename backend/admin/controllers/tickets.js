@@ -23,21 +23,20 @@ const createTicket = async (req, res) => {
       !ticketNumber
     ) {
       return res.status(400).json({
-        
         success: false,
         message: "All fields are required",
       });
     }
 
     const photoFiles = req.files?.attachment || [];
-    console.log(photoFiles);
+    console.log("photo",photoFiles);
     // const uploadedPhotoURLs = [];
 
     for (const file of photoFiles) {
       const url = await uploadToS3(file, `tickets/${ophID}/attachments`);
       uploadedPhotoURLs.push(url);
     }
-    
+
     const result = await ticketModel.createTicket(
       ophID,
       name,
@@ -60,16 +59,13 @@ const createTicket = async (req, res) => {
   }
 };
 
-
 const getAllTickets = async (req, res) => {
-  
   const { ophID } = req.query;
   if (!ophID) {
     return res
       .status(400)
       .json({ success: false, message: "Missing OPH ID in query" });
-  }
-  else {
+  } else {
     try {
       const tickets = await ticketModel.getAllTickets(ophID);
       res.status(200).json({ success: true, data: tickets });
@@ -78,20 +74,25 @@ const getAllTickets = async (req, res) => {
     } catch (error) {
       console.error("Error fetching tickets:", error);
       console.log("Controller - ophID:", ophID);
-      res.status(500).json({ success: false, message: "Internal server error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
   }
 };
 
 const updateResolvedSummary = async (req, res) => {
-  const { ticketNumber, notes, ophID} = req.body;
+  const { ticketNumber, notes, ophID } = req.body;
 
   if (!ticketNumber || !notes || !ophID) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   try {
-    const summary = await ticketModel.updateResolvedSummary(ticketNumber, notes);
+    const summary = await ticketModel.updateResolvedSummary(
+      ticketNumber,
+      notes
+    );
 
     // Save notification to database
     const notificationMessage = `Ticket #${ticketNumber} was updated with a resolution.`;
@@ -99,14 +100,14 @@ const updateResolvedSummary = async (req, res) => {
       ophid: ophID,
       message: notificationMessage,
       title: "Ticket Updated",
-      link: `/dashboard/request-ticket`
+      link: `/dashboard/request-ticket`,
     });
 
     const io = req.app.get("io");
     const onlineUsers = req.app.get("onlineUsers");
-    
+
     if (io && onlineUsers) {
-      const userSocketId = onlineUsers.get(ophID);  
+      const userSocketId = onlineUsers.get(ophID);
       if (userSocketId) {
         io.to(userSocketId).emit("ticket-updated", {
           ticketNumber,
@@ -121,11 +122,11 @@ const updateResolvedSummary = async (req, res) => {
     return res.status(200).json({ success: true, data: summary });
   } catch (error) {
     console.error("Error updating ticket:", error.message);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
-
-
 
 const getTicketSummaries = async (req, res) => {
   try {
@@ -158,7 +159,6 @@ const getTicket = async (req, res) => {
     }
   }
 };
-
 
 module.exports = {
   createTicket,
