@@ -1,12 +1,13 @@
-const { getOrCreateHash } = require("../model/artist_hash_mapping");
+const { getOrCreateHash, regenerateHash } = require("../model/artist_hash_mapping");
 
 /**
- * Generate or get hash for an OPH ID
- * This endpoint can be used to generate hashes for OPH IDs
+ * Generate or get token for an OPH ID
+ * This endpoint can be used to generate tokens for OPH IDs
+ * Format: stagename-profession-abc123
  */
 const generateHashController = async (req, res) => {
   try {
-    const { oph_id } = req.query;
+    const { oph_id, regenerate } = req.query;
 
     if (!oph_id) {
       return res.status(400).json({
@@ -15,7 +16,14 @@ const generateHashController = async (req, res) => {
       });
     }
 
-    const hash = await getOrCreateHash(oph_id);
+    let hash;
+    if (regenerate === "true" || regenerate === "1") {
+      // Regenerate hash (invalidates old and creates new)
+      hash = await regenerateHash(oph_id);
+    } else {
+      // Get existing or create new
+      hash = await getOrCreateHash(oph_id);
+    }
 
     return res.status(200).json({
       success: true,

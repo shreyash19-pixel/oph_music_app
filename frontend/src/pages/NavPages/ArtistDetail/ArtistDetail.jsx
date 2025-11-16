@@ -20,7 +20,7 @@ const ArtistDetail = () => {
   const audioRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const [searchParams] = useSearchParams();
-  const hash = searchParams.get("hash");
+  const token = searchParams.get("token");
   const id = searchParams.get("id"); // Keep for backward compatibility
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,8 +66,8 @@ const ArtistDetail = () => {
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
     try {
-      // Use hash if available, otherwise fall back to id for backward compatibility
-      const param = hash ? `hash=${hash}` : `id=${id}`;
+      // Use token if available, otherwise fall back to id for backward compatibility
+      const param = token ? `token=${token}` : `id=${id}`;
       const response = await axiosApi.get(`/get-nav-artist-detail?${param}`);
       setArtist(response.data.data);
     } catch (err) {
@@ -92,10 +92,10 @@ const ArtistDetail = () => {
   };
 
   useEffect(() => {
-    if (hash || id) {
+    if (token || id) {
       fetchIndividualArtist();
     }
-  }, [hash, id]);
+  }, [token, id]);
 
   useEffect(() => {
     fetchRankedArtists();
