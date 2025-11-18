@@ -19,6 +19,10 @@ const PaymentScreen = () => {
   const [matchedCosting, setMatchedCosting] = useState(null);
   const from = location.state.from;
   const song_id = location.state.song_id;
+
+  console.log(song_id);
+  
+
   const event_id = location.state.event_id;
   const outside_user = location.state.outside_user;
   const user_type = location.state.user_type;

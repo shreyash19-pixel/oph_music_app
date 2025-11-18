@@ -113,8 +113,11 @@ const AddNewSong = () => {
         );
 
         if (response.data.success) {
+          console.log(response);
+          
           const data = Object.values(response.data.data);
-          console.log(response.data.songCnt);
+          // console.log(response.data.songCnt);
+          console.log(data[0].song_id);
           setLoading(false);
 
           if (songCount < 2) {
@@ -129,7 +132,7 @@ const AddNewSong = () => {
             navigate("/auth/payment", {
               state: {
                 from: "Special artist song registration",
-                song_id: data.song_id,
+                song_id: data[0].song_id,
               },
             });
           }

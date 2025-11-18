@@ -425,7 +425,7 @@ const MYEPK = () => {
                 <tbody>
                   {artist?.songs.map(
                     (song, index) =>
-                      song.song_status === "approved" && (
+                      song.song_status === "approved" && song.payment_status === "approved" && (
                         <tr
                           key={index}
                           className="border-b border-gray-800 hover:bg-gray-800/50 text-white"

@@ -164,7 +164,7 @@ const SectionBlock = ({
 
       {fields && (
         <Field label={fields}>
-          {fields === "Bio" || fields === "Change Artist Story" ? (
+          {fields === "Bio" || fields === "Change Artist Story"  || fields === "Artist Story" ? (
             <p className="w-full p-2 border rounded-md text-black bg-gray-100">
               {content}
             </p>

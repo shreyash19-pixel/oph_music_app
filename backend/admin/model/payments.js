@@ -20,7 +20,7 @@ const getPaymentDetailsForAllSong = async () => {
     const [rows] = await db.query(
       `SELECT *
         FROM sign_up_payment
-        WHERE \`From\` = 'Song Registration'
+        WHERE \`From\` = 'Song Registration' OR \`From\` = 'Special artist song registration'
         AND Status = 'under review';
       `
     );
@@ -153,7 +153,7 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
     const [rows] = await db.query(
       `SELECT *
         FROM sign_up_payment
-        WHERE \`From\` = 'Song Registration'
+        WHERE \`From\` = 'Song Registration' OR \`From\` = 'Special artist song registration'
         AND Status = 'under review'
         AND OPH_ID = ?
         AND song_id = ?;`,
