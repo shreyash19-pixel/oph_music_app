@@ -9,6 +9,7 @@ import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Link, useNavigate } from "react-router-dom";
 import { Image, Shimmer } from "react-shimmer";
 import toast from "react-hot-toast";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 function PodcastSlider({ searchText, title }) {
   const navigate = useNavigate();
@@ -17,14 +18,16 @@ function PodcastSlider({ searchText, title }) {
   const [playingIndex, setPlayingIndex] = useState(null);
   const [isPlayButtonClicked, setIsPlayButtonClicked] = useState(false);
   const videoRefs = useRef([]);
+  const wasPlayingBeforeSeek = useRef(false);
   const [allPodcasts, setAllPodcasts] = useState([]);
+  const hasAutoPlayed = useRef({}); // Track which videos have auto-played
 
   useEffect(() => {
     const fetchPodcasts = async () => {
       try {
         const response = await axiosApi.get("/allPodcasts");
         const sortedData = (response.data.data || []).sort(
-          (a, b) => b.views - a.views,
+          (a, b) => b.views - a.views
         );
         setAllPodcasts(sortedData);
       } catch (err) {
@@ -40,7 +43,7 @@ function PodcastSlider({ searchText, title }) {
   const filteredPodcasts = useMemo(() => {
     if (searchText) {
       return allPodcasts.filter((podcast) =>
-        podcast.title.toLowerCase().includes(searchText.toLowerCase()),
+        podcast.title.toLowerCase().includes(searchText.toLowerCase())
       );
     }
     return allPodcasts;
@@ -61,38 +64,69 @@ function PodcastSlider({ searchText, title }) {
 
     setIsPlayButtonClicked(true);
 
-    videoRefs.current.forEach((video, idx) => {
-      if (video && idx !== index) {
-        video.pause();
-        video.currentTime = 0;
+    // Pause all other videos first
+    videoRefs.current.forEach((videoRef, idx) => {
+      if (videoRef && idx !== index) {
+        if (videoRef.pause) {
+          videoRef.pause();
+        } else if (videoRef.videoElement && videoRef.videoElement.pause) {
+          videoRef.videoElement.pause();
+        }
+        if (videoRef.videoElement && videoRef.videoElement.currentTime !== undefined) {
+          videoRef.videoElement.currentTime = 0;
+        }
+        // Reset auto-play flag for other videos
+        hasAutoPlayed.current[idx] = false;
       }
     });
 
-    setPlayingIndex(index);
-    if (videoRefs.current[index]) {
-      videoRefs.current[index].play();
+    // Reset auto-play flag for the current video if it was already playing
+    if (playingIndex === index && videoRefs.current[index]) {
+      const currentVideo = videoRefs.current[index];
+      if (currentVideo && !currentVideo.paused) {
+        // Video is already playing, just toggle pause
+        currentVideo.pause();
+        setPlayingIndex(null);
+        setIsPlayButtonClicked(false);
+        return;
+      }
     }
 
+    setPlayingIndex(index);
+    
+    // Reset the flag after a short delay (play will be handled by ref callback)
     setTimeout(() => {
       setIsPlayButtonClicked(false);
-    }, 1000);
+    }, 200);
   };
 
   const handleVideoPlay = (index) => {
     if (!isPlayButtonClicked) {
-      videoRefs.current.forEach((video, idx) => {
-        if (video && idx !== index) {
-          video.pause();
-          video.currentTime = 0;
+      // Pause all other videos on the page (but not the current one)
+      videoRefs.current.forEach((videoRef, idx) => {
+        if (videoRef && idx !== index) {
+          const video = videoRef.videoElement || videoRef;
+          if (video && video.pause) {
+            video.pause();
+            if (video.currentTime !== undefined) {
+              video.currentTime = 0;
+            }
+          }
         }
       });
     }
   };
 
   const stopAllVideos = () => {
-    videoRefs.current.forEach((video) => {
-      if (video) {
-        video.pause();
+    videoRefs.current.forEach((videoRef, idx) => {
+      if (videoRef) {
+        if (videoRef.pause) {
+          videoRef.pause();
+        } else if (videoRef.videoElement && videoRef.videoElement.pause) {
+          videoRef.videoElement.pause();
+        }
+        // Reset auto-play flag
+        hasAutoPlayed.current[idx] = false;
       }
     });
     setPlayingIndex(null);
@@ -180,14 +214,37 @@ function PodcastSlider({ searchText, title }) {
               <div key={index} className="px-2 lg:px-4 w-full">
                 <div className="rounded-xl overflow-hidden relative">
                   {playingIndex === index ? (
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
+                    <CustomVideoPlayer
+                      ref={(el) => {
+                        videoRefs.current[index] = el;
+                        // Auto-play when ref is set and component is ready (only once)
+                        if (el && el.play && !hasAutoPlayed.current[index]) {
+                          hasAutoPlayed.current[index] = true;
+                          setTimeout(() => {
+                            if (el && el.play && playingIndex === index) {
+                              el.play().catch(err => {
+                                console.error("Auto-play error:", err);
+                              });
+                            }
+                          }, 150);
+                        }
+                      }}
                       src={podcast.video_url}
-                      controls
-                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] object-cover rounded-xl mx-auto"
-                      onEnded={() => setPlayingIndex(null)}
-                      onPlay={() => handleVideoPlay(index)}
-                      autoPlay
+                      poster={podcast.thumbnail_url}
+                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] rounded-xl mx-auto"
+                      pauseOtherVideos={true}
+                      onPlay={() => {
+                        // Only handle video play if not triggered by button click
+                        if (!isPlayButtonClicked) {
+                          handleVideoPlay(index);
+                        }
+                      }}
+                      onPause={() => {
+                        // Reset auto-play flag when paused
+                        if (playingIndex !== index) {
+                          hasAutoPlayed.current[index] = false;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="relative cursor-pointer overflow-hidden">
@@ -249,14 +306,37 @@ function PodcastSlider({ searchText, title }) {
               <div key={index} className="px-2 lg:px-4 w-full">
                 <div className="rounded-xl overflow-hidden relative">
                   {playingIndex === index ? (
-                    <video
-                      ref={(el) => (videoRefs.current[index] = el)}
+                    <CustomVideoPlayer
+                      ref={(el) => {
+                        videoRefs.current[index] = el;
+                        // Auto-play when ref is set and component is ready (only once)
+                        if (el && el.play && !hasAutoPlayed.current[index]) {
+                          hasAutoPlayed.current[index] = true;
+                          setTimeout(() => {
+                            if (el && el.play && playingIndex === index) {
+                              el.play().catch(err => {
+                                console.error("Auto-play error:", err);
+                              });
+                            }
+                          }, 150);
+                        }
+                      }}
                       src={podcast.video_url}
-                      controls
-                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] object-cover rounded-xl mx-auto"
-                      onEnded={() => setPlayingIndex(null)}
-                      onPlay={() => handleVideoPlay(index)}
-                      autoPlay
+                      poster={podcast.thumbnail_url}
+                      className="w-full sm:w-[95%] lg:w-[95%] aspect-[16/9] rounded-xl mx-auto"
+                      pauseOtherVideos={true}
+                      onPlay={() => {
+                        // Only handle video play if not triggered by button click
+                        if (!isPlayButtonClicked) {
+                          handleVideoPlay(index);
+                        }
+                      }}
+                      onPause={() => {
+                        // Reset auto-play flag when paused
+                        if (playingIndex !== index) {
+                          hasAutoPlayed.current[index] = false;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="relative cursor-pointer overflow-hidden">

@@ -5,6 +5,7 @@ import { FaPlay, FaPause } from "react-icons/fa";
 import { Image, Shimmer } from "react-shimmer";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios"; // ✅ adjust path if needed
+import { navigateToArtistDetail } from "../../../../../utils/artistHash";
 
 const TopPicksSection = () => {
   const navigate = useNavigate();
@@ -92,6 +93,21 @@ const TopPicksSection = () => {
     };
   }, [audio]);
 
+  // Listen for pauseAllAudio event to pause audio when video plays
+  useEffect(() => {
+    const handlePauseAllAudio = () => {
+      if (audio && !audio.paused) {
+        audio.pause();
+        setPlayingSongId(null);
+      }
+    };
+
+    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    return () => {
+      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
+    };
+  }, [audio]);
+
   function rankToColor(rank) {
     const val = {
       1: "bg-emerald-400",
@@ -145,7 +161,7 @@ const TopPicksSection = () => {
                     <div
                       className="relative h-80 hover:cursor-pointer"
                       onClick={() =>
-                        navigate(`/public-artist-detail?id=${artist.OPH_ID}`)
+                        navigateToArtistDetail(navigate, artist.OPH_ID)
                       }
                     >
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />

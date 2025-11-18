@@ -226,8 +226,10 @@ const PaymentScreen = () => {
           location.state.date || location.state.booking_date || null || location.state.new_booking_date,
         old_release_date: location.state.old_booking_date || null,
         lyricalVid: lyrical_services,
+        amount: getDisplayAmount(),
       };
-
+      console.log(formData);
+      
       const apiPath =
         from === "Song Repayment" ? "/song-payment" : "/auth/payment";
 

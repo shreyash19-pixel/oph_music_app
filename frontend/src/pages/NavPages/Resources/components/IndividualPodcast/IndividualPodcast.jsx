@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const formatViews = (views) => {
   if (!views && views !== 0) return "0 views";
@@ -15,7 +16,6 @@ const IndividualPodcast = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [content, setContent] = useState({});
-  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
 
   console.log(id, "1");
@@ -33,45 +33,18 @@ const IndividualPodcast = () => {
     fetchPodcast();
   }, [fetchPodcast]);
 
-  const togglePlayPause = () => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      videoRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((err) => console.error("Video play error:", err));
-    } else {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
   return (
     <div className="text-white py-40 min-h-screen xl:px-16 lg:px-10 px-6 container mx-auto">
       {/* Video */}
       <div className="relative w-full aspect-video mb-8 rounded-xl overflow-hidden md:p-12">
-        <video
-          controls
-          controlsList="nodownload"
+        <CustomVideoPlayer
           ref={videoRef}
           src={content.video_url}
-          className="w-full h-full object-cover"
           poster={content.thumbnail_url}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
+          className="w-full h-full"
+          pauseOtherVideos={true}
+          showPlayButtonOverlay={true}
         />
-        {!isPlaying && (
-          <button
-            onClick={togglePlayPause}
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-          >
-            <img
-              src="/assets/images/playButton.png"
-              alt="Play"
-              className="w-30 h-30 opacity-80 hover:opacity-100 transition-opacity"
-            />
-          </button>
-        )}
       </div>
 
       {/* Title */}

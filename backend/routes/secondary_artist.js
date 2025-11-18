@@ -24,4 +24,7 @@ router.post(
 // GET - Fetch all secondary artists by OPH_ID
 router.get("/secondary-artists", controller.getSecondaryArtistsByOphId);
 
+// GET - Fetch all secondary artists by song_id
+router.get("/secondary-artists-by-song/:songId", controller.getSecondaryArtistsBySongId);
+
 module.exports = router;

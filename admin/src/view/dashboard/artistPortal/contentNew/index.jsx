@@ -17,6 +17,7 @@ const ContentNew = () => {
   const [video, setVideo] = useState({});
   const [imageUrls, setImageUrls] = useState(["", "", ""]);
   const [loading, setLoading] = useState(true);
+  const [secondaryArtists, setSecondaryArtists] = useState([]);
 
   const [statuses, setStatuses] = useState({
     Content: null,
@@ -56,26 +57,6 @@ const ContentNew = () => {
 
         });
 
-        // Parse secondary artists
-        const secondaryArtists = [];
-        if (
-          song.secondary_artist_types &&
-          song.secondary_artist_names &&
-          song.secondary_legal_names
-        ) {
-          const types = song.secondary_artist_types.split(",").map((s) => s.trim());
-          const names = song.secondary_artist_names.split(",").map((s) => s.trim());
-          const legalNames = song.secondary_legal_names.split(",").map((s) => s.trim());
-
-          for (let i = 0; i < types.length; i++) {
-            secondaryArtists.push({
-              artist_type: types[i] || "",
-              artist_name: names[i] || "",
-              legal_name: legalNames[i] || "",
-            });
-          }
-        }
-
         // Set Audio
         setAudio({
           song_name: song.audio_song_name || "",
@@ -89,8 +70,18 @@ const ContentNew = () => {
           composer: song.composer || "",
           producer: song.producer || "",
           audio_url: song.audio_url || "",
-          secondary_artists: secondaryArtists,
         });
+
+        // Fetch secondary artists separately
+        try {
+          const secondaryRes = await axiosApi.get(`/secondary-artists-by-song/${songId}`);
+          if (secondaryRes.data.success && secondaryRes.data.data) {
+            setSecondaryArtists(secondaryRes.data.data);
+          }
+        } catch (err) {
+          console.error("Error fetching secondary artists:", err);
+          setSecondaryArtists([]);
+        }
 
         // Set Video
         let parsedImages = [];
@@ -234,17 +225,86 @@ const ContentNew = () => {
           renderExtra={() => (
             <div className="mt-4 space-y-4">
               <h3 className="text-lg font-semibold text-gray-800">Secondary Artists</h3>
-              {audio.secondary_artists?.length > 0 ? (
-                audio.secondary_artists.map((artist, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 border rounded-lg bg-gray-100 text-sm space-y-1"
-                  >
-                    <div><strong>Type:</strong> {artist.artist_type}</div>
-                    <div><strong>Artist Name:</strong> {artist.artist_name}</div>
-                    <div><strong>Legal Name:</strong> {artist.legal_name}</div>
-                  </div>
-                ))
+              {secondaryArtists.length > 0 ? (
+                <div className="space-y-4">
+                  {secondaryArtists.map((artist, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 border rounded-lg bg-gray-50 space-y-3"
+                    >
+                      <div className="flex items-start gap-4">
+                        {artist.artistPictureUrl && (
+                          <img
+                            src={artist.artistPictureUrl}
+                            alt={artist.artist_name || "Artist"}
+                            className="w-20 h-20 object-cover rounded-lg border"
+                            onError={(e) => {
+                              e.target.src = "https://via.placeholder.com/80?text=No+Image";
+                            }}
+                          />
+                        )}
+                        <div className="flex-1 space-y-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <strong className="text-gray-700">Artist Type:</strong>
+                              <div className="text-gray-900">{artist.artist_type || "—"}</div>
+                            </div>
+                            <div>
+                              <strong className="text-gray-700">Artist Name:</strong>
+                              <div className="text-gray-900">{artist.artist_name || "—"}</div>
+                            </div>
+                            <div>
+                              <strong className="text-gray-700">Legal Name:</strong>
+                              <div className="text-gray-900">{artist.Legal_name || "—"}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-3 pt-2 border-t">
+                            {artist.SpotifyLink && (
+                              <a
+                                href={artist.SpotifyLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-800 text-sm font-medium"
+                              >
+                                Spotify ↗
+                              </a>
+                            )}
+                            {artist.InstagramLink && (
+                              <a
+                                href={artist.InstagramLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-pink-600 hover:text-pink-800 text-sm font-medium"
+                              >
+                                Instagram ↗
+                              </a>
+                            )}
+                            {artist.FacebookLink && (
+                              <a
+                                href={artist.FacebookLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Facebook ↗
+                              </a>
+                            )}
+                            {artist.AppleMusicLink && (
+                              <a
+                                href={artist.AppleMusicLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              >
+                                Apple Music ↗
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <p className="text-sm text-gray-600">No secondary artists.</p>
               )}

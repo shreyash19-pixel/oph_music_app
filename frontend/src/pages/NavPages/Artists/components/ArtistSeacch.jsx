@@ -1,6 +1,7 @@
 // components/ArtistRankingTable.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { navigateToArtistDetail } from "../../../../utils/artistHash";
 
 const ArtistRankingTable = ({ data = [], title = "Ranking" }) => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const ArtistRankingTable = ({ data = [], title = "Ranking" }) => {
   };
 
   const handleProfileClick = (artistId) => {
-    navigate(`/public-artist-detail?id=${artistId}`);
+    navigateToArtistDetail(navigate, artistId);
   };
 
   return (

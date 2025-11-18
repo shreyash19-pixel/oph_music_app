@@ -4,7 +4,8 @@ import { Image, Shimmer } from "react-shimmer";
 import "./TipsSlider.css";
 import Struggle from "../../../../../../public/assets/images/struggle.png";
 import Elipse3 from "../../../../../../public/assets/images/elipse3.png";
-import axiosApi from "../../../../../conf/axios"; // ✅ adjust import if needed
+import axiosApi from "../../../../../conf/axios";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const TipsSlider = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,24 +86,8 @@ const TipsSlider = () => {
     setIsPlaying(false);
   };
 
-  const togglePlayPause = (e) => {
-    e.stopPropagation();
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
+  const modalVideoRef = useRef(null);
 
-  useEffect(() => {
-    if (isModalOpen && videoRef.current) {
-      videoRef.current.play();
-    }
-  }, [isModalOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -186,21 +171,15 @@ const TipsSlider = () => {
             </button>
 
             <div className="relative">
-              <video
-                ref={videoRef}
+              <CustomVideoPlayer
+                ref={modalVideoRef}
                 src={selectedVideo}
                 className="w-full h-auto rounded-lg"
                 autoPlay
-                playsInline
+                pauseOtherVideos={true}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
               />
-              {!isPlaying && (
-                <button
-                  onClick={togglePlayPause}
-                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white text-6xl rounded-full w-20 h-20 mx-auto my-auto"
-                >
-                  ▶
-                </button>
-              )}
             </div>
           </div>
         </div>

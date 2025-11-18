@@ -7,6 +7,7 @@ import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 function SuccessSlider({ searchText, title }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -49,14 +50,6 @@ function SuccessSlider({ searchText, title }) {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
     setIsPlaying(true);
-    setTimeout(() => {
-      const video = document.getElementById("video-player");
-      if (video) {
-        video.play().catch((error) => {
-          console.error("Autoplay failed:", error);
-        });
-      }
-    }, 300);
   };
 
   const closeModal = () => {
@@ -65,19 +58,7 @@ function SuccessSlider({ searchText, title }) {
     setIsPlaying(false);
   };
 
-  const togglePlayPause = (e) => {
-    e.stopPropagation();
-    const video = document.getElementById("video-player");
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsPlaying(true);
-      } else {
-        video.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
+  const modalVideoRef = useRef(null);
 
   const handleMouseDown = () => {
     setIsDragging(false);
@@ -304,13 +285,15 @@ function SuccessSlider({ searchText, title }) {
                 &times;
               </button>
               <div className="relative h-auto w-auto">
-                <video
-                  id="video-player"
+                <CustomVideoPlayer
+                  ref={modalVideoRef}
+                  id="video-player-success"
                   src={selectedVideo}
                   className="rounded-lg w-full"
                   autoPlay
-                  playsInline
-                  controls
+                  pauseOtherVideos={true}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                 />
               </div>
             </div>

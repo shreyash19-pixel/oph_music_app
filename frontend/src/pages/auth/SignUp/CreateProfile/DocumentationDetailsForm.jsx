@@ -546,7 +546,7 @@ const DocumentationDetailsForm = () => {
 
             {/* PAN Card Upload */}
             <div className="space-y-4  mb-4">
-              <p className="text-sm text-white">Upload PAN Card</p>
+              <p className="text-sm text-white">Upload PAN Card <span className="text-gray-400 text-xs"></span></p>
               <div className="flex gap-4">
                 <div className="flex-1">
                   <input
