@@ -98,6 +98,7 @@ const AddNewSong = () => {
       sendFormData.append("credits", formData.credits);
       sendFormData.append("time", formData.time);
       sendFormData.append("proof", formData.proof);
+      sendFormData.append("songCount", songCount);
       sendFormData.append("audioFile", formData.audioFile);
 
       try {
@@ -115,13 +116,23 @@ const AddNewSong = () => {
           const data = Object.values(response.data.data);
           console.log(response.data.songCnt);
           setLoading(false);
-          navigate("/auth/payment", {
-            state: {
-              from: "Special artist song registration",
-              song_id: data.song_id,
-              songCnt: songCount,
-            },
-          });
+
+          if (songCount < 2) {
+            navigate("/dashboard/pending", {
+              state: {
+                heading: "Your request is under review",
+                btnText: "Back to Home",
+                redirectTo: "/dashboard",
+              },
+            });
+          } else {
+            navigate("/auth/payment", {
+              state: {
+                from: "Special artist song registration",
+                song_id: data.song_id,
+              },
+            });
+          }
         }
       } catch (err) {
         console.error(err.message);

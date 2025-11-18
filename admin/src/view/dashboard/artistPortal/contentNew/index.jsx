@@ -52,6 +52,9 @@ const ContentNew = () => {
                 year: "numeric",
               })
             : "",
+          projects_type : song.register_projects_type || "",
+          video_type : song.register_video_type || ""
+
         });
 
         // Set Audio
@@ -193,7 +196,7 @@ const ContentNew = () => {
         <SectionBlock
           section="Content"
           data={content}
-          fields={["project_type", "CP_Line", "PLine", "release_date"]}
+          fields={["project_type", "CP_Line", "PLine", "release_date", "projects_type", "video_type"]}
           showActions={false}
           statuses={statuses}
           reasons={reasons}

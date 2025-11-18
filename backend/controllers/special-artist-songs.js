@@ -19,12 +19,14 @@ const getSpeicalArtistSongStatusController = async (req, res) => {
     }
 
     const response = await getSpeicalArtistSongStatus(ophid);
+    const songCount = await getSongCount(ophid);
 
     if (response) {
       return res.status(200).json({
         success: true,
         message: "Data fetched successfully",
         data: response,
+        songCnt: songCount.length === 0 ? 0 : songCount[0].cnt,
       });
     }
   } catch (err) {
@@ -37,7 +39,7 @@ const getSpeicalArtistSongStatusController = async (req, res) => {
 
 const insertSpecialArtistSongsController = async (req, res) => {
   try {
-    const { ophid, songName, views, credits, time, proof } = req.body;
+    const { ophid, songName, views, credits, time, proof, songCount } = req.body;
 
     // Validate required fields
     if (!ophid || !songName || views == null || !credits || !time || !proof) {
@@ -67,18 +69,14 @@ const insertSpecialArtistSongsController = async (req, res) => {
       credits,
       time,
       proof,
+      songCount,
       audioURL
     );
-
-    const songCount = await getSongCount(ophid);
-
-    console.log(songCount);
 
     return res.status(201).json({
       success: true,
       message: "Data inserted successfully",
       data: response,
-      songCnt: songCount.length === 0 ? 0 : songCount[0].cnt,
     });
   } catch (err) {
     console.error(err);

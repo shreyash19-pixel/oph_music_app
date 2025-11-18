@@ -46,8 +46,12 @@ const setSongReleaseDetails = async (
   instagram_url,
   facebook_url
 ) => {
+
+  console.log("hekredkfdkfs");
+  
+
   const [rows] = await db.execute(
-    "UPDATE song_release SET release_time = ?, youtube_release_time = ?, spotify_release_time = ?, apple_release_time = ?, instagram_release_time = ?,facebook_release_time = ?, share_url = ?, youtube_url = ?, spotify_url = ?, apple_url = ?, instagram_url = ?, facebook_url = ? WHERE ophid = ? AND song_id = ?",
+    "UPDATE song_release SET release_time = ?, youtube_release_time = ?, spotify_release_time = ?, apple_release_time = ?, instagram_release_time = ?,facebook_release_time = ?, share_url = ?, youtube_url = ?, spotify_url = ?, apple_url = ?, instagram_url = ?, facebook_url = ? WHERE song_id = ?",
     [
       release_time,
       youtube_release_time,
@@ -61,7 +65,6 @@ const setSongReleaseDetails = async (
       apple_url,
       instagram_url,
       facebook_url,
-      ophid,
       songId,
     ]
   );

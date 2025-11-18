@@ -163,13 +163,6 @@ const PaymentScreen = () => {
   // Function to get the appropriate amount based on the matched costing data or fallback
   const getDisplayAmount = () => {
     if (matchedCosting) {
-      console.log(location.state.songCnt);
-      
-      if(matchedCosting.name === "Special artist song registration" && location.state.songCnt <= 2)
-      {
-        return parseFloat(0)
-      }
-
       // Parse cost as number (handles string format like "799.00")
       return parseFloat(matchedCosting.cost);
     }

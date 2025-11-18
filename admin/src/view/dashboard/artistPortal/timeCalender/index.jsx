@@ -34,8 +34,8 @@ export default function TimeCalendar() {
               d.getMonth() + 1
             ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
             dateMap[localDateStr] = {
-              content: item.content,
-              artist: item.artist,
+              content: item.oph_id,
+              artist: item.full_name,
             };
           });
 
@@ -242,13 +242,23 @@ export default function TimeCalendar() {
   const UserAvatar = ({ artist }) => (
     <div className="flex items-center gap-2 mb-2">
       {/* Circle with Initial */}
+      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-400 text-gray-900 font-bold">
+        {artist?.charAt(0)?.toUpperCase() || "?"}
+      </div>
+
       {/* Full name only on larger screens */}
-      {/* <span className="text-sm hidden lg:block">{artist.artist.name}</span> */}
+      <span className="text-sm hidden lg:block">{artist}</span>
     </div>
   );
 
-  const handleDateCellClick = (year, month, day, isCurrentMonth, getCurrentGridStatus) => {
-    if (!isCurrentMonth || getCurrentGridStatus.Status === 'approved') return; // Don't handle clicks on non-current month days
+  const handleDateCellClick = (
+    year,
+    month,
+    day,
+    isCurrentMonth,
+    getCurrentGridStatus
+  ) => {
+    if (!isCurrentMonth || getCurrentGridStatus.Status === "approved") return; // Don't handle clicks on non-current month days
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
@@ -267,7 +277,7 @@ export default function TimeCalendar() {
   };
 
   // Update renderCalendarCell to include click handler
-  const renderCalendarCell = ({ day, isCurrentMonth }, index) => {    
+  const renderCalendarCell = ({ day, isCurrentMonth }, index) => {
     const isBlocked = isDateBlocked(currentYear, currentMonthIndex, day);
     const isPast = isDateInPast(currentYear, currentMonthIndex, day);
     const isValidFutureDate = isWithinOneYear(
@@ -283,10 +293,14 @@ export default function TimeCalendar() {
     )}-${String(d.getDate()).padStart(2, "0")}`;
     const artist = blockedDatesInfo[dateStr];
 
-    const getCurrentGridStatus = data.find((d) => d.current_booking_date === dateStr)
+    console.log(artist);
+    
+
+    const getCurrentGridStatus = data.find(
+      (d) => d.current_booking_date === dateStr
+    );
 
     // console.log(getCurrentGridStatus);
-    
 
     return (
       <div
@@ -303,9 +317,13 @@ export default function TimeCalendar() {
           }
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
-          isBlocked && isCurrentMonth && getCurrentGridStatus.Status === 'under review'
+          isBlocked &&
+          isCurrentMonth &&
+          getCurrentGridStatus.Status === "under review"
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
-            : isBlocked && isCurrentMonth && getCurrentGridStatus.Status === 'approved'
+            : isBlocked &&
+              isCurrentMonth &&
+              getCurrentGridStatus.Status === "approved"
             ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
             : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
@@ -325,23 +343,25 @@ export default function TimeCalendar() {
           >
             {day}
           </span>
-          {isBlocked && isCurrentMonth && getCurrentGridStatus.Status === 'under review' && (
-            <svg
-              className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
-              viewBox="0 0 18 21"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M3.25 6C3.25 2.82436 5.82436 0.25 9 0.25C12.1756 0.25 14.75 2.82436 14.75 6V7.11372C14.75 7.18052 14.7413 7.24529 14.7249 7.30693C16.161 7.83463 17.2803 8.99318 17.7553 10.4549C18 11.2081 18 12.1387 18 14C18 15.8613 18 16.7919 17.7553 17.5451C17.2607 19.0673 16.0673 20.2607 14.5451 20.7553C13.7919 21 12.8613 21 11 21H6.99998C5.13871 21 4.20808 21 3.45492 20.7553C1.93273 20.2607 0.739307 19.0673 0.244717 17.5451C0 16.7919 0 15.8613 0 14C0 12.1387 0 11.2081 0.244717 10.4549C0.719664 8.99318 1.83903 7.83463 3.27512 7.30693C3.25873 7.24529 3.25 7.18052 3.25 7.11372V6ZM4.75 7.03413C5.31973 7 6.03471 7 7 7H11C11.9653 7 12.6803 7 13.25 7.03413V6C13.25 3.65279 11.3472 1.75 9 1.75C6.65279 1.75 4.75 3.65279 4.75 6V7.03413ZM9 11.25C9.41421 11.25 9.75 11.5858 9.75 12V16C9.75 16.4142 9.41421 16.75 9 16.75C8.58579 16.75 8.25 16.4142 8.25 16V12C8.25 11.5858 8.58579 11.25 9 11.25Z"
-                fill="#EC4346"
-              />
-            </svg>
-          )}
+          {isBlocked &&
+            isCurrentMonth &&
+            getCurrentGridStatus.Status === "under review" && (
+              <svg
+                className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
+                viewBox="0 0 18 21"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M3.25 6C3.25 2.82436 5.82436 0.25 9 0.25C12.1756 0.25 14.75 2.82436 14.75 6V7.11372C14.75 7.18052 14.7413 7.24529 14.7249 7.30693C16.161 7.83463 17.2803 8.99318 17.7553 10.4549C18 11.2081 18 12.1387 18 14C18 15.8613 18 16.7919 17.7553 17.5451C17.2607 19.0673 16.0673 20.2607 14.5451 20.7553C13.7919 21 12.8613 21 11 21H6.99998C5.13871 21 4.20808 21 3.45492 20.7553C1.93273 20.2607 0.739307 19.0673 0.244717 17.5451C0 16.7919 0 15.8613 0 14C0 12.1387 0 11.2081 0.244717 10.4549C0.719664 8.99318 1.83903 7.83463 3.27512 7.30693C3.25873 7.24529 3.25 7.18052 3.25 7.11372V6ZM4.75 7.03413C5.31973 7 6.03471 7 7 7H11C11.9653 7 12.6803 7 13.25 7.03413V6C13.25 3.65279 11.3472 1.75 9 1.75C6.65279 1.75 4.75 3.65279 4.75 6V7.03413ZM9 11.25C9.41421 11.25 9.75 11.5858 9.75 12V16C9.75 16.4142 9.41421 16.75 9 16.75C8.58579 16.75 8.25 16.4142 8.25 16V12C8.25 11.5858 8.58579 11.25 9 11.25Z"
+                  fill="#EC4346"
+                />
+              </svg>
+            )}
         </div>
-        {isBlocked && isCurrentMonth && <UserAvatar artist={artist} />}
+        {isBlocked && isCurrentMonth && <UserAvatar artist={artist.content} />}
       </div>
     );
   };
