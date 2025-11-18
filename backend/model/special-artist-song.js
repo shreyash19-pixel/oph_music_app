@@ -16,25 +16,33 @@ const insertSpecialArtistSongs = async (
   credits,
   duration,
   proof,
+  songCount,
   audio_url
 ) => {
-  await db.execute(
-    "INSERT INTO special_artist_songs (ophid, song_name, views,credits,duration,proof, audio_url) VALUES (?,?,?,?,?,?,?)",
-    [ophid, song_name, views, credits, duration, proof, audio_url]
-  );
 
-  const [getDetails] = await db.execute(
-    "SELECT song_id FROM special_artist_songs WHERE ophid = ?",
-    [ophid]
-  );
+  const [rows] = 
+    await db.execute(
+      "INSERT INTO special_artist_songs (ophid, song_name, views,credits,duration,proof, audio_url) VALUES (?,?,?,?,?,?,?)",
+      [ophid, song_name, views, credits, duration, proof, audio_url]
+    )
+  // console.log(rows);
+  
+  // const [songId] =  await db.execute(
+  //     "SELECT song_id FROM special_artist_songs WHERE ophid = ? AND song_name = ?",
+  //     [ophid, song_name]
+  //   )
 
-  const songMap = {};
+  //   console.log(songId);
+    
 
-  songMap[ophid] = {
-    song_id: getDetails[0].song_id,
-  };
+  //   if (songCount < 3) {
+  //     await db.execute(
+  //       "UPDATE special_artist_songs SET status = 'approved' WHERE song_id = ?",
+  //       [songId[0].song_id]
+  //     )
+  // }
 
-  return songMap;
+  return rows;
 };
 
 const getSongCount = async (ophid) => {
@@ -45,7 +53,6 @@ AS
 SELECT cnt FROM CTECount WHERE ophid = ?`,
     [ophid]
   );
-
 
   return count;
 };

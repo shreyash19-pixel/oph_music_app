@@ -29,6 +29,8 @@ const getSongsByOphIdUnderReview = async (ophId,songId) => {
     sr.current_page,
     sr.reject_reason AS register_reject_reason,
     sr.status AS register_status,
+    sr.projects_type AS register_projects_type,
+    sr.video_type AS register_video_type,
 
     ad.Song_name AS audio_song_name,
     ad.language,

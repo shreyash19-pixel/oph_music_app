@@ -701,20 +701,22 @@ export default function RegisterSongForm() {
                 <div className="flex gap-4">
                   <div className="flex gap-2">
                     <input
-                      type="checkbox"
-                      id="New"
-                      onChange={handleProjectTypeChange}
-                      checked={projectsType.includes("New")}
+                      type="radio"
+                      name="projectTypeRadio"
+                      value="New"
+                      onChange={() => setProjectsType("New")}
+                      checked={projectsType === "New"}
                     />
                     <label htmlFor="New">New</label>
                   </div>
 
                   <div className="flex gap-2">
                     <input
-                      type="checkbox"
-                      id="Hybrid"
-                      onChange={handleProjectTypeChange}
-                      checked={projectsType.includes("Hybrid")}
+                      type="radio"
+                      name="projectTypeRadio"
+                      value="Hybrid"
+                      onChange={() => setProjectsType("Hybrid")}
+                      checked={projectsType === "Hybrid"}
                     />
                     <label htmlFor="Hybrid">Hybrid</label>
                   </div>
@@ -728,23 +730,26 @@ export default function RegisterSongForm() {
                 Music video or lyrical video
                 <span className="text-red-500">*</span>
               </label>
+
               <div className="flex gap-4">
                 <div className="flex gap-2">
                   <input
-                    type="checkbox"
-                    id="Music Video"
-                    onChange={handleVideoTypeChange}
-                    checked={videoType.includes("Music Video")}
+                    type="radio"
+                    name="videoTypeRadio"
+                    value="Music Video"
+                    onChange={() => setVideoType("Music Video")}
+                    checked={videoType === "Music Video"}
                   />
                   <label htmlFor="Music Video">Music Video</label>
                 </div>
 
                 <div className="flex gap-2">
                   <input
-                    type="checkbox"
-                    id="Lyrical Video"
-                    onChange={handleVideoTypeChange}
-                    checked={videoType.includes("Lyrical Video")}
+                    type="radio"
+                    name="videoTypeRadio"
+                    value="Lyrical Video"
+                    onChange={() => setVideoType("Lyrical Video")}
+                    checked={videoType === "Lyrical Video"}
                   />
                   <label htmlFor="Lyrical Video">Lyrical Video</label>
                 </div>
