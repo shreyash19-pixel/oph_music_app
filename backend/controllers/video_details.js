@@ -104,19 +104,16 @@ exports.checkPaymentStatusController = async (req, res) => {
 
   try{
 
-      const {contentId} = req.query
+      const {contentId, ophid} = req.query
 
-      if(!contentId)
+      if(!contentId || !ophid)
       {
         return res.status(400).json({
           success: false,
           message: "Missing required field"
         })
-      }
-
-      console.log("in controller of payment status");
-      
-      const response = await videoDetails.checkPaymentStatus(contentId)
+      }      
+      const response = await videoDetails.checkPaymentStatus(contentId, ophid)
 
       if(response)
       {
