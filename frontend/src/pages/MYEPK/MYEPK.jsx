@@ -9,10 +9,10 @@ import {
 import axiosApi from "../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Face from "../../../public/assets/images/facebook.png";
-import Twitter from "../../../public/assets/images/twitter.png";
-import Linkedin from "../../../public/assets/images/linkedin.png";
 import Insta from "../../../public/assets/images/instagram.png";
 import Story from "../../../public/assets/images/story.png";
+import Spotify from "../../../public/assets/images/spotify.png";
+import Apple from "../../../public/assets/images/apple.png";
 import Edit from "../../../public/assets/images/edit.png";
 import { useArtist } from "../../pages/auth/API/ArtistContext";
 import { useSelector } from "react-redux";
@@ -315,26 +315,26 @@ const MYEPK = () => {
                       className="opacity-70 hover:opacity-100"
                     />
                   </a>
-                  {/* <a
-                    href={artist.linkedin_url || ""}
+                  <a
+                    href={artist.spotify_url || ""}
                     className="text-white w-10 h-10 object-cover hover:text-white"
                   >
                     <img
-                      src={Linkedin}
+                      src={Spotify}
                       alt="Social"
                       className="opacity-70 hover:opacity-100"
                     />
                   </a>
                   <a
-                    href={artist.twitter_url || ""}
+                    href={artist.apple_url || ""}
                     className="text-white hover:text-white"
                   >
                     <img
-                      src={Twitter}
+                      src={Apple}
                       alt="Social"
                       className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
                     />
-                  </a> */}
+                  </a>
 
                   <div>
                     {artist?.artist_story_video ? (
