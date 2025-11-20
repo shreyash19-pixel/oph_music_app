@@ -12,6 +12,7 @@ export default function VideoMetadataForm() {
   const { contentId } = useParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [payStat, setPayStat] = useState("");
   const location = useLocation();
   console.log(location);
 
@@ -103,11 +104,12 @@ export default function VideoMetadataForm() {
     try {
       const response = await axiosApi.get("/check-payment-status", {
         headers: headers,
-        params: { contentId },
+        params: { contentId, ophid },
       });
 
       if (response.data.success) {
-        setNextPage(response.data.data);
+        setNextPage(response.data.data.nextPagePath);
+        setPayStat(response.data.data.reject_reason);
       }
     } catch (err) {
       console.error(err.message);
@@ -322,6 +324,7 @@ export default function VideoMetadataForm() {
   };
 
   const fetchVideoMetadata = async () => {
+    setIsLoading(true);
     if (!contentId) {
       setError("No content ID provided");
       setIsLoading(false);
@@ -371,6 +374,8 @@ export default function VideoMetadataForm() {
     } catch (err) {
       console.error("Error fetching video metadata:", err);
       setError("Failed to load video metadata");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -384,7 +389,7 @@ export default function VideoMetadataForm() {
     checkAlreadyBookedDate();
     fetchVideoMetadata();
     checkPaymentStaus();
-  }, [contentId, headers]);
+  }, [contentId, headers, ophid]);
 
   if (navigateToSongReg) {
     navigate("/dashboard/error", {
@@ -405,7 +410,13 @@ export default function VideoMetadataForm() {
           VIDEO METADATA
         </h1>
         {formData.reject_reason && (
-          <p className="text-red-700">Reason: {formData.reject_reason}</p>
+          <p className="text-red-700">
+            Video rejection reason: {formData.reject_reason}
+          </p>
+        )}
+
+        {payStat && (
+          <p className="text-red-700">Payment rejection reason: {payStat}</p>
         )}
 
         {(isLoading || isRemoving || isUploading) && <Loading />}

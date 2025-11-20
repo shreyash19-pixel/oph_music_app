@@ -38,25 +38,34 @@ const setJourneyStatus = async (ophid, song_id) => {
   return rows;
 };
 
-const checkPaymentStatus = async (song_id) => {
+const checkPaymentStatus = async (song_id, ophid) => {
+  console.log();
+  
   const [rows] = await db.execute(
-    "SELECT sp.status FROM songs_register sr LEFT JOIN sign_up_payment sp ON sr.song_id = sp.song_id WHERE sr.song_id = ?",
-    [song_id]
+    "SELECT Status, reject_reason FROM sign_up_payment WHERE song_id = ? AND OPH_ID = ?",
+    [song_id, ophid]
   );
   let nextPagePath = "";
 
-  if (rows[0].status === null) {
+  if (rows[0].Status === null) {
     nextPagePath = "payment";
   }
-  else if(rows[0].status === "rejected") 
+  else if(rows[0].Status === "rejected") 
   {
     nextPagePath = "repayment"
   }
-  else if (rows[0].status === 'approved' || rows[0].status === "under review") {
+  else if (rows[0].Status === 'approved' || rows[0].Status === "under review") {
     nextPagePath = "pending";
   }
+
+  const map = {}
+
+  map[song_id] = {
+    nextPagePath : nextPagePath,
+    reject_reason : rows[0].reject_reason
+  }
   
-  return nextPagePath;
+  return map[song_id];
 };
 
 /**

@@ -27,12 +27,12 @@ const insertSpecialArtistSongs = async (
     )
   // console.log(rows);
   
-  // const [songId] =  await db.execute(
-  //     "SELECT song_id FROM special_artist_songs WHERE ophid = ? AND song_name = ?",
-  //     [ophid, song_name]
-  //   )
+  const [songId] =  await db.execute(
+      "SELECT song_id FROM special_artist_songs WHERE ophid = ? AND song_name = ?",
+      [ophid, song_name]
+    )
 
-  //   console.log(songId);
+    console.log(songId);
     
 
   //   if (songCount < 3) {
@@ -42,7 +42,7 @@ const insertSpecialArtistSongs = async (
   //     )
   // }
 
-  return rows;
+  return songId;
 };
 
 const getSongCount = async (ophid) => {
