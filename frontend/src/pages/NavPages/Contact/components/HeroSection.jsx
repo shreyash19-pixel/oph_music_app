@@ -121,7 +121,7 @@ function HeroSection() {
         <div className="flex  flex-col lg:w-1/2 px-4 md:px-0">
           <span className=" text-[24px] md:text-[34px] mt-20 md:mt-10  lg:text-[42px] text-white uppercase font-extrabold ">
             Fill out this form to get updates, detailed info, and{' '}
-            <span className="text-[#5DC9DE]"> stay connected with the OPH Community</span>
+            <span className="text-[#5DC9DE]"> stay connected with the NN Community</span>
           </span>
           <span className="text-[16px] md:text-[20px] text-[#9BA3B7] mt-2">
             Give us a call, and if the call doesn&apos;t connect, please fill out the form. We will get in touch with you within 24 hours.
