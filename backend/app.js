@@ -187,6 +187,7 @@ app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
 // ✅ Start server
-server.listen(port, () => {
+server.listen(port, '0.0.0.0' ,() => {
   console.log(`Server is listening on port ${port}...`);
 });
+ 
