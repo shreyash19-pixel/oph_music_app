@@ -74,17 +74,28 @@ const songRelease = require("./admin/routes/song_release");
 const supportingNumbers = require("./admin/routes/supporting_numbers");
 
 // ✅ Middleware order is important
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://ophcommunity.com",
+  "https://ophcommunity.in",
+  "https://ophcommunity.org",
+  "https://admin.ophcommunity.com",
+  "https://admin.ophcommunity.in",
+  "https://admin.ophcommunity.org",
+];
+
 app.use(
   cors({
-    origin: ["http://localhost:5173",
-      "http://localhost:5174",
-      "https://ophcommunity.com",
-      "https://ophcommunity.in",
-      "https://ophcommunity.org",
-      "https://admin.ophcommunity.com",
-      "https://admin.ophcommunity.in",
-      "https://admin.ophcommunity.org"],
-    origin: true,
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
