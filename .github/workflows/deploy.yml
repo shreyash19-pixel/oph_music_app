@@ -1,0 +1,89 @@
+name: Multi Server CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "admin/**"
+
+jobs:
+
+  # ✅ Detect which folders changed
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      admin: ${{ steps.filter.outputs.admin }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            admin:
+              - 'admin/**'
+
+
+  # ✅ BACKEND DEPLOY → BACKEND EC2
+  deploy-backend:
+    needs: filter
+    if: needs.filter.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    environment: backend-server-ec2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Backend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER2_HOST }}
+          username: ${{ secrets.SERVER2_USER }}
+          key: ${{ secrets.SERVER2_SSH_KEY }}
+          script: |
+            cd /var/www/backend/oph_music_app/backend
+            git pull origin dev
+            npm install
+            pm2 restart backend
+
+
+  # ✅ FRONTEND + ADMIN DEPLOY → SAME FRONTEND EC2
+  deploy-frontend-admin:
+    needs: filter
+    if: needs.filter.outputs.frontend == 'true' || needs.filter.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    environment: frontend-server-ec2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Frontend & Admin
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER1_HOST }}
+          username: ${{ secrets.SERVER1_USER }}
+          key: ${{ secrets.SERVER1_SSH_KEY }}
+          script: |
+            # ✅ Frontend deploy
+            cd /var/www/frontend/oph_music_app/frontend
+            git pull origin dev
+            npm install
+            npm run build
+            pm2 restart frontend
+
+            # ✅ Admin deploy
+            cd /var/www/admin/oph_music_app/admin
+            git pull origin dev
+            npm install
+            npm run build
+            pm2 restart admin
