@@ -52,6 +52,7 @@ jobs:
           key: ${{ secrets.SERVER2_SSH_KEY }}
           script: |
             cd /var/www/backend/oph_music_app/backend
+            nvm use 22
             git pull origin dev
             npm install
             pm2 restart backend
@@ -76,6 +77,7 @@ jobs:
           script: |
             # ✅ Frontend deploy
             cd /var/www/frontend/oph_music_app/frontend
+            nvm use 22
             git pull origin dev
             npm install
             npm run build
@@ -83,6 +85,7 @@ jobs:
 
             # ✅ Admin deploy
             cd /var/www/admin/oph_music_app/admin
+            nvm use 22
             git pull origin dev
             npm install
             npm run build
