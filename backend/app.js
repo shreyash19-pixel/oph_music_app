@@ -76,7 +76,14 @@ const supportingNumbers = require("./admin/routes/supporting_numbers");
 // ✅ Middleware order is important
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["http://localhost:5173",
+      "http://localhost:5174",
+      "https://ophcommunity.com",
+      "https://ophcommunity.in",
+      "https://ophcommunity.org",
+      "https://admin.ophcommunity.com",
+      "https://admin.ophcommunity.in",
+      "https://admin.ophcommunity.org"],
     origin: true,
     credentials: true,
   })
@@ -187,7 +194,6 @@ app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
 // ✅ Start server
-server.listen(port, '0.0.0.0' ,() => {
+server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}...`);
 });
- 
