@@ -58,14 +58,14 @@ jobs:
             nvm use 22.21.1
 
             cd /var/www/backend/oph_music_app/backend
-            git pull origin dev
+            git pull 
             npm install
 
             # PM2 start or restart backend
             if pm2 list | grep -q backend; then
-              pm2 restart backend
+              pm2 restart all
             else
-              pm2 start npm --name backend -- start
+              
             fi
 
   # FRONTEND + ADMIN DEPLOY → FRONTEND EC2
