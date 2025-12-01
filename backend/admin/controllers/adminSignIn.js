@@ -6,7 +6,6 @@ require("dotenv").config();
 const signin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    let navTo = "";
 
     const user = await admin_details.findUserByEmail(email);
 
@@ -17,75 +16,42 @@ const signin = async (req, res) => {
     }
 
     const dbUser = user[0];
-    
-    const isPasswordValid = await bcrypt.compare(password, dbUser.Password);
 
+    const isPasswordValid = await bcrypt.compare(password, dbUser.Password);
     if (!isPasswordValid) {
       return res
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // const token = jwt.sign({ email }, process.env.SECRET_KEY, {
-    //   expiresIn: "1h",
-    // });
+    // ✅ CREATE JWT
     const token = jwt.sign(
       {
         email: email,
         role: dbUser.Role
-        
       },
       process.env.SECRET_KEY,
-      { expiresIn: "24h" });
-    
+      { expiresIn: "24h" }
+    );
 
-    
+    // ✅ ✅ ✅ SET COOKIE HERE — THIS IS WHAT YOU WERE MISSING
+    res.cookie("admin_token", token, {
+      httpOnly: true,
+      secure: true,        // ✅ REQUIRED because you are on HTTPS
+      sameSite: "none",    // ✅ REQUIRED because frontend is on different subdomain
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
+    // ✅ DO NOT return token in JSON anymore
     return res.status(200).json({
       success: true,
-      message: "Login successful",
-      token: token,
+      message: "Login successful"
     });
+
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-const updateAdminRole = async (req, res) => {
-  try {
-    const { email, newRole } = req.body;
-
-    // Check if required fields are provided
-    if (!email || !newRole) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and newRole are required.",
-      });
-    }
-
-    // Update role in DB
-    const result = await admin_details.updateRoleByEmail(email,newRole)
-
-    // Check if any row was affected
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Admin not found or role not updated.",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Role updated successfully.",
-    });
-
-  } catch (error) {
-    console.error("Error updating role:", error);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred while updating role.",
-    });
-  }
-};
-
-module.exports = { signin, updateAdminRole };
+module.exports = { signin };

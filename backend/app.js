@@ -6,6 +6,9 @@ const { Server } = require("socket.io");
 
 const app = express();
 const port = process.env.PORT;
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
 
 const server = http.createServer(app);
 // Connect DB (assumed it runs inside connectDB file)
@@ -73,36 +76,34 @@ const costing = require("./admin/routes/costing");
 const songRelease = require("./admin/routes/song_release");
 const supportingNumbers = require("./admin/routes/supporting_numbers");
 
-// ✅ Middleware order is important
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
   "https://ophcommunity.com",
   "https://ophcommunity.in",
   "https://ophcommunity.org",
   "https://admin.ophcommunity.com",
   "https://admin.ophcommunity.in",
   "https://admin.ophcommunity.org",
+  "http://localhost:5173",
+  "http://localhost:5174"
 ];
 
-app.use(cors({
-  origin: function(origin, callback){
-    if(!origin) return callback(null, true); // allow curl / server requests
-    if(allowedOrigins.indexOf(origin) === -1){
-      return callback(new Error("CORS not allowed"), false);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
-}));
+};
 
-// Make sure OPTIONS preflight is handled
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));   // ✅ MUST reuse same options
+
+
 
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
