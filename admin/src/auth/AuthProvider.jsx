@@ -1,57 +1,58 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
-import { User } from "lucide-react";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [headers, setHeaders] = useState(
-    token ? { Authorization: `Bearer ${token}` } : null
-  );
-
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const storedToken = localStorage.getItem("token");
-  if (storedToken) {
-    try {
-      const decoded = jwtDecode(storedToken);
-      const currentTime = Date.now() / 1000;
-      if (decoded.exp && decoded.exp < currentTime) {
-        console.log("Token expired on load");
+  const headers = token ? { Authorization: `Bearer ${token}` } : null;
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+
+    if (storedToken && typeof storedToken === "string" && storedToken.split(".").length === 3) {
+      try {
+        const decoded = jwtDecode(storedToken);
+        const currentTime = Date.now() / 1000;
+
+        if (decoded.exp && decoded.exp < currentTime) {
+          localStorage.removeItem("token");
+          setToken(null);
+          setUser(null);
+        } else {
+          setToken(storedToken);
+          setUser(decoded);
+        }
+      } catch (error) {
         localStorage.removeItem("token");
         setToken(null);
         setUser(null);
-      } else {
-        setToken(storedToken);
-        setUser(decoded);
-        
       }
-    } catch (error) {
-      console.error("Invalid token", error);
+    } else {
       localStorage.removeItem("token");
-      setToken(null);
-      setUser(null);
     }
-  }
-  setLoading(false); 
-  
-}, []);
 
+    setLoading(false);
+  }, []);
 
   const login = (jwtToken) => {
+    if (!jwtToken || typeof jwtToken !== "string" || jwtToken.split(".").length !== 3) {
+      console.error("Invalid token received:", jwtToken);
+      return;
+    }
+
     localStorage.setItem("token", jwtToken);
+
     const decoded = jwtDecode(jwtToken);
     setToken(jwtToken);
     setUser(decoded);
 
     if (decoded.exp) {
       const expirationTime = decoded.exp * 1000 - Date.now();
-      setTimeout(() => {
-        logout();
-      }, expirationTime);
+      setTimeout(logout, expirationTime);
     }
   };
 
@@ -59,11 +60,10 @@ useEffect(() => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    setHeaders(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout,loading,headers }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading, headers }}>
       {children}
     </AuthContext.Provider>
   );
