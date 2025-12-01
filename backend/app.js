@@ -7,7 +7,7 @@ const { Server } = require("socket.io");
 const app = express();
 const port = process.env.PORT;
 const cookieParser = require("cookie-parser");
-app.use(cookieParser());
+
 
 
 const server = http.createServer(app);
@@ -210,6 +210,8 @@ app.use("/", costing);
 app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
+
+app.use(cookieParser());
 // ✅ Start server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}...`);
