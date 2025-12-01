@@ -1,26 +1,43 @@
 const db = require("../DB/connect");
 const crypto = require("crypto");
 
-// Secret key for hashing - should be in environment variables
-const HASH_SECRET = process.env.HASH_SECRET || "oph-music-app-secret-key-change-in-production";
+/**
+ * Sanitize string for URL usage
+ */
+const sanitizeForUrl = (str) => {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+};
 
 /**
- * Generate a hash for an OPH ID
- * @param {string} ophId - The OPH ID to hash
- * @returns {string} - The generated hash
+ * Generate a short random hash (6 characters)
  */
-const generateHash = (ophId) => {
-  return crypto
-    .createHash("sha256")
-    .update(ophId + HASH_SECRET)
-    .digest("hex");
+const generateRandomHash = () => {
+  return crypto.randomBytes(3).toString('hex').substring(0, 6);
+};
+
+/**
+ * Generate a structured hash for an OPH ID
+ * Format: stagename-profession-abc123
+ */
+const generateStructuredHash = (stageName, profession) => {
+  const sanitizedStageName = sanitizeForUrl(stageName) || "artist";
+  const sanitizedProfession = sanitizeForUrl(profession) || "artist";
+  const randomHash = generateRandomHash();
+  
+  return `${sanitizedStageName}-${sanitizedProfession}-${randomHash}`;
 };
 
 /**
  * Get or create a hash for an OPH ID
  * If hash exists and is active, return it. Otherwise, create a new one.
- * @param {string} ophId - The OPH ID
- * @returns {Promise<string>} - The hash for the OPH ID
+ * Format: stagename-profession-abc123
  */
 const getOrCreateHash = async (ophId) => {
   try {
@@ -34,14 +51,62 @@ const getOrCreateHash = async (ophId) => {
       return existing[0].hash;
     }
 
-    // Generate new hash
-    const hash = generateHash(ophId);
+    // Fetch stage_name and profession from database
+    const [artistData] = await db.execute(
+      `SELECT ud.stage_name, pd.Profession 
+       FROM user_details ud 
+       LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID 
+       WHERE ud.ophid = ?`,
+      [ophId]
+    );
+
+    if (!artistData || artistData.length === 0) {
+      throw new Error(`Artist not found for OPH ID: ${ophId}`);
+    }
+
+    const stageName = artistData[0].stage_name || "";
+    const profession = artistData[0].Profession || "";
+
+    // Generate hash with random suffix
+    let hash = generateStructuredHash(stageName, profession);
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    // Ensure uniqueness by regenerating if hash exists
+    while (attempts < maxAttempts) {
+      const [existingHash] = await db.execute(
+        "SELECT oph_id FROM artist_hash_mapping WHERE hash = ? AND is_active = 1 AND oph_id != ?",
+        [hash, ophId]
+      );
+
+      if (!existingHash || existingHash.length === 0) {
+        // Hash is unique, break the loop
+        break;
+      }
+
+      // Hash exists, regenerate with new random hash
+      hash = generateStructuredHash(stageName, profession);
+      attempts++;
+    }
 
     // Insert into database
-    await db.execute(
-      "INSERT INTO artist_hash_mapping (oph_id, hash) VALUES (?, ?) ON DUPLICATE KEY UPDATE hash = VALUES(hash), is_active = 1, expires_at = NULL",
-      [ophId, hash]
-    );
+    try {
+      await db.execute(
+        "INSERT INTO artist_hash_mapping (oph_id, hash) VALUES (?, ?) ON DUPLICATE KEY UPDATE hash = VALUES(hash), is_active = 1, expires_at = NULL",
+        [ophId, hash]
+      );
+    } catch (error) {
+      // If unique constraint violation, regenerate hash
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+        hash = generateStructuredHash(stageName, profession);
+        await db.execute(
+          "INSERT INTO artist_hash_mapping (oph_id, hash) VALUES (?, ?) ON DUPLICATE KEY UPDATE hash = VALUES(hash), is_active = 1, expires_at = NULL",
+          [ophId, hash]
+        );
+      } else {
+        throw error;
+      }
+    }
 
     return hash;
   } catch (error) {
@@ -51,8 +116,6 @@ const getOrCreateHash = async (ophId) => {
 
 /**
  * Get OPH ID from hash
- * @param {string} hash - The hash to lookup
- * @returns {Promise<string|null>} - The OPH ID or null if not found
  */
 const getOphIdFromHash = async (hash) => {
   try {
@@ -73,8 +136,6 @@ const getOphIdFromHash = async (hash) => {
 
 /**
  * Invalidate a hash (soft delete)
- * @param {string} hash - The hash to invalidate
- * @returns {Promise<boolean>} - True if successful
  */
 const invalidateHash = async (hash) => {
   try {
@@ -90,8 +151,6 @@ const invalidateHash = async (hash) => {
 
 /**
  * Invalidate all hashes for an OPH ID
- * @param {string} ophId - The OPH ID
- * @returns {Promise<boolean>} - True if successful
  */
 const invalidateHashesForOphId = async (ophId) => {
   try {
@@ -105,11 +164,28 @@ const invalidateHashesForOphId = async (ophId) => {
   }
 };
 
+/**
+ * Regenerate hash for an OPH ID (invalidates old and creates new)
+ * Useful when stage_name or profession changes
+ */
+const regenerateHash = async (ophId) => {
+  try {
+    // Invalidate existing hash
+    await invalidateHashesForOphId(ophId);
+    
+    // Generate new hash
+    return await getOrCreateHash(ophId);
+  } catch (error) {
+    throw new Error(`Error regenerating hash: ${error.message}`);
+  }
+};
+
 module.exports = {
-  generateHash,
+  generateStructuredHash,
   getOrCreateHash,
   getOphIdFromHash,
   invalidateHash,
   invalidateHashesForOphId,
+  regenerateHash,
 };
 

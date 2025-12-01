@@ -73,14 +73,33 @@ const costing = require("./admin/routes/costing");
 const songRelease = require("./admin/routes/song_release");
 const supportingNumbers = require("./admin/routes/supporting_numbers");
 
-// ✅ Middleware order is important
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
-    origin: true,
-    credentials: true,
-  })
-);
+const allowedOrigins = [
+  "https://ophcommunity.com",
+  "https://ophcommunity.in",
+  "https://ophcommunity.org",
+  "https://admin.ophcommunity.com",
+  "https://admin.ophcommunity.in",
+  "https://admin.ophcommunity.org",
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+
+// ✅ HANDLE PREFLIGHT EXPLICITLY WITH SAME OPTIONS
+app.options("*", cors(corsOptions));
+
+
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
@@ -187,6 +206,6 @@ app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
 // ✅ Start server
-server.listen(port, () => {
+server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}...`);
 });
