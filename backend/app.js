@@ -6,9 +6,6 @@ const { Server } = require("socket.io");
 
 const app = express();
 const port = process.env.PORT;
-const cookieParser = require("cookie-parser");
-
-
 
 const server = http.createServer(app);
 // Connect DB (assumed it runs inside connectDB file)
@@ -87,22 +84,19 @@ const allowedOrigins = [
   "http://localhost:5174"
 ];
 
-const corsOptions = {
+app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+    if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
-};
+  
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization","X-Requested-With"]
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));   // ✅ MUST reuse same options
-
+// ✅ HANDLE PREFLIGHT EXPLICITLY
+app.options("*", cors());
 
 
 app.use(express.json());
@@ -210,8 +204,6 @@ app.use("/", costing);
 app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
-
-app.use(cookieParser());
 // ✅ Start server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}...`);

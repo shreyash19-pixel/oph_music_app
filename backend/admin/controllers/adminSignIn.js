@@ -6,6 +6,7 @@ require("dotenv").config();
 const signin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    let navTo = "";
 
     const user = await admin_details.findUserByEmail(email);
 
@@ -16,38 +17,34 @@ const signin = async (req, res) => {
     }
 
     const dbUser = user[0];
-
+    
     const isPasswordValid = await bcrypt.compare(password, dbUser.Password);
+
     if (!isPasswordValid) {
       return res
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // ✅ CREATE JWT
+    // const token = jwt.sign({ email }, process.env.SECRET_KEY, {
+    //   expiresIn: "1h",
+    // });
     const token = jwt.sign(
       {
         email: email,
         role: dbUser.Role
+        
       },
       process.env.SECRET_KEY,
-      { expiresIn: "24h" }
-    );
+      { expiresIn: "24h" });
+    
 
-    // ✅ ✅ ✅ SET COOKIE HERE — THIS IS WHAT YOU WERE MISSING
-    res.cookie("admin_token", token, {
-      httpOnly: true,
-      secure: true,        // ✅ REQUIRED because you are on HTTPS
-      sameSite: "none",    // ✅ REQUIRED because frontend is on different subdomain
-      maxAge: 24 * 60 * 60 * 1000
-    });
-
-    // ✅ DO NOT return token in JSON anymore
+    
     return res.status(200).json({
       success: true,
-      message: "Login successful"
+      message: "Login successful",
+      token: token,
     });
-
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
