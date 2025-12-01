@@ -81,22 +81,23 @@ const allowedOrigins = [
   "https://admin.ophcommunity.in",
   "https://admin.ophcommunity.org",
   "http://localhost:5173",
-  "http://localhost:5174"
+  "http://localhost:5174",
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
+const corsOptions = {
+  origin(origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
-  
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization","X-Requested-With"]
-}));
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
 
-// ✅ HANDLE PREFLIGHT EXPLICITLY
-app.options("*", cors());
+app.use(cors(corsOptions));
+
+// ✅ HANDLE PREFLIGHT EXPLICITLY WITH SAME OPTIONS
+app.options("*", cors(corsOptions));
 
 
 app.use(express.json());
