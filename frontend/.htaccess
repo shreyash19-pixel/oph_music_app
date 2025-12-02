@@ -1,9 +1,9 @@
 RewriteEngine On
 
-# Redirect all NavRoutes from .org to .com
+# Redirect all NavRoutes from .org → .com
 RewriteCond %{HTTP_HOST} ^ophcommunity\.org$ [NC]
 
-# Allow auth + dashboard to stay on .org
+# Allow /auth and /dashboard to stay on .org
 RewriteCond %{REQUEST_URI} !^/auth
 RewriteCond %{REQUEST_URI} !^/dashboard
 
