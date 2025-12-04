@@ -6,9 +6,8 @@ export const checkDomainAndRedirect = () => {
   const hostname = window.location.hostname;
   const pathname = window.location.pathname;
   
-  // Auth routes that should only be accessible on .org
-  const authRoutes = ['/auth/login', '/auth/signin', '/auth/signup'];
-  const isAuthRoute = authRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+  // Check if path starts with /auth (any auth route)
+  const isAuthRoute = pathname.startsWith('/auth');
   
   // If we're on .com or .in and trying to access auth routes, redirect to .org
   if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {

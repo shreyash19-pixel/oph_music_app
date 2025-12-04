@@ -114,16 +114,30 @@ function Navbar() {
             </button>
           ) : (
             <div>
-              <Link to={"/auth/login"}>
-                <button className="px-4 py-2 text-primary font-bold uppercase">
-                  Login
-                </button>
-              </Link>
-              <Link to={"/auth/signup"}>
-                <button className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full">
-                  Sign Up
-                </button>
-              </Link>
+              <button 
+                className="px-4 py-2 text-primary font-bold uppercase"
+                onClick={() => {
+                  if (window.location.hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/login");
+                  } else {
+                    window.location.href = "https://ophcommunity.org/auth/login";
+                  }
+                }}
+              >
+                Login
+              </button>
+              <button 
+                className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
+                onClick={() => {
+                  if (window.location.hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/signup");
+                  } else {
+                    window.location.href = "https://ophcommunity.org/auth/signup";
+                  }
+                }}
+              >
+                Sign Up
+              </button>
             </div>
           )}
         </div>
@@ -236,19 +250,31 @@ function Navbar() {
             </button>
           ) : (
             <div className="flex flex-col space-y-2">
-              <Link to={"/auth/login"}>
-                <button className="w-full text-primary font-bold uppercase">
-                  Login
-                </button>
-              </Link>
-                <Link to={"/auth/signup"}>
-                  <button
-                    id="signup-btn"
-                    className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
-                  >
-                    Sign Up
-                  </button>
-                </Link>
+              <button 
+                className="w-full text-primary font-bold uppercase"
+                onClick={() => {
+                  if (window.location.hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/login");
+                  } else {
+                    window.location.href = "https://ophcommunity.org/auth/login";
+                  }
+                }}
+              >
+                Login
+              </button>
+              <button
+                id="signup-btn"
+                className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
+                onClick={() => {
+                  if (window.location.hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/signup");
+                  } else {
+                    window.location.href = "https://ophcommunity.org/auth/signup";
+                  }
+                }}
+              >
+                Sign Up
+              </button>
             </div>
           )}
         </div>

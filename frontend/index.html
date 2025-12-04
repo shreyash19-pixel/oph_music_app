@@ -63,8 +63,9 @@
     (function () {
       const hostname = window.location.hostname;
       const pathname = window.location.pathname;
-      const authRoutes = ['/auth/login', '/auth/signin', '/auth/signup'];
-      const isAuthRoute = authRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+
+      // Check if path starts with /auth (any auth route)
+      const isAuthRoute = pathname.startsWith('/auth');
 
       if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
         const protocol = window.location.protocol;
