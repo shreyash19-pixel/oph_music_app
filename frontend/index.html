@@ -68,6 +68,17 @@
       const isAuthRoute = pathname.startsWith('/auth');
 
       if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
+        // Store the original domain before redirecting
+        try {
+          localStorage.setItem('oph_origin_domain', hostname);
+          // Store the path they were on (but not if it's an auth route)
+          if (!pathname.startsWith('/auth')) {
+            localStorage.setItem('oph_origin_path', pathname);
+          }
+        } catch (e) {
+          console.warn('Could not store origin domain:', e);
+        }
+        
         const protocol = window.location.protocol;
         const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + window.location.hash;
         window.location.replace(newUrl);

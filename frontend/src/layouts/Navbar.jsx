@@ -14,6 +14,17 @@ function Navbar() {
   const openSignup = () => setShowSignup(true);
   const closeSignup = () => setShowSignup(false);
 
+  // Helper function to navigate - redirects to origin domain if on .org
+  const navigateWithOrigin = (path) => {
+    const originDomain = localStorage.getItem('oph_origin_domain');
+    if (originDomain && window.location.hostname.includes('ophcommunity.org')) {
+      const protocol = window.location.protocol;
+      window.location.href = `${protocol}//${originDomain}${path}`;
+    } else {
+      navigate(path);
+    }
+  };
+
   useEffect(() => {
     if (!headers || !headers.Authorization) {
       setVerified(false);
@@ -36,68 +47,37 @@ function Navbar() {
         <ul className="hidden lg:flex space-x-12 text-cyan-400">
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/home");
-              // window.location.href = import.meta.env.VITE_WEBSITE_URL;
-            }}
+            onClick={() => navigateWithOrigin("/home")}
           >
             Home
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              console.log(
-                "Events link clicked - navigating to /events/online-music-events"
-              );
-              navigate("/events/online-music-events");
-              // https://ophcommunity.com/events
-            }}
+            onClick={() => navigateWithOrigin("/events/online-music-events")}
           >
             Events
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/find-your-collaborator");
-            }}
+            onClick={() => navigateWithOrigin("/find-your-collaborator")}
           >
             Artists
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate(
-                "/leaderboard/top-music-networking-platform-for-creators/"
-              );
-              // window.location.href =
-              //   import.meta.env.VITE_WEBSITE_URL + "leaderboard";
-            }}
+            onClick={() => navigateWithOrigin("/leaderboard/top-music-networking-platform-for-creators/")}
           >
             Leaderboard
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/resources/music-learning-education");
-            }}
+            onClick={() => navigateWithOrigin("/resources/music-learning-education")}
           >
             Resources
           </li>
-          {/* <li
-            className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              window.location.href = import.meta.env.VITE_WEBSITE_URL + "resources";
-            }}
-          >
-            Resources
-          </li> */}
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/contact");
-              // window.location.href =
-              //   import.meta.env.VITE_WEBSITE_URL + "contact";
-            }}
+            onClick={() => navigateWithOrigin("/contact")}
           >
             Contact
           </li>
@@ -199,41 +179,37 @@ function Navbar() {
         <ul className="flex flex-col space-y-4 p-4">
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/home")}
+            onClick={() => navigateWithOrigin("/home")}
           >
             Home
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/events/online-music-events")}
+            onClick={() => navigateWithOrigin("/events/online-music-events")}
           >
             Events
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/find-your-collaborator")}
+            onClick={() => navigateWithOrigin("/find-your-collaborator")}
           >
             Artists
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              navigate(
-                "/leaderboard/top-music-networking-platform-for-creators/"
-              )
-            }
+            onClick={() => navigateWithOrigin("/leaderboard/top-music-networking-platform-for-creators/")}
           >
             Leaderboard
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/resources/music-learning-education")}
+            onClick={() => navigateWithOrigin("/resources/music-learning-education")}
           >
             Resources
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/contact")}
+            onClick={() => navigateWithOrigin("/contact")}
           >
             Contact
           </li>
