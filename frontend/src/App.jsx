@@ -29,8 +29,8 @@ const App = () => {
           {/* Website Routes */}
           <Route path="/*" element={<NavRoutes />} />
 
-          {/* Redirect root to /auth */}
-          <Route path="/" element={<Navigate to="/auth" />} />
+          {/* Redirect root to /home */}
+          <Route path="/" element={<Navigate to="/home" />} />
 
           {/* Fallback error */}
           <Route path="*" element={<Error />} />
