@@ -66,8 +66,15 @@
       const urlParams = new URLSearchParams(window.location.search);
       const originParam = urlParams.get('origin');
 
-      // If directly visiting .org root, redirect to login immediately
+      // Helper function to clear origin cookie
+      const clearOriginCookie = () => {
+        document.cookie = 'oph_origin_domain=; path=/; max-age=0; SameSite=Lax; Secure';
+        document.cookie = 'oph_origin_domain=; path=/; max-age=0; SameSite=Lax'; // Fallback without Secure
+      };
+
+      // If directly visiting .org root, clear any old cookie and redirect to login
       if (hostname.includes('ophcommunity.org') && (pathname === '/' || pathname === '')) {
+        clearOriginCookie();
         window.location.replace(window.location.protocol + '//ophcommunity.org/auth/login');
         return;
       }
@@ -86,12 +93,22 @@
         window.history.replaceState({}, '', newUrl);
       }
 
+      // If we're on .org/auth without origin param (direct visit), clear any old cookie
+      if (isAuthRoute && hostname.includes('ophcommunity.org') && !originParam) {
+        clearOriginCookie();
+      }
+
       // If we're on .com or .in trying to access auth, redirect to .org
       if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
         const protocol = window.location.protocol;
         const separator = window.location.search ? '&' : '?';
         const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + separator + 'origin=' + hostname + window.location.hash;
         window.location.replace(newUrl);
+      }
+
+      // If we're on .com or .in (not auth route), clear any old cookie
+      if (!isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
+        clearOriginCookie();
       }
     })();
   </script>

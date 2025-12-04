@@ -5,6 +5,18 @@
  */
 
 /**
+ * Clear the origin domain cookie
+ */
+export const clearOriginCookie = () => {
+  if (typeof document === 'undefined') return;
+  
+  // Clear cookie with Secure flag (HTTPS)
+  document.cookie = 'oph_origin_domain=; path=/; max-age=0; SameSite=Lax; Secure';
+  // Clear cookie without Secure flag (fallback for HTTP)
+  document.cookie = 'oph_origin_domain=; path=/; max-age=0; SameSite=Lax';
+};
+
+/**
  * Get the original domain from cookie (set by nginx/JS)
  */
 export const getOriginDomain = () => {

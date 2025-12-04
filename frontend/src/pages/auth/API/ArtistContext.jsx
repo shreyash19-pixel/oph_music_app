@@ -221,6 +221,11 @@ export const ArtistProvider = ({ children }) => {
     setUser(null);
     setOphid(null);
     setHasNewNotification(false);
+    
+    // Clear origin domain cookie on logout
+    document.cookie = 'oph_origin_domain=; path=/; max-age=0; SameSite=Lax; Secure';
+    document.cookie = 'oph_origin_domain=; path=/; max-age=0; SameSite=Lax'; // Fallback without Secure
+    
     setTimeout(() => {
       console.log("Navigating to /auth/login now");
       navigate("/auth/login");
