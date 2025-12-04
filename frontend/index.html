@@ -66,6 +66,12 @@
       const urlParams = new URLSearchParams(window.location.search);
       const originParam = urlParams.get('origin');
 
+      // If directly visiting .org root, redirect to login immediately
+      if (hostname.includes('ophcommunity.org') && (pathname === '/' || pathname === '')) {
+        window.location.replace(window.location.protocol + '//ophcommunity.org/auth/login');
+        return;
+      }
+
       // Check if path starts with /auth (any auth route)
       const isAuthRoute = pathname.startsWith('/auth');
 
