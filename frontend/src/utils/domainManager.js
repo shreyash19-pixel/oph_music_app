@@ -78,6 +78,9 @@ export const clearOriginDomain = () => {
 export const shouldRedirectToOrigin = () => {
   const hostname = window.location.hostname;
   const pathname = window.location.pathname;
+  const originDomain = getOriginDomain();
+  
+  console.log('Checking redirect:', { hostname, pathname, originDomain });
   
   // Only redirect if:
   // 1. We're on .org
@@ -86,10 +89,11 @@ export const shouldRedirectToOrigin = () => {
   // 4. We're NOT on dashboard routes (dashboard can stay on .org)
   if (
     hostname.includes('ophcommunity.org') &&
-    getOriginDomain() &&
+    originDomain &&
     !pathname.startsWith('/auth') &&
     !pathname.startsWith('/dashboard')
   ) {
+    console.log('Should redirect to origin:', originDomain);
     return true;
   }
   

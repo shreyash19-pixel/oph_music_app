@@ -97,7 +97,23 @@ function Navbar() {
               <button 
                 className="px-4 py-2 text-primary font-bold uppercase"
                 onClick={() => {
-                  if (window.location.hostname.includes('ophcommunity.org')) {
+                  const hostname = window.location.hostname;
+                  const pathname = window.location.pathname;
+                  
+                  // Store origin domain before redirecting
+                  if (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in')) {
+                    try {
+                      localStorage.setItem('oph_origin_domain', hostname);
+                      // Store current path (if not already an auth route)
+                      if (!pathname.startsWith('/auth')) {
+                        localStorage.setItem('oph_origin_path', pathname);
+                      }
+                    } catch (e) {
+                      console.warn('Could not store origin domain:', e);
+                    }
+                  }
+                  
+                  if (hostname.includes('ophcommunity.org')) {
                     navigate("/auth/login");
                   } else {
                     window.location.href = "https://ophcommunity.org/auth/login";
@@ -109,7 +125,23 @@ function Navbar() {
               <button 
                 className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
                 onClick={() => {
-                  if (window.location.hostname.includes('ophcommunity.org')) {
+                  const hostname = window.location.hostname;
+                  const pathname = window.location.pathname;
+                  
+                  // Store origin domain before redirecting
+                  if (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in')) {
+                    try {
+                      localStorage.setItem('oph_origin_domain', hostname);
+                      // Store current path (if not already an auth route)
+                      if (!pathname.startsWith('/auth')) {
+                        localStorage.setItem('oph_origin_path', pathname);
+                      }
+                    } catch (e) {
+                      console.warn('Could not store origin domain:', e);
+                    }
+                  }
+                  
+                  if (hostname.includes('ophcommunity.org')) {
                     navigate("/auth/signup");
                   } else {
                     window.location.href = "https://ophcommunity.org/auth/signup";
@@ -229,7 +261,23 @@ function Navbar() {
               <button 
                 className="w-full text-primary font-bold uppercase"
                 onClick={() => {
-                  if (window.location.hostname.includes('ophcommunity.org')) {
+                  const hostname = window.location.hostname;
+                  const pathname = window.location.pathname;
+                  
+                  // Store origin domain before redirecting
+                  if (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in')) {
+                    try {
+                      localStorage.setItem('oph_origin_domain', hostname);
+                      // Store current path (if not already an auth route)
+                      if (!pathname.startsWith('/auth')) {
+                        localStorage.setItem('oph_origin_path', pathname);
+                      }
+                    } catch (e) {
+                      console.warn('Could not store origin domain:', e);
+                    }
+                  }
+                  
+                  if (hostname.includes('ophcommunity.org')) {
                     navigate("/auth/login");
                   } else {
                     window.location.href = "https://ophcommunity.org/auth/login";
@@ -242,7 +290,23 @@ function Navbar() {
                 id="signup-btn"
                 className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
                 onClick={() => {
-                  if (window.location.hostname.includes('ophcommunity.org')) {
+                  const hostname = window.location.hostname;
+                  const pathname = window.location.pathname;
+                  
+                  // Store origin domain before redirecting
+                  if (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in')) {
+                    try {
+                      localStorage.setItem('oph_origin_domain', hostname);
+                      // Store current path (if not already an auth route)
+                      if (!pathname.startsWith('/auth')) {
+                        localStorage.setItem('oph_origin_path', pathname);
+                      }
+                    } catch (e) {
+                      console.warn('Could not store origin domain:', e);
+                    }
+                  }
+                  
+                  if (hostname.includes('ophcommunity.org')) {
                     navigate("/auth/signup");
                   } else {
                     window.location.href = "https://ophcommunity.org/auth/signup";

@@ -17,16 +17,31 @@ const DomainRedirectHandler = () => {
   const location = useLocation();
   
   useEffect(() => {
-    // Check if we should redirect to origin domain
-    // This will automatically redirect users back to their original domain
-    // when they navigate away from auth routes on .org
-    if (shouldRedirectToOrigin()) {
-      const originUrl = getOriginUrl(location.pathname);
-      if (originUrl) {
-        // Use replace to avoid adding to history
-        window.location.replace(originUrl);
+    // Check immediately on mount and route change
+    const checkAndRedirect = () => {
+      if (shouldRedirectToOrigin()) {
+        const originUrl = getOriginUrl(location.pathname);
+        console.log('Redirecting to origin domain:', originUrl);
+        if (originUrl) {
+          // Use replace to avoid adding to history
+          window.location.replace(originUrl);
+          return true; // Indicates redirect is happening
+        }
       }
+      return false;
+    };
+    
+    // Check immediately
+    if (checkAndRedirect()) {
+      return; // Redirect is happening, don't set up timer
     }
+    
+    // Also check after a small delay (in case React Router hasn't finished)
+    const timer = setTimeout(() => {
+      checkAndRedirect();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [location.pathname]);
   
   return null;
