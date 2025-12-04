@@ -58,29 +58,32 @@
     fbq('track', 'PageView');
   </script>
 
-  <!-- Domain redirect for auth routes -->
+  <!-- Domain redirect for auth routes and cookie management -->
   <script>
     (function () {
       const hostname = window.location.hostname;
       const pathname = window.location.pathname;
+      const urlParams = new URLSearchParams(window.location.search);
+      const originParam = urlParams.get('origin');
 
       // Check if path starts with /auth (any auth route)
       const isAuthRoute = pathname.startsWith('/auth');
 
-      if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
-        // Store the original domain before redirecting
-        try {
-          localStorage.setItem('oph_origin_domain', hostname);
-          // Store the path they were on (but not if it's an auth route)
-          if (!pathname.startsWith('/auth')) {
-            localStorage.setItem('oph_origin_path', pathname);
-          }
-        } catch (e) {
-          console.warn('Could not store origin domain:', e);
-        }
+      // If we're on .org and have origin query parameter, set cookie
+      if (isAuthRoute && hostname.includes('ophcommunity.org') && originParam) {
+        // Set cookie with origin domain
+        document.cookie = `oph_origin_domain=${originParam}; path=/; max-age=3600; SameSite=Lax; Secure`;
+        // Remove origin parameter from URL
+        urlParams.delete('origin');
+        const newSearch = urlParams.toString();
+        const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
 
+      // If we're on .com or .in trying to access auth, redirect to .org
+      if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
         const protocol = window.location.protocol;
-        const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + window.location.hash;
+        const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + '&origin=' + hostname + window.location.hash;
         window.location.replace(newUrl);
       }
     })();
