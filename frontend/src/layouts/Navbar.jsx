@@ -34,7 +34,9 @@ function Navbar() {
       // If user has an origin cookie (came from .com or .in), go back there.
       // Otherwise, default to .com for normal nav from .org.
       const originDomain = getOriginDomainFromCookie();
-      const targetDomain = originDomain || "ophcommunity.com";
+      // Normalize domain (remove www. if present)
+      const targetDomain = originDomain ? originDomain.replace(/^www\./, '') : "ophcommunity.com";
+      console.log('[Navbar] Navigating with origin:', { originDomain, targetDomain, path });
       window.location.href = `${protocol}//${targetDomain}${path}`;
       return;
     }

@@ -47,13 +47,17 @@ export const getOriginUrl = (path = null) => {
   if (hostname.includes('ophcommunity.org') && originDomain) {
     const protocol = window.location.protocol;
     const originPath = path || window.location.pathname;
-    return `${protocol}//${originDomain}${originPath}`;
+    // Normalize domain (remove www. if present)
+    const normalizedDomain = originDomain.replace(/^www\./, '');
+    console.log('[DomainManager] Redirecting to origin:', { originDomain, normalizedDomain, path: originPath });
+    return `${protocol}//${normalizedDomain}${originPath}`;
   }
   
   // If we're on .org with no origin cookie, default to .com
   if (hostname.includes('ophcommunity.org') && !originDomain) {
     const protocol = window.location.protocol;
     const originPath = path || window.location.pathname;
+    console.log('[DomainManager] No origin cookie, defaulting to .com:', { path: originPath });
     return `${protocol}//ophcommunity.com${originPath}`;
   }
   

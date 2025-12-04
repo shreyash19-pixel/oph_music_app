@@ -84,8 +84,13 @@
 
       // If we're on .org and have origin query parameter, set cookie
       if (isAuthRoute && hostname.includes('ophcommunity.org') && originParam) {
-        // Set cookie with origin domain
-        document.cookie = `oph_origin_domain=${originParam}; path=/; max-age=3600; SameSite=Lax; Secure`;
+        // Normalize origin domain (remove www. prefix to ensure consistency)
+        let normalizedOrigin = originParam;
+        if (normalizedOrigin.startsWith('www.')) {
+          normalizedOrigin = normalizedOrigin.replace('www.', '');
+        }
+        // Set cookie with normalized origin domain
+        document.cookie = `oph_origin_domain=${normalizedOrigin}; path=/; max-age=3600; SameSite=Lax; Secure`;
         // Remove origin parameter from URL
         urlParams.delete('origin');
         const newSearch = urlParams.toString();
