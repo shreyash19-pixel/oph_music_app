@@ -6,7 +6,8 @@
   <link rel="icon" type="image/svg+xml" href="./public/logo.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Artist Portal</title>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LT3NSY5YMJ"></script>
+  <script async
+    src="https://www.googletagmanager.com/gtag/js?id=G-LT3NSY5YMJ"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
@@ -16,56 +17,170 @@
   </script>
 
   <!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-N648KR5H');</script>
+  <script>(function (w, d, s, l, i) {
+      w[l] = w[l] || []; w[l].push({
+        'gtm.start':
+          new Date().getTime(), event: 'gtm.js'
+      }); var f = d.getElementsByTagName(s)[0],
+        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-N648KR5H');</script>
   <!-- End Google Tag Manager -->
-<!-- Google Tag Manager (noscript) -->
+  <!-- Google Tag Manager (noscript) -->
 
-<script type="text/javascript">
-  (function(c,l,a,r,i,t,y){
-      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-  })(window, document, "clarity", "script", "r6jpaxcpmt");
-</script>
-<script type="text/javascript">
-  (function(c,l,a,r,i,t,y){
-      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-  })(window, document, "clarity", "script", "r6jtdhqbxm");
-</script>
-<script>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', '1347514409888655');
-  fbq('track', 'PageView');
+  <script type="text/javascript">
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+    })(window, document, "clarity", "script", "r6jpaxcpmt");
   </script>
-  
+  <script type="text/javascript">
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+    })(window, document, "clarity", "script", "r6jtdhqbxm");
+  </script>
+  <script>
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1347514409888655');
+    fbq('track', 'PageView');
+  </script>
 
-  
-  
+  <!-- Domain redirect for auth routes and cookie management -->
+  <script>
+    (function () {
+      const hostname = window.location.hostname;
+      const pathname = window.location.pathname;
+      const urlParams = new URLSearchParams(window.location.search);
+      const originParam = urlParams.get('origin');
 
-  
+      // Helper function to get current cookie value
+      const getCurrentCookie = () => {
+        const match = document.cookie
+          .split(';')
+          .map(c => c.trim())
+          .find(c => c.startsWith('oph_origin_domain='));
+        return match ? match.split('=')[1] : null;
+      };
+
+      // Helper function to validate cookie value
+      const isValidCookieValue = (value) => {
+        if (!value) return false;
+        const validValues = ['ophcommunity.com', 'ophcommunity.in'];
+        return validValues.includes(value);
+      };
+
+      // Helper function to clear origin cookie (aggressive clearing for all possible variations)
+      const clearOriginCookie = () => {
+        // Clear with all possible path variations
+        const paths = ['/', '/auth', '/home'];
+        const domains = ['.ophcommunity.org', '.ophcommunity.com', '.ophcommunity.in'];
+
+        // Clear cookie with all combinations
+        paths.forEach(path => {
+          document.cookie = `oph_origin_domain=; path=${path}; max-age=0; SameSite=Lax; Secure`;
+          document.cookie = `oph_origin_domain=; path=${path}; max-age=0; SameSite=Lax`;
+          document.cookie = `oph_origin_domain=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure`;
+          document.cookie = `oph_origin_domain=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+        });
+
+        // Also try domain-specific clearing (with dot prefix for subdomain matching)
+        domains.forEach(domain => {
+          document.cookie = `oph_origin_domain=; domain=${domain}; path=/; max-age=0; SameSite=Lax; Secure`;
+          document.cookie = `oph_origin_domain=; domain=${domain}; path=/; max-age=0; SameSite=Lax`;
+        });
+      };
+
+      // Validate and clear invalid cookies on every page load
+      const currentCookie = getCurrentCookie();
+      if (currentCookie && !isValidCookieValue(currentCookie)) {
+        console.log('[Cookie] Invalid cookie value detected, clearing:', currentCookie);
+        clearOriginCookie();
+      }
+
+      // If directly visiting .org root, clear any old cookie and redirect to login
+      if (hostname.includes('ophcommunity.org') && (pathname === '/' || pathname === '')) {
+        clearOriginCookie();
+        window.location.replace(window.location.protocol + '//ophcommunity.org/auth/login');
+        return;
+      }
+
+      // Check if path starts with /auth (any auth route)
+      const isAuthRoute = pathname.startsWith('/auth');
+
+      // If we're on .org and have origin query parameter, set cookie
+      if (isAuthRoute && hostname.includes('ophcommunity.org') && originParam) {
+        // First clear any old cookies
+        clearOriginCookie();
+
+        // Normalize origin domain (remove www. prefix to ensure consistency)
+        let normalizedOrigin = originParam;
+        if (normalizedOrigin.startsWith('www.')) {
+          normalizedOrigin = normalizedOrigin.replace('www.', '');
+        }
+
+        // Set cookie with normalized origin domain and version timestamp
+        const cookieValue = `${normalizedOrigin}`;
+        document.cookie = `oph_origin_domain=${cookieValue}; path=/; max-age=3600; SameSite=Lax; Secure`;
+
+        // Remove origin parameter from URL
+        urlParams.delete('origin');
+        const newSearch = urlParams.toString();
+        const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
+
+      // If we're on .org/auth without origin param (direct visit), clear any old cookie
+      if (isAuthRoute && hostname.includes('ophcommunity.org') && !originParam) {
+        clearOriginCookie();
+      }
+
+      // If we're on .com or .in trying to access auth, redirect to .org
+      if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
+        // Normalize hostname (remove www.)
+        let normalizedHostname = hostname;
+        if (normalizedHostname.startsWith('www.')) {
+          normalizedHostname = normalizedHostname.replace('www.', '');
+        }
+        const protocol = window.location.protocol;
+        const separator = window.location.search ? '&' : '?';
+        const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + separator + 'origin=' + normalizedHostname + window.location.hash;
+        window.location.replace(newUrl);
+      }
+
+      // If we're on .com or .in (not auth route), clear any old cookie
+      if (!isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
+        clearOriginCookie();
+      }
+    })();
+  </script>
+
+
+
+
+
 </head>
 
 <body>
-  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N648KR5H"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=1347514409888655&ev=PageView&noscript=1"
-      /></noscript>
+  <noscript><iframe
+      src="https://www.googletagmanager.com/ns.html?id=GTM-N648KR5H" height="0"
+      width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=1347514409888655&ev=PageView&noscript=1" /></noscript>
 
-    <div id="root"></div>
+  <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 
 </body>

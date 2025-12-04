@@ -14,6 +14,37 @@ function Navbar() {
   const openSignup = () => setShowSignup(true);
   const closeSignup = () => setShowSignup(false);
 
+  // Helper to read origin domain from cookie set by nginx / index.html
+  const getOriginDomainFromCookie = () => {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("oph_origin_domain="));
+    if (!match) return null;
+    return match.split("=")[1] || null;
+  };
+
+  // Helper function to navigate - on .org, sends to origin (or .com by default)
+  const navigateWithOrigin = (path) => {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+
+    if (hostname.includes("ophcommunity.org")) {
+      // If user has an origin cookie (came from .com or .in), go back there.
+      // Otherwise, default to .com for normal nav from .org.
+      const originDomain = getOriginDomainFromCookie();
+      // Normalize domain (remove www. if present)
+      const targetDomain = originDomain ? originDomain.replace(/^www\./, '') : "ophcommunity.com";
+      console.log('[Navbar] Navigating with origin:', { originDomain, targetDomain, path });
+      window.location.href = `${protocol}//${targetDomain}${path}`;
+      return;
+    }
+
+    // On .com / .in or any other domain, use client-side navigation
+    navigate(path);
+  };
+
   useEffect(() => {
     if (!headers || !headers.Authorization) {
       setVerified(false);
@@ -36,68 +67,37 @@ function Navbar() {
         <ul className="hidden lg:flex space-x-12 text-cyan-400">
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/home");
-              // window.location.href = import.meta.env.VITE_WEBSITE_URL;
-            }}
+            onClick={() => navigateWithOrigin("/home")}
           >
             Home
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              console.log(
-                "Events link clicked - navigating to /events/online-music-events"
-              );
-              navigate("/events/online-music-events");
-              // https://ophcommunity.com/events
-            }}
+            onClick={() => navigateWithOrigin("/events/online-music-events")}
           >
             Events
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/find-your-collaborator");
-            }}
+            onClick={() => navigateWithOrigin("/find-your-collaborator")}
           >
             Artists
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate(
-                "/leaderboard/top-music-networking-platform-for-creators/"
-              );
-              // window.location.href =
-              //   import.meta.env.VITE_WEBSITE_URL + "leaderboard";
-            }}
+            onClick={() => navigateWithOrigin("/leaderboard/top-music-networking-platform-for-creators/")}
           >
             Leaderboard
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/resources/music-learning-education");
-            }}
+            onClick={() => navigateWithOrigin("/resources/music-learning-education")}
           >
             Resources
           </li>
-          {/* <li
-            className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              window.location.href = import.meta.env.VITE_WEBSITE_URL + "resources";
-            }}
-          >
-            Resources
-          </li> */}
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => {
-              navigate("/contact");
-              // window.location.href =
-              //   import.meta.env.VITE_WEBSITE_URL + "contact";
-            }}
+            onClick={() => navigateWithOrigin("/contact")}
           >
             Contact
           </li>
@@ -114,16 +114,40 @@ function Navbar() {
             </button>
           ) : (
             <div>
-              <Link to={"/auth/login"}>
-                <button className="px-4 py-2 text-primary font-bold uppercase">
-                  Login
-                </button>
-              </Link>
-              <Link to={"/auth/signup"}>
-                <button className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full">
-                  Sign Up
-                </button>
-              </Link>
+              <button 
+                className="px-4 py-2 text-primary font-bold uppercase"
+                onClick={() => {
+                  const hostname = window.location.hostname;
+                  
+                  // For .org, stay on .org and use SPA navigation
+                  if (hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/login");
+                  } else {
+                    // For .com / .in, hit local /auth/login so nginx can
+                    // redirect to .org with ?origin= and set the cookie.
+                    window.location.href = "/auth/login";
+                  }
+                }}
+              >
+                Login
+              </button>
+              <button 
+                className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
+                onClick={() => {
+                  const hostname = window.location.hostname;
+
+                  // For .org, stay on .org and use SPA navigation
+                  if (hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/signup");
+                  } else {
+                    // For .com / .in, hit local /auth/signup so nginx can
+                    // redirect to .org with ?origin= and set the cookie.
+                    window.location.href = "/auth/signup";
+                  }
+                }}
+              >
+                Sign Up
+              </button>
             </div>
           )}
         </div>
@@ -185,41 +209,37 @@ function Navbar() {
         <ul className="flex flex-col space-y-4 p-4">
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/home")}
+            onClick={() => navigateWithOrigin("/home")}
           >
             Home
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/events/online-music-events")}
+            onClick={() => navigateWithOrigin("/events/online-music-events")}
           >
             Events
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/find-your-collaborator")}
+            onClick={() => navigateWithOrigin("/find-your-collaborator")}
           >
             Artists
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() =>
-              navigate(
-                "/leaderboard/top-music-networking-platform-for-creators/"
-              )
-            }
+            onClick={() => navigateWithOrigin("/leaderboard/top-music-networking-platform-for-creators/")}
           >
             Leaderboard
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/resources/music-learning-education")}
+            onClick={() => navigateWithOrigin("/resources/music-learning-education")}
           >
             Resources
           </li>
           <li
             className="font-semibold uppercase hover:text-[#22D3EE] hover:cursor-pointer"
-            onClick={() => navigate("/contact")}
+            onClick={() => navigateWithOrigin("/contact")}
           >
             Contact
           </li>
@@ -236,19 +256,35 @@ function Navbar() {
             </button>
           ) : (
             <div className="flex flex-col space-y-2">
-              <Link to={"/auth/login"}>
-                <button className="w-full text-primary font-bold uppercase">
-                  Login
-                </button>
-              </Link>
-                <Link to={"/auth/signup"}>
-                  <button
-                    id="signup-btn"
-                    className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
-                  >
-                    Sign Up
-                  </button>
-                </Link>
+              <button 
+                className="w-full text-primary font-bold uppercase"
+                onClick={() => {
+                  const hostname = window.location.hostname;
+
+                  if (hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/login");
+                  } else {
+                    window.location.href = "/auth/login";
+                  }
+                }}
+              >
+                Login
+              </button>
+              <button
+                id="signup-btn"
+                className="px-4 py-2 bg-primary text-[#181B24] font-bold uppercase rounded-full"
+                onClick={() => {
+                  const hostname = window.location.hostname;
+
+                  if (hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/signup");
+                  } else {
+                    window.location.href = "/auth/signup";
+                  }
+                }}
+              >
+                Sign Up
+              </button>
             </div>
           )}
         </div>
