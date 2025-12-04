@@ -83,7 +83,8 @@
       // If we're on .com or .in trying to access auth, redirect to .org
       if (isAuthRoute && (hostname.includes('ophcommunity.com') || hostname.includes('ophcommunity.in'))) {
         const protocol = window.location.protocol;
-        const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + '&origin=' + hostname + window.location.hash;
+        const separator = window.location.search ? '&' : '?';
+        const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + separator + 'origin=' + hostname + window.location.hash;
         window.location.replace(newUrl);
       }
     })();
