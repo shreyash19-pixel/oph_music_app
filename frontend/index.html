@@ -78,7 +78,7 @@
         } catch (e) {
           console.warn('Could not store origin domain:', e);
         }
-        
+
         const protocol = window.location.protocol;
         const newUrl = protocol + '//ophcommunity.org' + pathname + window.location.search + window.location.hash;
         window.location.replace(newUrl);
