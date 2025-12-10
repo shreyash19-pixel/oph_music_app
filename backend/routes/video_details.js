@@ -6,7 +6,10 @@ const multer = require("multer");
 const controller = require("../controllers/video_details");
 
 // store the file in memory; your controller calls uploadToS3
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 const authMiddleware = require("../middleware/authenticate")
 
 router.post(

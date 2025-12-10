@@ -4,7 +4,10 @@ const personalDetails = require('../controllers/personal_details');
 const multer = require("multer");
 const authMiddleware = require("../middleware/authenticate")
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 router.post('/auth/personal-details', authMiddleware ,upload.single("profile_image"),personalDetails.insertPersonalDetails);
 router.get('/auth/personal-details',  authMiddleware,personalDetails.mapPersonalDetails);

@@ -4,7 +4,10 @@ const multer = require("multer");
 
 const controller = require("../controllers/secondary_artist");
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 const authMiddleware = require("../middleware/authenticate")
 
 // POST - Create secondary artist

@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const costingController = require("../controllers/costing");
 const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 router.get("/get_costing", costingController.getCosting);
 router.post("/insert_costing", upload.single('qr_image'), costingController.insertCosting);

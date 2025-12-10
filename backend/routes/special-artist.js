@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const authMiddleware = require("../middleware/authenticate");
-const upload = multer({ storage: multer.memoryStorage() }); // For S3 upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+}); // For S3 upload
 
 const {
   editSpecialArtistDetailsController,

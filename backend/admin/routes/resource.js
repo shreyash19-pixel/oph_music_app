@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 const Resource = require("../controllers/resource");
 const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 router.get("/podcast/search", Resource.searchPodcasts);
 router.post(

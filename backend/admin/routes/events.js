@@ -3,7 +3,10 @@ const router = express.Router();
 const multer = require("multer");
 const events = require("../controllers/events");
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 router.get("/events", events.fetchAllEvents);
 router.post("/post-events", upload.fields([

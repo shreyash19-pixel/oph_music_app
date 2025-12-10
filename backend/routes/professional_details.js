@@ -4,7 +4,10 @@ const multer = require("multer");
 const controller = require("../controllers/professional_details");
 const authMiddleware = require("../middleware/authenticate")
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 router.get("/auth/professional-details", authMiddleware, controller.getProfessionalByOphId)
 

@@ -4,7 +4,10 @@ const router = express.Router();
 const controller = require("../controllers/documentation_details");
 const authMiddleware = require("../middleware/authenticate");
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 router.get(
   "/auth/documentation-details",
   authMiddleware,
