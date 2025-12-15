@@ -7,6 +7,7 @@ const signin = async (req, res) => {
   try {
     const { email, password } = req.body;
     let navTo = "";
+    console.log("Login attempt for email:", email);
 
     const user = await user_details.findUserByEmail(email);
 
@@ -17,19 +18,20 @@ const signin = async (req, res) => {
     }
 
     const dbUser = user[0];
+    console.log("User found:", dbUser.ophid);
 
     const ophId = user[0].ophid;
     const isPasswordValid = await bcrypt.compare(password, dbUser.user_pass);
 
     if (!isPasswordValid) {
+      console.log("Password validation failed for:", email);
       return res
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    // const token = jwt.sign({ email }, process.env.SECRET_KEY, {
-    //   expiresIn: "1h",
-    // });
+    console.log("Password validated successfully");
+
     const token = jwt.sign(
       {
         email: email,
@@ -46,38 +48,45 @@ const signin = async (req, res) => {
     );
 
     const result = await user_details.checkRejectedStep(dbUser.ophid);
+    console.log("checkRejectedStep result:", result);
 
-    const checkRejectedStep = result[0];
-
-    if (
-      checkRejectedStep.user_status === "under review" &&
-      checkRejectedStep.professional_status === "under review" &&
-      checkRejectedStep.documentation_status === "under review" &&
-      checkRejectedStep.payment_status === "under review"
-    ) {
-      navTo = "/auth/profile-status";
-    } else if (checkRejectedStep.payment_status === "rejected") {
-      navTo = "/auth/payment";
-    } else if (checkRejectedStep.user_status === "rejected") {
-      navTo = "/auth/create-profile/personal-details";
-    } else if (checkRejectedStep.professional_status === "rejected") {
-      navTo = "/auth/create-profile/professional-details";
-    } else if (checkRejectedStep.documentation_status === "rejected") {
-      navTo = "/auth/create-profile/documentation-details";
-    } else if (
-      checkRejectedStep.user_status === "under review" ||
-      checkRejectedStep.professional_status === "under review" ||
-      checkRejectedStep.documentation_status === "under review" ||
-      checkRejectedStep.payment_status === "under review"
-    ) {
-      navTo = dbUser.current_step;
-    } else if (checkRejectedStep.overall_status === "completed") {
-      navTo = "/dashboard";
+    if (!result || result.length === 0) {
+      console.log("No application status found, using current_step");
+      navTo = dbUser.current_step || "/dashboard";
     } else {
-      navTo = dbUser.current_step;
+      const checkRejectedStep = result[0];
+      console.log("Application status:", checkRejectedStep);
+
+      if (
+        checkRejectedStep.user_status === "under review" &&
+        checkRejectedStep.professional_status === "under review" &&
+        checkRejectedStep.documentation_status === "under review" &&
+        checkRejectedStep.payment_status === "under review"
+      ) {
+        navTo = "/auth/profile-status";
+      } else if (checkRejectedStep.payment_status === "rejected") {
+        navTo = "/auth/payment";
+      } else if (checkRejectedStep.user_status === "rejected") {
+        navTo = "/auth/create-profile/personal-details";
+      } else if (checkRejectedStep.professional_status === "rejected") {
+        navTo = "/auth/create-profile/professional-details";
+      } else if (checkRejectedStep.documentation_status === "rejected") {
+        navTo = "/auth/create-profile/documentation-details";
+      } else if (
+        checkRejectedStep.user_status === "under review" ||
+        checkRejectedStep.professional_status === "under review" ||
+        checkRejectedStep.documentation_status === "under review" ||
+        checkRejectedStep.payment_status === "under review"
+      ) {
+        navTo = dbUser.current_step || "/auth/create-profile/personal-details";
+      } else if (checkRejectedStep.overall_status === "completed") {
+        navTo = "/dashboard";
+      } else {
+        navTo = dbUser.current_step || "/auth/create-profile/personal-details";
+      }
     }
 
-    console.log(navTo);
+    console.log("Final navTo:", navTo);
 
     return res.status(200).json({
       success: true,

@@ -1,3 +1,4 @@
+// SidebarNav.jsx (replace the body)
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -22,65 +23,40 @@ import axiosApi from "../../conf/axios";
 
 const SidebarNav = ({ onClose }) => {
   const navigate = useNavigate();
-  const { logout } = useArtist();
-  const [userData, setUserData] = useState(null);
   const location = useLocation();
-  const [isMobile, setIsMobile] = useState(false); // State to check if screen width is narrow
+  const { logout, ophid, headers } = useArtist();
+
+  const [userData, setUserData] = useState(null);
   const [data, setData] = useState([]);
-  const {ophid, headers} = useArtist()
-  const [artistType, setArtistType] = useState('')
+  const [artistType, setArtistType] = useState("");
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
-    if (storedData) {
-      setUserData(JSON.parse(storedData));
-    }
-
-    // Function to check screen size
-    const checkMobileScreen = () => {
-      setIsMobile(window.innerWidth < 1024); // For example, if the screen width is less than 1024px, consider it mobile
-    };
-
-    // Check screen size on load
-    checkMobileScreen();
-
-    // Add resize event listener
-    window.addEventListener("resize", checkMobileScreen);
-
-    // Cleanup event listener on component unmount
-    return () => {
-      window.removeEventListener("resize", checkMobileScreen);
-    };
+    if (storedData) setUserData(JSON.parse(storedData));
   }, []);
 
   const getArtistType = async () => {
-
-    if(!headers || !headers.Authorization)
-    {
+    if (!headers || !headers.Authorization) {
       console.warn("Headers are not ready yet");
-      return
+      return;
     }
-    try{
+    try {
       const response = await axiosApi.get("/get-artist-type", {
         headers: headers,
-        params: {ophid}
-      })
+        params: { ophid },
+      });
 
-      if(response.data.success)
-      {
-        setArtistType(response.data.data[0].artist_type)
+      if (response.data.success) {
+        setArtistType(response.data.data[0].artist_type);
       }
+    } catch (err) {
+      console.error(err?.message || err);
     }
-    catch(err)
-    {
-      console.error(err.data.message);
-    }
-
-  }
+  };
 
   useEffect(() => {
-      getArtistType()
-  }, [headers, ophid])
+    getArtistType();
+  }, [headers, ophid]);
 
   const handleLogout = async () => {
     await logout();
@@ -96,7 +72,7 @@ const SidebarNav = ({ onClose }) => {
           songName: data.Song_name,
         },
       });
-
+      onClose?.();
       return;
     }
     navigate(path);
@@ -104,73 +80,83 @@ const SidebarNav = ({ onClose }) => {
   };
 
   const menuItems = [
-    { icon: <TiHome />, label: "Home", to: "/dashboard", type : "Independent artist, Special artist"},
     {
-      icon: <img src = {EPK} className="w-[24px] h-[24px]" />,  
+      icon: <TiHome />,
+      label: "Home",
+      to: "/dashboard",
+      type: "Independent artist, Special artist",
+    },
+    {
+      icon: <img src={EPK} className="w-[24px] h-[24px]" />,
       label: "MY EPK",
       to: "/dashboard/my-epk",
-      type : "Special artist"
+      type: "Special artist",
     },
     {
       icon: <img src={Calender} className="w-[24px] h-[24px]" />,
       label: "Time Calendar",
       to: "/dashboard/time-calendar",
-      type : "Independent artist"
+      type: "Independent artist",
     },
     {
       icon: <img src={SongUp} className="w-[24px] h-[24px]" />,
       label: "Songs Registration",
       to: "/dashboard/upload-song",
-      type : "Independent artist"
+      type: "Independent artist",
     },
     {
       icon: <img src={Tv} className="w-[24px] h-[24px]" />,
       label: "TV Publishing",
       to: "/dashboard/tv-publishing",
-      type : "Independent artist"
+      type: "Independent artist",
     },
     {
       icon: <img src={Spot} className="w-[24px] h-[24px]" />,
       label: "Artist Spotlight",
       to: "/dashboard/artist-spotlight",
-      type : "Independent artist"
+      type: "Independent artist",
     },
     {
       icon: <img src={Anal} className="w-[24px] h-[24px]" />,
       label: "Analytics",
       to: "/dashboard/analytics",
-      type : "Independent artist"
+      type: "Independent artist",
     },
     {
       icon: <img src={Ticket} className="w-[24px] h-[24px]" />,
       label: "Request Ticket",
       to: "/dashboard/request-ticket",
-      type : "Independent artist, Special artist"
+      type: "Independent artist, Special artist",
     },
     {
       icon: <img src={Event} className="w-[24px] h-[24px]" />,
       label: "Event",
       to: "/dashboard/events",
-      type : "Independent artist, Special artist"
+      type: "Independent artist, Special artist",
     },
     {
       icon: <img src={Income} className="w-[24px] h-[24px]" />,
       label: "Income",
       to: "/dashboard/income",
-      type : "Independent artist, Special artist"
+      type: "Independent artist, Special artist",
     },
     {
       icon: <img src={Key} className="w-[24px] h-[24px]" />,
       label: "Key Performance Indicators",
       to: "/dashboard/key-performance-indicators",
-      type : "Independent artist"
+      type: "Independent artist",
     },
   ];
 
+  // show all items while artistType is loading to avoid empty menu
+  const visibleItems = artistType
+    ? menuItems.filter((i) => i.type.includes(artistType))
+    : menuItems;
+
   return (
-    <div className="w-30 lg:w-[300px] fixed top-0 flex flex-col h-full bg-[#181B24] text-gray-300 items-start">
-      {/* Only show the X button if it's a mobile screen */}
-      {isMobile && (
+    <div className="w-full lg:w-[300px] h-full bg-[#181B24] text-gray-300 flex flex-col">
+      {/* Close button shown only when parent passed onClose */}
+      {onClose && (
         <button
           className="absolute top-4 right-4 z-40 text-white p-2"
           onClick={onClose}
@@ -178,13 +164,15 @@ const SidebarNav = ({ onClose }) => {
           <X className="w-6 h-6" />
         </button>
       )}
+
       <img
         src={Elp}
-        className="lg:block lg:absolute hidden lg:top-0 lg:right-0"
+        className="hidden lg:block lg:absolute lg:top-0 lg:right-0"
         alt=""
       />
+
       <div className="p-4 mb-3">
-        <div className="flex mt-3 lg:items-center justify-start space-x-2">
+        <div className="flex items-center space-x-2">
           <img
             src={Logo}
             className="px-1"
@@ -195,9 +183,9 @@ const SidebarNav = ({ onClose }) => {
         </div>
       </div>
 
-      <nav className="flex-1 z-50 w-full">
+      <nav className="flex-1 z-50 w-full overflow-y-auto">
         <ul className="space-y-1 w-full">
-          {artistType !== '' && menuItems.filter((item) => item.type.includes(artistType)).map((item, index) => (
+          {visibleItems.map((item, index) => (
             <li key={index}>
               <button
                 className={`w-full flex items-center px-4 py-2 hover:bg-gray-800 hover:text-cyan-400 transition-colors duration-200 justify-start text-[#666B76] ${
@@ -217,17 +205,15 @@ const SidebarNav = ({ onClose }) => {
         </ul>
       </nav>
 
-      {
-        <div className="p-4 border-t border-gray-800 w-full">
-          <Link
-            onClick={handleLogout}
-            className="flex items-center px-4 py-2 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors duration-200 rounded justify-start w-full"
-          >
-            <img src={Logout} className="w-[24px] h-[24px]" alt="Logout" />
-            <span className="ms-3">Log Out</span>
-          </Link>
-        </div>
-      }
+      <div className="p-4 border-t border-gray-800 w-full">
+        <button
+          onClick={handleLogout}
+          className="flex items-center px-4 py-2 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors duration-200 rounded justify-start w-full"
+        >
+          <img src={Logout} className="w-[24px] h-[24px]" alt="Logout" />
+          <span className="ms-3">Log Out</span>
+        </button>
+      </div>
     </div>
   );
 };
