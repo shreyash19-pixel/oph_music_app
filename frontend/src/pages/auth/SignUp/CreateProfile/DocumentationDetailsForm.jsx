@@ -22,7 +22,8 @@ const DocumentationDetailsForm = () => {
   const navigate = useNavigate();
   const { headers, ophid } = useArtist();
 
-  const [loading, setLoading] = useState(true);
+  // Only show the blocking loader while actually fetching/submitting.
+  const [loading, setLoading] = useState(false);
 
   const [banks, setBanks] = useState([]);
   const signatureCanvasRef = useRef(null);
@@ -109,12 +110,8 @@ const DocumentationDetailsForm = () => {
   // }, []);
 
   const fetchDocumentationDetails = async () => {
+    setLoading(true);
     try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers not ready yet");
-        return;
-      }
-
       const response = await getDocumentationDetails(headers, ophid);
       console.log(response);
       if (response.success && response.data.length > 0) {
@@ -172,10 +169,10 @@ const DocumentationDetailsForm = () => {
   };
 
   useEffect(() => {
-    if (ophid) {
-      fetchDocumentationDetails();
-    }
-  }, [ophid]);
+    if (!ophid) return;
+    if (!headers?.Authorization) return;
+    fetchDocumentationDetails();
+  }, [ophid, headers?.Authorization]);
 
   // Fetch banks when component mounts
   useEffect(() => {

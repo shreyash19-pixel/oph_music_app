@@ -81,7 +81,8 @@ const PersonalDetailsForm = () => {
   // useEffect(() => {
   //   fetchVideo();
   // }, []);
-  const [loading, setLoading] = useState(true);
+  // Only show the blocking loader while actually fetching/submitting.
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     legalName: "",
     stageName: "",
@@ -127,6 +128,7 @@ const PersonalDetailsForm = () => {
   // }, []);
 
   const fetchPersonalDetails = async () => {
+    setLoading(true);
     try {
       if (!headers || !headers.Authorization) {
         console.warn("Headers not ready yet");
