@@ -8,11 +8,6 @@ const fs = require("fs");
 const { uploadToS3, uploadToS3Form } = require("../utils");
 const { log } = require("console");
 
-const { S3Client, DeleteObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
-
-const s3 = new S3Client({ region: process.env.AWS_REGION }); // replace with your region
-const bucketName = process.env.S3_BUCKET; 
-
 const membershipForm = async (req, res) => {
   {
     try {
@@ -1712,73 +1707,71 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
     </body>
     </html>
     `;
-      // Generate HTML
-      
-      // --- REFACTOR START ---
-      // The PDF generation and upload process should happen BEFORE sending a response.
-      // This ensures that if any part of it fails, we can send a proper error to the client.
+      // Always return the HTML form to the client.
+      // PDF generation + upload is best-effort and should NOT block the UI.
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.status(200).send(html);
 
-      try {
-        // 1. Generate PDF
-        // Use @sparticuz/chromium for server environments like Render
-        const browser = await puppeteer.launch({
-          args: chromium.args,
-          defaultViewport: chromium.defaultViewport,
-          executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
-          ignoreHTTPSErrors: true,
-        });
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({
-          format: "A4",
-          printBackground: true,
-          margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
-        });
-        await browser.close();
-
-        // 2. Prepare for S3 Upload
-        const fileName = `${artist[0].full_name.replace(/\s+/g, "_")}.pdf`;
-        const s3Key = `pdfs/${fileName}`;
-
-        // 3. Check if an old version of the file exists and delete it
-        try {
-          await s3.send(new HeadObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-          }));
-          // If the command above succeeds, the file exists. Let's delete it.
-          console.log(`Deleting existing PDF from S3: ${s3Key}`);
-          await s3.send(new DeleteObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-          }));
-        } catch (err) {
-          if (err.name !== "NotFound") {
-            // Log the error but don't block the upload of the new file
-            console.warn("Could not delete existing file from S3, proceeding with upload:", err.message);
-          }
-          // If 'NotFound', it's the desired state, so we do nothing.
+      // Best-effort PDF generation in the background.
+      setImmediate(async () => {
+        // If S3 isn't configured, skip PDF upload entirely.
+        if (!process.env.S3_BUCKET) {
+          console.warn("[membership] S3_BUCKET not set; skipping membership PDF generation/upload.");
+          return;
         }
 
-        // 4. Upload the new PDF to S3
-        const file = {
-          originalname: fileName,
-          buffer: pdfBuffer,
-          mimetype: "application/pdf",
-        };
-        const s3Url = await uploadToS3Form(file, "pdfs");
-        console.log(`Successfully uploaded PDF to S3: ${s3Url}`);
+        try {
+          // Try to launch a browser in a way that works both on EC2 and serverless.
+          let browser = null;
+          try {
+            const executablePath = await chromium.executablePath().catch(() => null);
+            if (executablePath) {
+              browser = await puppeteer.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath,
+                headless: chromium.headless,
+                ignoreHTTPSErrors: true,
+              });
+            }
+          } catch (e) {
+            browser = null;
+          }
 
-        // 5. Finally, send the HTML response to the client
-        res.send(html);
-        // --- REFACTOR END ---
+          if (!browser) {
+            browser = await puppeteer.launch({
+              args: ["--no-sandbox", "--disable-setuid-sandbox"],
+              headless: true,
+              ignoreHTTPSErrors: true,
+            });
+          }
 
-      } catch (error) {
-        console.error("Error during PDF generation or S3 upload:", error);
-        // If PDF generation or upload fails, send a server error response.
-        return res.status(500).send("Failed to generate or save the membership PDF.");
-      }
+          const page = await browser.newPage();
+          await page.setContent(html, { waitUntil: "networkidle0" });
+          const pdfBuffer = await page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
+          });
+          await browser.close();
+
+          const safeName =
+            (artist?.[0]?.full_name && String(artist[0].full_name)) || ophid || "membership";
+          const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
+
+          const file = {
+            originalname: fileName,
+            buffer: pdfBuffer,
+            mimetype: "application/pdf",
+          };
+
+          // S3 upload overwrites if key already exists, so no explicit delete is required.
+          const s3Url = await uploadToS3Form(file, "pdfs");
+          console.log(`[membership] PDF uploaded: ${s3Url}`);
+        } catch (error) {
+          console.error("[membership] PDF generation/upload failed (non-blocking):", error);
+        }
+      });
     } catch (error) {
       console.error("Error generating membership form:", error);
       res.status(500).send("Error generating membership form");
