@@ -40,8 +40,37 @@ export function getSocketBaseUrl() {
   return window.location.origin;
 }
 
+function truthyEnv(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase() === "true";
+}
+
+const FORCE_POLLING = truthyEnv(import.meta.env.VITE_SOCKET_FORCE_POLLING);
+
 export const socket = io(getSocketBaseUrl(), {
   path: "/socket.io",
   withCredentials: true,
   autoConnect: false,
+  transports: FORCE_POLLING ? ["polling"] : ["polling", "websocket"],
+  upgrade: !FORCE_POLLING,
+});
+
+// If websocket upgrade is blocked by the proxy/CDN, downgrade once to polling-only.
+let didDowngradeToPolling = FORCE_POLLING;
+socket.on("connect_error", (err) => {
+  if (didDowngradeToPolling) return;
+  const msg = String(err?.message || "");
+  // Heuristic: common websocket/transport failures across proxies.
+  if (!/websocket|transport|upgrade/i.test(msg)) return;
+
+  didDowngradeToPolling = true;
+  try {
+    socket.io.opts.transports = ["polling"];
+    socket.io.opts.upgrade = false;
+    if (socket.connected) socket.disconnect();
+    socket.connect();
+  } catch {
+    // no-op
+  }
 });
