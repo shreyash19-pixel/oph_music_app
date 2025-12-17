@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import useSocketRegistration from "../../../../hook/useSocketRegistration";
@@ -58,10 +58,12 @@ export const ArtistProvider = ({ children }) => {
 
   console.log(ophid);
 
-  useSocketRegistration(ophid, () => {
+  const handleNewNotification = useCallback(() => {
     setHasNewNotification(true);
     localStorage.setItem("hasNewNotification", "true");
-  });
+  }, []);
+
+  useSocketRegistration(ophid, handleNewNotification);
   // Validate token on mount and redirect if needed
   useEffect(() => {
     const verifyToken = () => {
