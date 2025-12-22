@@ -44,7 +44,7 @@ const insertPayment = async (
 
 const insertSongID = async (ophid, song_id) => {
   const [rows] = await db.execute(
-    "UPDATE sign_up_payment SET song_id = ? WHERE OPH_ID = ?",
+    "UPDATE sign_up_payment SET song_id = ? WHERE OPH_ID = ? AND `From` = 'Song Registration' AND song_id IS NULL",
     [song_id, ophid]
   );
   return rows;
