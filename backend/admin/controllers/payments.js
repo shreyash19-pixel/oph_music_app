@@ -1,6 +1,9 @@
 const payment_details = require("../model/payments");
 const { saveNotification } = require("../../utils/notify");
 const { updateSongStatus } = require("../model/songs");
+const { sendEmail } = require("../../emailService");
+const user_details = require("../../model/signin.js");
+const eventsModel = require("../model/events");
 
 const updateStatus = async (req, res) => {
   try {
@@ -29,7 +32,115 @@ const updateStatus = async (req, res) => {
     }
 
     const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionId);
-    const place = paymentDetails[0].From;
+    console.log("Payment details:", paymentDetails[0]);
+    const place = paymentDetails[0].From || paymentDetails[0].from || paymentDetails[0]['From'];
+
+    // Send email when payment is approved
+    if (status === "approved" && paymentDetails && paymentDetails.length > 0) {
+      try {
+        console.log("Payment approved, sending confirmation email...");
+        const payment = paymentDetails[0];
+        
+        // Get user details
+        const user = await user_details.findUserByOphId(ophId);
+        
+        if (user && user.length > 0) {
+          const userEmail = user[0].email;
+          const userName = user[0].full_name || user[0].stage_name || "Artist";
+          
+          // Send event registration email
+          if (payment.event_id && place === "Event Registeration") {
+            const eventDetails = await eventsModel.getEventById(payment.event_id);
+            
+            if (eventDetails) {
+              const htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #8458B3;">🎉 Event Registration Confirmed!</h2>
+                  <p>Hi ${userName},</p>
+                  <p>Great news! Your registration for <strong>${eventDetails.EventName}</strong> has been confirmed and your payment has been approved.</p>
+                  
+                  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #333; margin-top: 0;">Event Details:</h3>
+                    <p><strong>Event:</strong> ${eventDetails.EventName}</p>
+                    <p><strong>Date & Time:</strong> ${new Date(eventDetails.dateTime).toLocaleString()}</p>
+                    <p><strong>Location:</strong> ${eventDetails.location}</p>
+                    <p><strong>Registration Fee:</strong> ₹${eventDetails.registrationFee_normal}</p>
+                    <p><strong>Winner Reward:</strong> ${eventDetails.winnerReward}</p>
+                    <p><strong>Transaction ID:</strong> ${transactionId}</p>
+                  </div>
+                  
+                  <p><strong>What's Next?</strong></p>
+                  <ul>
+                    <li>Keep this email as your registration confirmation</li>
+                    <li>Arrive at the venue 30 minutes before the event starts</li>
+                    <li>Bring a valid ID for verification</li>
+                    <li>Check your dashboard for any updates</li>
+                  </ul>
+                  
+                  <p>We're excited to see you perform! If you have any questions, feel free to reach out to us.</p>
+                  
+                  <p>Best of luck!</p>
+                  <br/>
+                  <p>Best regards,<br/>
+                  OPH Community Team<br/>
+                  <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947 | <a href="https://ophcommunity.com/contact/">ophcommunity.com/contact</a></p>
+                </div>`;
+
+              await sendEmail(
+                userEmail,
+                `🎉 Registration Confirmed - ${eventDetails.EventName}`,
+                htmlContent
+              );
+              console.log("Event registration confirmation email sent successfully");
+            }
+          }
+          // Send signup completion email
+          else if (!payment.event_id && !payment.song_id && place === "Registration") {
+            const htmlContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #8458B3;">🎉 Welcome to OPH Community!</h2>
+                <p>Hi ${userName},</p>
+                <p>Congratulations! Your registration payment has been approved and you're now officially part of the OPH Community family.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3 style="color: #333; margin-top: 0;">Registration Details:</h3>
+                  <p><strong>OPH ID:</strong> ${ophId}</p>
+                  <p><strong>Transaction ID:</strong> ${transactionId}</p>
+                  <p><strong>Amount:</strong> ₹${payment.amount || 'N/A'}</p>
+                  <p><strong>Status:</strong> Payment Approved</p>
+                </div>
+                
+                <p><strong>What's Next?</strong></p>
+                <ul>
+                  <li>Complete your profile setup if not already done</li>
+                  <li>Explore upcoming events and competitions</li>
+                  <li>Connect with other artists in the community</li>
+                  <li>Start uploading your music and content</li>
+                </ul>
+                
+                <p>We're excited to have you on board! Your journey as an OPH Community artist starts now.</p>
+                
+                <p>If you have any questions or need assistance, don't hesitate to reach out to our support team.</p>
+                
+                <p>Welcome aboard!</p>
+                <br/>
+                <p>Best regards,<br/>
+                OPH Community Team<br/>
+                <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947 | <a href="https://ophcommunity.com/contact/">ophcommunity.com/contact</a></p>
+              </div>`;
+
+            await sendEmail(
+              userEmail,
+              `🎉 Welcome to OPH Community - Registration Approved!`,
+              htmlContent
+            );
+            console.log("Signup completion email sent successfully");
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send approval email:", emailError);
+      }
+    }
 
     let link = null;
     if (status === "rejected") {

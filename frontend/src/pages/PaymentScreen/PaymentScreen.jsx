@@ -17,15 +17,16 @@ const PaymentScreen = () => {
   const [error, setError] = useState(null);
   const [costingData, setCostingData] = useState([]);
   const [matchedCosting, setMatchedCosting] = useState(null);
-  const from = location.state.from;
-  const song_id = location.state.song_id;
-
-  console.log(song_id);
   
-
-  const event_id = location.state.event_id;
-  const outside_user = location.state.outside_user;
-  const user_type = location.state.user_type;
+  const from = location.state?.from || null;
+  const song_id = location.state?.song_id || null;
+  const event_id = location.state?.event_id || null;
+  const outside_user = location.state?.outside_user || null;
+  const user_type = location.state?.user_type || null;
+  
+  console.log("PaymentScreen location.state:", location.state);
+  console.log("Extracted from:", from);
+  console.log("Extracted event_id:", event_id);
   const [oph_id, setoph_id] = useState("");
 
   const {
@@ -216,6 +217,17 @@ const PaymentScreen = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    // Debug logs for payment data
+    console.log("=== PAYMENT DEBUG LOGS ===");
+    console.log("Raw location.state:", location.state);
+    console.log("Extracted values:");
+    console.log("- from:", from, "(type:", typeof from, ")");
+    console.log("- event_id:", event_id, "(type:", typeof event_id, ")");
+    console.log("- song_id:", song_id, "(type:", typeof song_id, ")");
+    console.log("- oph_id:", oph_id, "(type:", typeof oph_id, ")");
+    console.log("- trans:", trans, "(type:", typeof trans, ")");
+    
     try {
       const formData = {
         OPH_ID: oph_id,
@@ -232,7 +244,10 @@ const PaymentScreen = () => {
         lyricalVid: lyrical_services,
         amount: getDisplayAmount(),
       };
-      console.log(formData);
+      
+      console.log("Final formData being sent:", formData);
+      console.log("API Path:", from === "Song Repayment" ? "/song-payment" : "/auth/payment");
+      console.log("=========================");
       
       const apiPath =
         from === "Song Repayment" ? "/song-payment" : "/auth/payment";

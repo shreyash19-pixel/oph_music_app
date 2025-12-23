@@ -85,7 +85,6 @@ export default function Events() {
         returnPath: "/dashboard/events",
         heading: "Complete Event Registration",
         from: "Event Registeration",
-        
       },
     });
     // navigate("/dashboard/success", {

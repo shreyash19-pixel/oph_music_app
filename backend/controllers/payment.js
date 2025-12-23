@@ -1,15 +1,16 @@
-const paymentInfo = require("../model/payment");
+const paymentInfo = require("../model/payment.js");
 const { setCurrentStep } = require("../model/common/set_step.js");
 const user_details = require("../model/signin.js");
 
 const payment = async (req, res) => {
   try {
+    console.log("PAYMENT FUNCTION CALLED WITH:", req.body);
     const {
       OPH_ID,
       Transaction_ID,
       Review,
       Status,
-      step,
+      step, 
       from,
       song_id,
       event_id,
@@ -27,13 +28,29 @@ const payment = async (req, res) => {
       });
     }
 
+    // Validate: 'from' field is required for event payments
+    if (event_id && !from) {
+      return res.status(400).json({
+        success: false,
+        message: "'from' field is required for event payments.",
+      });
+    }
+
+    // Validate: 'from' field is required for all payments
+    if (!from || from === null || from === undefined || from === '') {
+      return res.status(400).json({
+        success: false,
+        message: "'from' field is required to identify payment source.",
+      });
+    }
+
     // Call insertPayment with song_id or event_id (whichever is provided, null for the other)
     const dbResponse = await paymentInfo.insertPayment(
       OPH_ID,
       Transaction_ID,
       Review,
       Status,
-      from,
+      from || null,
       song_id || null,
       event_id || null,
       release_date || null,
@@ -43,40 +60,26 @@ const payment = async (req, res) => {
 
     if (dbResponse) {
       console.log("in response", step);
-
-      const result = await user_details.checkRejectedStep(OPH_ID);
-
-      const checkRejectedStep = result[0];
-
-      if (
-        checkRejectedStep.user_status === "under review" &&
-        checkRejectedStep.professional_status === "under review" &&
-        checkRejectedStep.documentation_status === "under review" &&
-        checkRejectedStep.payment_status === "under review"
-      ) {
-        navTo = "/auth/profile-status";
-      }
-      else if (checkRejectedStep.payment_status === "rejected") {
-        navTo = "/auth/payment";
-      } else if (checkRejectedStep.user_status === "rejected") {
-        navTo = "/auth/create-profile/personal-details";
-      } else if (checkRejectedStep.professional_status === "rejected") {
-        navTo = "/auth/create-profile/professional-details";
-      } else if (checkRejectedStep.documentation_status === "rejected") {
-        navTo = "/auth/create-profile/documentation-details";
-      } else if (checkRejectedStep.payment_status === "rejected") {
-        navTo = "/auth/payment";
-      } else if (
-        checkRejectedStep.user_status === "under review" ||
-        checkRejectedStep.professional_status === "under review" ||
-        checkRejectedStep.documentation_status === "under review" ||
-        checkRejectedStep.payment_status === "under review"
-      ) {
-        navTo = step;
-      } else if (checkRejectedStep.overall_status === "completed") {
-        navTo = "/dashboard";
+      
+      let navTo = "";
+      
+      // Check if this is event payment
+      if (event_id) {
+        const eventPayment = await paymentInfo.getEventPaymentByOphId(OPH_ID);
+        if (eventPayment && eventPayment.length > 0) {
+          console.log("Event payment status:", eventPayment[0].Status);
+          navTo = eventPayment[0].Status === "approved" ? "/dashboard" : step || "/dashboard/events";
+        }
       } else {
-        navTo = step;
+        // Check signup payment
+        const result = await paymentInfo.getSignupPaymentByOphId(OPH_ID);
+        if (result && result.length > 0) {
+          const signupPayment = result[0];
+          console.log("Signup payment status:", signupPayment.Status);
+          navTo = signupPayment.Status === "approved" ? "/dashboard" : step || "/auth/create-profile/personal-details";
+        } else {
+          navTo = "/auth/create-profile/personal-details";
+        }
       }
 
       if (from === "Registration") {
