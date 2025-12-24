@@ -49,8 +49,11 @@ if (!taskName) {
   process.exit(1);
 }
 
+// Get backend directory path
+const backendDir = path.join(__dirname, "..");
+
 // Change to backend directory
-process.chdir(path.join(__dirname, ".."));
+process.chdir(backendDir);
 
 // Load NVM if available (for EC2 deployment)
 const nvmPath = process.env.NVM_DIR || path.join(process.env.HOME || "/root", ".nvm");
@@ -64,33 +67,41 @@ if (fs.existsSync(nvmSh)) {
 }
 
 log(`Starting cron task: ${taskName}`);
+log(`Working directory: ${process.cwd()}`);
 
-// Map task names to their corresponding files
+// Map task names to their corresponding files (relative to backend directory)
 const taskMap = {
-  'kpi': './kpi.js',
-  'leaderboard': './leaderboard.js',
-  'monthly-kpi': './monthly_kpi.js',
-  'monthly-leaderboard': './monthly_leaderboard.js',
-  'monthly-song': './monthly_song.js'
+  'kpi': 'kpi.js',
+  'leaderboard': 'leaderboard.js',
+  'monthly-kpi': 'monthly_kpi.js',
+  'monthly-leaderboard': 'monthly_leaderboard.js',
+  'monthly-song': 'monthly_song.js'
 };
 
-const taskFile = taskMap[taskName];
+const taskFileName = taskMap[taskName];
 
-if (!taskFile) {
+if (!taskFileName) {
   error(`Unknown task: ${taskName}`);
   error(`Available tasks: ${Object.keys(taskMap).join(', ')}`);
   process.exit(1);
 }
 
+// Resolve absolute path to task file
+const taskFilePath = path.resolve(backendDir, taskFileName);
+
 // Check if task file exists
-if (!fs.existsSync(path.join(__dirname, "..", taskFile.replace('./', '')))) {
-  error(`Task file not found: ${taskFile}`);
+if (!fs.existsSync(taskFilePath)) {
+  error(`Task file not found: ${taskFilePath}`);
+  error(`Backend directory: ${backendDir}`);
+  error(`Looking for: ${taskFileName}`);
   process.exit(1);
 }
 
+log(`Task file found: ${taskFilePath}`);
+
 // Run the task
 const startTime = Date.now();
-log(`Executing: ${taskFile}`);
+log(`Executing: ${taskFileName}`);
 
 // Handle uncaught errors globally
 process.on('uncaughtException', (err) => {
@@ -137,15 +148,16 @@ function completeTask(success = true, message = '') {
 try {
   // Import and run the task
   // For ES modules (kpi.js, leaderboard.js), we'll need to handle them differently
-  if (taskFile === './kpi.js' || taskFile === './leaderboard.js') {
+  if (taskFileName === 'kpi.js' || taskFileName === 'leaderboard.js') {
     // These are ES modules, need to use dynamic import
     // Note: These scripts auto-execute, so we just need to wait for them
-    const taskPath = path.resolve(__dirname, "..", taskFile.replace('./', ''));
+    log(`Loading ES module: ${taskFilePath}`);
     
-    import(taskPath)
+    import(taskFilePath)
       .then(() => {
         // ES modules that auto-execute - wait a bit for async operations to complete
         // The scripts themselves handle their own async operations
+        log(`ES module loaded, waiting for async operations to complete...`);
         setTimeout(() => {
           completeTask(true);
         }, 10000); // Give 10 seconds for async operations
@@ -155,10 +167,12 @@ try {
       });
   } else {
     // These are CommonJS modules that auto-execute
-    require(taskFile);
+    log(`Loading CommonJS module: ${taskFilePath}`);
+    require(taskFilePath);
     
     // For monthly scripts that auto-run, wait for async operations
     // They have their own async functions that complete
+    log(`CommonJS module loaded, waiting for async operations to complete...`);
     setTimeout(() => {
       completeTask(true);
     }, 60000); // Give 60 seconds for monthly scripts (they do S3 operations)
