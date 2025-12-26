@@ -66,8 +66,8 @@ const songRepayment = async (
 
   rows.push(
     await db.execute(
-      "UPDATE sign_up_payment SET reject_for = ?, song_id = ? WHERE song_id = ?",
-      [song_id, null, song_id]
+      "UPDATE sign_up_payment SET reject_for = ?, song_id = ? WHERE song_id = ? AND OPH_ID = ?",
+      [song_id, null, song_id, OPH_ID]
     )
   );
 

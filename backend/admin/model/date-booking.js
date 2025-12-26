@@ -11,10 +11,14 @@ const insertBooking = async (oph_id, booking_date, song_name, project_type) => {
   return result;
 };
 
-const insertSongAndProject = async (oph_id, song_name, project_type) => {
+const insertSongAndProject = async (oph_id, song_name, project_type, release_date) => {
+  if (!release_date) {
+    throw new Error("release_date is required to update a specific booking");
+  }
+  
   const [rows] = await db.execute(
-    "UPDATE calender SET song_name = ?, project_type = ? WHERE oph_id = ?",
-    [song_name, project_type, oph_id]
+    "UPDATE calender SET song_name = ?, project_type = ? WHERE oph_id = ? AND current_booking_date = ?",
+    [song_name, project_type, oph_id, release_date]
   );
 
   return rows;
