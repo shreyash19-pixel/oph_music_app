@@ -49,18 +49,18 @@ const insertDocumentationController = async (req, res) => {
       : null;
 
 
-    // Save to DB
+    // Save to DB - Map PascalCase from frontend to snake_case for database
     const result = await insertDocumentationDetails(
-      OPH_ID,
-      AadharFrontURL,
-      AadharBackURL,
-      PanFrontURL,
-      SignatureImageURL,
-      BankName,
-      AccountHolderName,
-      AccountNumber,
-      IFSCCode,
-      AgreementAccepted
+      OPH_ID, // ophId
+      AadharFrontURL || null, // aadharFrontUrl
+      AadharBackURL || null, // aadharBackUrl
+      PanFrontURL || null, // panFrontUrl
+      SignatureImageURL || null, // signatureImageUrl
+      BankName || null, // bankName
+      AccountHolderName || null, // accountHolderName
+      AccountNumber || null, // accountNumber
+      IFSCCode || null, // ifscCode
+      AgreementAccepted || 0 // agreementAccepted
     );
 
     if (result) {
@@ -88,11 +88,16 @@ const getDocumentByOphIdController = async (req, res) => {
   try {
     const { ophid } = req.query;
     
+    if (!ophid) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing ophid parameter",
+      });
+    }
 
     const data = await getDocumentationDetailsByOphId(ophid);
     
-
-    if (!data) {
+    if (!data || data.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Data not found for the given OPH_ID",
@@ -101,7 +106,12 @@ const getDocumentByOphIdController = async (req, res) => {
 
     res.status(200).json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error fetching documentation details:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error",
+      error: error.message 
+    });
   }
 };
 

@@ -12,3 +12,12 @@ Project_update.md
 *CREATE_NEW*.md
 *MAKE_RDS*.md
 *UNTrack*.md
+*CRON*.md
+*AWS-EVENTBRIDGE*.md
+*QUICK-START*.md
+deloyment.md
+hashing-*.md
+
+# Backup and config files
+backend/monthly_*_backup_*.json
+nginx-*.conf

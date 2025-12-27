@@ -40,43 +40,51 @@ const NewSignupDetails = () => {
 
   const handleFinalAction = async(type) => {
     const recentTxn = txnList.length > 0 ? txnList[0] : null;
-    if (type === "Reject") {
-      const logData = {
-        action: "Reject",
-        ophId: ophid,
-        transactionId: recentTxn ? recentTxn.transactionId : "No transaction",
-        status: "rejected",
-        reject_reason:reason
-      };
-      console.log("Reject Log:", logData);
+    
+    try {
+      if (type === "Reject") {
+        const logData = {
+          action: "Reject",
+          ophId: ophid,
+          transactionId: recentTxn ? recentTxn.transactionId : "No transaction",
+          status: "rejected",
+          reject_reason: reason
+        };
+        console.log("Reject Log:", logData);
 
-      const submit = await axiosApi.put("/payment-update-status",logData);
+        const submit = await axiosApi.put("/payment-update-status", logData);
 
-      if(submit.status === 200){
-        toast.error(`Rejected with reason: ${reason || "No reason provided"}`, { duration: 20000 });
+        if(submit.status === 200){
+          toast.error(`Rejected with reason: ${reason || "No reason provided"}`, { duration: 20000 });
+          setActionLocked(true);
+          setConfirmAction(null);
+        }
+        setReason("");
+      } else if (type === "Accept") {
+        const logData = {
+          action: "Accept",
+          ophId: ophid,
+          transactionId: recentTxn ? recentTxn.transactionId : "No transaction",
+          status: "approved",
+        };
+        console.log("Accept Log:", logData);
+
+        const submit = await axiosApi.put("/payment-update-status", logData);
+
+        if(submit.status === 200){
+          toast.success("Artist accepted successfully!", { duration: 20000 });
+          setActionLocked(true);
+          setConfirmAction(null);
+        }
       }
-
-
-      setReason("");
-    } else if (type === "Accept") {
-      const logData = {
-        action: "Accept",
-        ophId: ophid,
-        transactionId: recentTxn ? recentTxn.transactionId : "No transaction",
-        status: "approved",
-      };
-      console.log("Accept Log:", logData);
-
-      const submit = await axiosApi.put("/payment-update-status",logData);
-
-      if(submit.status === 200){
-        toast.success("Artist accepted successfully!", { duration: 20000 });
-      }
-
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        "Failed to update payment status. Please try again.";
+      toast.error(errorMessage);
     }
-
-    setActionLocked(true);
-    setConfirmAction(null);
   };
 
   const copyToClipboard = (text) => {

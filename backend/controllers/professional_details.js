@@ -56,20 +56,21 @@
         allPhotoURLs.push(...photoURLs); // append old URLs
       }
 
+      // Map PascalCase from frontend to snake_case for database
       const dbResponse = await professional.insertProfessionalDetails(
-        OPH_ID,
-        Profession,
-        Bio,
-        videoFinalURL,
-        JSON.stringify(allPhotoURLs),
-        SpotifyLink,
-        InstagramLink,
-        FacebookLink,
-        AppleMusicLink,
-        parseInt(ExperienceYearly),
-        parseInt(ExperienceMonthly),
-        parseInt(SongsPlanningCount),
-        SongsPlanningType
+        OPH_ID, // ophId
+        Profession || null, // profession
+        Bio || null, // bio
+        videoFinalURL || null, // videoUrl
+        JSON.stringify(allPhotoURLs) || null, // photoUrls
+        SpotifyLink || null, // spotifyLink
+        InstagramLink || null, // instagramLink
+        FacebookLink || null, // facebookLink
+        AppleMusicLink || null, // appleMusicLink
+        parseInt(ExperienceYearly) || 0, // experienceYearly
+        parseInt(ExperienceMonthly) || 0, // experienceMonthly
+        parseInt(SongsPlanningCount) || 0, // songsPlanningCount
+        SongsPlanningType || null // songsPlanningType
       );
 
       if (dbResponse) {
@@ -99,9 +100,17 @@
   const getProfessionalByOphId = async (req, res) => {
     try {
       const { ophid } = req.query;
+      
+      if (!ophid) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing ophid parameter",
+        });
+      }
+
       const data = await user_details.getProfessionalByOphId(ophid);
 
-      if (!data) {
+      if (!data || data.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Data not found for the given OPH_ID",
@@ -110,7 +119,12 @@
 
       res.status(200).json({ success: true, data });
     } catch (error) {
-      res.status(500).json({ success: false, message: "Internal server error" });
+      console.error("Error fetching professional details:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Internal server error",
+        error: error.message 
+      });
     }
   };
 

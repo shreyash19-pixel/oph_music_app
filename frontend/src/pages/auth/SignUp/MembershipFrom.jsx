@@ -21,20 +21,29 @@ const MembershipForm = () => {
 
     const fetchMembershipForm = async () => {
       try {
+        if (!ophid) {
+          setError("Missing OPH ID. Please sign in again.");
+          return;
+        }
 
-
-        // const artist_id = JSON.parse(localStorage.getItem("userData")).artist.id;
-        // console.log("Artist ID:", JSON.parse(localStorage.getItem("userData")).artist.id);
         const response = await axiosApi.get(`auth/membership?ophid=${ophid}`, { headers });
-        // console.log("API Response:", response.data);
+        
+        // Handle different response types
         if (typeof response.data === "string") {
           setContent(response.data);
+        } else if (response.data?.success === false) {
+          setError(response.data.message || "Error fetching membership form. Please try again later.");
         } else {
           setError("Received an unexpected response. Please check the API endpoint.");
         }
       } catch (error) {
         console.error("Error fetching membership form:", error);
-        setError("Error fetching membership form. Please try again later.");
+        const errorMessage = 
+          error?.response?.data?.message || 
+          error?.message || 
+          "Error fetching membership form. Please try again later.";
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     };
     if (ophid) {

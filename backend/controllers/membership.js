@@ -9,17 +9,20 @@ const { uploadToS3, uploadToS3Form } = require("../utils");
 const { log } = require("console");
 
 const membershipForm = async (req, res) => {
-  {
-    try {
-      // Fetch professions from database instead of hardcoding
-      const professionOptions = await professions.getAll();
-      
+  try {
+    // Fetch professions from database instead of hardcoding
+    const professionOptions = await professions.getAll();
+    
 
-      // Fetch banks from database
-      const Banks = require('../model/banks');
-      const banking = await Banks.getBanks();
-      const { ophid } = req.query;
-      const OPH_ID = ophid;
+    // Fetch banks from database
+    const Banks = require('../model/banks');
+    const banking = await Banks.getBanks();
+    const { ophid } = req.query;
+    const OPH_ID = ophid;
+
+    if (!ophid) {
+      return res.status(400).send("Missing ophid parameter");
+    }
 
 
       // Fetch artist data
@@ -32,31 +35,66 @@ const membershipForm = async (req, res) => {
       const artistProf = await prof_details.getProfessionalByOphId(OPH_ID);
       const artistDoc = await docs.getDocumentationDetailsByOphId(ophid);
 
-      const formattedDate = artist[0].createdAt.toISOString().split("T")[0];
-      const aadharFrontUrl = artistDoc[0].AadharFrontURL;
-      const aadharBackUrl = artistDoc[0].AadharBackURL;
+      // Validate data exists
+      if (!artist || artist.length === 0) {
+        return res.status(404).send("Artist not found");
+      }
 
-      const panFrontUrl = artistDoc[0].PanFrontURL;
+      if (!artistProf || artistProf.length === 0) {
+        return res.status(404).send("Professional details not found");
+      }
+
+      if (!artistDoc || artistDoc.length === 0) {
+        return res.status(404).send("Documentation details not found");
+      }
+
+      // Handle both createdAt (old) and created_at (new) column names
+      const createdDate = artist[0]?.created_at || artist[0]?.createdAt;
+      const formattedDate = createdDate 
+        ? (createdDate instanceof Date ? createdDate : new Date(createdDate)).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
+      
+      const aadharFrontUrl = artistDoc[0]?.AadharFrontURL || null;
+      const aadharBackUrl = artistDoc[0]?.AadharBackURL || null;
+      const panFrontUrl = artistDoc[0]?.PanFrontURL || null;
 
       // BankName is now stored as string directly, no need to convert or lookup
-      const BankName = artistDoc[0].BankName;
+      const BankName = artistDoc[0]?.BankName || null;
 
       const bankDetails = {
         bank_name: BankName,
-        bank_acc_number: artistDoc[0].AccountNumber,
-        bank_ifsc_code: artistDoc[0].IFSCCode,
-        bank_acc_name: artistDoc[0].AccountHolderName,
+        bank_acc_number: artistDoc[0]?.AccountNumber || null,
+        bank_ifsc_code: artistDoc[0]?.IFSCCode || null,
+        bank_acc_name: artistDoc[0]?.AccountHolderName || null,
       };
-      const signatureUrl = artistDoc[0].SignatureImageURL;
+      const signatureUrl = artistDoc[0]?.SignatureImageURL || null;
 
-      const professionId = parseInt(artistProf[0].Profession); // Convert from string to number
-      const professionName = professionOptions.find(
-        (p) => p.id === professionId
-      )?.name;
+      const professionId = artistProf[0]?.Profession 
+        ? parseInt(artistProf[0].Profession) 
+        : null;
+      const professionName = professionId 
+        ? professionOptions.find((p) => p.id === professionId)?.name || null
+        : null;
 
-      if (!artist) {
-        return res.status(404).send("Artist not found");
+      // Load header image from local assets folder
+      let headerImageBase64 = null;
+      try {
+        const path = require('path');
+        const imagePath = path.join(__dirname, '../assests/membership_header.jpg');
+        
+        if (fs.existsSync(imagePath)) {
+          const imageBuffer = fs.readFileSync(imagePath);
+          const base64 = imageBuffer.toString('base64');
+          const contentType = 'image/jpeg'; // Assuming it's a JPEG
+          headerImageBase64 = `data:${contentType};base64,${base64}`;
+          console.log('[membership] ✅ Header image loaded from local assets folder');
+        } else {
+          console.warn('[membership] ⚠️ Header image not found at:', imagePath);
+        }
+      } catch (error) {
+        console.error('[membership] ❌ Error loading header image:', error.message);
       }
+
       // const paymentId = await DB.knex('payments').where('artist_id', artist.id).where('plan_id', 4).where('status', 0).first('trans_id');
       // // Fetch bank details
       // const bankDetails = await DB.knex('user_bank_accs')
@@ -379,9 +417,9 @@ const membershipForm = async (req, res) => {
     <body>
       <!-- Page 1 -->
       <div class="page">
-        <div class="header">
-        <img src="https://ophcommunity.s3.ap-south-1.amazonaws.com/assets/membership_header.jpg" alt="Header" class="header-image" width="223mm">
-        </div>
+        ${headerImageBase64 ? `<div class="header">
+         <img src="${headerImageBase64}" alt="Header" class="header-image" width="223mm">
+         </div>` : ''}
         <div class="row gap-10">
         <div class="form-group">
           <label class="field-name">Artist Membership Code</label>
@@ -1772,10 +1810,13 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
           console.error("[membership] PDF generation/upload failed (non-blocking):", error);
         }
       });
-    } catch (error) {
-      console.error("Error generating membership form:", error);
-      res.status(500).send("Error generating membership form");
-    }
+  } catch (error) {
+    console.error("Error generating membership form:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error generating membership form",
+      error: error.message 
+    });
   }
 };
 

@@ -1,11 +1,13 @@
 const db = require("../../DB/connect");
 
-const updateStatus = async (ophId, transactionId, newStatus, reject_reason) => {
+const updateStatus = async (connection, ophId, transactionId, newStatus, reject_reason) => {
   try {
-    const [result] = await db.query(
-      `UPDATE sign_up_payment 
-       SET Status = ?, reject_reason = ?
-       WHERE OPH_ID = ? AND Transaction_ID = ?`,
+    // Use provided connection if available (for transactions), otherwise use default db
+    const dbConnection = connection || db;
+    const [result] = await dbConnection.query(
+      `UPDATE payments 
+       SET status = ?, reject_reason = ?
+       WHERE oph_id = ? AND transaction_id = ?`,
       [newStatus, reject_reason, ophId, transactionId]
     );
 
@@ -19,10 +21,9 @@ const getPaymentDetailsForAllSong = async () => {
   try {
     const [rows] = await db.query(
       `SELECT *
-        FROM sign_up_payment
-        WHERE \`From\` = 'Song Registration' OR \`From\` = 'Special artist song registration'
-        AND Status = 'under review';
-      `
+        FROM payments
+        WHERE (from_source = 'Song Registration' OR from_source = 'Special artist song registration')
+        AND status = 'under review'`
     );
     return rows;
   } catch (error) {
@@ -34,10 +35,9 @@ const getPaymentDetailsForAllEvents = async () => {
   try {
     const [rows] = await db.query(
       `SELECT *
-        FROM sign_up_payment
-        WHERE \`From\` = 'Event Registeration'
-        AND Status = 'under review';
-      `
+        FROM payments
+        WHERE from_source = 'Event Registeration'
+        AND status = 'under review'`
     );
     return rows;
   } catch (error) {
@@ -49,10 +49,9 @@ const getPaymentDetailsForAllBooking = async () => {
   try {
     const [rows] = await db.query(
       `SELECT *
-        FROM sign_up_payment
-        WHERE \`From\` = 'Date Booking'
-        AND Status = 'under review';
-      `
+        FROM payments
+        WHERE from_source = 'Date Booking'
+        AND status = 'under review'`
     );
     return rows;
   } catch (error) {
@@ -64,10 +63,10 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
   try {
     const [rows] = await db.query(
       `SELECT *
-        FROM sign_up_payment
-        WHERE \`From\` = 'Event Registeration'
-        AND Status = 'under review'
-        AND OPH_ID = ?;`,
+        FROM payments
+        WHERE from_source = 'Event Registeration'
+        AND status = 'under review'
+        AND oph_id = ?`,
       [ophid]
     );
     return rows;
@@ -138,8 +137,8 @@ const getPaymentDetailsByTransactionId = async (transactionId) => {
   try {
     const [rows] = await db.query(
       `SELECT *
-        FROM sign_up_payment
-        WHERE Transaction_ID = ?`,
+        FROM payments
+        WHERE transaction_id = ?`,
       [transactionId]
     );
     return rows;
@@ -152,11 +151,11 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
   try {
     const [rows] = await db.query(
       `SELECT *
-        FROM sign_up_payment
-        WHERE \`From\` = 'Song Registration' OR \`From\` = 'Special artist song registration'
-        AND Status = 'under review'
-        AND OPH_ID = ?
-        AND song_id = ?;`,
+        FROM payments
+        WHERE (from_source = 'Song Registration' OR from_source = 'Special artist song registration')
+        AND status = 'under review'
+        AND oph_id = ?
+        AND song_id = ?`,
       [ophid, songid]
     );
     return rows;
@@ -168,9 +167,9 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
 const updateStatusPayment = async (ophId, songId, status) => {
   try {
     const [result] = await db.query(
-      `UPDATE sign_up_payment 
-       SET Status = ?
-       WHERE OPH_ID = ? AND song_id = ?`,
+      `UPDATE payments 
+       SET status = ?
+       WHERE oph_id = ? AND song_id = ?`,
       [status, ophId, songId]
     );
 
@@ -183,7 +182,7 @@ const updateStatusPayment = async (ophId, songId, status) => {
 const getTransactionDetails = async (release_date) => {
   try {
     const [rows] = await db.execute(
-      "SELECT sp.OPH_ID, Transaction_ID, `From`, song_id, Status , c.* FROM sign_up_payment sp join calender c ON sp.release_date = c.current_booking_date  WHERE release_date = ?",
+      "SELECT sp.oph_id AS OPH_ID, sp.transaction_id AS Transaction_ID, sp.from_source AS `From`, sp.song_id, sp.status AS Status, c.* FROM payments sp JOIN calender c ON sp.release_date = c.current_booking_date WHERE sp.release_date = ?",
       [release_date]
     );
     return rows;
@@ -208,14 +207,14 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
 
       rows.push(
         await db.execute(
-          "UPDATE sign_up_payment SET Status = ?, reject_reason = ?, release_date = ? WHERE release_date = ?",
+          "UPDATE payments SET status = ?, reject_reason = ?, release_date = ? WHERE release_date = ?",
           [decision, isReasonEmpty, null, release_date]
         )
       );
     } else {
       rows.push(
         await db.execute(
-          "UPDATE sign_up_payment SET Status = ?, reject_reason = ? WHERE release_date = ?",
+          "UPDATE payments SET status = ?, reject_reason = ? WHERE release_date = ?",
           [decision, isReasonEmpty, release_date]
         )
       );
@@ -224,7 +223,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
     if (decision === "rejected" || decision === "approved") {
       rows.push(
         await db.execute(
-          "UPDATE sign_up_payment SET Status = ?, reject_reason = ? WHERE release_date = ?",
+          "UPDATE payments SET status = ?, reject_reason = ? WHERE release_date = ?",
           [decision, isReasonEmpty, release_date]
         )
       );
@@ -233,7 +232,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
     if (decision === "rejected" || decision === "approved") {
       rows.push(
         await db.execute(
-          "UPDATE sign_up_payment SET Status = ?, reject_reason = ? WHERE release_date = ?",
+          "UPDATE payments SET status = ?, reject_reason = ? WHERE release_date = ?",
           [decision, isReasonEmpty, release_date]
         )
       );

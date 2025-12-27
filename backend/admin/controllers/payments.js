@@ -1,6 +1,6 @@
 const payment_details = require("../model/payments");
 const { saveNotification } = require("../../utils/notify");
-const { updateSongStatus } = require("../model/songs");
+const AdminPaymentService = require("../services/AdminPaymentService");
 
 const updateStatus = async (req, res) => {
   try {
@@ -12,24 +12,16 @@ const updateStatus = async (req, res) => {
         .json({ message: "ophId, transactionId, and status are required" });
     }
 
-    // If songId is provided, update song status
-    if (songId) {
-      await updateSongStatus(parseInt(songId), ophId, (reject_reason || "").trim() || null);
-    }
-
-    const result = await payment_details.updateStatus(
+    // Use AdminPaymentService to handle all admin application logic
+    const result = await AdminPaymentService.updatePaymentStatus({
       ophId,
       transactionId,
       status,
       reject_reason,
-    );
+      songId
+    });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "No record found to update" });
-    }
-
-    const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionId);
-    const place = paymentDetails[0].From;
+    const { place } = result;
 
     let link = null;
     if (status === "rejected") {
@@ -74,7 +66,10 @@ const updateStatus = async (req, res) => {
     res.status(200).json({ message: "Status updated successfully" });
   } catch (error) {
     console.error("Error updating status:", error);
-    res.status(500).json({ message: "Internal server error" });
+    const errorMessage = error.message || "Internal server error";
+    const statusCode = error.message === 'Payment not found' || error.message === 'No record found to update' ? 404 : 
+                      error.message.includes('required') ? 400 : 500;
+    res.status(statusCode).json({ message: errorMessage });
   }
 };
 

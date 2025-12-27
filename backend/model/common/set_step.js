@@ -1,13 +1,18 @@
+const db = require("../../DB/connect");
 
-const db = require("../../DB/connect")
-
-
-const setCurrentStep = async (step,ophid) => {
-    console.log(step, ophid);
+/**
+ * Set current step for user
+ * Uses standardized column name: oph_id (not ophid)
+ * Note: The column name in the database is step_status (not current_step)
+ */
+const setCurrentStep = async (step, ophId) => {
+    console.log(step, ophId);
     
-    const [rows] = await db.execute("UPDATE user_details SET current_step = ? WHERE ophid = ?", [step, ophid])
-    return rows
-}
+    const [rows] = await db.execute(
+        "UPDATE user_details SET step_status = ? WHERE oph_id = ?", 
+        [step, ophId]
+    );
+    return rows;
+};
 
-
-module.exports = {setCurrentStep}
+module.exports = { setCurrentStep };

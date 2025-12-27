@@ -27,6 +27,7 @@ const DocumentationDetailsForm = () => {
 
   const [banks, setBanks] = useState([]);
   const signatureCanvasRef = useRef(null);
+  const signatureCanvasContainerRef = useRef(null);
 
   // Function to fetch banks from API
   const fetchBanks = useCallback(async () => {
@@ -178,6 +179,46 @@ const DocumentationDetailsForm = () => {
   useEffect(() => {
     fetchBanks();
   }, [fetchBanks]);
+
+  // Fix canvas coordinate offset by ensuring canvas dimensions match displayed size
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (signatureCanvasRef.current && signatureCanvasContainerRef.current) {
+        const canvas = signatureCanvasRef.current.getCanvas();
+        const container = signatureCanvasContainerRef.current;
+        
+        if (!canvas || !container) return;
+        
+        // Get the actual displayed size (accounting for device pixel ratio)
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const displayWidth = Math.floor(rect.width);
+        const displayHeight = 150; // Fixed height
+        
+        // Set canvas internal dimensions to match displayed size
+        // This ensures 1:1 mapping between mouse/touch coordinates and canvas coordinates
+        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+          canvas.width = displayWidth;
+          canvas.height = displayHeight;
+          
+          // Scale the context to account for device pixel ratio for crisp rendering
+          const ctx = canvas.getContext('2d');
+          ctx.scale(1, 1); // Reset scale
+        }
+      }
+    };
+
+    // Update on mount
+    const timeoutId = setTimeout(updateCanvasSize, 50);
+    
+    // Update on window resize
+    window.addEventListener('resize', updateCanvasSize);
+    
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   const parseString = (accept) => {
     if (accept === "false") {
@@ -627,19 +668,29 @@ const DocumentationDetailsForm = () => {
 
                 {/* Signature Canvas */}
                 {!formData.signature?.preview && (
-                  <div className="relative flex-1">
+                  <div 
+                    ref={signatureCanvasContainerRef}
+                    className="relative flex-1"
+                  >
                     <SignatureCanvas
                       ref={signatureCanvasRef}
                       canvasProps={{
-                        height: 150,
                         className:
                           "block w-full bg-white rounded border border-gray-600",
+                        style: {
+                          touchAction: 'none',
+                        }
                       }}
+                      backgroundColor="white"
+                      penColor="black"
+                      velocityFilterWeight={0.7}
+                      minWidth={2}
+                      maxWidth={3}
                       onEnd={stopDrawing}
                     />
                     <button
                       onClick={clearSignature}
-                      className="absolute top-2 right-2 text-sm text-gray-600 hover:text-cyan-400"
+                      className="absolute top-2 right-2 text-sm text-gray-600 hover:text-cyan-400 z-10"
                     >
                       Clear
                     </button>
