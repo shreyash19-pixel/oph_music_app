@@ -39,8 +39,8 @@ const WebsiteSettings = () => {
         // Ensure response and response.data exist
         if (response && response.data) {
           if (response.data.success && Array.isArray(response.data.data)) {
-            console.log('Costing data received:', response.data.data);
-            setCostingItems(response.data.data);
+          console.log('Costing data received:', response.data.data);
+          setCostingItems(response.data.data);
           } else {
             setError('Failed to load costing data: Invalid response format');
             setCostingItems([]);

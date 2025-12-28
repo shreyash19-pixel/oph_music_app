@@ -167,56 +167,164 @@ class UserService {
   }
 
   /**
+   * Map step_status database value to route path
+   */
+  mapStepStatusToRoute(stepStatus) {
+    if (!stepStatus) {
+      return '/auth/payment';
+    }
+
+    const routeMap = {
+      'personal_details': '/auth/create-profile/personal-details',
+      'professional_details': '/auth/create-profile/professional-details',
+      'documentation_details': '/auth/create-profile/documentation-details',
+      'payment': '/auth/payment',
+    };
+
+    return routeMap[stepStatus] || '/auth/payment';
+  }
+
+  /**
+   * Normalize status value for comparison (case-insensitive)
+   */
+  normalizeStatus(status) {
+    if (!status) return null;
+    return String(status).toLowerCase().trim();
+  }
+
+  /**
+   * Check if status matches a given value (case-insensitive)
+   */
+  isStatus(status, value) {
+    return this.normalizeStatus(status) === this.normalizeStatus(value);
+  }
+
+  /**
+   * Check if user has previously filled any forms
+   * Returns true if any status is not null/pending (meaning they have submitted data)
+   */
+  hasPreviouslyFilledForms(user_status, professional_status, documentation_status, payment_status) {
+    // If any status exists and is not null/pending, user has filled forms before
+    return (
+      (user_status && !this.isStatus(user_status, "pending")) ||
+      (professional_status && !this.isStatus(professional_status, "pending")) ||
+      (documentation_status && !this.isStatus(documentation_status, "pending")) ||
+      (payment_status && !this.isStatus(payment_status, "pending"))
+    );
+  }
+
+  /**
    * Determine where to redirect user after login based on application status
    */
   determineNavigationPath(user, applicationStatus) {
+    // If no application status record exists, determine based on step_status
     if (!applicationStatus) {
-      return user.step_status || '/auth/payment';
+      console.log("[Navigation] No applicationStatus, using step_status:", user.step_status);
+      return this.mapStepStatusToRoute(user.step_status);
     }
 
     const { user_status, professional_status, documentation_status, payment_status, overall_status } = applicationStatus;
-
-    // All steps under review - show status page
-    if (
-      user_status === "under review" &&
-      professional_status === "under review" &&
-      documentation_status === "under review" &&
-      payment_status === "under review"
-    ) {
-      return "/auth/profile-status";
-    }
-
-    // Check for rejected steps (priority order)
-    if (payment_status === "rejected") {
-      return "/auth/payment";
-    }
-    if (user_status === "rejected") {
-      return "/auth/create-profile/personal-details";
-    }
-    if (professional_status === "rejected") {
-      return "/auth/create-profile/professional-details";
-    }
-    if (documentation_status === "rejected") {
-      return "/auth/create-profile/documentation-details";
-    }
-
-    // Any step under review - go to current step
-    if (
-      user_status === "under review" ||
-      professional_status === "under review" ||
-      documentation_status === "under review" ||
-      payment_status === "under review"
-    ) {
-      return user.step_status || '/auth/payment';
-    }
+    
+    console.log("[Navigation] Application Status:", {
+      user_status,
+      professional_status,
+      documentation_status,
+      payment_status,
+      overall_status
+    });
 
     // Application completed - go to dashboard
-    if (overall_status === "completed") {
+    if (this.isStatus(overall_status, "completed")) {
+      console.log("[Navigation] Overall status is completed, redirecting to /dashboard");
       return "/dashboard";
     }
 
-    // Default to current step
-    return user.step_status || '/auth/payment';
+    // PRIORITY 1: Check for rejected steps FIRST (user needs to resubmit)
+    // Rejected steps take priority - user must fix these before anything else
+    // Check in sequence: user -> professional -> documentation -> payment
+    if (this.isStatus(user_status, "rejected")) {
+      console.log("[Navigation] User status is rejected, redirecting to /auth/create-profile/personal-details");
+      return "/auth/create-profile/personal-details";
+    }
+    if (this.isStatus(professional_status, "rejected")) {
+      console.log("[Navigation] Professional status is rejected, redirecting to /auth/create-profile/professional-details");
+      return "/auth/create-profile/professional-details";
+    }
+    if (this.isStatus(documentation_status, "rejected")) {
+      console.log("[Navigation] Documentation status is rejected, redirecting to /auth/create-profile/documentation-details");
+      return "/auth/create-profile/documentation-details";
+    }
+    if (this.isStatus(payment_status, "rejected")) {
+      console.log("[Navigation] Payment status is rejected, redirecting to /auth/payment");
+      return "/auth/payment";
+    }
+
+    // PRIORITY 2: If any step is under review, show status page (user cannot edit while under review)
+    if (
+      this.isStatus(user_status, "under review") ||
+      this.isStatus(professional_status, "under review") ||
+      this.isStatus(documentation_status, "under review") ||
+      this.isStatus(payment_status, "under review")
+    ) {
+      console.log("[Navigation] At least one step is under review, redirecting to /auth/profile-status");
+      return "/auth/profile-status";
+    }
+
+    // PRIORITY 3: If user has previously filled forms and overall_status is not complete,
+    // redirect to profile-status instead of form pages
+    if (this.hasPreviouslyFilledForms(user_status, professional_status, documentation_status, payment_status)) {
+      console.log("[Navigation] User has previously filled forms, redirecting to /auth/profile-status");
+      return "/auth/profile-status";
+    }
+
+    // Find the first incomplete (pending) step and navigate there
+    // Steps must be completed in order: user -> professional -> documentation -> payment
+    if (this.isStatus(user_status, "pending") || !user_status) {
+      return "/auth/create-profile/personal-details";
+    }
+    
+    if (this.isStatus(professional_status, "pending") || !professional_status) {
+      // Only allow professional details if user step is approved
+      if (this.isStatus(user_status, "approved")) {
+        return "/auth/create-profile/professional-details";
+      }
+      // If user is not approved but professional is pending, still go to personal details
+      return "/auth/create-profile/personal-details";
+    }
+    
+    if (this.isStatus(documentation_status, "pending") || !documentation_status) {
+      // Only allow documentation if previous steps are approved
+      if (this.isStatus(user_status, "approved") && this.isStatus(professional_status, "approved")) {
+        return "/auth/create-profile/documentation-details";
+      }
+      // If previous steps not approved, go to first incomplete step
+      if (!this.isStatus(user_status, "approved")) {
+        return "/auth/create-profile/personal-details";
+      }
+      return "/auth/create-profile/professional-details";
+    }
+    
+    if (this.isStatus(payment_status, "pending") || !payment_status) {
+      // Only allow payment if all previous steps are approved
+      if (
+        this.isStatus(user_status, "approved") &&
+        this.isStatus(professional_status, "approved") &&
+        this.isStatus(documentation_status, "approved")
+      ) {
+        return "/auth/payment";
+      }
+      // If previous steps not approved, go to first incomplete step
+      if (!this.isStatus(user_status, "approved")) {
+        return "/auth/create-profile/personal-details";
+      }
+      if (!this.isStatus(professional_status, "approved")) {
+        return "/auth/create-profile/professional-details";
+      }
+      return "/auth/create-profile/documentation-details";
+    }
+
+    // Default: map step_status to route or go to payment
+    return this.mapStepStatusToRoute(user.step_status);
   }
 
   /**

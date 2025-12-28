@@ -17,9 +17,12 @@ const insertProfessionalDetails = async (
   experienceYearly,
   experienceMonthly,
   songsPlanningCount,
-  songsPlanningType
+  songsPlanningType,
+  connection = null
 ) => {
-  const [result] = await db.execute(
+  // Use provided connection if available (for transactions), otherwise use pool
+  const query = connection || db;
+  const [result] = await query.execute(
     `INSERT INTO professional_details (
       oph_id,
       profession,

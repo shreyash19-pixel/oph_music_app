@@ -1,58 +1,49 @@
 const db = require("../../DB/connect");
 
 const getUserDetailsByOphId = async (ophid) => {
+  console.log("getUserDetailsByOphId - Querying for OPH_ID:", ophid);
+  // Return user details regardless of status (approved, rejected, under review, etc.)
   const [rows] = await db.execute(
-    "SELECT * FROM user_details WHERE ophid = ? AND step_status = 'under review'",
+    "SELECT * FROM user_details WHERE oph_id = ?",
     [ophid],
   );
-  return rows[0]; // Only one row since ophid is PK
+  console.log("getUserDetailsByOphId - Rows returned:", rows.length);
+  console.log("getUserDetailsByOphId - First row:", rows[0]);
+  return rows[0] || null;
 };
 
 const getProfessionalDetailsByOphId = async (ophid) => {
+  // Return professional details regardless of status (approved, rejected, under review, etc.)
   const [rows] = await db.execute(
-    "SELECT * FROM professional_details WHERE OPH_ID = ? AND step_status = 'under review'",
+    "SELECT * FROM professional_details WHERE oph_id = ?",
     [ophid],
   );
-  return rows[0];
+  return rows[0] || null;
 };
 
 const getDocumentationDetailsByOphId = async (ophid) => {
+  // Return documentation details regardless of status (approved, rejected, under review, etc.)
   const [rows] = await db.execute(
-    "SELECT * FROM documentation_details WHERE OPH_ID = ? AND step_status = 'under review'",
+    "SELECT * FROM documentation_details WHERE oph_id = ?",
     [ophid],
   );
-  return rows[0];
+  return rows[0] || null;
 };
 
 const getAllUserDetailsWithAnyStepUnderReview = async () => {
   const [rows] = await db.execute(
     `
-    SELECT *
-FROM user_details
-WHERE ophid IN (
-    -- Case 1: Under review in ALL 3 tables
-    SELECT ophid FROM user_details WHERE step_status = 'under review'
-    INTERSECT
-    SELECT OPH_ID FROM professional_details WHERE step_status = 'under review'
-    INTERSECT
-    SELECT OPH_ID FROM documentation_details WHERE step_status = 'under review'
-)
-
-UNION
-
-SELECT *
-FROM user_details
-WHERE form_fill_count > 3
-  AND ophid IN (
-      -- Case 2: Under review in ANY ONE table
-      SELECT ophid FROM user_details WHERE step_status = 'under review'
-      UNION
-      SELECT OPH_ID FROM professional_details WHERE step_status = 'under review'
-      UNION
-      SELECT OPH_ID FROM documentation_details WHERE step_status = 'under review'
-  );
-
-
+    SELECT DISTINCT ud.*
+    FROM user_details ud
+    WHERE ud.oph_id IN (
+        -- Get all OPH_IDs that have 'under review' in any of the 3 tables
+        SELECT oph_id FROM user_details WHERE step_status = 'under review'
+        UNION
+        SELECT oph_id FROM professional_details WHERE step_status = 'under review'
+        UNION
+        SELECT oph_id FROM documentation_details WHERE step_status = 'under review'
+    )
+    ORDER BY ud.created_at DESC;
     `,
   );
   return rows;
@@ -61,16 +52,14 @@ WHERE form_fill_count > 3
 const getAllSales = async () => {
   const [rows] = await db.execute(
     `
-    SELECT *
-    FROM user_details
-    WHERE ophid IN (
-      SELECT ophid FROM user_details WHERE step_status = 'rejected'
-      INTERSECT
-      SELECT OPH_ID FROM professional_details WHERE step_status = 'rejected'
-      INTERSECT
-      SELECT OPH_ID FROM documentation_details WHERE step_status = 'rejected'
-    );
-
+    SELECT DISTINCT ud.*
+    FROM user_details ud
+    INNER JOIN professional_details pd ON ud.oph_id = pd.oph_id
+    INNER JOIN documentation_details dd ON ud.oph_id = dd.oph_id
+    WHERE ud.step_status = 'rejected'
+      AND pd.step_status = 'rejected'
+      AND dd.step_status = 'rejected'
+    ORDER BY ud.created_at DESC;
     `
   );
   return rows;
@@ -81,7 +70,7 @@ const updateUserDetailsStatus = async (ophid, status, reason) => {
     `
     UPDATE user_details
     SET step_status = ?, reject_reason = ?
-    WHERE ophid = ?
+    WHERE oph_id = ?
     `,
     [status, reason, ophid],
   );
@@ -94,7 +83,7 @@ const updateDocumentationStatus = async (ophid, status, reason) => {
     `
     UPDATE documentation_details
     SET step_status = ?, reject_reason = ?
-    WHERE OPH_ID = ?
+    WHERE oph_id = ?
     `,
     [status, reason, ophid],
   );
@@ -107,7 +96,7 @@ const updateProfessionalStatus = async (ophid, status, reason) => {
     `
     UPDATE professional_details
     SET step_status = ?, reject_reason = ?
-    WHERE OPH_ID = ?
+    WHERE oph_id = ?
     `,
     [status, reason, ophid],
   );
@@ -118,7 +107,7 @@ const updateProfessionalStatus = async (ophid, status, reason) => {
 const getUserDetailsStepStatus = async (ophid) => {
   const [rows] = await db.execute(
     `
-    SELECT step_status FROM user_details WHERE ophid = ?
+    SELECT step_status FROM user_details WHERE oph_id = ?
     `,
     [ophid],
   );
@@ -128,7 +117,7 @@ const getUserDetailsStepStatus = async (ophid) => {
 const getProfessionalDetailsStepStatus = async (ophid) => {
   const [rows] = await db.execute(
     `
-    SELECT step_status FROM professional_details WHERE OPH_ID = ?
+    SELECT step_status FROM professional_details WHERE oph_id = ?
     `,
     [ophid],
   );
@@ -138,7 +127,7 @@ const getProfessionalDetailsStepStatus = async (ophid) => {
 const getDocumentationDetailsStepStatus = async (ophid) => {
   const [rows] = await db.execute(
     `
-    SELECT step_status FROM documentation_details WHERE OPH_ID = ?
+    SELECT step_status FROM documentation_details WHERE oph_id = ?
     `,
     [ophid],
   );

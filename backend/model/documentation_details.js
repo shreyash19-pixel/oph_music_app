@@ -10,10 +10,13 @@ const insertDocumentationDetails = async (
   accountHolderName,
   accountNumber,
   ifscCode,
-  agreementAccepted
+  agreementAccepted,
+  connection = null
 ) => {
   // Note: Uses standardized column names: oph_id, snake_case for all fields
-  const [result] = await db.execute(
+  // Use provided connection if available (for transactions), otherwise use pool
+  const query = connection || db;
+  const [result] = await query.execute(
     `INSERT INTO documentation_details (
       oph_id,
       aadhar_front_url,

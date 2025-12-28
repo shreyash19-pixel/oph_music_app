@@ -453,7 +453,7 @@ const membershipForm = async (req, res) => {
                 <span>Phone Number</span>
                 <span class="mr-22">:</span>
             </span>
-            <span class="field-value w-60">${artist[0].contact_num || ""}</span>
+            <span class="field-value w-60">${artist[0].contact_number || artist[0].contact_num || ""}</span>
         </div>
         <div class="field grid-template-columns-2">
             <span class="field-name d-flex justify-content-between align-items-center">

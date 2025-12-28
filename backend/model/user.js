@@ -7,7 +7,7 @@ const db = require('../DB/connect');
 
 const createUser = async (connection, ophId, name, stageName, email, contactNumber, password, artistType, stepStatus) => {
   const [result] = await connection.execute(
-    'INSERT INTO user_details (oph_id, full_name, stage_name, email, contact_num, user_pass, artist_type, step_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO user_details (oph_id, full_name, stage_name, email, contact_number, user_pass, artist_type, step_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     [ophId, name, stageName, email, contactNumber, password, artistType, stepStatus]
   );
   return result;
@@ -15,7 +15,7 @@ const createUser = async (connection, ophId, name, stageName, email, contactNumb
 
 const getEmailAndNumber = async (connection, email, contactNumber) => {
   const [rows] = await connection.execute(
-    'SELECT * FROM user_details WHERE email = ? OR contact_num = ?',
+    'SELECT * FROM user_details WHERE email = ? OR contact_number = ?',
     [email, contactNumber]
   );
   return rows;

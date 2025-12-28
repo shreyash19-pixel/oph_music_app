@@ -24,7 +24,7 @@ const signin = async (req, res) => {
       return res.status(401).json({ 
         success: false, 
         message: error.message 
-      });
+    });
     }
 
     return res.status(500).json({ 
@@ -36,9 +36,9 @@ const signin = async (req, res) => {
 
 const getArtistDetail = async (req, res) => {
   try {
-    const { ophid } = req.params;
+  const { ophid } = req.params;
     const artistDetail = await UserService.getArtistDetail(ophid);
-    return res.status(200).json({ success: true, data: artistDetail });
+  return res.status(200).json({ success: true, data: artistDetail });
   } catch (error) {
     console.error("Get artist detail error:", error);
     return res.status(500).json({ success: false, message: "Server error" });

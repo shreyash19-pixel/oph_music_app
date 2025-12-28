@@ -110,70 +110,90 @@ const DocumentationDetailsForm = () => {
   //   loadVideo();
   // }, []);
 
-  const fetchDocumentationDetails = async () => {
+  const fetchDocumentationDetails = useCallback(async () => {
+    if (!ophid) {
+      console.warn("No OPH_ID provided to fetch documentation details");
+      return;
+    }
+    if (!headers?.Authorization) {
+      console.warn("No authorization headers available");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await getDocumentationDetails(headers, ophid);
-      console.log(response);
-      if (response.success && response.data.length > 0) {
-        const doc = response.data[0];
-        // BankName is now stored as string directly
-        const BankName = doc.BankName;
+      console.log("Documentation details response:", response);
+      
+      if (response.success) {
+        // Handle both array and single object responses
+        const data = Array.isArray(response.data) ? response.data : [response.data];
+        
+        if (data.length > 0) {
+          const doc = data[0];
+          // BankName is now stored as string directly
+          const BankName = doc.BankName || doc.bank_name || "";
 
-        const aadharFrontFile = doc.AadharFrontURL
-          ? await urlToFile(doc.AadharFrontURL, "aadhar-front.png")
-          : null;
-        const aadharBackFile = doc.AadharBackURL
-          ? await urlToFile(doc.AadharBackURL, "aadhar-back.png")
-          : null;
-        const panFrontFile = doc.PanFrontURL
-          ? await urlToFile(doc.PanFrontURL, "pan-front.png")
-          : null;
-        const signatureFile = doc.SignatureImageURL
-          ? await urlToFile(doc.SignatureImageURL, "signature.png")
-          : null;
+          const aadharFrontFile = doc.AadharFrontURL || doc.aadhar_front_url
+            ? await urlToFile(doc.AadharFrontURL || doc.aadhar_front_url, "aadhar-front.png")
+            : null;
+          const aadharBackFile = doc.AadharBackURL || doc.aadhar_back_url
+            ? await urlToFile(doc.AadharBackURL || doc.aadhar_back_url, "aadhar-back.png")
+            : null;
+          const panFrontFile = doc.PanFrontURL || doc.pan_front_url
+            ? await urlToFile(doc.PanFrontURL || doc.pan_front_url, "pan-front.png")
+            : null;
+          const signatureFile = doc.SignatureImageURL || doc.signature_image_url
+            ? await urlToFile(doc.SignatureImageURL || doc.signature_image_url, "signature.png")
+            : null;
 
-        const baseForm = {
-          aadharFront: aadharFrontFile
-            ? { file: aadharFrontFile, preview: doc.AadharFrontURL }
-            : null,
-          aadharBack: aadharBackFile
-            ? { file: aadharBackFile, preview: doc.AadharBackURL }
-            : null,
-          panFront: panFrontFile
-            ? { file: panFrontFile, preview: doc.PanFrontURL }
-            : null,
-          signature: signatureFile
-            ? { file: signatureFile, preview: doc.SignatureImageURL }
-            : null,
-          bankName: BankName || "",
-          accountHolder: doc.AccountHolderName || "",
-          accountNumber: doc.AccountNumber || "",
-          ifscCode: doc.IFSCCode || "",
-          agreementAccepted: doc.AgreementAccepted,
-          step_status: doc.step_status,
-          reject_reason: doc.reject_reason,
-        };
+          const baseForm = {
+            aadharFront: aadharFrontFile
+              ? { file: aadharFrontFile, preview: doc.AadharFrontURL || doc.aadhar_front_url }
+              : null,
+            aadharBack: aadharBackFile
+              ? { file: aadharBackFile, preview: doc.AadharBackURL || doc.aadhar_back_url }
+              : null,
+            panFront: panFrontFile
+              ? { file: panFrontFile, preview: doc.PanFrontURL || doc.pan_front_url }
+              : null,
+            signature: signatureFile
+              ? { file: signatureFile, preview: doc.SignatureImageURL || doc.signature_image_url }
+              : null,
+            bankName: BankName,
+            accountHolder: doc.AccountHolderName || doc.account_holder_name || "",
+            accountNumber: doc.AccountNumber || doc.account_number || "",
+            ifscCode: doc.IFSCCode || doc.ifsc_code || "",
+            agreementAccepted: doc.AgreementAccepted || doc.agreement_accepted || false,
+            step_status: doc.step_status || "",
+            reject_reason: doc.reject_reason || "",
+          };
 
-        setFormData(baseForm);
-        setcheckSimilarData(baseForm);
+          setFormData(baseForm);
+          setcheckSimilarData(baseForm);
 
-        if (response.data[0].reject_reason != null) {
-          setRejectReason(response.data[0].reject_reason);
+          if (doc.reject_reason != null) {
+            setRejectReason(doc.reject_reason);
+          }
+        } else {
+          console.log("No documentation details found for this user");
         }
+      } else {
+        console.error("Failed to fetch documentation details:", response.message);
+        toast.error(response.message || "Failed to fetch documentation details");
       }
     } catch (error) {
-      toast.error("Failed to fetch documentation details");
+      console.error("Error fetching documentation details:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to fetch documentation details";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [ophid, headers]);
 
   useEffect(() => {
-    if (!ophid) return;
-    if (!headers?.Authorization) return;
     fetchDocumentationDetails();
-  }, [ophid, headers?.Authorization]);
+  }, [fetchDocumentationDetails]);
 
   // Fetch banks when component mounts
   useEffect(() => {

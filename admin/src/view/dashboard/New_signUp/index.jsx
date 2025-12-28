@@ -123,7 +123,7 @@ const NewSignupDetails = () => {
             <Detail label="Full Name" value={artist.full_name} />
             <Detail label="Stage Name" value={artist.stage_name} />
             <Detail label="Email" value={artist.email} />
-            <Detail label="Contact Number" value={artist.contact_num} />
+            <Detail label="Contact Number" value={artist.contact_number || artist.contact_num} />
             <Detail label="Artist Type" value={artist.artist_type} />
             <Detail label="Location" value={artist.location} />
             <div className="sm:col-span-2">
