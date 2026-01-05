@@ -27,6 +27,15 @@ const fetchAllScores = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching scores:', err);
+    
+    // Handle database connection errors specifically
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        success: false, 
+        message: "Database connection error. Please check database credentials and permissions.",
+        error: "Access denied"
+      });
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 };

@@ -319,9 +319,10 @@ export default function RegisterSongForm() {
 
       if (response.data.success) {
         navigate(
-          `/dashboard/upload-song/audio-metadata/${response.data.contentID}`,
+          `/dashboard/upload-song/audio-metadata`,
           {
             state: {
+              song_id: response.data.contentID,
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
@@ -355,9 +356,10 @@ export default function RegisterSongForm() {
       );
       if (response.data.success) {
         navigate(
-          `/dashboard/upload-song/audio-metadata/${response.data.contentID}`,
+          `/dashboard/upload-song/audio-metadata`,
           {
             state: {
+              song_id: response.data.contentID,
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,
@@ -392,9 +394,10 @@ export default function RegisterSongForm() {
       console.log(response);
       if (response.data.success) {
         navigate(
-          `/dashboard/upload-song/audio-metadata/${response.data.contentID}`,
+          `/dashboard/upload-song/audio-metadata`,
           {
             state: {
+              song_id: response.data.contentID,
               songName: updatedFormData.name,
               release_date: updatedFormData.release_date,
               project_type: projectType,

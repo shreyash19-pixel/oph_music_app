@@ -5,6 +5,7 @@ const {
   insertNewSongRegDetails,
   insertHybridSongRegDetails,
   getPendingSongsList,
+  updateSongStatusToDraft,
 } = require("../controllers/songs_register");
 const authMiddleware = require("../middleware/authenticate");
 
@@ -16,5 +17,6 @@ router.post(
   insertHybridSongRegDetails,
 );
 router.get("/pending-song-registeration", authMiddleware, getPendingSongsList);
+router.post("/update-song-status-to-draft", authMiddleware, updateSongStatusToDraft);
 
 module.exports = router;

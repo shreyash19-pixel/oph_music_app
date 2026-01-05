@@ -59,11 +59,11 @@ const ArtistRoutes = () => {
             element={<SongRegistrationForm />}
           />
           <Route
-            path="upload-song/audio-metadata/:contentId"
+            path="upload-song/audio-metadata"
             element={<AudioMetadataForm />}
           />
           <Route
-            path="upload-song/video-metadata/:contentId"
+            path="upload-song/video-metadata"
             element={<VideoMetadataForm />}
           />
           <Route path="request-ticket" element={<RequestTicketForm />} />
@@ -75,14 +75,6 @@ const ArtistRoutes = () => {
           <Route
             path="upload-song/register-song"
             element={<SongRegistrationForm />}
-          />
-          <Route
-            path="upload-song/audio-metadata/:contentId"
-            element={<AudioMetadataForm />}
-          />
-          <Route
-            path="upload-song/video-metadata/:contentId"
-            element={<VideoMetadataForm />}
           />
           <Route path="request-ticket" element={<RequestTicketForm />} />
           <Route path="events" element={<Events />} />

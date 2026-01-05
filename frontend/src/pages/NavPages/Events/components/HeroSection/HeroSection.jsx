@@ -213,7 +213,7 @@ export default function HeroSection({ professions = [] }) {
             event_id: current.id,
             returnPath: "/dashboard/events",
             heading: "Complete Event Registration",
-            from: "Event Registeration",
+            from: "Event Registration",
             outside_user: true,
           },
         });

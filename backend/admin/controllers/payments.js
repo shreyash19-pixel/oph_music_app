@@ -29,7 +29,7 @@ const updateStatus = async (req, res) => {
         case "Song Registration":
           link = "/dashboard/upload-song";
           break;
-        case "Event Registeration":
+        case "Event Registration":
           link = "/dashboard/events";
           break;
         case "Date booking":
@@ -77,17 +77,19 @@ const getAllSongPayments = async (req, res) => {
   try {
     const payments = await payment_details.getPaymentDetailsForAllSong();
 
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No song payments under review found" });
-    }
-
     return res.status(200).json({
-      message: "Song payments fetched successfully",
-      data: payments,
+      success: true,
+      message: payments && payments.length > 0 
+        ? "Song payments fetched successfully" 
+        : "No song payments under review found",
+      data: payments || [],
     });
   } catch (error) {
     console.error("Error fetching song payments:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
   }
 };
 
@@ -95,17 +97,19 @@ const getAllEventsPayments = async (req, res) => {
   try {
     const payments = await payment_details.getPaymentDetailsForAllEvents();
 
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No event payments under review found" });
-    }
-
     return res.status(200).json({
-      message: "Event payments fetched successfully",
-      data: payments,
+      success: true,
+      message: payments && payments.length > 0 
+        ? "Event payments fetched successfully" 
+        : "No event payments under review found",
+      data: payments || [],
     });
   } catch (error) {
     console.error("Error fetching event payments:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
   }
 };
 
@@ -113,17 +117,19 @@ const getAllBookingPayments = async (req, res) => {
   try {
     const payments = await payment_details.getPaymentDetailsForAllBooking();
 
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No booking payments under review found" });
-    }
-
     return res.status(200).json({
-      message: "Booking payments fetched successfully",
-      data: payments,
+      success: true,
+      message: payments && payments.length > 0 
+        ? "Booking payments fetched successfully" 
+        : "No booking payments under review found",
+      data: payments || [],
     });
   } catch (error) {
     console.error("Error fetching booking payments:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
   }
 };
 
@@ -180,28 +186,56 @@ const updateEventPaymentSp = async (req, res) => {
     if (!ophId || !transactionId || !status || !eventId) {
       return res
         .status(400)
-        .json({ message: "ophId, transactionId, status and eventId are required" });
+        .json({ 
+          success: false,
+          message: "ophId, transactionId, status and eventId are required" 
+        });
     }
 
-    const result = await payment_details.updateEventPaymentSp(
+    // Use AdminPaymentService to handle all admin application logic
+    // This will update both payments and event_participants tables
+    const result = await AdminPaymentService.updateEventPaymentStatus({
       ophId,
       transactionId,
       status,
       reject_reason,
-      parseInt(eventId)
-    );
+      eventId
+    });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "No record found to update" });
-    }
-    else{
-      // Event payment status updated
+    // Send notification to user
+    const { saveNotification } = require("../../utils/notify");
+    const message = status === "rejected" 
+      ? `Your event payment with Transaction ID: ${transactionId} has been ${status}${reject_reason ? ` due to: ${reject_reason}` : ''}.`
+      : `Your event payment with Transaction ID: ${transactionId} has been ${status}.`;
+
+    const notificationPayload = {
+      ophid: ophId,
+      message: message,
+      title: `Event Payment ${status}`,
+      link: status === "rejected" ? "/dashboard/events" : null
+    };
+    
+    await saveNotification(notificationPayload);
+    
+    // Emit socket event if user is online
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+    const userSocketId = onlineUsers?.get(ophId);
+    if (userSocketId) {
+      io.to(userSocketId).emit("Payment-update", notificationPayload);
     }
 
-    res.status(200).json({ message: "Event payment updated successfully" });
+    res.status(200).json({ 
+      success: true,
+      message: "Event payment updated successfully",
+      affectedRows: result.affectedRows
+    });
   } catch (error) {
     console.error("Error updating event payment:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ 
+      success: false,
+      message: error.message || "Internal server error" 
+    });
   }
 };
 

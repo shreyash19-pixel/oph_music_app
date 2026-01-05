@@ -17,14 +17,15 @@ const PaymentScreen = () => {
   const [error, setError] = useState(null);
   const [costingData, setCostingData] = useState([]);
   const [matchedCosting, setMatchedCosting] = useState(null);
-  const from = location.state.from;
-  const song_id = location.state.song_id;
+  const event_id = location.state?.event_id;
+  // Set from_source based on event_id if not provided
+  const from = location.state?.from || (event_id ? "Event Registration" : null);
+  const song_id = location.state?.song_id;
 
   console.log(song_id);
   
 
-  const event_id = location.state.event_id;
-  const outside_user = location.state.outside_user;
+  const outside_user = location.state?.outside_user;
   const user_type = location.state.user_type;
   const [oph_id, setoph_id] = useState("");
 
@@ -44,7 +45,7 @@ const PaymentScreen = () => {
       setLoading(true);
 
       // Check if this is an event registration
-      if (from === "Event Registeration" && event_id) {
+      if (from === "Event Registration" && event_id) {
         const response = await axiosApi.get(`/event/${event_id}`);
 
         if (response.status === 200) {
@@ -64,7 +65,7 @@ const PaymentScreen = () => {
           
           // Create a mock costing object for event data
           const eventCosting = {
-            name: "Event Registeration",
+            name: "Event Registration",
             cost: finalAmount,
             qr_image_path: (outside_user === true || outside_user === 1)
               ? eventData.payment_qr || "/qr.png"
@@ -182,7 +183,7 @@ const PaymentScreen = () => {
       from === "Date booking"
     ) {
       return 799; // Song Registration amount (used by multiple services)
-    } else if (from === "Event Registeration") {
+    } else if (from === "Event Registration") {
       return 1000;
     } else if (from === "Release date change") {
       return 300;
@@ -354,7 +355,7 @@ const PaymentScreen = () => {
             redirectTo: "/dashboard/upload-song",
           },
         });
-      } else if (response.data.success && from === "Event Registeration") {
+      } else if (response.data.success && from === "Event Registration") {
         {
           console.log(oph_id,"test oph_id");
           

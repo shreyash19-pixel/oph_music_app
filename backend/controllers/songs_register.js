@@ -17,20 +17,20 @@ exports.insertNewSongRegDetails = async (req, res) => {
       project_type,
       name,
       release_date,
-      lyricalVid === false ? "base" : "base + lyrics",
-      lyricalVid === false ? 0 : 1,
+      lyricalVid === false ? false : true, // Convert to boolean
       next_step,
       videoType
     );
 
     if (RegSongRes) {
-
-      const song_id = await songRegModel.getSongID(name)
+      // Use insertId from the insert result (auto-increment)
+      const song_id = songRegModel.getSongIdFromInsert(RegSongRes);
       
       return res.status(201).json({
         success: true,
         message: "Song Registered Successfully",
-        contentID : song_id[0].song_id
+        contentID: song_id,
+        song_id: song_id
       });
     }
   } catch (err) {
@@ -57,8 +57,7 @@ exports.insertHybridSongRegDetails = async (req, res) => {
       project_type,
       name,
       release_date,
-      lyricalVid === false ? "base" : "base + lyrics",
-      lyricalVid === false ? 0 : 1,
+      lyricalVid === false ? false : true, // Convert to boolean
       available_on_music_platforms,
       next_step,
       projectsType,
@@ -66,13 +65,14 @@ exports.insertHybridSongRegDetails = async (req, res) => {
     );
 
     if (RegSongRes) {
-
-      const song_id = await songRegModel.getSongID(name)
+      // Use insertId from the insert result (auto-increment)
+      const song_id = songRegModel.getSongIdFromInsert(RegSongRes);
 
       return res.status(201).json({
         success: true,
         message: "Song Registered Successfully",
-        contentID : song_id[0].song_id
+        contentID: song_id,
+        song_id: song_id
       });
     }
   } catch (err) {
@@ -106,10 +106,43 @@ exports.getPendingSongsList = async (req, res) => {
   }
   catch(err)
   {
+    console.error('Error in getPendingSongsList:', err);
     return res.status(500).json({
       success: false,
-      message: err
+      message: err.message || "Internal server error"
     })
   }
+}
 
+exports.updateSongStatusToDraft = async (req, res) => {
+  try {
+    const { song_id, oph_id } = req.body;
+
+    if (!song_id || !oph_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: song_id and oph_id"
+      });
+    }
+
+    const result = await songRegModel.updateSongStatusToDraft(song_id, oph_id);
+
+    if (result.affectedRows > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Song status updated to draft"
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "Song not found"
+      });
+    }
+  } catch (err) {
+    console.error("Error updating song status:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
 }

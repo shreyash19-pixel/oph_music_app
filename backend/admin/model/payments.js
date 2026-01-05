@@ -33,14 +33,21 @@ const getPaymentDetailsForAllSong = async () => {
 
 const getPaymentDetailsForAllEvents = async () => {
   try {
+    // Query for event payments - check by event_id (most reliable) 
+    // and also check from_source for backward compatibility
     const [rows] = await db.query(
       `SELECT *
         FROM payments
-        WHERE from_source = 'Event Registeration'
+        WHERE (
+          event_id IS NOT NULL
+          OR from_source = 'Event Registration'
+          OR from_source LIKE 'Event Regist%'
+        )
         AND status = 'under review'`
     );
     return rows;
   } catch (error) {
+    console.error('Error in getPaymentDetailsForAllEvents:', error);
     throw error;
   }
 };
@@ -50,7 +57,7 @@ const getPaymentDetailsForAllBooking = async () => {
     const [rows] = await db.query(
       `SELECT *
         FROM payments
-        WHERE from_source = 'Date Booking'
+        WHERE (from_source = 'Date booking' OR from_source = 'Date Booking')
         AND status = 'under review'`
     );
     return rows;
@@ -61,16 +68,38 @@ const getPaymentDetailsForAllBooking = async () => {
 
 const getPaymentDetailsForEventsByOphId = async (ophid) => {
   try {
+    // Query for event payments by oph_id - check by event_id (most reliable)
+    // and also check from_source for backward compatibility
+    // Return all statuses so admin can approve/reject any payment
     const [rows] = await db.query(
-      `SELECT *
-        FROM payments
-        WHERE from_source = 'Event Registeration'
-        AND status = 'under review'
-        AND oph_id = ?`,
+      `SELECT 
+        id,
+        oph_id,
+        transaction_id,
+        review,
+        status,
+        from_source,
+        song_id,
+        event_id,
+        release_date,
+        reject_reason,
+        reject_for,
+        amount,
+        created_at,
+        updated_at
+      FROM payments
+      WHERE (
+        event_id IS NOT NULL
+        OR from_source = 'Event Registration'
+        OR from_source LIKE 'Event Regist%'
+      )
+      AND oph_id = ?
+      ORDER BY created_at DESC`,
       [ophid]
     );
     return rows;
   } catch (error) {
+    console.error('Error in getPaymentDetailsForEventsByOphId:', error);
     throw error;
   }
 };
@@ -102,27 +131,53 @@ const updateSongPaymentSp = async (ophid, transactionId, FormData, status) => {
 };
 
 const updateEventPaymentSp = async (
+  connection,
   ophId,
   transactionId,
   status,
   reject_reason,
-  eventId
+  eventId,
+  isRejected = false
 ) => {
-  let query = `CALL sp_handle_event_payment(?, ?, ?, ?, ?)`;
-  const values = [ophId, transactionId, status, reject_reason, eventId];
-
-  console.log("Values:", values);
-  console.log(
-    "Value types:",
-    values.map((v) => typeof v)
-  );
-
   try {
-    const [result] = await db.execute(query, values);
-    console.log("Stored procedure result:", result);
-    return result;
+    // Use provided connection if available (for transactions), otherwise use default db
+    const dbConnection = connection || db;
+    
+    // If payment is rejected, move event_id to reject_for and set event_id to NULL
+    if (isRejected) {
+      const [result] = await dbConnection.query(
+        `UPDATE payments 
+         SET status = ?, 
+             reject_reason = ?,
+             reject_for = ?,
+             event_id = NULL,
+             updated_at = NOW()
+         WHERE oph_id = ? 
+           AND transaction_id = ? 
+           AND event_id = ?`,
+        [status, reject_reason || null, eventId, ophId, transactionId, parseInt(eventId)]
+      );
+
+      console.log("Update event payment result (rejected):", result);
+      return result;
+    } else {
+      // For approved or under review, normal update
+      const [result] = await dbConnection.query(
+        `UPDATE payments 
+         SET status = ?, 
+             reject_reason = ?,
+             updated_at = NOW()
+         WHERE oph_id = ? 
+           AND transaction_id = ? 
+           AND event_id = ?`,
+        [status, reject_reason || null, ophId, transactionId, parseInt(eventId)]
+      );
+
+      console.log("Update event payment result:", result);
+      return result;
+    }
   } catch (error) {
-    console.error("Stored procedure error details:", {
+    console.error("Error updating event payment:", {
       message: error.message,
       code: error.code,
       errno: error.errno,

@@ -9,17 +9,18 @@ import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideo
 
 export default function VideoMetadataForm() {
   const navigate = useNavigate();
-  const { contentId } = useParams();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [payStat, setPayStat] = useState("");
-  const location = useLocation();
-  console.log(location);
+  
+  // Get song_id from location state instead of URL params
+  const contentId = location.state?.song_id;
 
   const [nextPage, setNextPage] = useState("");
-  const release_date = new Date(
-    location.state.release_date
-  ).toLocaleDateString();
+  const release_date = location.state?.release_date 
+    ? new Date(location.state.release_date).toLocaleDateString()
+    : "";
 
   const year = release_date.split("/")[2];
   const month = release_date.split("/")[0];
@@ -27,7 +28,7 @@ export default function VideoMetadataForm() {
 
   const formattedDate = `${year}-${month}-${day}`;
 
-  const [songName, setSongName] = useState(location.state.songName);
+  const [songName, setSongName] = useState(location.state?.songName || "");
   const projectType = localStorage.getItem("projectType") || "";
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
@@ -219,7 +220,7 @@ export default function VideoMetadataForm() {
             songName: location.state.songName,
             project_type: location.state.project_type,
             lyrical_services: location.state.lyrical_services,
-            backPath: `/dashboard/upload-song/video-metadata/${contentId}`,
+            backPath: `/dashboard/upload-song/video-metadata`,
           },
         });
       }
@@ -235,7 +236,7 @@ export default function VideoMetadataForm() {
               songName: location.state.songName,
               project_type: projectType,
               lyrical_services: location.state.lyrical_services,
-              backPath: `/dashboard/upload-song/video-metadata/${contentId}`,
+              backPath: `/dashboard/upload-song/video-metadata`,
             },
           });
         } else if (nextPage === "payment") {
@@ -247,7 +248,7 @@ export default function VideoMetadataForm() {
               songName: location.state.songName,
               project_type: location.state.project_type,
               lyrical_services: location.state.lyrical_services,
-              backPath: `/dashboard/upload-song/video-metadata/${contentId}`,
+              backPath: `/dashboard/upload-song/video-metadata`,
             },
           });
         } else if (nextPage === "pending") {
@@ -389,6 +390,26 @@ export default function VideoMetadataForm() {
     checkAlreadyBookedDate();
     fetchVideoMetadata();
     checkPaymentStaus();
+
+    // Cleanup: Update song status to draft when user leaves the page
+    return () => {
+      if (contentId && ophid) {
+        // Use sendBeacon or fetch with keepalive for better reliability
+        const updateStatus = async () => {
+          try {
+            await axiosApi.post(
+              "/update-song-status-to-draft",
+              { song_id: contentId, oph_id: ophid },
+              { headers }
+            );
+          } catch (error) {
+            // Silently fail - this is cleanup, don't block navigation
+            console.log("Failed to update song status to draft:", error);
+          }
+        };
+        updateStatus();
+      }
+    };
   }, [contentId, headers, ophid]);
 
   if (navigateToSongReg) {

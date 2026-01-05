@@ -92,9 +92,10 @@ exports.getVideoDetails = async (req, res) => {
   }
   catch(err)
   {
+    console.error('Error in getVideoDetails:', err);
     return res.status(500).json({
       success: false,
-      message : err.message
+      message : err.message || "Internal server error"
     })
   }
 
@@ -105,15 +106,40 @@ exports.checkPaymentStatusController = async (req, res) => {
   try{
 
       const {contentId, ophid} = req.query
+      // Get ophid from query param or JWT token
+      // Try multiple possible paths for ophid in token
+      const tokenOphid = req.user?.userData?.artist?.id 
+        || req.user?.userData?.artist?.OPH_ID
+        || req.user?.ophid
+        || req.user?.OPH_ID;
 
-      if(!contentId || !ophid)
+      if(!contentId)
       {
         return res.status(400).json({
           success: false,
-          message: "Missing required field"
+          message: "Missing required field: contentId"
         })
-      }      
-      const response = await videoDetails.checkPaymentStatus(contentId, ophid)
+      }
+
+      const finalOphid = ophid || tokenOphid;
+
+      if(!finalOphid)
+      {
+        console.log('Token structure:', JSON.stringify(req.user, null, 2));
+        return res.status(400).json({
+          success: false,
+          message: "Missing required field: ophid (not found in token or query)",
+          debug: {
+            hasUser: !!req.user,
+            userKeys: req.user ? Object.keys(req.user) : [],
+            userDataKeys: req.user?.userData ? Object.keys(req.user.userData) : [],
+            artistKeys: req.user?.userData?.artist ? Object.keys(req.user.userData.artist) : [],
+            queryOphid: ophid
+          }
+        })
+      }
+      
+      const response = await videoDetails.checkPaymentStatus(contentId, finalOphid)
 
       if(response)
       {
@@ -127,10 +153,12 @@ exports.checkPaymentStatusController = async (req, res) => {
 
   catch(err)
   {
+    console.error('Error in checkPaymentStatusController:', err);
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message || "Internal server error"
     })
   }
 
 }
+

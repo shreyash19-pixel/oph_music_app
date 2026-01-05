@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 const useSocketRegistration = (OPH_ID, onNewNotification) => {
   useEffect(() => {
     if (!OPH_ID) {
-      console.warn("No OPH_ID provided to socket registration.");
+      // Silently return if OPH_ID is not available yet (e.g., during initial mount)
       return;
     }
 

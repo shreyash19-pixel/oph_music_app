@@ -34,12 +34,13 @@ class PaymentService {
 
       // Handle release date change logic
       if (from_source === "Release date change" && old_release_date) {
+        // Move old release_date to reject_for and clear release_date for old payment
         await connection.execute(
-          "UPDATE payments SET reject_for = ?, release_date = ? WHERE release_date = ? AND (from_source = ? OR from_source = ?)",
+          "UPDATE payments SET reject_for = ?, release_date = NULL, updated_at = NOW() WHERE release_date = ? AND oph_id = ? AND (from_source = ? OR from_source = ?)",
           [
-            old_release_date ?? null,
-            null,
-            old_release_date ?? null,
+            old_release_date,
+            old_release_date,
+            oph_id,
             "Date booking",
             "Release date change",
           ]

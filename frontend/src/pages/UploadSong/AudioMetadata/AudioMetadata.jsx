@@ -254,8 +254,11 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
 export default function AudioMetadataForm() {
   const checkProjectType = localStorage.getItem("projectType");
   const navigate = useNavigate();
-  const { contentId } = useParams();
+  const location = useLocation();
   const fileInputRef = useRef(null);
+  
+  // Get song_id from location state instead of URL params
+  const contentId = location.state?.song_id;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -271,10 +274,8 @@ export default function AudioMetadataForm() {
     { name: "marathi", id: 3 },
   ]);
   const [audioFileUrl, setAudioFileUrl] = useState(null);
-  const location = useLocation();
-  console.log(location);
 
-  const [songName, setSongName] = useState(location.state.songName);
+  const [songName, setSongName] = useState(location.state?.songName || "");
   const [showSecondaryForm, setShowSecondaryForm] = useState(false);
   const [selectedArtistType, setSelectedArtistType] = useState("");
   const [rejectReason, setRejectReason] = useState(null);
@@ -566,13 +567,14 @@ export default function AudioMetadataForm() {
         setIsLoading(false);
         nextPage === "video"
           ? navigate(
-              `/dashboard/upload-song/video-metadata/${response.data.song_id}`,
+              `/dashboard/upload-song/video-metadata`,
               {
                 state: {
-                  songName: location.state.songName,
-                  release_date: location.state.release_date,
-                  project_type: location.state.project_type,
-                  lyrical_services: location.state.lyrical_services,
+                  song_id: response.data.song_id || contentId,
+                  songName: location.state?.songName || songName,
+                  release_date: location.state?.release_date,
+                  project_type: location.state?.project_type,
+                  lyrical_services: location.state?.lyrical_services,
                 },
               }
             )
@@ -592,6 +594,8 @@ export default function AudioMetadataForm() {
   };
 
   const checkIfDateIsAvail = () => {
+    if (!location.state?.release_date) return;
+    
     const check = checkBookingDates.find((date) => {
       const formattedDate = new Date(
         location.state.release_date
@@ -656,7 +660,7 @@ export default function AudioMetadataForm() {
       if (response.data.success) {
         const { audio_metadata, secondary_artists } = response.data.data;
 
-        setSongName(audio_metadata[0]?.Song_name || location.state.songName);
+        setSongName(audio_metadata[0]?.Song_name || location.state?.songName || songName);
         setLangID(audio_metadata[0]?.language || null);
         setGenre(audio_metadata[0]?.genre || "");
         setSubGenre(audio_metadata[0]?.sub_genre || "");
@@ -731,10 +735,36 @@ export default function AudioMetadataForm() {
   }, [checkBookingDates]);
 
   useEffect(() => {
+    // If contentId is missing and no location state, redirect to register-song
+    if (!contentId && !location.state?.songName) {
+      navigate("/dashboard/upload-song/register-song", { replace: true });
+      return;
+    }
+    
     checkAlreadyBookedDate();
     fetchAudioMetadata();
     checkVideoStaus();
-  }, [contentId, headers]);
+
+    // Cleanup: Update song status to draft when user leaves the page
+    return () => {
+      if (contentId && ophid) {
+        // Use sendBeacon or fetch with keepalive for better reliability
+        const updateStatus = async () => {
+          try {
+            await axiosApi.post(
+              "/update-song-status-to-draft",
+              { song_id: contentId, oph_id: ophid },
+              { headers }
+            );
+          } catch (error) {
+            // Silently fail - this is cleanup, don't block navigation
+            console.log("Failed to update song status to draft:", error);
+          }
+        };
+        updateStatus();
+      }
+    };
+  }, [contentId, headers, location.state, ophid]);
 
   async function getAudioAsBlob(url) {
     const response = await fetch(url);

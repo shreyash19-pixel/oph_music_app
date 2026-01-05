@@ -3,27 +3,22 @@ const {getOphIdFromHash} = require("../model/artist_hash_mapping")
 
 
 const newReleasesController = async (req, res) => {
-
-    try{
-        const response = await newReleases()
-
-        if(response)
-        {
-            return res.status(200).json({
-                success: true,
-                message: "Data fetched successfully",
-                data: response
-            })
-        }
-    }
-    catch(err)
-    {
+    try {
+        const response = await newReleases();
+        
+        // Always return a response, even if empty
+        return res.status(200).json({
+            success: true,
+            message: "Data fetched successfully",
+            data: response || {}
+        });
+    } catch (err) {
+        console.error("Error in newReleasesController:", err);
         return res.status(500).json({
             success: false,
-            message: err.message
-        })
+            message: err.message || "Internal server error"
+        });
     }
-
 }
 
 const getArtistDetailController = async (req, res) => {
@@ -109,40 +104,32 @@ const getReleatedArtistsController = async (req, res) => {
 }
 
 
-const getUpcomingSongController = async (req ,res) => {
+const getUpcomingSongController = async (req, res) => {
+    try {
+        const { ophid } = req.query;
 
-    try{
-        const {ophid} = req.query
-
-        if(!ophid)
-        {
+        if (!ophid) {
             return res.status(400).json({
                 success: false,
                 message: "Missing required field"
-            })
+            });
         }
-
-        console.log("in upcomg");
         
-        const response = await getUpcomingSong(ophid)
+        const response = await getUpcomingSong(ophid);
 
-        if(response)
-        {
-            return res.status(200).json({
-                success: true,
-                message: "Data Fetch Successfully",
-                data: response
-            })
-        }
-    }
-    catch(err)
-    {
+        // Always return a response, even if empty
+        return res.status(200).json({
+            success: true,
+            message: "Data fetched successfully",
+            data: response || {}
+        });
+    } catch (err) {
+        console.error("Error in getUpcomingSongController:", err);
         return res.status(500).json({
             success: false,
-            message: err.message
-        })
+            message: err.message || "Internal server error"
+        });
     }
-
 }
 
 

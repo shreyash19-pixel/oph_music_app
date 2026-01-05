@@ -47,31 +47,55 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date, reason)
 };
 
 const getAllBookings = async () => {
-  const [rows] = await db.execute("SELECT * FROM calender c join user_details ud ON c.oph_id = ud.ophid");
+  try {
+    const [rows] = await db.execute(
+      `SELECT 
+        c.id,
+        c.oph_id,
+        c.current_booking_date,
+        c.previous_booking_date,
+        c.original_booking_date,
+        c.song_name,
+        c.project_type,
+        c.created_at,
+        c.updated_at,
+        COALESCE(ud.full_name, '') as full_name
+      FROM calender c 
+      LEFT JOIN user_details ud ON c.oph_id = ud.oph_id`
+    );
 
-  const rowsWithIST = rows.map((row) => ({
-    ...row,
-    current_booking_date: row.current_booking_date
-      ? moment
-          .utc(row.current_booking_date)
-          .tz("Asia/Kolkata")
-          .format("YYYY-MM-DD")
-      : null,
-    previous_booking_date: row.previous_booking_date
-      ? moment
-          .utc(row.previous_booking_date)
-          .tz("Asia/Kolkata")
-          .format("YYYY-MM-DD")
-      : null,
-    original_booking_date: row.original_booking_date
-      ? moment
-          .utc(row.original_booking_date)
-          .tz("Asia/Kolkata")
-          .format("YYYY-MM-DD")
-      : null,
-  }));
+    const rowsWithIST = rows.map((row) => ({
+      ...row,
+      current_booking_date: row.current_booking_date
+        ? moment
+            .utc(row.current_booking_date)
+            .tz("Asia/Kolkata")
+            .format("YYYY-MM-DD")
+        : null,
+      previous_booking_date: row.previous_booking_date
+        ? moment
+            .utc(row.previous_booking_date)
+            .tz("Asia/Kolkata")
+            .format("YYYY-MM-DD")
+        : null,
+      original_booking_date: row.original_booking_date
+        ? moment
+            .utc(row.original_booking_date)
+            .tz("Asia/Kolkata")
+            .format("YYYY-MM-DD")
+        : null,
+    }));
 
-  return rowsWithIST;
+    return rowsWithIST;
+  } catch (error) {
+    console.error("Error in getAllBookings:", error);
+    // If table doesn't exist or other error, return empty array instead of throwing
+    if (error.code === 'ER_NO_SUCH_TABLE' || error.code === 'ER_BAD_FIELD_ERROR') {
+      console.log("Calendar table or column not found, returning empty array");
+      return [];
+    }
+    throw error;
+  }
 };
 
 const getAllBookingsByID = async (ophid) => {

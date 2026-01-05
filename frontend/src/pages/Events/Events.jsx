@@ -84,7 +84,7 @@ export default function Events() {
         event_id: data.event_id,
         returnPath: "/dashboard/events",
         heading: "Complete Event Registration",
-        from: "Event Registeration",
+        from: "Event Registration",
         
       },
     });

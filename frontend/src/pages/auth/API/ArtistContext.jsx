@@ -6,8 +6,6 @@ import useSocketRegistration from "../../../../hook/useSocketRegistration";
 const ArtistContext = createContext();
 
 export const ArtistProvider = ({ children }) => {
-  console.log("sdhsaddh");
-  
   const navigate = useNavigate();
 
   const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -30,7 +28,6 @@ export const ArtistProvider = ({ children }) => {
 
         setUser(decoded);
         const id = decoded.userData?.artist?.id;
-        console.log(id);
 
         if (id) {
           setOphid(id);
@@ -51,12 +48,7 @@ export const ArtistProvider = ({ children }) => {
     }
   }, [token]);
 
-  useEffect(() => {
-    console.log("👤 User state changed:", user);
-    console.log(ophid);
-  }, [user]);
-
-  console.log(ophid);
+  // Removed debug logs
 
   const handleNewNotification = useCallback(() => {
     setHasNewNotification(true);

@@ -12,6 +12,15 @@ const signin = async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     
+    // Handle database connection errors specifically
+    if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        success: false, 
+        message: "Database connection error. Please check database credentials and permissions.",
+        error: "Access denied"
+      });
+    }
+    
     // Handle specific errors
     if (error.message === 'User not found') {
       return res.status(400).json({ 
@@ -29,7 +38,7 @@ const signin = async (req, res) => {
 
     return res.status(500).json({ 
       success: false, 
-      message: "Server error" 
+      message: error.message || "Server error" 
     });
   }
 };
