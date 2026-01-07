@@ -95,15 +95,19 @@ exports.getAllBookings = async (req, res) => {
     try {
         const bookings = await bookingModel.getAllBookings();
 
-        if (bookings) {
-            return res.status(200).json({
-                success: true,
-                message: "Data fetched successfully",
-                data: bookings,
-            });
-        }
+        return res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Data fetched successfully",
+            data: bookings || [],
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error in getAllBookings:", error);
+        res.status(500).json({ 
+            status: 500,
+            success: false,
+            error: error.message || "Internal server error" 
+        });
     }
 };
 

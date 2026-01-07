@@ -207,10 +207,10 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
     const [rows] = await db.query(
       `SELECT *
         FROM payments
-        WHERE (from_source = 'Song Registration' OR from_source = 'Special artist song registration')
-        AND status = 'under review'
+        WHERE (from_source = 'Song Registration' OR from_source = 'Song Repayment' OR from_source = 'Special artist song registration')
         AND oph_id = ?
-        AND song_id = ?`,
+        AND song_id = ?
+        ORDER BY created_at DESC`,
       [ophid, songid]
     );
     return rows;
@@ -247,53 +247,143 @@ const getTransactionDetails = async (release_date) => {
 };
 
 const setPaymentVerification = async (decision, reason, release_date, from) => {
-  let rows = [];
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    let isReasonEmpty = reason === "null" || reason === null || reason === "" ? null : reason;
+    let affectedRows = 0;
 
-  let isReasonEmpty = reason === "null" ? null : reason;
+    if (from === "Date booking" || from === "Date Booking") {
+      if (decision === "rejected") {
+        // First, get the payment IDs that will be affected (before we update release_date)
+        // Check for any payments with this release_date, regardless of status
+        const [paymentsToUpdate] = await connection.execute(
+          `SELECT id, oph_id, release_date, from_source, status FROM payments 
+           WHERE release_date = ? 
+           AND (LOWER(from_source) = 'date booking' OR from_source = 'Release date change')
+           AND status != 'rejected'`,
+          [release_date]
+        );
+        
+        // If no payments found with status != 'rejected', try to find any payments for this date
+        if (paymentsToUpdate.length === 0) {
+          const [allPayments] = await connection.execute(
+            `SELECT id, oph_id, release_date, from_source, status FROM payments 
+             WHERE release_date = ? 
+             AND (LOWER(from_source) = 'date booking' OR from_source = 'Release date change')`,
+            [release_date]
+          );
+          console.log(`[setPaymentVerification] No non-rejected payments found. All payments for this date:`, allPayments);
+        }
 
-  if (from === "Date booking") {
-    if (decision === "rejected") {
-      rows.push(
-        await db.execute(
+        console.log(`[setPaymentVerification] Found ${paymentsToUpdate.length} payments to update for date: ${release_date}`);
+        console.log(`[setPaymentVerification] Payments:`, paymentsToUpdate);
+
+        // Delete calendar entry
+        const [deleteResult] = await connection.execute(
           "DELETE FROM calender WHERE current_booking_date = ?",
           [release_date]
-        )
-      );
+        );
+        console.log(`[setPaymentVerification] Deleted ${deleteResult.affectedRows} calendar entries`);
+        affectedRows += deleteResult.affectedRows;
 
-      rows.push(
-        await db.execute(
-          "UPDATE payments SET status = ?, reject_reason = ?, release_date = ? WHERE release_date = ?",
-          [decision, isReasonEmpty, null, release_date]
-        )
-      );
-    } else {
-      rows.push(
-        await db.execute(
-          "UPDATE payments SET status = ?, reject_reason = ? WHERE release_date = ?",
+        // Update payments: set status, reject_reason, and move release_date to reject_for
+        if (paymentsToUpdate.length > 0) {
+          const paymentIds = paymentsToUpdate.map(p => p.id);
+          console.log(`[setPaymentVerification] Updating payment IDs:`, paymentIds);
+          
+          // For single payment, use direct WHERE clause; for multiple, use IN clause
+          let updateQuery;
+          let updateParams;
+          
+          if (paymentIds.length === 1) {
+            updateQuery = `UPDATE payments 
+             SET status = ?, 
+                 reject_reason = ?, 
+                 reject_for = release_date,
+                 release_date = NULL,
+                 updated_at = NOW()
+             WHERE id = ?`;
+            updateParams = [decision, isReasonEmpty, paymentIds[0]];
+          } else {
+            const placeholders = paymentIds.map(() => '?').join(',');
+            updateQuery = `UPDATE payments 
+             SET status = ?, 
+                 reject_reason = ?, 
+                 reject_for = release_date,
+                 release_date = NULL,
+                 updated_at = NOW()
+             WHERE id IN (${placeholders})`;
+            updateParams = [decision, isReasonEmpty, ...paymentIds];
+          }
+          
+          console.log(`[setPaymentVerification] Executing query:`, updateQuery);
+          console.log(`[setPaymentVerification] With params:`, updateParams);
+          
+          const [updateResult] = await connection.execute(updateQuery, updateParams);
+          console.log(`[setPaymentVerification] Updated ${updateResult.affectedRows} payment records`);
+          affectedRows += updateResult.affectedRows;
+          
+          if (updateResult.affectedRows === 0) {
+            console.log(`[setPaymentVerification] WARNING: Update query executed but no rows were affected!`);
+          }
+        } else {
+          console.log(`[setPaymentVerification] WARNING: No payments found to update for date ${release_date}`);
+        }
+      } else if (decision === "approved") {
+        // Approve the payment
+        const [updateResult] = await connection.execute(
+          `UPDATE payments 
+           SET status = ?, 
+               reject_reason = NULL,
+               updated_at = NOW()
+           WHERE release_date = ? 
+           AND (from_source = 'Date booking' OR from_source = 'Release date change')
+           AND status != 'approved'`,
+          [decision, release_date]
+        );
+        affectedRows += updateResult.affectedRows;
+      }
+    } else if (from === "Release date change") {
+      if (decision === "rejected" || decision === "approved") {
+        const [updateResult] = await connection.execute(
+          `UPDATE payments 
+           SET status = ?, 
+               reject_reason = ?,
+               updated_at = NOW()
+           WHERE release_date = ? 
+           AND from_source = 'Release date change'`,
           [decision, isReasonEmpty, release_date]
-        )
-      );
-    }
-  } else if (from === "Release date change") {
-    if (decision === "rejected" || decision === "approved") {
-      rows.push(
-        await db.execute(
-          "UPDATE payments SET status = ?, reject_reason = ? WHERE release_date = ?",
+        );
+        affectedRows += updateResult.affectedRows;
+      }
+    } else if (from === "Song Registration") {
+      if (decision === "rejected" || decision === "approved") {
+        const [updateResult] = await connection.execute(
+          `UPDATE payments 
+           SET status = ?, 
+               reject_reason = ?,
+               updated_at = NOW()
+           WHERE release_date = ? 
+           AND from_source = 'Song Registration'`,
           [decision, isReasonEmpty, release_date]
-        )
-      );
+        );
+        affectedRows += updateResult.affectedRows;
+      }
     }
-  } else if (from === "Song Registration") {
-    if (decision === "rejected" || decision === "approved") {
-      rows.push(
-        await db.execute(
-          "UPDATE payments SET status = ?, reject_reason = ? WHERE release_date = ?",
-          [decision, isReasonEmpty, release_date]
-        )
-      );
-    }
+    
+    await connection.commit();
+    
+    return { success: true, affectedRows };
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error in setPaymentVerification:", error);
+    throw error;
+  } finally {
+    connection.release();
   }
-  return rows;
 };
 
 module.exports = {

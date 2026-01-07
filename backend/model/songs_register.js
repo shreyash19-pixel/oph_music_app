@@ -23,16 +23,22 @@ const insertNewSong = async (
   release_date,
   Lyrics_services,
   next_step,
-  videoType
+  videoType,
+  connection = null
 ) => {
-  // Convert Lyrics_services to boolean
+  // Convert Lyrics_services to boolean (1 or 0 for MySQL)
   const lyricsServicesBoolean = Lyrics_services === true || 
                                  Lyrics_services === 'true' || 
                                  Lyrics_services === 1 || 
                                  Lyrics_services === '1' ||
                                  Lyrics_services === 'base + lyrics';
   
-  const [result] = await db.execute(
+  // Convert to integer (1 for true, 0 for false) for MySQL BOOLEAN type
+  const lyricsServicesValue = lyricsServicesBoolean ? 1 : 0;
+  
+  // Use provided connection if available (for transactions), otherwise use pool
+  const query = connection || db;
+  const [result] = await query.execute(
     `INSERT INTO songs_register 
       (oph_id, project_type, Song_name, release_date, Lyrics_services, current_page, video_type)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -49,7 +55,7 @@ const insertNewSong = async (
       project_type,
       Song_name,
       release_date,
-      lyricsServicesBoolean,
+      lyricsServicesValue,
       next_step,
       videoType
     ]
@@ -67,22 +73,31 @@ const insertHybridSong = async (
   available_on_music_platforms,
   next_step,
   projectsType,
-  videoType
+  videoType,
+  connection = null
 ) => {
-  // Convert Lyrics_services to boolean
+  // Convert Lyrics_services to boolean (1 or 0 for MySQL)
   const lyricsServicesBoolean = Lyrics_services === true || 
                                  Lyrics_services === 'true' || 
                                  Lyrics_services === 1 || 
                                  Lyrics_services === '1' ||
                                  Lyrics_services === 'base + lyrics';
   
-  // Convert availability_on_music_platforms to boolean
+  // Convert to integer (1 for true, 0 for false) for MySQL BOOLEAN type
+  const lyricsServicesValue = lyricsServicesBoolean ? 1 : 0;
+  
+  // Convert availability_on_music_platforms to boolean (1 or 0 for MySQL)
   const availabilityBoolean = available_on_music_platforms === true || 
                                available_on_music_platforms === 'true' || 
                                available_on_music_platforms === 1 || 
                                available_on_music_platforms === '1';
   
-  const [result] = await db.execute(
+  // Convert to integer (1 for true, 0 for false) for MySQL BOOLEAN type
+  const availabilityValue = availabilityBoolean ? 1 : 0;
+  
+  // Use provided connection if available (for transactions), otherwise use pool
+  const query = connection || db;
+  const [result] = await query.execute(
     `INSERT INTO songs_register 
       (oph_id, project_type, Song_name, release_date, Lyrics_services, availability_on_music_platform, current_page, projects_type, video_type)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -100,8 +115,8 @@ const insertHybridSong = async (
       project_type,
       Song_name,
       release_date,
-      lyricsServicesBoolean,
-      availabilityBoolean,
+      lyricsServicesValue,
+      availabilityValue,
       next_step,
       projectsType,
       videoType
@@ -197,6 +212,24 @@ const updateSongStatusToDraft = async (song_id, oph_id) => {
   return result;
 };
 
+const getSongById = async (song_id, oph_id, connection = null) => {
+  // Use provided connection if available (for transactions), otherwise use pool
+  const query = connection || db;
+  const [rows] = await query.execute(
+    "SELECT song_id, oph_id, Song_name FROM songs_register WHERE song_id = ? AND oph_id = ?",
+    [song_id, oph_id]
+  );
+  return rows[0] || null;
+};
+
+const updateSongStatusToUnderReview = async (connection, song_id, oph_id) => {
+  const [result] = await connection.execute(
+    "UPDATE songs_register SET status = 'under review', updated_at = NOW() WHERE song_id = ? AND oph_id = ?",
+    [song_id, oph_id]
+  );
+  return result;
+};
+
 module.exports = {
   insertNewSong,
   insertHybridSong,
@@ -204,4 +237,6 @@ module.exports = {
   getSongIdFromInsert,
   getPendingSongsList,
   updateSongStatusToDraft,
+  getSongById,
+  updateSongStatusToUnderReview,
 };

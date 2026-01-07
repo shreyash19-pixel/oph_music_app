@@ -130,13 +130,15 @@ export default function UploadSongs() {
             
             onClick={(e) => {
               if (['draft', 'rejected'].includes(song.status)) {
+                // Just navigate - status will be updated to "under review" only when user submits metadata
                 navigate(song.next_page, {
                   state: {
                     song_id: song.id,
                     songName: song.name,
                     release_date: song.release_date,
                     project_type: song.projectType,
-                    lyrical_services: song.lyrical_services
+                    lyrical_services: song.lyrical_services,
+                    isFixingRejected: song.status === 'rejected' // Pass flag to indicate we're fixing rejected item
                   }
                 });
                 localStorage.setItem("projectType", song.projectType);
@@ -158,12 +160,10 @@ export default function UploadSongs() {
               </div>
 
             </div>
-            {/* Show rejection reason if status is Rejected */}
-            {song.status === "rejected" &&
-              // song.status_text === "Audio/Video Meta Data Rejected" && 
-              (
-                <p className="text-red-400 mt-2">{song.firstRejectedStep}</p>
-              )}
+            {/* Show rejection message if status is Rejected */}
+            {song.status === "rejected" && (
+              <p className="text-red-400 mt-2">{song.firstRejectedStep}</p>
+            )}
           </div>
         )) : (
           <div className="text-center py-4">

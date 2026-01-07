@@ -1,4 +1,5 @@
 const db = require('../../DB/connect');
+const SongApplicationStatusService = require('../../services/song/SongApplicationStatusService');
 
 class AdminSongService {
   /**
@@ -36,6 +37,15 @@ class AdminSongService {
         throw new Error('No matching record found');
       }
 
+      // Update song_application_status table
+      const step = section === "Audio" ? "audio" : "video";
+      await SongApplicationStatusService.updateStepStatus(
+        connection,
+        songId,
+        step,
+        normalizedStatus
+      );
+
       // Recalculate and update overall song status
       await this.recalculateSongStatus(connection, songId, ophId, rejectReason);
 
@@ -64,70 +74,50 @@ class AdminSongService {
    * @param {string|null} rejectReason - Rejection reason if any component is rejected
    */
   async recalculateSongStatus(connection, songId, ophId, rejectReason = null) {
-    // Get current statuses of all components
+    // Use SongApplicationStatusService to recalculate overall_status
+    // This ensures consistency - all status logic is centralized
+    const SongApplicationStatusService = require('../../services/song/SongApplicationStatusService');
+    
+    // Recalculate overall_status based on individual step statuses in song_application_status
+    await SongApplicationStatusService.recalculateOverallStatus(connection, songId);
+    
+    // Optionally update reject_reason in songs_register for backward compatibility
+    // Get rejection reasons from individual tables
     const [components] = await connection.query(
       `SELECT 
-        ad.status as audio_status,
         ad.reject_reason as audio_reject_reason,
-        vd.status as video_status,
         vd.reject_reason as video_reject_reason,
-        p.status as payment_status,
         p.reject_reason as payment_reject_reason
       FROM songs_register sr
       LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
       LEFT JOIN video_details vd ON sr.song_id = vd.song_id
-      LEFT JOIN payments p ON sr.song_id = p.song_id AND (p.from_source = 'Song Registration' OR p.from_source = 'Special artist song registration')
+      LEFT JOIN payments p ON sr.song_id = p.song_id 
+        AND (p.from_source = 'Song Registration' OR p.from_source = 'Song Repayment' OR p.from_source = 'Special artist song registration')
       WHERE sr.song_id = ? AND sr.oph_id = ?
       LIMIT 1`,
       [songId, ophId]
     );
 
-    if (components.length === 0) {
-      throw new Error('Song not found');
+    if (components.length > 0) {
+      const component = components[0];
+      const finalRejectReason = component.audio_reject_reason || 
+                                component.video_reject_reason || 
+                                component.payment_reject_reason || 
+                                rejectReason;
+      
+      if (finalRejectReason) {
+        await connection.query(
+          `UPDATE songs_register 
+           SET reject_reason = ?, updated_at = NOW() 
+           WHERE song_id = ? AND oph_id = ?`,
+          [finalRejectReason, songId, ophId]
+        );
+      }
     }
 
-    const component = components[0];
-    const audioStatus = component.audio_status;
-    const videoStatus = component.video_status;
-    const paymentStatus = component.payment_status;
-
-    // Determine overall song status
-    let overallStatus = 'Pending';
-    let finalRejectReason = null;
-
-    // Check if any component is rejected
-    if (audioStatus === 'rejected') {
-      overallStatus = 'Rejected';
-      finalRejectReason = component.audio_reject_reason || rejectReason;
-    } else if (videoStatus === 'rejected') {
-      overallStatus = 'Rejected';
-      finalRejectReason = component.video_reject_reason || rejectReason;
-    } else if (paymentStatus === 'rejected') {
-      overallStatus = 'Rejected';
-      finalRejectReason = component.payment_reject_reason || rejectReason;
-    }
-    // Check if any component is under review
-    else if (audioStatus === 'under review' || videoStatus === 'under review' || paymentStatus === 'under review') {
-      overallStatus = 'Under Review';
-    }
-    // Check if any component is missing (draft state)
-    else if (!audioStatus || !videoStatus || !paymentStatus) {
-      overallStatus = 'Draft';
-    }
-    // All components approved
-    else if (audioStatus === 'approved' && videoStatus === 'approved' && paymentStatus === 'approved') {
-      overallStatus = 'Approved';
-    }
-
-    // Update songs_register table
-    await connection.query(
-      `UPDATE songs_register 
-       SET status = ?, reject_reason = ?, updated_at = NOW() 
-       WHERE song_id = ? AND oph_id = ?`,
-      [overallStatus, finalRejectReason, songId, ophId]
-    );
-
-    console.log(`✅ Updated song status: ${songId} -> ${overallStatus}`);
+    // Get the updated overall_status for logging
+    const songStatus = await SongApplicationStatusService.getSongApplicationStatus(connection, songId);
+    console.log(`✅ Recalculated song_application_status.overall_status: ${songId} -> ${songStatus?.overall_status || 'N/A'}`);
   }
 
   /**

@@ -1,6 +1,8 @@
 const db = require('../../DB/connect');
 const paymentModel = require('../../model/payment');
 const ApplicationStatusService = require('../application/ApplicationStatusService');
+const SongApplicationStatusService = require('../song/SongApplicationStatusService');
+const songRegModel = require('../../model/songs_register');
 const userModel = require('../../model/user');
 
 class PaymentService {
@@ -77,6 +79,41 @@ class PaymentService {
         }
       }
 
+      // If this is a song registration payment and song_id is provided, update payment status
+      let nextRejectedSection = null;
+      let redirectPath = null;
+      let songName = '';
+      
+      if ((from_source === "Song Registration" || from_source === "Song Repayment") && song_id) {
+        // Normalize payment status
+        const paymentStatus = status === 'approved' ? 'approved' : 'under review';
+        
+        // Update payments table status to ensure it's 'under review' (normalize case and clear reject_reason)
+        await connection.execute(
+          `UPDATE payments 
+           SET status = ?, reject_reason = NULL, updated_at = NOW()
+           WHERE song_id = ? AND oph_id = ? 
+           AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
+           ORDER BY created_at DESC LIMIT 1`,
+          [paymentStatus, song_id, oph_id]
+        );
+        
+        // Update payment status in song_application_status (centralized status management)
+        await SongApplicationStatusService.updateStepStatus(
+          connection,
+          song_id,
+          'payment',
+          paymentStatus
+        );
+        
+        // Check for next rejected section after resubmitting payment
+        const SongRegistrationService = require('../song/SongRegistrationService');
+        const nextSection = await SongRegistrationService.getNextRejectedSection(song_id, oph_id, 'payment');
+        nextRejectedSection = nextSection.nextRejectedSection;
+        redirectPath = nextSection.redirectPath;
+        songName = nextSection.songName;
+      }
+
       // Determine navigation path
       const user = await userModel.findUserByOphId(connection, oph_id);
       const applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, oph_id);
@@ -85,10 +122,32 @@ class PaymentService {
 
       await connection.commit();
 
+      // Get song details if this is a song payment
+      let songId = null;
+      let releaseDate = null;
+      let projectType = null;
+      let lyricalServices = null;
+      
+      if ((from_source === "Song Registration" || from_source === "Song Repayment") && song_id) {
+        const SongRegistrationService = require('../song/SongRegistrationService');
+        const songDetails = await SongRegistrationService.getNextRejectedSection(song_id, oph_id, 'payment');
+        songId = songDetails.songId;
+        releaseDate = songDetails.releaseDate;
+        projectType = songDetails.projectType;
+        lyricalServices = songDetails.lyricalServices;
+      }
+
       return {
         success: true,
         message: "Payment ID sent for verification",
-        step: navTo
+        step: navTo,
+        nextRejectedSection: nextRejectedSection,
+        redirectPath: redirectPath,
+        songName: songName,
+        songId: songId,
+        releaseDate: releaseDate,
+        projectType: projectType,
+        lyricalServices: lyricalServices
       };
 
     } catch (error) {
@@ -159,9 +218,34 @@ class PaymentService {
     const connection = await db.getConnection();
     
     try {
+      await connection.beginTransaction();
+
+      // Update payment with song_id
       await paymentModel.insertSongId(connection, ophId, songId);
+
+      // Update song status to "under review"
+      await songRegModel.updateSongStatusToUnderReview(connection, songId, ophId);
+
+      // Get payment status to update song_application_status
+      const [payments] = await connection.execute(
+        "SELECT status FROM payments WHERE song_id = ? AND oph_id = ? AND (from_source = 'Song Registration' OR from_source = 'Song Repayment') ORDER BY created_at DESC LIMIT 1",
+        [songId, ophId]
+      );
+
+      if (payments.length > 0) {
+        const paymentStatus = payments[0].status === 'approved' ? 'approved' : 'under review';
+        await SongApplicationStatusService.updateStepStatus(
+          connection,
+          songId,
+          'payment',
+          paymentStatus
+        );
+      }
+
+      await connection.commit();
       return { success: true, message: "Data updated successfully" };
     } catch (error) {
+      await connection.rollback();
       throw error;
     } finally {
       connection.release();
@@ -207,6 +291,20 @@ class PaymentService {
         release_date ?? null,
         amount ?? null
       );
+
+      // If song_id is provided, update song status and payment status
+      if (song_id) {
+        // Update song status to "under review"
+        await songRegModel.updateSongStatusToUnderReview(connection, song_id, oph_id);
+
+        // Update payment status in song_application_status to 'under review'
+        await SongApplicationStatusService.updateStepStatus(
+          connection,
+          song_id,
+          'payment',
+          status === 'approved' ? 'approved' : 'under review'
+        );
+      }
 
       await connection.commit();
 

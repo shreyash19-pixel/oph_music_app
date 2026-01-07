@@ -15,7 +15,6 @@ const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionSto
 export default function RegisterSongForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  console.log(location);
 
   const [blockedDates, setBlockedDates] = useState([]); // Add state for blocked dates
   const [artistBlockedDates, setArtistBlockedDates] = useState([]); // Add state for blocked dates
@@ -415,7 +414,13 @@ export default function RegisterSongForm() {
     e.preventDefault();
 
     if (!agreement) {
-      alert("Please agree to the terms and conditions.");
+      toast.error("Please agree to the terms and conditions.");
+      return;
+    }
+
+    // Validate video type selection
+    if (!videoType || (videoType !== "Music Video" && videoType !== "Lyrical Video")) {
+      toast.error("Please select either Music Video or Lyrical Video.");
       return;
     }
 

@@ -25,7 +25,7 @@ export default function TimeCalendar() {
       try {
         const response = await axiosApi.get("admin-calendar/bookings");
 
-        if ((response.data.status = 200)) {
+        if (response.data.status === 200 || response.status === 200) {
           const dateMap = {};
           setData(response.data.data);
           response.data.data.forEach((item) => {

@@ -49,9 +49,21 @@ export default function VideoMetadataForm() {
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
 
   const urlToFile = async (url, fileName, mimeType) => {
-    const res = await fetch(url);
-    const buffer = await res.blob();
-    return new File([buffer], fileName, { type: mimeType });
+    try {
+      if (!url || typeof url !== 'string') {
+        throw new Error('Invalid URL provided');
+      }
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+      }
+      const buffer = await res.blob();
+      return new File([buffer], fileName, { type: mimeType });
+    } catch (error) {
+      console.error(`Error converting URL to file (${url}):`, error);
+      // Return null instead of throwing to prevent breaking the component
+      return null;
+    }
   };
 
   const handlePhotoUpload = (e) => {
@@ -109,11 +121,14 @@ export default function VideoMetadataForm() {
       });
 
       if (response.data.success) {
-        setNextPage(response.data.data.nextPagePath);
-        setPayStat(response.data.data.reject_reason);
+        const nextPagePath = response.data.data?.nextPagePath;
+        const rejectReason = response.data.data?.reject_reason;
+        
+        setNextPage(nextPagePath || "");
+        setPayStat(rejectReason || "");
       }
     } catch (err) {
-      console.error(err.message);
+      console.error("Error checking payment status:", err);
     }
   };
 
@@ -227,38 +242,93 @@ export default function VideoMetadataForm() {
 
       if (response.data.success) {
         setIsLoading(false);
-        if (nextPage === "repayment") {
-          navigate("/auth/payment", {
-            state: {
-              from: "Song Repayment",
-              booking_date: location.state.release_date,
-              song_id: contentId,
-              songName: location.state.songName,
-              project_type: projectType,
-              lyrical_services: location.state.lyrical_services,
-              backPath: `/dashboard/upload-song/video-metadata`,
-            },
-          });
-        } else if (nextPage === "payment") {
-          navigate("/auth/payment", {
-            state: {
-              from: "Song Registration",
-              booking_date: location.state.release_date,
-              song_id: contentId,
-              songName: location.state.songName,
-              project_type: location.state.project_type,
-              lyrical_services: location.state.lyrical_services,
-              backPath: `/dashboard/upload-song/video-metadata`,
-            },
-          });
-        } else if (nextPage === "pending") {
-          navigate("/dashboard/pending", {
-            state: {
-              heading: "Your video details are under review",
-              btnText: "Upload a new song",
-              redirectTo: "/dashboard/upload-song",
-            },
-          });
+        
+        // Check if there's a redirect path from backend (for rejected sections)
+        if (response.data.redirectPath) {
+          if (response.data.redirectPath === '/dashboard/success') {
+            navigate("/dashboard/success", {
+              state: {
+                heading: "Your song registration has been completed successfully!",
+                btnText: "Back to Home",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+            // Redirect to audio metadata
+            navigate("/dashboard/upload-song/audio-metadata/", {
+              state: {
+                song_id: contentId,
+                songName: response.data.songName || location.state.songName,
+                release_date: location.state.release_date,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+            // Redirect to video metadata (shouldn't happen after submitting video, but handle it)
+            navigate("/dashboard/upload-song/video-metadata/", {
+              state: {
+                song_id: contentId,
+                songName: response.data.songName || location.state.songName,
+                release_date: location.state.release_date,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else if (response.data.redirectPath === '/auth/payment') {
+            // Redirect to payment
+            navigate("/auth/payment", {
+              state: {
+                from: "Song Repayment",
+                booking_date: response.data.releaseDate || location.state.release_date,
+                song_id: response.data.songId || contentId,
+                songName: response.data.songName || location.state.songName,
+                project_type: response.data.projectType || projectType,
+                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state.lyrical_services,
+                backPath: `/dashboard/upload-song/video-metadata`,
+              },
+            });
+          } else {
+            // Fallback to default navigation
+            navigate(response.data.redirectPath);
+          }
+        } else {
+          // Default navigation logic (existing behavior)
+          if (nextPage === "repayment") {
+            navigate("/auth/payment", {
+              state: {
+                from: "Song Repayment",
+                booking_date: location.state.release_date,
+                song_id: contentId,
+                songName: location.state.songName,
+                project_type: projectType,
+                lyrical_services: location.state.lyrical_services,
+                backPath: `/dashboard/upload-song/video-metadata`,
+              },
+            });
+          } else if (nextPage === "payment") {
+            navigate("/auth/payment", {
+              state: {
+                from: "Song Registration",
+                booking_date: location.state.release_date,
+                song_id: contentId,
+                songName: location.state.songName,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                backPath: `/dashboard/upload-song/video-metadata`,
+              },
+            });
+          } else if (nextPage === "pending") {
+            navigate("/dashboard/pending", {
+              state: {
+                heading: "Your video details are under review",
+                btnText: "Upload a new song",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          }
         }
       }
     } catch (error) {
@@ -269,10 +339,6 @@ export default function VideoMetadataForm() {
       setIsLoading(false);
     }
   };
-
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
-  }
 
   const checkIfDateIsAvail = () => {
     const check = checkBookingDates.find((date) => {
@@ -354,6 +420,9 @@ export default function VideoMetadataForm() {
             return await urlToFile(url, fileName, "image/jpeg");
           })
         );
+        
+        // Filter out null values (failed conversions)
+        const validImageFiles = imageFiles.filter(file => file !== null);
 
         // Convert video URL to File (if exists)
         let videoFile = null;
@@ -366,7 +435,7 @@ export default function VideoMetadataForm() {
         setFormData({
           credits: data.credits || "",
           existing_thumbnails: imageUrls,
-          thumbnails: imageFiles,
+          thumbnails: validImageFiles,
           video_file: videoFile,
           existing_video_url: data.video_url || null,
           reject_reason: data.reject_reason || null,
@@ -391,26 +460,14 @@ export default function VideoMetadataForm() {
     fetchVideoMetadata();
     checkPaymentStaus();
 
-    // Cleanup: Update song status to draft when user leaves the page
-    return () => {
-      if (contentId && ophid) {
-        // Use sendBeacon or fetch with keepalive for better reliability
-        const updateStatus = async () => {
-          try {
-            await axiosApi.post(
-              "/update-song-status-to-draft",
-              { song_id: contentId, oph_id: ophid },
-              { headers }
-            );
-          } catch (error) {
-            // Silently fail - this is cleanup, don't block navigation
-            console.log("Failed to update song status to draft:", error);
-          }
-        };
-        updateStatus();
-      }
-    };
+    // No cleanup function needed - status is managed centrally through song_application_status
+    // Status only changes when user submits metadata or admin approves/rejects
+    // No need to set to "draft" on page leave
   }, [contentId, headers, ophid]);
+
+  if (error) {
+    return <div className="text-red-500 p-4">{error}</div>;
+  }
 
   if (navigateToSongReg) {
     navigate("/dashboard/error", {
@@ -422,6 +479,7 @@ export default function VideoMetadataForm() {
         songName: songName,
       },
     });
+    return null;
   }
 
   return (
@@ -436,8 +494,11 @@ export default function VideoMetadataForm() {
           </p>
         )}
 
-        {payStat && (
-          <p className="text-red-700">Payment rejection reason: {payStat}</p>
+        {payStat && payStat.trim() !== "" && (
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+            <p className="text-red-400 font-semibold mb-1">Payment Rejection</p>
+            <p className="text-red-300 text-sm">{payStat}</p>
+          </div>
         )}
 
         {(isLoading || isRemoving || isUploading) && <Loading />}

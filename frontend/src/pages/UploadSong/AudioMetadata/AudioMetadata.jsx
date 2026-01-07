@@ -22,8 +22,6 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
   const { headers } = useArtist();
   const [loading, setLoading] = useState(false);
 
-  console.log(location);
-
   const handleSubmitSecondary = async (e) => {
     e.preventDefault();
 
@@ -279,6 +277,7 @@ export default function AudioMetadataForm() {
   const [showSecondaryForm, setShowSecondaryForm] = useState(false);
   const [selectedArtistType, setSelectedArtistType] = useState("");
   const [rejectReason, setRejectReason] = useState(null);
+  const [isFixingRejected, setIsFixingRejected] = useState(false);
   const { headers, artist, user, ophid } = useArtist();
   const [featuringArtists, setFeaturingArtists] = useState([]);
   const [lyricistArtists, setLyricistArtists] = useState([]);
@@ -291,6 +290,7 @@ export default function AudioMetadataForm() {
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
   const [nextPage, setNextPage] = useState(false);
+  const [payStat, setPayStat] = useState("");
 
   // const [subgenre, setSubgenre] = useState("");
 
@@ -437,6 +437,22 @@ export default function AudioMetadataForm() {
     }
   };
 
+  const checkPaymentStaus = async () => {
+    try {
+      const response = await axiosApi.get("/check-payment-status", {
+        headers: headers,
+        params: { contentId, ophid },
+      });
+
+      if (response.data.success) {
+        const rejectReason = response.data.data?.reject_reason;
+        setPayStat(rejectReason || "");
+      }
+    } catch (err) {
+      console.error("Error checking payment status:", err);
+    }
+  };
+
   const handleArtistRemove = async (
     artistType,
     index,
@@ -565,26 +581,81 @@ export default function AudioMetadataForm() {
 
       if (response.status === 201) {
         setIsLoading(false);
-        nextPage === "video"
-          ? navigate(
-              `/dashboard/upload-song/video-metadata`,
-              {
-                state: {
-                  song_id: response.data.song_id || contentId,
-                  songName: location.state?.songName || songName,
-                  release_date: location.state?.release_date,
-                  project_type: location.state?.project_type,
-                  lyrical_services: location.state?.lyrical_services,
-                },
-              }
-            )
-          : navigate("/dashboard/pending", {
+        
+        // Check if there's a redirect path from backend (for rejected sections)
+        if (response.data.redirectPath) {
+          if (response.data.redirectPath === '/dashboard/success') {
+            navigate("/dashboard/success", {
               state: {
-                heading: "Your audio details are under review",
-                btnText: "Upload a new song",
+                heading: "Your song registration has been completed successfully!",
+                btnText: "Back to Home",
                 redirectTo: "/dashboard/upload-song",
               },
             });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+            // Redirect to audio metadata (shouldn't happen after submitting audio, but handle it)
+            navigate("/dashboard/upload-song/audio-metadata/", {
+              state: {
+                song_id: response.data.song_id || contentId,
+                songName: response.data.songName || location.state?.songName || songName,
+                release_date: location.state?.release_date,
+                project_type: location.state?.project_type,
+                lyrical_services: location.state?.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+            // Redirect to video metadata
+            navigate("/dashboard/upload-song/video-metadata/", {
+              state: {
+                song_id: response.data.song_id || contentId,
+                songName: response.data.songName || location.state?.songName || songName,
+                release_date: location.state?.release_date,
+                project_type: location.state?.project_type,
+                lyrical_services: location.state?.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else if (response.data.redirectPath === '/auth/payment') {
+            // Redirect to payment
+            navigate("/auth/payment", {
+              state: {
+                from: "Song Repayment",
+                booking_date: response.data.releaseDate || location.state?.release_date,
+                song_id: response.data.song_id || contentId,
+                songName: response.data.songName || location.state?.songName || songName,
+                project_type: response.data.projectType || location.state?.project_type,
+                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state?.lyrical_services,
+                backPath: `/dashboard/upload-song/audio-metadata`,
+              },
+            });
+          } else {
+            // Fallback to default navigation
+            navigate(response.data.redirectPath);
+          }
+        } else {
+          // Default navigation logic (existing behavior)
+          nextPage === "video"
+            ? navigate(
+                `/dashboard/upload-song/video-metadata`,
+                {
+                  state: {
+                    song_id: response.data.song_id || contentId,
+                    songName: location.state?.songName || songName,
+                    release_date: location.state?.release_date,
+                    project_type: location.state?.project_type,
+                    lyrical_services: location.state?.lyrical_services,
+                  },
+                }
+              )
+            : navigate("/dashboard/pending", {
+                state: {
+                  heading: "Your audio details are under review",
+                  btnText: "Upload a new song",
+                  redirectTo: "/dashboard/upload-song",
+                },
+              });
+        }
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
@@ -671,7 +742,12 @@ export default function AudioMetadataForm() {
           languages.find((lang) => lang.id === audio_metadata[0]?.language) ||
             languages
         );
-        setRejectReason(audio_metadata[0]?.reject_reason || "");
+        const audioRejectReason = audio_metadata[0]?.reject_reason || "";
+        setRejectReason(audioRejectReason);
+        // If there's a rejection reason, mark that we're fixing a rejected item
+        if (audioRejectReason && audioRejectReason.trim() !== "") {
+          setIsFixingRejected(true);
+        }
 
         // Set audio file feedback
         if (audio_metadata[0]?.audio_url) {
@@ -741,30 +817,22 @@ export default function AudioMetadataForm() {
       return;
     }
     
+    // Check if we're fixing a rejected item from location state
+    if (location.state?.isFixingRejected) {
+      setIsFixingRejected(true);
+      console.log("🔧 User is fixing a rejected item - will not set to draft");
+    }
+    
     checkAlreadyBookedDate();
     fetchAudioMetadata();
     checkVideoStaus();
+    checkPaymentStaus();
 
-    // Cleanup: Update song status to draft when user leaves the page
-    return () => {
-      if (contentId && ophid) {
-        // Use sendBeacon or fetch with keepalive for better reliability
-        const updateStatus = async () => {
-          try {
-            await axiosApi.post(
-              "/update-song-status-to-draft",
-              { song_id: contentId, oph_id: ophid },
-              { headers }
-            );
-          } catch (error) {
-            // Silently fail - this is cleanup, don't block navigation
-            console.log("Failed to update song status to draft:", error);
-          }
-        };
-        updateStatus();
-      }
-    };
+    // No cleanup function needed - status is managed centrally through song_application_status
+    // Status only changes when user submits metadata or admin approves/rejects
+    // No need to set to "draft" on page leave
   }, [contentId, headers, location.state, ophid]);
+
 
   async function getAudioAsBlob(url) {
     const response = await fetch(url);
@@ -842,7 +910,10 @@ export default function AudioMetadataForm() {
                 Audio Metadata
               </h1>
               {rejectReason && (
-                <p className="text-red-700">Reason: {rejectReason}</p>
+                <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+                  <p className="text-red-400 font-semibold mb-1">Audio Rejection</p>
+                  <p className="text-red-300 text-sm">{rejectReason}</p>
+                </div>
               )}
               <div className="space-y-2 my-2">
                 <label className="block">

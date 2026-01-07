@@ -1,5 +1,6 @@
 const db = require('../../DB/connect');
 const ApplicationStatusService = require('../../services/application/ApplicationStatusService');
+const SongApplicationStatusService = require('../../services/song/SongApplicationStatusService');
 
 class AdminPaymentService {
   /**
@@ -28,12 +29,15 @@ class AdminPaymentService {
 
       const place = paymentDetailsBefore[0]?.from_source || null;
       const isRegistrationPayment = place === "Registration";
-      const isSongPayment = place === "Song Registration" || place === "Special artist song registration";
+      const isSongPayment = place === "Song Registration" || place === "Song Repayment" || place === "Special artist song registration";
       const isDateBookingPayment = place === "Date booking" || place === "Date Booking";
       const isReleaseDateChange = place === "Release date change";
 
       // Check if payment is rejected
       const isRejected = status === 'rejected' || status === 'Rejected';
+
+      // Get song_id before potentially moving it (needed for song_application_status update)
+      const songIdBeforeUpdate = paymentDetailsBefore[0]?.song_id || songId;
 
       // Handle song payment rejection: move song_id to reject_for and set song_id to NULL
       if (isSongPayment && isRejected && paymentDetailsBefore[0]?.song_id) {
@@ -108,6 +112,32 @@ class AdminPaymentService {
         
         // Recalculate overall_status (this is done automatically in updateStepStatus, but explicit for clarity)
         await ApplicationStatusService.recalculateOverallStatus(connection, ophId);
+      }
+
+      // Application Logic: If this is a Song Registration payment, update song_application_status
+      if (isSongPayment) {
+        // Use song_id from before update (in case it was moved to reject_for)
+        const actualSongId = songIdBeforeUpdate;
+        
+        if (actualSongId) {
+          // Map payment status to song_application_status format
+          let paymentStatus = 'pending';
+          if (status === 'rejected' || status === 'Rejected') {
+            paymentStatus = 'rejected';
+          } else if (status === 'approved' || status === 'Approved') {
+            paymentStatus = 'approved';
+          } else if (status === 'under review' || status === 'Under Review') {
+            paymentStatus = 'under review';
+          }
+
+          // Update status_payment in song_application_status table
+          await SongApplicationStatusService.updateStepStatus(
+            connection,
+            actualSongId,
+            'payment',
+            paymentStatus
+          );
+        }
       }
 
       await connection.commit();

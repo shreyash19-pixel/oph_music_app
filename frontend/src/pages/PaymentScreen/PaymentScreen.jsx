@@ -306,13 +306,42 @@ const PaymentScreen = () => {
           );
 
           if (CalenderRes.data.success) {
-            navigate("/dashboard/success", {
-              state: {
-                heading: "Your Song Registration has been done successfully!",
-                btnText: "Register another song",
-                redirectTo: "/dashboard/upload-song",
-              },
-            });
+            // Check if there's a redirect path from backend (for rejected sections)
+            if (response.data.redirectPath && response.data.redirectPath !== '/dashboard/success') {
+              if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+                navigate("/dashboard/upload-song/audio-metadata/", {
+                  state: {
+                    song_id: location.state.song_id,
+                    songName: response.data.songName || location.state.songName,
+                    release_date: location.state.booking_date,
+                    project_type: location.state.project_type,
+                    lyrical_services: location.state.lyrical_services,
+                    isFixingRejected: true,
+                  },
+                });
+              } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+                navigate("/dashboard/upload-song/video-metadata/", {
+                  state: {
+                    song_id: location.state.song_id,
+                    songName: response.data.songName || location.state.songName,
+                    release_date: location.state.booking_date,
+                    project_type: location.state.project_type,
+                    lyrical_services: location.state.lyrical_services,
+                    isFixingRejected: true,
+                  },
+                });
+              } else {
+                navigate(response.data.redirectPath);
+              }
+            } else {
+              navigate("/dashboard/success", {
+                state: {
+                  heading: "Your Song Registration has been done successfully!",
+                  btnText: "Register another song",
+                  redirectTo: "/dashboard/upload-song",
+                },
+              });
+            }
           }
         }
       } else if (
@@ -348,13 +377,54 @@ const PaymentScreen = () => {
           });
         }
       } else if (response.data.success && from === "Song Repayment") {
-        navigate("/dashboard/success", {
-          state: {
-            heading: "Your Song Registration has been done successfully!",
-            btnText: "View Song Registration",
-            redirectTo: "/dashboard/upload-song",
-          },
-        });
+        // Check if there's a redirect path from backend (for rejected sections)
+        if (response.data.redirectPath) {
+          if (response.data.redirectPath === '/dashboard/success') {
+            navigate("/dashboard/success", {
+              state: {
+                heading: "Your song registration has been completed successfully!",
+                btnText: "Back to Home",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+            // Redirect to audio metadata
+            navigate("/dashboard/upload-song/audio-metadata/", {
+              state: {
+                song_id: location.state.song_id,
+                songName: response.data.songName || location.state.songName,
+                release_date: location.state.booking_date,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+            // Redirect to video metadata
+            navigate("/dashboard/upload-song/video-metadata/", {
+              state: {
+                song_id: location.state.song_id,
+                songName: response.data.songName || location.state.songName,
+                release_date: location.state.booking_date,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else {
+            // Fallback to default navigation
+            navigate(response.data.redirectPath);
+          }
+        } else {
+          // Default behavior
+          navigate("/dashboard/success", {
+            state: {
+              heading: "Your Song Registration has been done successfully!",
+              btnText: "View Song Registration",
+              redirectTo: "/dashboard/upload-song",
+            },
+          });
+        }
       } else if (response.data.success && from === "Event Registration") {
         {
           console.log(oph_id,"test oph_id");

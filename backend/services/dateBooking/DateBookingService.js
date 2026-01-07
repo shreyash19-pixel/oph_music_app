@@ -152,12 +152,12 @@ class DateBookingService {
         throw new Error('New date is already booked by another user');
       }
 
-      // Update booking
+      // Update booking (calender table doesn't have a reason column)
       const [result] = await connection.query(
         `UPDATE calender 
-         SET previous_booking_date = ?, current_booking_date = ?, reason = ?, updated_at = NOW()
+         SET previous_booking_date = ?, current_booking_date = ?, updated_at = NOW()
          WHERE oph_id = ? AND current_booking_date = ?`,
-        [oldDate, newDate, reason, ophId, oldDate]
+        [oldDate, newDate, ophId, oldDate]
       );
 
       if (result.affectedRows === 0) {

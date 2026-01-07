@@ -52,7 +52,15 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date) => {
 
 const getAllBookings = async () => {
   const [rows] = await db.execute(
-    "SELECT DISTINCT c.*, sup.`Status` FROM calender c LEFT JOIN sign_up_payment sup ON c.current_booking_date = sup.release_date WHERE c.song_name IS null AND `From` = 'Date booking' OR `From` = 'Release date change'"
+    `SELECT DISTINCT 
+      c.*, 
+      p.status as payment_status,
+      COALESCE(ud.full_name, '') as full_name
+    FROM calender c 
+    LEFT JOIN payments p ON c.current_booking_date = p.release_date 
+      AND (p.from_source = 'Date booking' OR p.from_source = 'Release date change')
+    LEFT JOIN user_details ud ON c.oph_id = ud.oph_id
+    WHERE c.song_name IS NULL`
   );
 
   const rowsWithIST = rows.map((row) => ({

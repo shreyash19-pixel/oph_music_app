@@ -6,17 +6,32 @@ const updateStatus = async (req, res) => {
   try {
     const { ophId, transactionId, status, reject_reason, songId } = req.body;
 
-    if (!ophId || !transactionId || !status) {
+    console.log("updateStatus received body:", req.body);
+    console.log("ophId:", ophId, "transactionId:", transactionId, "status:", status);
+
+    // Handle both camelCase and snake_case
+    const ophIdValue = ophId || req.body.oph_id;
+    const transactionIdValue = transactionId || req.body.transaction_id;
+    const statusValue = status || req.body.Status;
+
+    if (!ophIdValue || !transactionIdValue || !statusValue) {
       return res
         .status(400)
-        .json({ message: "ophId, transactionId, and status are required" });
+        .json({ 
+          message: "ophId, transactionId, and status are required",
+          received: {
+            ophId: ophIdValue,
+            transactionId: transactionIdValue,
+            status: statusValue
+          }
+        });
     }
 
     // Use AdminPaymentService to handle all admin application logic
     const result = await AdminPaymentService.updatePaymentStatus({
-      ophId,
-      transactionId,
-      status,
+      ophId: ophIdValue,
+      transactionId: transactionIdValue,
+      status: statusValue,
       reject_reason,
       songId
     });
@@ -330,19 +345,44 @@ const setPaymentVerificationController = async (req, res) => {
   try {
     const { decision, reason, release_date, from } = req.body;
 
-    if ((decision === "rejected" && reason === null) || decision === "" ||  !release_date || !from) {
+    console.log("[setPaymentVerificationController] Received request:", {
+      decision,
+      reason: reason ? "provided" : "missing",
+      release_date,
+      from
+    });
+
+    if (!decision || !release_date || !from) {
+      console.log("[setPaymentVerificationController] Missing required fields");
       return res.status(400).json({
         success: false,
-        message: "Missing required fields"
+        message: "Missing required fields: decision, release_date, and from are required"
+      });
+    }
+
+    if (decision === "rejected" && (!reason || reason.trim() === "")) {
+      console.log("[setPaymentVerificationController] Missing rejection reason");
+      return res.status(400).json({
+        success: false,
+        message: "Rejection reason is required when rejecting"
       });
     }
     
     const response = await payment_details.setPaymentVerification(decision, reason, release_date, from);
 
-    if (response) {
-      return res.status(201).json({
+    console.log("[setPaymentVerificationController] Response:", response);
+
+    if (response && response.success) {
+      return res.status(200).json({
         success: true,
-        message: "Data updated successfully"
+        message: "Data updated successfully",
+        affectedRows: response.affectedRows
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update payment verification",
+        affectedRows: response?.affectedRows || 0
       });
     }
 

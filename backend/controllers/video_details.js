@@ -1,5 +1,6 @@
 const videoDetails = require("../model/video_details");
 const { uploadToS3 } = require("../utils");
+const SongApplicationStatusService = require("../services/song/SongApplicationStatusService");
 
 exports.createVideoDetails = async (req, res) => {
   try {
@@ -47,8 +48,85 @@ exports.createVideoDetails = async (req, res) => {
     );
 
     if (response) {
-      await videoDetails.setJourneyStatus(ophid,song_id)
-      res.status(201).json({ success: true, message: "Video details saved" });
+      await videoDetails.setJourneyStatus(ophid,song_id);
+      
+      // Check if this was a resubmission of a rejected video BEFORE we clear the reject_reason
+      const db = require("../DB/connect");
+      const connection = await db.getConnection();
+      let redirectPath = null;
+      let nextRejectedSection = null;
+      let songName = null;
+      let songId = null;
+      let releaseDate = null;
+      let projectType = null;
+      let lyricalServices = null;
+      let wasRejected = false;
+      
+      try {
+        // Check if video was previously rejected (before we update it)
+        const [videoDetailsCheck] = await connection.execute(
+          `SELECT reject_reason, status FROM video_details WHERE song_id = ?`,
+          [song_id]
+        );
+        
+        wasRejected = videoDetailsCheck.length > 0 && 
+                     (videoDetailsCheck[0].reject_reason !== null || videoDetailsCheck[0].status === 'rejected');
+        
+        // Update status_video to 'under review' in both:
+        // 1. video_details table (already set in insertVideoDetails model)
+        // 2. song_application_status table (for centralized status management)
+        await connection.beginTransaction();
+        
+        // Ensure video_details.status is set to 'under review' (should already be set by model, but ensure it)
+        await connection.execute(
+          `UPDATE video_details 
+           SET status = 'under review', reject_reason = NULL, updated_at = NOW()
+           WHERE song_id = ?`,
+          [song_id]
+        );
+        
+        // Update song_application_status
+        await SongApplicationStatusService.updateStepStatus(
+          connection,
+          song_id,
+          'video',
+          'under review'
+        );
+        
+        await connection.commit();
+        
+        // Only check for next rejected section if this was a resubmission
+        if (wasRejected) {
+          const SongRegistrationService = require("../services/song/SongRegistrationService");
+          const nextSection = await SongRegistrationService.getNextRejectedSection(song_id, ophid, 'video');
+          redirectPath = nextSection.redirectPath;
+          nextRejectedSection = nextSection.nextRejectedSection;
+          songName = nextSection.songName;
+          songId = nextSection.songId;
+          releaseDate = nextSection.releaseDate;
+          projectType = nextSection.projectType;
+          lyricalServices = nextSection.lyricalServices;
+        }
+        // For new submissions, redirectPath will be null, so frontend uses default navigation
+      } catch (error) {
+        await connection.rollback();
+        console.error("Error updating video status:", error);
+        // Don't fail the request if status update fails
+      } finally {
+        connection.release();
+      }
+      
+      res.status(201).json({ 
+        success: true, 
+        message: "Video details saved",
+        nextRejectedSection: nextRejectedSection,
+        redirectPath: redirectPath, // null for new submissions, will use default navigation
+        songName: songName,
+        songId: songId,
+        releaseDate: releaseDate,
+        projectType: projectType,
+        lyricalServices: lyricalServices
+      });
     }
 
   } catch (err) {
