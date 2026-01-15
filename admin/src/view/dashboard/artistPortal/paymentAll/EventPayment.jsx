@@ -26,18 +26,30 @@ const EventPayment = () => {
         let paymentArray = paymentRes.data.data || [];
         
         // Map the backend response to frontend expected format
-        const mappedPayments = paymentArray.map(payment => ({
-          paymentId: payment.Transaction_ID,
-          status: payment.Status,
-          createdAt: payment.CreatedAt,
-          paymentType: payment.From,
-          amount: payment.event_id ? `Event ID: ${payment.event_id}` : 'N/A',
-          description: `Event Registration Payment - ${payment.From}`,
-          ophId: payment.OPH_ID
-        }));
+        // Handle both snake_case (from database) and PascalCase (legacy) field names
+        const mappedPayments = paymentArray.map(payment => {
+          // Normalize status - handle empty, null, or different cases
+          let status = (payment.status || payment.Status || '').toString().toLowerCase().trim();
+          if (!status || status === 'null' || status === 'undefined') {
+            status = 'under review'; // Default to 'under review' if status is missing
+          }
+          
+          return {
+            paymentId: payment.transaction_id || payment.Transaction_ID,
+            status: status,
+            createdAt: payment.created_at || payment.CreatedAt,
+            paymentType: payment.from_source || payment.From || 'Event Registration',
+            amount: payment.event_id ? `Event ID: ${payment.event_id}` : 'N/A',
+            eventId: payment.event_id, // Store event_id directly for easier access
+            description: `Event Registration Payment - ${payment.from_source || payment.From || 'Event Registration'}`,
+            ophId: payment.oph_id || payment.OPH_ID
+          };
+        });
         
         mappedPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         console.log("Mapped payments:", mappedPayments);
+        console.log("First payment status:", mappedPayments[0]?.status);
+        console.log("Raw payment data:", paymentArray[0]);
         
         setPaymentList(mappedPayments);
       } catch (error) {
@@ -57,13 +69,26 @@ const EventPayment = () => {
       return;
     }
 
+    // Extract event_id - prefer direct eventId field, fallback to parsing from amount
+    let eventId = recentPayment.eventId;
+    if (!eventId && recentPayment.amount && recentPayment.amount.includes('Event ID: ')) {
+      eventId = recentPayment.amount.replace('Event ID: ', '').trim();
+    }
+    
+    // Validate eventId is present
+    if (!eventId) {
+      toast.error("Event ID is missing. Cannot process payment.");
+      setConfirmAction(null);
+      return;
+    }
+
     if (type === "Reject") {
       const logData = {
         ophId: ophid,
         transactionId: recentPayment.paymentId,
         status: "rejected",
         reject_reason: reason || "No reason provided",
-        eventId: recentPayment.amount.replace('Event ID: ', '') || null
+        eventId: eventId
       };
       console.log("Reject Log:", logData);
 
@@ -75,15 +100,18 @@ const EventPayment = () => {
         console.log("Response data:", submit.data);
         console.log("Response status:", submit.status);
         
-        // Check if the stored procedure was successful - handle different response formats
+        // Check if the update was successful
         const isSuccess = (
-          (submit.data && submit.data.affectedRows === 1) || 
-          (submit.data && submit.data.result && submit.data.result.affectedRows === 1) ||
-          (submit.status === 200 && submit.data && typeof submit.data === 'object')
+          submit.status === 200 && 
+          submit.data && 
+          (submit.data.success === true || submit.data.affectedRows > 0 || submit.data.message)
         );
         
         if (isSuccess) {
-          toast.success(`Payment rejected successfully with reason: ${reason || "No reason provided"}`, { duration: 20000 });
+          toast.success(`Payment rejected successfully with reason: ${reason || "No reason provided"}`, { 
+            position: "top-center",
+            duration: 4000 
+          });
           
           // Update local state instead of reloading
           setPaymentList(prevPayments => 
@@ -98,21 +126,36 @@ const EventPayment = () => {
           setActionLocked(true);
         } else {
           console.log("Reject failed - Response details:", submit);
-          toast.error("Failed to reject payment - please try again");
+          const errorMsg = submit.data?.message || "Failed to reject payment - please try again";
+          toast.error(errorMsg, { position: "top-center", duration: 5000 });
         }
       } catch (error) {
         console.error("Error rejecting payment:", error);
-        toast.error("Failed to reject payment");
+        const errorMessage = error?.response?.data?.message || error?.message || "Failed to reject payment";
+        toast.error(errorMessage, { duration: 5000 });
       }
 
       setReason("");
     } else if (type === "Approve") {
+      // Extract event_id - prefer direct eventId field, fallback to parsing from amount
+      let eventId = recentPayment.eventId;
+      if (!eventId && recentPayment.amount && recentPayment.amount.includes('Event ID: ')) {
+        eventId = recentPayment.amount.replace('Event ID: ', '').trim();
+      }
+      
+      // Validate eventId is present
+      if (!eventId) {
+        toast.error("Event ID is missing. Cannot process payment.");
+        setConfirmAction(null);
+        return;
+      }
+      
       const logData = {
         ophId: ophid,
         transactionId: recentPayment.paymentId,
         status: "approved",
         reject_reason: null,
-        eventId: recentPayment.amount.replace('Event ID: ', '') || null
+        eventId: eventId
       };
       console.log("Approve Log:", logData);
 
@@ -124,15 +167,18 @@ const EventPayment = () => {
         console.log("Response data:", submit.data);
         console.log("Response status:", submit.status);
         
-        // Check if the stored procedure was successful - handle different response formats
+        // Check if the update was successful
         const isSuccess = (
-          (submit.data && submit.data.affectedRows === 1) || 
-          (submit.data && submit.data.result && submit.data.result.affectedRows === 1) ||
-          (submit.status === 200 && submit.data && typeof submit.data === 'object')
+          submit.status === 200 && 
+          submit.data && 
+          (submit.data.success === true || submit.data.affectedRows > 0 || submit.data.message)
         );
         
         if (isSuccess) {
-          toast.success("Payment approved successfully!", { duration: 20000 });
+          toast.success("Payment approved successfully!", { 
+            position: "top-center",
+            duration: 4000 
+          });
           
           // Update local state instead of reloading
           setPaymentList(prevPayments => 
@@ -147,11 +193,13 @@ const EventPayment = () => {
           setActionLocked(true);
         } else {
           console.log("Approve failed - Response details:", submit);
-          toast.error("Failed to approve payment - please try again");
+          const errorMsg = submit.data?.message || "Failed to approve payment - please try again";
+          toast.error(errorMsg, { position: "top-center", duration: 5000 });
         }
       } catch (error) {
         console.error("Error approving payment:", error);
-        toast.error("Failed to approve payment");
+        const errorMessage = error?.response?.data?.message || error?.message || "Failed to approve payment";
+        toast.error(errorMessage, { duration: 5000 });
       }
     }
 
@@ -189,6 +237,17 @@ const EventPayment = () => {
   }
 
   const displayedPayments = showAllPayments ? paymentList : paymentList.slice(0, 1);
+
+  // Helper function to check if payment can be acted upon
+  const canTakeAction = (payment) => {
+    if (!payment) return false;
+    const status = (payment.status || '').toLowerCase().trim();
+    // Allow actions if status is 'under review', 'pending', or empty/null
+    return !status || status === 'under review' || status === 'pending';
+  };
+
+  const recentPayment = paymentList[0];
+  const isActionEnabled = canTakeAction(recentPayment) && !actionLocked;
 
   return (
     <div className="min-h-screen bg-blue-50 p-6">
@@ -292,24 +351,24 @@ const EventPayment = () => {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Enter rejection reason (required for rejection)..."
-            disabled={actionLocked || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status))}
+            disabled={!isActionEnabled}
             className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setConfirmAction("Reject")}
-              disabled={actionLocked || !reason.trim() || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status))}
+              disabled={!isActionEnabled || !reason.trim()}
               className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
-                actionLocked || !reason.trim() || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status)) ? "opacity-50 cursor-not-allowed" : ""
+                !isActionEnabled || !reason.trim() ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               Reject Payment
             </button>
             <button
               onClick={() => setConfirmAction("Approve")}
-              disabled={actionLocked || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status))}
+              disabled={!isActionEnabled}
               className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
-                actionLocked || (paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status)) ? "opacity-50 cursor-not-allowed" : ""
+                !isActionEnabled ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               Approve Payment
@@ -317,20 +376,22 @@ const EventPayment = () => {
           </div>
           
           {/* Show status message when payment is processed */}
-          {paymentList[0] && !['pending', 'under review'].includes(paymentList[0].status) && (
+          {recentPayment && !canTakeAction(recentPayment) && (
             <div className={`mt-4 p-3 rounded-lg text-center font-medium ${
-              paymentList[0].status === 'approved' 
+              recentPayment.status === 'approved' 
                 ? 'bg-green-100 text-green-800 border border-green-200' 
-                : 'bg-red-100 text-red-800 border border-red-200'
+                : recentPayment.status === 'rejected'
+                ? 'bg-red-100 text-red-800 border border-red-200'
+                : 'bg-gray-100 text-gray-800 border border-gray-200'
             }`}>
-              Payment has been {paymentList[0].status}. No further actions can be taken.
+              Payment has been {recentPayment.status || 'processed'}. No further actions can be taken.
             </div>
           )}
           
-          {/* Show message when payment is under review */}
-          {paymentList[0] && paymentList[0].status === 'under review' && (
+          {/* Show message when payment can be acted upon */}
+          {recentPayment && canTakeAction(recentPayment) && (
             <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
-              Payment is under review. You can approve or reject this payment.
+              Payment is {recentPayment.status || 'pending review'}. You can approve or reject this payment.
             </div>
           )}
         </div>

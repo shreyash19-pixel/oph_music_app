@@ -63,9 +63,9 @@ jobs:
 
             # PM2 start or restart backend
             if pm2 list | grep -q backend; then
-              pm2 restart all
+              pm2 restart backend
             else
-              
+              pm2 start npm --name backend -- start
             fi
 
   # FRONTEND + ADMIN DEPLOY → FRONTEND EC2

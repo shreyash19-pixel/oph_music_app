@@ -21,8 +21,10 @@ const VerifyBookingDates = () => {
         params: { release_date },
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data && response.data.data.length > 0) {
         setTransactions(response.data.data[0]);
+      } else {
+        console.error("No transaction data found for date:", release_date);
       }
     } catch (err) {
       console.error(err.message);
@@ -31,8 +33,11 @@ const VerifyBookingDates = () => {
     }
   };
   useEffect(() => {
-    fetchBookingDetails();
-  }, []);
+    if (release_date) {
+      fetchBookingDetails();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [release_date]);
 
   const handleDecision = async (dec) => {
     console.log(dec);
@@ -42,15 +47,20 @@ const VerifyBookingDates = () => {
       return;
     }
 
-    const formData = new FormData();
+    // Send as JSON instead of FormData
+    const fromSource = transactions?.From || transactions?.from || transactions?.from_source || "Date booking";
+    
+    const requestData = {
+      decision: dec,
+      reason: reason || null,
+      release_date: release_date,
+      from: fromSource
+    };
 
-    formData.append("decision", dec);
-    formData.append("reason", reason);
-    formData.append("release_date", release_date);
-    formData.append("from", transactions.From);
+    console.log("Sending payment verification request:", requestData);
 
     try {
-      const response = await axiosApi.post("/payment-verification", formData, {
+      const response = await axiosApi.post("/payment-verification", requestData, {
         headers: { "Content-Type": "application/json" },
       });
 

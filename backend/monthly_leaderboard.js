@@ -33,7 +33,8 @@ Note: Make sure you have all required dependencies installed:
 
 The file will:
 - Fetch leaderboard data from /leaderboard endpoint
-- Process records and place them in both creation and update months
+- Calculate monthly differences (only new or changed records per month)
+- Store incremental changes, not cumulative totals
 - Save results to S3 bucket
 - Show detailed logging of what's happening
 */
@@ -179,7 +180,76 @@ async function saveMonthlyLeaderboardMetrics() {
       }
     });
 
-    // Now merge with existing data, preserving historical months
+    // Helper function to get all records from previous months (cumulative up to but not including target month)
+    const getCumulativeRecordsUpToMonth = (targetYear, targetMonthName, data) => {
+      const cumulativeRecords = new Map(); // Use Map to track latest version of each OPH_ID
+      
+      // Get all months/years that come before the target month
+      Object.keys(data).forEach(year => {
+        Object.keys(data[year]).forEach(month => {
+          const yearNum = parseInt(year);
+          const targetYearNum = parseInt(targetYear);
+          
+          // Parse month name to number (0-11)
+          const monthNum = new Date(Date.parse(year + '-' + month + '-01')).getMonth();
+          const targetMonthNum = new Date(Date.parse(targetYear + '-' + targetMonthName + '-01')).getMonth();
+          
+          // Include if year is before target year, or same year but month is before target month
+          const isBeforeTarget = (yearNum < targetYearNum) || 
+                                (yearNum === targetYearNum && monthNum < targetMonthNum);
+          
+          if (isBeforeTarget) {
+            data[year][month].forEach(record => {
+              // Keep the latest version of each OPH_ID
+              const existing = cumulativeRecords.get(record.OPH_ID);
+              if (!existing || new Date(record.updatedAt) > new Date(existing.updatedAt)) {
+                cumulativeRecords.set(record.OPH_ID, record);
+              }
+            });
+          }
+        });
+      });
+      
+      return Array.from(cumulativeRecords.values());
+    };
+
+    // Helper function to calculate difference (new or changed records in target month)
+    const calculateMonthlyDifference = (targetYear, targetMonthName, newRecords, existingData) => {
+      // Get all records that existed before this month (cumulative)
+      const previousRecords = getCumulativeRecordsUpToMonth(targetYear, targetMonthName, existingData);
+      const previousOPHIDs = new Set(previousRecords.map(r => r.OPH_ID));
+      const previousRecordsMap = new Map(previousRecords.map(r => [r.OPH_ID, r]));
+      
+      // Find records that are new or changed
+      const differences = [];
+      
+      newRecords.forEach(newRecord => {
+        const ophId = newRecord.OPH_ID;
+        const previousRecord = previousRecordsMap.get(ophId);
+        
+        if (!previousRecord) {
+          // This is a completely new record
+          differences.push(newRecord);
+          console.log(`NEW: OPH_ID ${ophId} is new in ${targetMonthName} ${targetYear}`);
+        } else {
+          // Check if the record has changed (compare key fields)
+          const hasChanged = 
+            newRecord.song_count !== previousRecord.song_count ||
+            newRecord.total_views !== previousRecord.total_views ||
+            newRecord.score !== previousRecord.score ||
+            new Date(newRecord.updatedAt).getTime() !== new Date(previousRecord.updatedAt).getTime();
+          
+          if (hasChanged) {
+            differences.push(newRecord);
+            console.log(`CHANGED: OPH_ID ${ophId} changed in ${targetMonthName} ${targetYear}`);
+          }
+        }
+      });
+      
+      return differences;
+    };
+
+    // Now merge with existing data, calculating differences for each month
     Object.keys(organizedData).forEach(year => {
       if (!updatedData[year]) updatedData[year] = {};
       
@@ -191,97 +261,26 @@ async function saveMonthlyLeaderboardMetrics() {
                             new Date(Date.parse(year + '-' + month + '-01')).getMonth() < currentMonth);
 
         if (isFirstRun) {
-          // For first run, just use all organized data as-is
-          updatedData[year][month] = organizedData[year][month];
-          console.log(`FIRST RUN: Set data for ${month} ${year} with ${organizedData[year][month].length} records`);
+          // For first run, calculate differences from empty (so all records are differences)
+          const differences = calculateMonthlyDifference(year, month, organizedData[year][month], {});
+          updatedData[year][month] = differences;
+          console.log(`FIRST RUN: Set data for ${month} ${year} with ${differences.length} difference records (out of ${organizedData[year][month].length} total)`);
         } else if (isCurrentMonth) {
-          // For current month, only update records that were actually updated in current month
-          if (!updatedData[year][month]) updatedData[year][month] = [];
+          // For current month, calculate differences from previous months
+          const differences = calculateMonthlyDifference(year, month, organizedData[year][month], updatedData);
           
-          // Get records that were updated in current month (not just created)
-          const currentMonthUpdatedRecords = organizedData[year][month].filter(record => {
-            const updatedAt = new Date(record.updatedAt);
-            const updatedYear = updatedAt.getFullYear();
-            const updatedMonth = updatedAt.getMonth();
-            return updatedYear === currentYear && updatedMonth === currentMonth;
-          });
+          // Replace current month data with only the differences
+          updatedData[year][month] = differences;
+          console.log(`CURRENT MONTH: Updated ${month} ${year} with ${differences.length} difference records (out of ${organizedData[year][month].length} total)`);
+        } else if (!isPastMonth) {
+          // For future months, calculate differences
+          const differences = calculateMonthlyDifference(year, month, organizedData[year][month], updatedData);
           
-          console.log(`Found ${currentMonthUpdatedRecords.length} records updated in current month (${month} ${year})`);
-          
-          // Update only the records that were actually updated in current month
-          currentMonthUpdatedRecords.forEach(updatedRecord => {
-            const existingIndex = updatedData[year][month].findIndex(existingRecord => 
-              existingRecord.OPH_ID === updatedRecord.OPH_ID
-            );
-            
-            if (existingIndex !== -1) {
-              updatedData[year][month][existingIndex] = updatedRecord;
-              console.log(`Updated record for OPH_ID: ${updatedRecord.OPH_ID} in current month (${month} ${year})`);
-            } else {
-              updatedData[year][month].push(updatedRecord);
-              console.log(`Added new record for OPH_ID: ${updatedRecord.OPH_ID} in current month (${month} ${year})`);
-            }
-          });
-          
-          // Add any new records that were created in current month but not updated
-          const currentMonthCreatedRecords = organizedData[year][month].filter(record => {
-            const createdAt = new Date(record.createdAt);
-            const createdYear = createdAt.getFullYear();
-            const createdMonth = createdAt.getMonth();
-            const updatedAt = new Date(record.updatedAt);
-            const updatedYear = updatedAt.getFullYear();
-            const updatedMonth = updatedAt.getMonth();
-            
-            // Only include if created in current month AND not updated in current month
-            return (createdYear === currentYear && createdMonth === currentMonth) && 
-                   !(updatedYear === currentYear && updatedMonth === currentMonth);
-          });
-          
-          currentMonthCreatedRecords.forEach(newRecord => {
-            const recordExists = updatedData[year][month].some(existingRecord => 
-              existingRecord.OPH_ID === newRecord.OPH_ID
-            );
-            
-            if (!recordExists) {
-              updatedData[year][month].push(newRecord);
-              console.log(`Added new record for OPH_ID: ${newRecord.OPH_ID} in current month (${month} ${year}) - created but not updated`);
-            }
-          });
-        } else {
-          // For future months, append new records without overwriting existing ones
-          if (!updatedData[year][month]) updatedData[year][month] = [];
-          
-          organizedData[year][month].forEach(newRecord => {
-            const recordExists = updatedData[year][month].some(existingRecord => 
-              existingRecord.OPH_ID === newRecord.OPH_ID
-            );
-            
-            if (!recordExists) {
-              updatedData[year][month].push(newRecord);
-              console.log(`Added new record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year})`);
-            } else {
-              // Update existing record only if the new one has a more recent updated_at
-              const existingRecord = updatedData[year][month].find(existingRecord => 
-                existingRecord.OPH_ID === newRecord.OPH_ID
-              );
-              
-              if (existingRecord) {
-                const existingUpdatedAt = new Date(existingRecord.updatedAt);
-                const newUpdatedAt = new Date(newRecord.updatedAt);
-                
-                if (newUpdatedAt > existingUpdatedAt) {
-                  const existingIndex = updatedData[year][month].findIndex(existingRecord => 
-                    existingRecord.OPH_ID === newRecord.OPH_ID
-                  );
-                  updatedData[year][month][existingIndex] = newRecord;
-                  console.log(`Updated record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year}) - newer data`);
-                } else {
-                  console.log(`PROTECTED: Kept existing record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year}) - existing data is newer`);
-                }
-              }
-            }
-          });
+          // Store only differences for future months
+          updatedData[year][month] = differences;
+          console.log(`FUTURE MONTH: Set data for ${month} ${year} with ${differences.length} difference records (out of ${organizedData[year][month].length} total)`);
         }
+        // Note: Past months are preserved as-is (they already contain differences)
       });
     });
 
@@ -305,6 +304,7 @@ async function saveMonthlyLeaderboardMetrics() {
     await saveToS3(S3_KEY, updatedData);
 
     console.log(`Successfully updated leaderboard metrics file in S3`);
+    console.log(`Each month now stores only differences (new or changed records), not cumulative totals`);
     console.log(`Historical months are preserved, only current month (${currentMonthName} ${currentYear}) can be updated`);
     console.log(`Local backup available at: ${localBackupPath}`);
   } catch (err) {

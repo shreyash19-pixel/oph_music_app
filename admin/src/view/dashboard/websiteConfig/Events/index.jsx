@@ -3,6 +3,7 @@ import axiosApi from "../../../../conf/axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import WebsiteConfig from "../../../../components/WebConfigSidebar";
+import toast from "react-hot-toast";
 
 const EventAdminForm = () => {
   const [formData, setFormData] = useState({
@@ -22,6 +23,7 @@ const EventAdminForm = () => {
   });
 
   const [imagePreview, setImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,10 +44,20 @@ const EventAdminForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
     const form = new FormData();
     for (let key in formData) {
       const value = formData[key];
-      form.append(key, value instanceof Date ? value.toISOString() : value);
+      // Only append non-null values
+      if (value !== null && value !== undefined && value !== "") {
+        form.append(key, value instanceof Date ? value.toISOString() : value);
+      }
     }
 
     try {
@@ -54,9 +66,49 @@ const EventAdminForm = () => {
           "Content-Type": "multipart/form-data",
         },
       });
+      
+      // Show success toast
+      toast.success("Event created successfully!", {
+        position: "top-center",
+        duration: 4000,
+      });
+      
       console.log("Upload Success:", res.data);
+      
+      // Reset form after successful creation
+      setFormData({
+        EventName: "",
+        dateTime: null,
+        location: "",
+        description: "",
+        long_desc: "",
+        hashtags: "",
+        registrationFee_normal: "",
+        registrationStart: null,
+        registrationEnd: null,
+        winnerReward: "",
+        image: null,
+        payment_qr: null,
+        payment_qr_discount: null,
+      });
+      setImagePreview(null);
+      
+      // Reset file inputs
+      const fileInputs = document.querySelectorAll('input[type="file"]');
+      fileInputs.forEach(input => {
+        if (input) input.value = "";
+      });
     } catch (err) {
       console.error("Upload Error:", err);
+      
+      // Show error toast
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to create event. Please try again.";
+      toast.error(errorMessage, {
+        position: "top-center",
+        duration: 4000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -90,9 +142,11 @@ const EventAdminForm = () => {
             name="EventName"
             type="text"
             placeholder="Event Name"
+            value={formData.EventName}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
             required
+            disabled={isSubmitting}
           />
 
           <div className="w-full">
@@ -111,6 +165,7 @@ const EventAdminForm = () => {
               placeholderText="Select Date & Time"
               todayButton="Today"
               isClearable
+              disabled={isSubmitting}
               customInput={<CustomDateInput placeholder="Select Date & Time" />}
               calendarClassName="!bg-white text-[#0d3c44] p-4 rounded-xl shadow-xl flex flex-col gap-3"
               popperClassName="!z-50"
@@ -121,40 +176,50 @@ const EventAdminForm = () => {
             name="location"
             type="text"
             placeholder="Location"
+            value={formData.location}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
+            disabled={isSubmitting}
           />
 
           <textarea
             name="description"
             placeholder="Event Description"
+            value={formData.description}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
             rows={2}
+            disabled={isSubmitting}
           />
 
           <textarea
             name="long_desc"
             placeholder="Long Event Description"
+            value={formData.long_desc}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
             rows={6}
+            disabled={isSubmitting}
           />
 
           <input
             name="hashtags"
             type="text"
             placeholder='Hashtags (e.g. ["#Music", "#Competition"])'
+            value={formData.hashtags}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
+            disabled={isSubmitting}
           />
 
           <input
             name="registrationFee_normal"
             type="number"
             placeholder="Fee"
+            value={formData.registrationFee_normal}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
+            disabled={isSubmitting}
           />
 
           <DatePicker
@@ -167,6 +232,7 @@ const EventAdminForm = () => {
             customInput={<CustomDateInput placeholder="Registration Start" />}
             todayButton="Today"
             isClearable
+            disabled={isSubmitting}
           />
           <br />
           <DatePicker
@@ -179,14 +245,17 @@ const EventAdminForm = () => {
             customInput={<CustomDateInput placeholder="Registration End" />}
             todayButton="Today"
             isClearable
+            disabled={isSubmitting}
           />
 
           <input
             name="winnerReward"
             type="text"
             placeholder="Winner Reward"
+            value={formData.winnerReward}
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#0d3c44] focus:outline-none"
+            disabled={isSubmitting}
           />
 
           <div>
@@ -215,15 +284,47 @@ const EventAdminForm = () => {
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
+                disabled={isSubmitting}
               />
             </label>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-[#0d3c44] text-white py-3 px-6 rounded-xl text-lg font-semibold hover:bg-[#0b3239] transition-all duration-150"
+            disabled={isSubmitting}
+            className={`w-full py-3 px-6 rounded-xl text-lg font-semibold transition-all duration-150 ${
+              isSubmitting
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                : "bg-[#0d3c44] text-white hover:bg-[#0b3239]"
+            }`}
           >
-            Submit Event
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Creating Event...
+              </span>
+            ) : (
+              "Submit Event"
+            )}
           </button>
         </form>
       </div>

@@ -39,33 +39,51 @@ const setJourneyStatus = async (ophid, song_id) => {
 };
 
 const checkPaymentStatus = async (song_id, ophid) => {
-  console.log();
-  
+  // Query should check both song_id and reject_for (for rejected payments where song_id was moved to reject_for)
   const [rows] = await db.execute(
-    "SELECT Status, reject_reason FROM sign_up_payment WHERE song_id = ? AND OPH_ID = ?",
-    [song_id, ophid]
+    `SELECT status, reject_reason, song_id, reject_for 
+     FROM payments 
+     WHERE oph_id = ? 
+     AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
+     AND (song_id = ? OR reject_for = ?)
+     ORDER BY created_at DESC 
+     LIMIT 1`,
+    [ophid, song_id, song_id]
   );
+  
+  console.log(`🔍 checkPaymentStatus - song_id: ${song_id}, ophid: ${ophid}`);
+  console.log(`📦 Payment rows found:`, rows);
+  
   let nextPagePath = "";
 
-  if (rows[0].Status === null) {
+  if (rows.length === 0 || rows[0].status === null) {
     nextPagePath = "payment";
   }
-  else if(rows[0].Status === "rejected") 
+  else if(rows[0].status === "rejected") 
   {
     nextPagePath = "repayment"
   }
-  else if (rows[0].Status === 'approved' || rows[0].Status === "under review") {
+  else if (rows[0].status === 'approved' || rows[0].status === "under review") {
     nextPagePath = "pending";
   }
 
-  const map = {}
+  const rejectReason = rows.length > 0 ? rows[0].reject_reason : null;
+  const paymentStatus = rows.length > 0 ? rows[0].status : null;
 
-  map[song_id] = {
+  console.log(`✅ Payment status result:`);
+  console.log(`   - status: ${paymentStatus}`);
+  console.log(`   - reject_reason: ${rejectReason}`);
+  console.log(`   - nextPagePath: ${nextPagePath}`);
+  console.log(`   - song_id in payment: ${rows[0]?.song_id}`);
+  console.log(`   - reject_for in payment: ${rows[0]?.reject_for}`);
+
+  const result = {
     nextPagePath : nextPagePath,
-    reject_reason : rows[0].reject_reason
+    reject_reason : rejectReason,
+    status: paymentStatus
   }
   
-  return map[song_id];
+  return result;
 };
 
 /**

@@ -187,12 +187,14 @@ const SignUpForm = () => {
       console.log(response);
 
       if (response.success) {
-        localStorage.setItem("token", response.token);
+        // Hydrate auth context immediately (avoid refresh-required state)
+        login(response.token);
         navigate("/auth/payment", {
           state: {
             from: "Registration",
             user_type: formData.artistType,
           },
+          replace: true,
         });
       }
     } catch (e) {

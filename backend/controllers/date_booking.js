@@ -1,29 +1,33 @@
 const bookingModel = require("../model/date_booking");
+const DateBookingService = require("../services/dateBooking/DateBookingService");
 
 exports.createBooking = async (req, res) => {
   try {
     const { oph_id, booking_date, song_name, project_type } = req.body;
     console.log(oph_id, booking_date, song_name, project_type, "calendar booking");
     
-    if (!oph_id) {
-      return res.status(400).json({ error: "oph_id is required" });
-    }
-
-    const response = await bookingModel.insertBooking(
-      oph_id,
-      booking_date,
-      song_name,
-      project_type
-    );
-
-    if (response) {
-      return res.status(201).json({
-        success: true,
-        message: "Release date has been booked successfully",
+    if (!oph_id || !booking_date) {
+      return res.status(400).json({ 
+        success: false,
+        error: "oph_id and booking_date are required" 
       });
     }
+
+    // Use DateBookingService for application logic
+    const response = await DateBookingService.createBooking(
+      oph_id,
+      booking_date,
+      song_name || null,
+      project_type || null
+    );
+
+    return res.status(201).json(response);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Error creating booking:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || "Internal server error" 
+    });
   }
 };
 
@@ -31,33 +35,27 @@ exports.insertSongAndProjectController = async (req, res) => {
   try {
     const { oph_id, song_name, project_type, release_date } = req.body;
 
-    console.log(release_date);
-    
-
     if (!oph_id || !song_name || !project_type || !release_date) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Missing required fields: oph_id, song_name, project_type, and release_date are required",
       });
     }
 
-    const response = await bookingModel.insertSongAndProject(
+    // Use DateBookingService for application logic
+    const response = await DateBookingService.linkSongToBooking(
       oph_id,
       song_name,
       project_type,
       release_date
     );
 
-    if (response) {
-      return res.status(201).json({
-        success: true,
-        message: "Data updated successfully",
-      });
-    }
+    return res.status(201).json(response);
   } catch (err) {
+    console.error("Error linking song to booking:", err);
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Internal server error",
     });
   }
 };
@@ -66,36 +64,28 @@ exports.updateBooking = async (req, res) => {
   try {
     const { oph_id, old_booking_date, new_booking_date, reason } = req.body;
 
-    console.log(reason);
-    
-
-    if (!oph_id) {
-      return res.status(400).json({ error: "oph_id is required" });
+    if (!oph_id || !old_booking_date || !new_booking_date) {
+      return res.status(400).json({ 
+        success: false,
+        error: "oph_id, old_booking_date, and new_booking_date are required" 
+      });
     }
 
-    const getExistingBookingDate = await bookingModel.findBookingByOphIdAndDate(
+    // Use DateBookingService for application logic
+    const response = await DateBookingService.updateBookingDate(
       oph_id,
-      old_booking_date
+      old_booking_date,
+      new_booking_date,
+      reason || null
     );
-    console.log(getExistingBookingDate);
-    
-    if (getExistingBookingDate) {
-      const updatedExistingBookingDate = await bookingModel.updateBooking(
-        oph_id,
-        old_booking_date,
-        new_booking_date,
-        reason
-      );
 
-      if (updatedExistingBookingDate) {
-        return res.status(201).json({
-          success: true,
-          message: "Date Updated successfully",
-        });
-      }
-    }
+    return res.status(201).json(response);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error updating booking:", error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || "Internal server error" 
+    });
   }
 };
 
@@ -103,15 +93,17 @@ exports.getAllBookings = async (req, res) => {
   try {
     const bookings = await bookingModel.getAllBookings();
 
-    if (bookings) {
-      return res.status(200).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: bookings,
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: bookings || [],
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error in getAllBookings controller:", error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || "Internal server error" 
+    });
   }
 };
 

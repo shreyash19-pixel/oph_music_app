@@ -6,8 +6,9 @@ const saveNotification = async ({
   title = null,
   link = null,
 }) => {
+  // Note: Parameter is 'ophid' but database column is 'oph_id'
   const sql = `
-    INSERT INTO notifications (ophid, message, title, link)
+    INSERT INTO notifications (oph_id, message, title, link)
     VALUES (?, ?, ?, ?)
   `;
 

@@ -325,7 +325,7 @@ const downloadSongsRegister = async (req, res) => {
         Song_name: row.Song_name,
         release_date: formatDate(row.release_date),
         Lyrics_services: row.Lyrics_services ? "Yes" : "No",
-        availability_on_music_platform: row.availability_on_music_platform,
+        availability_on_music_platform: row.availability_on_music_platform ? "Yes" : "No",
         status: row.status,
       });
 

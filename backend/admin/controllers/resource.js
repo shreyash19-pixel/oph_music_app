@@ -23,9 +23,20 @@ const fetchAllPodcast = async (req, res) => {
     res.status(200).json({ success: true, data: videos });
   } catch (err) {
     console.error("Error fetching Podcast:", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch Podcast" });
+    
+    // Handle database connection errors specifically
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        success: false, 
+        message: "Database connection error. Please check database credentials and permissions.",
+        error: "Access denied"
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || "Failed to fetch Podcast" 
+    });
   }
 };
 
@@ -204,7 +215,20 @@ const fetchAllStories = async (req, res) => {
     res.status(200).json({ success: true, data: videos });
   } catch (err) {
     console.error("Error fetching Story:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch Story" });
+    
+    // Handle database connection errors specifically
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        success: false, 
+        message: "Database connection error. Please check database credentials and permissions.",
+        error: "Access denied"
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || "Failed to fetch Story" 
+    });
   }
 };
 
@@ -376,7 +400,20 @@ const fetchAllReels = async (req, res) => {
     res.status(200).json({ success: true, data: videos });
   } catch (err) {
     console.error("Error fetching Reel:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch Reel" });
+    
+    // Handle database connection errors specifically
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        success: false, 
+        message: "Database connection error. Please check database credentials and permissions.",
+        error: "Access denied"
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || "Failed to fetch Reel" 
+    });
   }
 };
 

@@ -8,23 +8,21 @@ const fs = require("fs");
 const { uploadToS3, uploadToS3Form } = require("../utils");
 const { log } = require("console");
 
-const { S3Client, DeleteObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
-
-const s3 = new S3Client({ region: process.env.AWS_REGION }); // replace with your region
-const bucketName = process.env.S3_BUCKET; 
-
 const membershipForm = async (req, res) => {
-  {
-    try {
-      // Fetch professions from database instead of hardcoding
-      const professionOptions = await professions.getAll();
-      
+  try {
+    // Fetch professions from database instead of hardcoding
+    const professionOptions = await professions.getAll();
+    
 
-      // Fetch banks from database
-      const Banks = require('../model/banks');
-      const banking = await Banks.getBanks();
-      const { ophid } = req.query;
-      const OPH_ID = ophid;
+    // Fetch banks from database
+    const Banks = require('../model/banks');
+    const banking = await Banks.getBanks();
+    const { ophid } = req.query;
+    const OPH_ID = ophid;
+
+    if (!ophid) {
+      return res.status(400).send("Missing ophid parameter");
+    }
 
 
       // Fetch artist data
@@ -37,31 +35,66 @@ const membershipForm = async (req, res) => {
       const artistProf = await prof_details.getProfessionalByOphId(OPH_ID);
       const artistDoc = await docs.getDocumentationDetailsByOphId(ophid);
 
-      const formattedDate = artist[0].createdAt.toISOString().split("T")[0];
-      const aadharFrontUrl = artistDoc[0].AadharFrontURL;
-      const aadharBackUrl = artistDoc[0].AadharBackURL;
+      // Validate data exists
+      if (!artist || artist.length === 0) {
+        return res.status(404).send("Artist not found");
+      }
 
-      const panFrontUrl = artistDoc[0].PanFrontURL;
+      if (!artistProf || artistProf.length === 0) {
+        return res.status(404).send("Professional details not found");
+      }
+
+      if (!artistDoc || artistDoc.length === 0) {
+        return res.status(404).send("Documentation details not found");
+      }
+
+      // Handle both createdAt (old) and created_at (new) column names
+      const createdDate = artist[0]?.created_at || artist[0]?.createdAt;
+      const formattedDate = createdDate 
+        ? (createdDate instanceof Date ? createdDate : new Date(createdDate)).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
+      
+      const aadharFrontUrl = artistDoc[0]?.AadharFrontURL || null;
+      const aadharBackUrl = artistDoc[0]?.AadharBackURL || null;
+      const panFrontUrl = artistDoc[0]?.PanFrontURL || null;
 
       // BankName is now stored as string directly, no need to convert or lookup
-      const BankName = artistDoc[0].BankName;
+      const BankName = artistDoc[0]?.BankName || null;
 
       const bankDetails = {
         bank_name: BankName,
-        bank_acc_number: artistDoc[0].AccountNumber,
-        bank_ifsc_code: artistDoc[0].IFSCCode,
-        bank_acc_name: artistDoc[0].AccountHolderName,
+        bank_acc_number: artistDoc[0]?.AccountNumber || null,
+        bank_ifsc_code: artistDoc[0]?.IFSCCode || null,
+        bank_acc_name: artistDoc[0]?.AccountHolderName || null,
       };
-      const signatureUrl = artistDoc[0].SignatureImageURL;
+      const signatureUrl = artistDoc[0]?.SignatureImageURL || null;
 
-      const professionId = parseInt(artistProf[0].Profession); // Convert from string to number
-      const professionName = professionOptions.find(
-        (p) => p.id === professionId
-      )?.name;
+      const professionId = artistProf[0]?.Profession 
+        ? parseInt(artistProf[0].Profession) 
+        : null;
+      const professionName = professionId 
+        ? professionOptions.find((p) => p.id === professionId)?.name || null
+        : null;
 
-      if (!artist) {
-        return res.status(404).send("Artist not found");
+      // Load header image from local assets folder
+      let headerImageBase64 = null;
+      try {
+        const path = require('path');
+        const imagePath = path.join(__dirname, '../assests/membership_header.jpg');
+        
+        if (fs.existsSync(imagePath)) {
+          const imageBuffer = fs.readFileSync(imagePath);
+          const base64 = imageBuffer.toString('base64');
+          const contentType = 'image/jpeg'; // Assuming it's a JPEG
+          headerImageBase64 = `data:${contentType};base64,${base64}`;
+          console.log('[membership] ✅ Header image loaded from local assets folder');
+        } else {
+          console.warn('[membership] ⚠️ Header image not found at:', imagePath);
+        }
+      } catch (error) {
+        console.error('[membership] ❌ Error loading header image:', error.message);
       }
+
       // const paymentId = await DB.knex('payments').where('artist_id', artist.id).where('plan_id', 4).where('status', 0).first('trans_id');
       // // Fetch bank details
       // const bankDetails = await DB.knex('user_bank_accs')
@@ -384,9 +417,9 @@ const membershipForm = async (req, res) => {
     <body>
       <!-- Page 1 -->
       <div class="page">
-        <div class="header">
-        <img src="https://ophcommunity.s3.ap-south-1.amazonaws.com/assets/membership_header.jpg" alt="Header" class="header-image" width="223mm">
-        </div>
+        ${headerImageBase64 ? `<div class="header">
+         <img src="${headerImageBase64}" alt="Header" class="header-image" width="223mm">
+         </div>` : ''}
         <div class="row gap-10">
         <div class="form-group">
           <label class="field-name">Artist Membership Code</label>
@@ -420,7 +453,7 @@ const membershipForm = async (req, res) => {
                 <span>Phone Number</span>
                 <span class="mr-22">:</span>
             </span>
-            <span class="field-value w-60">${artist[0].contact_num || ""}</span>
+            <span class="field-value w-60">${artist[0].contact_number || artist[0].contact_num || ""}</span>
         </div>
         <div class="field grid-template-columns-2">
             <span class="field-name d-flex justify-content-between align-items-center">
@@ -1712,77 +1745,78 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
     </body>
     </html>
     `;
-      // Generate HTML
-      
-      // --- REFACTOR START ---
-      // The PDF generation and upload process should happen BEFORE sending a response.
-      // This ensures that if any part of it fails, we can send a proper error to the client.
+      // Always return the HTML form to the client.
+      // PDF generation + upload is best-effort and should NOT block the UI.
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.status(200).send(html);
 
-      try {
-        // 1. Generate PDF
-        // Use @sparticuz/chromium for server environments like Render
-        const browser = await puppeteer.launch({
-          args: chromium.args,
-          defaultViewport: chromium.defaultViewport,
-          executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
-          ignoreHTTPSErrors: true,
-        });
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({
-          format: "A4",
-          printBackground: true,
-          margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
-        });
-        await browser.close();
-
-        // 2. Prepare for S3 Upload
-        const fileName = `${artist[0].full_name.replace(/\s+/g, "_")}.pdf`;
-        const s3Key = `pdfs/${fileName}`;
-
-        // 3. Check if an old version of the file exists and delete it
-        try {
-          await s3.send(new HeadObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-          }));
-          // If the command above succeeds, the file exists. Let's delete it.
-          console.log(`Deleting existing PDF from S3: ${s3Key}`);
-          await s3.send(new DeleteObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-          }));
-        } catch (err) {
-          if (err.name !== "NotFound") {
-            // Log the error but don't block the upload of the new file
-            console.warn("Could not delete existing file from S3, proceeding with upload:", err.message);
-          }
-          // If 'NotFound', it's the desired state, so we do nothing.
+      // Best-effort PDF generation in the background.
+      setImmediate(async () => {
+        // If S3 isn't configured, skip PDF upload entirely.
+        if (!process.env.S3_BUCKET) {
+          console.warn("[membership] S3_BUCKET not set; skipping membership PDF generation/upload.");
+          return;
         }
 
-        // 4. Upload the new PDF to S3
-        const file = {
-          originalname: fileName,
-          buffer: pdfBuffer,
-          mimetype: "application/pdf",
-        };
-        const s3Url = await uploadToS3Form(file, "pdfs");
-        console.log(`Successfully uploaded PDF to S3: ${s3Url}`);
+        try {
+          // Try to launch a browser in a way that works both on EC2 and serverless.
+          let browser = null;
+          try {
+            const executablePath = await chromium.executablePath().catch(() => null);
+            if (executablePath) {
+              browser = await puppeteer.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath,
+                headless: chromium.headless,
+                ignoreHTTPSErrors: true,
+              });
+            }
+          } catch (e) {
+            browser = null;
+          }
 
-        // 5. Finally, send the HTML response to the client
-        res.send(html);
-        // --- REFACTOR END ---
+          if (!browser) {
+            browser = await puppeteer.launch({
+              args: ["--no-sandbox", "--disable-setuid-sandbox"],
+              headless: true,
+              ignoreHTTPSErrors: true,
+            });
+          }
 
-      } catch (error) {
-        console.error("Error during PDF generation or S3 upload:", error);
-        // If PDF generation or upload fails, send a server error response.
-        return res.status(500).send("Failed to generate or save the membership PDF.");
-      }
-    } catch (error) {
-      console.error("Error generating membership form:", error);
-      res.status(500).send("Error generating membership form");
-    }
+          const page = await browser.newPage();
+          await page.setContent(html, { waitUntil: "networkidle0" });
+          const pdfBuffer = await page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
+          });
+          await browser.close();
+
+          const safeName =
+            (artist?.[0]?.full_name && String(artist[0].full_name)) || ophid || "membership";
+          const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
+
+          const file = {
+            originalname: fileName,
+            buffer: pdfBuffer,
+            mimetype: "application/pdf",
+          };
+
+          // S3 upload overwrites if key already exists, so no explicit delete is required.
+          const s3Url = await uploadToS3Form(file, "pdfs");
+          console.log(`[membership] PDF uploaded: ${s3Url}`);
+        } catch (error) {
+          console.error("[membership] PDF generation/upload failed (non-blocking):", error);
+        }
+      });
+  } catch (error) {
+    console.error("Error generating membership form:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error generating membership form",
+      error: error.message 
+    });
   }
 };
 

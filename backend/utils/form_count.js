@@ -14,11 +14,13 @@ router.post("/increment-count/:ophid", async (req, res) => {
 
   try {
     // Update query: increment form_fill_count by 1
+    // Note: Route parameter is 'ophid' but database column is 'oph_id'
+    // Note: form_fill_count column may need to be added to user_details table if it doesn't exist
     const [result] = await db.execute(
       `UPDATE user_details
-       SET form_fill_count = form_fill_count + 1,
-           updatedAt = NOW()
-       WHERE ophid = ?`,
+       SET form_fill_count = COALESCE(form_fill_count, 0) + 1,
+           updated_at = NOW()
+       WHERE oph_id = ?`,
       [ophid],
     );
 

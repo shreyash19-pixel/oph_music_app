@@ -28,14 +28,22 @@ const Artist_new = () => {
   }
   useEffect(() => {
     const fetchData = async () => {
-      const res = await axiosApi.get("/any-under-review");
+      try {
+        const res = await axiosApi.get("/any-under-review");
+        console.log("API Response from /any-under-review:", res);
+        console.log("Response data:", res.data);
+        console.log("Full response object:", JSON.stringify(res.data, null, 2));
+        
+        const sortedData = res.data.userDetails.sort(
+          (a, b) => b.form_fill_count - a.form_fill_count,
+        );
 
-      const sortedData = res.data.userDetails.sort(
-        (a, b) => b.form_fill_count - a.form_fill_count,
-      );
-
-      setTableData(sortedData);
-      console.log(sortedData);
+        setTableData(sortedData);
+        console.log("Sorted data:", sortedData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        console.error("Error response:", error.response);
+      }
     };
 
     fetchData();

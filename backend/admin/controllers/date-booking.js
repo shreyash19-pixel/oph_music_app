@@ -29,12 +29,12 @@ exports.createBooking = async (req, res) => {
 
 exports.insertSongAndProjectController = async (req, res) => {
     try {
-        const { oph_id, song_name, project_type } = req.body;
+        const { oph_id, song_name, project_type, release_date } = req.body;
 
-        if (!oph_id || !song_name || !project_type) {
+        if (!oph_id || !song_name || !project_type || !release_date) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields",
+                message: "Missing required fields: oph_id, song_name, project_type, and release_date are required",
             });
         }
 
@@ -42,6 +42,7 @@ exports.insertSongAndProjectController = async (req, res) => {
             oph_id,
             song_name,
             project_type,
+            release_date
         );
 
         if (response) {
@@ -94,15 +95,19 @@ exports.getAllBookings = async (req, res) => {
     try {
         const bookings = await bookingModel.getAllBookings();
 
-        if (bookings) {
-            return res.status(200).json({
-                success: true,
-                message: "Data fetched successfully",
-                data: bookings,
-            });
-        }
+        return res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Data fetched successfully",
+            data: bookings || [],
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error in getAllBookings:", error);
+        res.status(500).json({ 
+            status: 500,
+            success: false,
+            error: error.message || "Internal server error" 
+        });
     }
 };
 

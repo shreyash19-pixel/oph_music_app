@@ -103,42 +103,19 @@ const updateSongSectionStatus = async (req, res) => {
     const table = section === "Audio" ? "audio_details" : "video_details";
     console.log(table);
 
-    // Pass ophid only for audio
-    const result = await songsModel.updateSongSectionStatus(
-      table,
-      status,
-      reason,
+    // Use AdminSongService to handle all application logic
+    const AdminSongService = require("../services/AdminSongService");
+    
+    const result = await AdminSongService.updateSectionStatus(
       songId,
-      section === "Audio" ? ophid : null,
+      ophid,
+      section,
+      status,
+      reason
     );
 
-    if (section === "Audio" && status === "rejected") {
-      console.log("Audio Reject Api ");
-    } else if (section === "Video" && status === "rejected") {
-      console.log("Video Reject Api ");
-    }
-
-    console.log(result);
-    console.log("test");
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "No matching record found." });
-    }
-
-    // Update the main song status using the model function directly
-    try {
-      console.log("Updating main song status");
-      console.log(ophid, songId, reason);
-      
-      // Validate parameters before calling the model function
-      if (!ophid || !songId) {
-        console.error("Missing required parameters: ophid or songId");
-        throw new Error("Missing required parameters");
-      }
-      
-      await songsModel.updateSongStatus(parseInt(songId), ophid, (reason || "").trim() || null);
-    } catch (error) {
-      console.error("Error updating main song status:", error);
-      // Continue with notification even if main status update fails
     }
 
     const data = await songsModel.getSongsByOphIdUnderReview(ophid, songId);

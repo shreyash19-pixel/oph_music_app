@@ -30,13 +30,13 @@ const SongPayment = () => {
 
         // Map the backend response to frontend expected format
         const mappedPayments = paymentArray.map((payment) => ({
-          paymentId: payment.Transaction_ID,
-          status: payment.Status,
-          createdAt: payment.CreatedAt,
-          paymentType: payment.From,
+          paymentId: payment.Transaction_ID || payment.transaction_id,
+          status: payment.Status || payment.status, // Handle both cases
+          createdAt: payment.CreatedAt || payment.created_at,
+          paymentType: payment.From || payment.from_source,
           amount: payment.song_id ? `Song ID: ${payment.song_id}` : "N/A",
-          description: `Song Registration Payment - ${payment.From}`,
-          ophId: payment.OPH_ID,
+          description: `Song Registration Payment - ${payment.From || payment.from_source}`,
+          ophId: payment.OPH_ID || payment.oph_id,
         }));
 
         mappedPayments.sort(
@@ -70,6 +70,15 @@ const SongPayment = () => {
         reject_reason: reason,
         songId: songid,
       };
+
+      console.log("Reject request data:", logData);
+      console.log("recentPayment:", recentPayment);
+      console.log("ophid:", ophid, "songid:", songid);
+
+      if (!logData.ophId || !logData.transactionId || !logData.status) {
+        toast.error("Missing required data. Please refresh the page and try again.");
+        return;
+      }
 
       try {
         const submit = await axiosApi.put("/payment-update-status", logData);
@@ -121,7 +130,14 @@ const SongPayment = () => {
         status: "approved",
         songId: songid,
       };
-      console.log("Approve Log:", logData);
+      console.log("Approve request data:", logData);
+      console.log("recentPayment:", recentPayment);
+      console.log("ophid:", ophid, "songid:", songid);
+
+      if (!logData.ophId || !logData.transactionId || !logData.status) {
+        toast.error("Missing required data. Please refresh the page and try again.");
+        return;
+      }
 
       try {
         const submit = await axiosApi.put("/payment-update-status", logData);
@@ -343,7 +359,10 @@ const SongPayment = () => {
             disabled={
               actionLocked ||
               (paymentList[0] &&
-                !["pending", "under review"].includes(paymentList[0].status))
+                paymentList[0].status &&
+                !["pending", "under review"].includes(
+                  paymentList[0].status?.toLowerCase()
+                ))
             }
             className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
@@ -388,10 +407,13 @@ const SongPayment = () => {
 
           {/* Show status message when payment is processed */}
           {paymentList[0] &&
-            !["pending", "under review"].includes(paymentList[0].status) && (
+            paymentList[0].status &&
+            !["pending", "under review"].includes(
+              paymentList[0].status?.toLowerCase()
+            ) && (
               <div
                 className={`mt-4 p-3 rounded-lg text-center font-medium ${
-                  paymentList[0].status === "approved"
+                  paymentList[0].status?.toLowerCase() === "approved"
                     ? "bg-green-100 text-green-800 border border-green-200"
                     : "bg-red-100 text-red-800 border border-red-200"
                 }`}
@@ -402,7 +424,9 @@ const SongPayment = () => {
             )}
 
           {/* Show message when payment is under review */}
-          {paymentList[0] && paymentList[0].status === "under review" && (
+          {paymentList[0] && 
+           (paymentList[0].status === "under review" || 
+            paymentList[0].status?.toLowerCase() === "under review") && (
             <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
               Payment is under review. You can approve or reject this payment.
             </div>

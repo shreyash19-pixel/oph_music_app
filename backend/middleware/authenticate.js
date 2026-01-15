@@ -14,6 +14,8 @@ const authMiddleware = (req, res, next) => {
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.SECRET_KEY);
+    // Attach decoded token to request for use in controllers
+    req.user = decoded;
     next();
   } catch (err) {
     return res

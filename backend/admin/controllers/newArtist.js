@@ -1,24 +1,34 @@
 const userDetailsModel = require("../model/newArtist");
+const AdminApplicationStatusService = require("../services/AdminApplicationStatusService");
 
 const getAllDetailsUnderReview = async (req, res) => {
   try {
     const { ophid } = req.params;
+    console.log("Fetching details for OPH_ID:", ophid);
 
     const userDetails = await userDetailsModel.getUserDetailsByOphId(ophid);
+    console.log("User details from DB:", userDetails);
+    
     const professionalDetails = await userDetailsModel.getProfessionalDetailsByOphId(ophid);
+    console.log("Professional details from DB:", professionalDetails);
+    
     const documentationDetails = await userDetailsModel.getDocumentationDetailsByOphId(ophid);
+    console.log("Documentation details from DB:", documentationDetails);
 
     // Check if no data found for all
     if (!userDetails && !professionalDetails && !documentationDetails) {
       return res.status(404).json({ message: "No details found with step_status 'under review' for given OPH ID." });
     }
 
-    res.status(200).json({
-      userDetails,
-      professionalDetails,
-      documentationDetails,
-    });
-    console.log(res.data);
+    const response = {
+      userDetails: userDetails || null,
+      professionalDetails: professionalDetails || null,
+      documentationDetails: documentationDetails || null,
+    };
+    
+    console.log("Sending response:", JSON.stringify(response, null, 2));
+    
+    res.status(200).json(response);
     
   } catch (error) {
     console.error("Error fetching details:", error);
@@ -64,47 +74,39 @@ const updateStatus = async (req, res) => {
   const { ophid, Personal, Professional, Documentation } = req.body;
 
   try {
-    if (Personal) {
-      const status = Personal.status === "Accepted" ? "completed" : "rejected";
-      const reason = Personal.status === "Rejected" ? Personal.reason : null;
-      const rejectedStep = Personal.status === "Rejected" ? "Personal" : null;
+    console.log("Update Status Request Body:", JSON.stringify(req.body, null, 2));
+    console.log("OPH ID:", ophid);
+    console.log("Personal:", Personal);
+    console.log("Professional:", Professional);
+    console.log("Documentation:", Documentation);
 
-      await userDetailsModel.updateUserDetailsStatus(ophid, status, reason, rejectedStep);
-    }
-    if (Personal) {
-      const status = Personal.status === "Accepted" ? "completed" : "rejected";
-      const reason = Personal.status === "Rejected" ? Personal.reason : null;
-      const rejectedStep = Personal.status === "Rejected" ? "Personal" : null;
-
-      await userDetailsModel.updateUserDetailsStatus(ophid, status, reason, rejectedStep);
-    }
-    if (Personal) {
-      const status = Personal.status === "Accepted" ? "completed" : "rejected";
-      const reason = Personal.status === "Rejected" ? Personal.reason : null;
-      const rejectedStep = Personal.status === "Rejected" ? "Personal" : null;
-
-      await userDetailsModel.updateUserDetailsStatus(ophid, status, reason, rejectedStep);
+    if (!ophid) {
+      return res.status(400).json({ message: "OPH ID is required" });
     }
 
-    if (Professional) {
-      const status = Professional.status === "Accepted" ? "completed" : "rejected";
-      const reason = Professional.status === "Rejected" ? Professional.reason : null;
+    // Use AdminApplicationStatusService to handle all application logic
+    // This updates both step tables (user_details, professional_details, documentation_details)
+    // and the application_status table in a transaction
+    const result = await AdminApplicationStatusService.updateMultipleStepStatuses(ophid, {
+      Personal,
+      Professional,
+      Documentation
+    });
 
-      await userDetailsModel.updateProfessionalStatus(ophid, status, reason);
-    }
+    console.log("Update Status Result:", JSON.stringify(result, null, 2));
 
-    if (Documentation) {
-      const status = Documentation.status === "Accepted" ? "completed" : "rejected";
-      const reason = Documentation.status === "Rejected" ? Documentation.reason : null;
-
-      await userDetailsModel.updateDocumentationStatus(ophid, status, reason);
-    }
-
-    res.status(200).json({ message: "Statuses updated successfully" });
+    res.status(200).json({ 
+      message: "Statuses updated successfully",
+      results: result.results
+    });
 
   } catch (error) {
     console.error("Error updating statuses:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      message: "Internal server error",
+      error: error.message 
+    });
   }
 };
 
@@ -126,6 +128,25 @@ const getDocumentationDetailsStepStatus = async (req, res) => {
   res.status(200).json({ documentationDetails });
 };
 
+const getApplicationStatus = async (req, res) => {
+  try {
+    const { ophid } = req.params;
+    const ApplicationStatusService = require("../../services/application/ApplicationStatusService");
+    const db = require("../../DB/connect");
+    const connection = await db.getConnection();
+    
+    try {
+      const applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, ophid);
+      res.status(200).json({ applicationStatus });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("Error fetching application status:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 module.exports = {
   getAllDetailsUnderReview,
@@ -135,4 +156,5 @@ module.exports = {
   getUserDetailsStepStatus,
   getProfessionalDetailsStepStatus,
   getDocumentationDetailsStepStatus,
+  getApplicationStatus,
 };

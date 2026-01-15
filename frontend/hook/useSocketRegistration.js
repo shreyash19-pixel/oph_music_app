@@ -5,21 +5,26 @@ import toast from "react-hot-toast";
 const useSocketRegistration = (OPH_ID, onNewNotification) => {
   useEffect(() => {
     if (!OPH_ID) {
-      console.warn("No OPH_ID provided to socket registration.");
+      // Silently return if OPH_ID is not available yet (e.g., during initial mount)
       return;
     }
 
-    console.log("Preparing to register socket with OPH_ID:", OPH_ID);
+    // Ensure the shared socket only connects when we actually have an OPH_ID.
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     const registerIfConnected = () => {
       socket.emit("register", OPH_ID.trim());
       console.log("Socket registered with OPH_ID:", OPH_ID);
     };
 
-    socket.on("connect", () => {
+    const handleConnect = () => {
       console.log("🔌 Socket connected:", socket.id);
       registerIfConnected();
-    });
+    };
+
+    socket.on("connect", handleConnect);
 
     // If already connected, register immediately
     if (socket.connected) {
@@ -76,11 +81,19 @@ const useSocketRegistration = (OPH_ID, onNewNotification) => {
 
     // Cleanup on unmount
     return () => {
-      socket.off("connect", registerIfConnected);
+      socket.off("connect", handleConnect);
       socket.off("Music-update", handleTicketUpdate);
       socket.off("Payment-update", handlePaymentUpdate);
       socket.off("Profile-update", handleProfileUpdate);
       socket.off("TV-update", handleTVUpdate);
+
+      // If the context unmounts (or user logs out and OPH_ID becomes null),
+      // we can disconnect to avoid background reconnect loops.
+      try {
+        socket.disconnect();
+      } catch {
+        // no-op
+      }
     };
   }, [OPH_ID, onNewNotification]);
 };
