@@ -13,6 +13,9 @@ export default function VideoMetadataForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [payStat, setPayStat] = useState("");
+
+  console.log(location);
+  
   
   // Get song_id from location state instead of URL params
   const contentId = location.state?.song_id;
@@ -190,6 +193,7 @@ export default function VideoMetadataForm() {
             song_name: location.state.songName,
             project_type: projectType,
             release_date: location.state.release_date,
+            song_id: contentId
           },
           {
             headers: {

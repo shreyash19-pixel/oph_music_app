@@ -9,7 +9,7 @@ import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 
-function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
+function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   const [name, setName] = useState("");
   const [legal_name, setLegalName] = useState("");
   const [spotify, setSpotify] = useState("");
@@ -18,9 +18,12 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd }) {
   const [apple, setApple] = useState("");
   const [profileImage, setProfileImage] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const { contentId } = useParams();
+
   const { headers } = useArtist();
   const [loading, setLoading] = useState(false);
+
+  console.log(contentId);
+  
 
   const handleSubmitSecondary = async (e) => {
     e.preventDefault();
@@ -257,6 +260,8 @@ export default function AudioMetadataForm() {
   
   // Get song_id from location state instead of URL params
   const contentId = location.state?.song_id;
+  console.log(contentId);
+  
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1136,6 +1141,7 @@ export default function AudioMetadataForm() {
                 artistType={selectedArtistType}
                 onClose={() => setShowSecondaryForm(false)}
                 onArtistAdd={handleArtistAdd}
+                contentId = {contentId}
               />
             </div>
           )}

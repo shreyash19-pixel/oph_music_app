@@ -46,7 +46,7 @@ const newReleases = async () => {
 
 const getReleatedArtists = async (profession) => {
   const [rows] = await db.execute(
-    "SELECT ud.ophid, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID WHERE pd.Profession = ?",
+    "SELECT ud.oph_id, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID WHERE pd.Profession = ?",
     [profession]
   );
   return rows;
@@ -54,7 +54,7 @@ const getReleatedArtists = async (profession) => {
 
 const getArtistDetail = async (ophid) => {
   const [rows] = await db.execute(
-    "WITH CTEArtistDetail AS (SELECT ud.ophid, ud.full_name `name`, pd.PhotoURLs photos ,ud.personal_photo, ud.stage_name, pd.VideoURL video_bio, pd.Profession profession, ud.location, kpi.total_views, pd.Bio bio, pd.FacebookLink facebook_url, pd.InstagramLink instagram_url, ad.Song_name song_name, ad.primary_artist primary_artist, ssm.youtube_views total_song_views,ad.audio_url duration_in_minutes, sr.`status` song_registeration_status, ad.`status` audio_details_status ,vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id WHERE ud.ophid = ?) SELECT * FROM CTEArtistDetail WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",
+    "WITH CTEArtistDetail AS (SELECT ud.oph_id, ud.full_name `name`, pd.PhotoURLs photos ,ud.personal_photo, ud.stage_name, pd.VideoURL video_bio, pd.Profession profession, ud.location, kpi.total_views, pd.Bio bio, pd.FacebookLink facebook_url, pd.InstagramLink instagram_url, ad.Song_name song_name, ad.primary_artist primary_artist, ssm.youtube_views total_song_views,ad.audio_url duration_in_minutes, sr.`status` song_registeration_status, ad.`status` audio_details_status ,vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID LEFT JOIN songs_register sr ON ud.oph_id = sr.OPH_ID LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id WHERE ud.oph_id = ?) SELECT * FROM CTEArtistDetail WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",
     [ophid]
   );
 
@@ -115,9 +115,9 @@ const getUpcomingSong = async (ophid) => {
     const [rows] = await db.execute(
       `SELECT DISTINCT sre.*, sr.release_date, vd.image_url
 FROM song_release sre
-LEFT JOIN songs_register sr ON sre.song_id = sr.song_id
+LEFT JOIN songs_register sr ON sre.songId = sr.song_id
 LEFT JOIN video_details vd ON sr.song_id = vd.song_id
-WHERE sre.ophid = ?
+WHERE sre.oph_id = ?
   AND CURDATE() < sr.release_date
 ORDER BY sr.release_date
 LIMIT 1;
@@ -128,7 +128,7 @@ LIMIT 1;
     let songMap = {};
     if (rows.length !== 0) {
       songMap = {
-        song_id: rows[0].song_id,
+        song_id: rows[0].songId,
         dateTime: rows[0].release_date,
         EventName: rows[0].song_name,
         image: rows[0].image_url ? JSON.parse(rows[0].image_url) : null,

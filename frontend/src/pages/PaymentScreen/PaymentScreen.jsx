@@ -301,6 +301,7 @@ const PaymentScreen = () => {
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
+              song_id: song_id
             },
             { headers: headers }
           );
@@ -358,6 +359,7 @@ const PaymentScreen = () => {
             song_name: location.state.songName,
             project_type: location.state.project_type,
             release_date: location.state.booking_date,
+            song_id:song_id
           },
           {
             headers: {

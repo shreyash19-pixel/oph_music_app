@@ -1,4 +1,4 @@
-const db = require('../DB/connect');
+const db = require("../DB/connect");
 
 /**
  * Song Application Status model - Database operations only
@@ -7,44 +7,69 @@ const db = require('../DB/connect');
 
 const getSongApplicationStatus = async (connection, songId) => {
   const [rows] = await connection.execute(
-    'SELECT * FROM song_application_status WHERE song_id = ?',
-    [songId]
+    "SELECT * FROM song_application_status WHERE song_id = ?",
+    [songId],
   );
   return rows;
 };
 
-const createSongApplicationStatus = async (connection, ophId, songId, songName) => {
+const getPrimaryArtist = async (connection, oph_id) => {
+  const [rows] = await connection.execute(
+    "SELECT full_name FROM user_details WHERE oph_id = ?",
+    [oph_id],
+  );
+  return rows;
+};
+
+const getSecondaryArtist = async (connection, songId) => {
+  const [rows] = await connection.execute(
+    "SELECT artist_name FROM secondary_artist WHERE song_id = ?",
+    [songId],
+  );
+  return rows;
+};
+
+const createSongApplicationStatus = async (
+  connection,
+  ophId,
+  songId,
+  songName,
+) => {
   const [result] = await connection.execute(
     `INSERT INTO song_application_status 
      (oph_id, song_id, song_name, status_audio, status_video, status_payment, overall_status) 
      VALUES (?, ?, ?, 'pending', 'pending', 'pending', 'pending')`,
-    [ophId, songId, songName]
+    [ophId, songId, songName],
   );
   return result;
 };
 
-const updateSongApplicationStatus = async (connection, songId, statusUpdates) => {
+const updateSongApplicationStatus = async (
+  connection,
+  songId,
+  statusUpdates,
+) => {
   const fields = [];
   const values = [];
 
   if (statusUpdates.status_audio !== undefined) {
-    fields.push('status_audio = ?');
+    fields.push("status_audio = ?");
     values.push(statusUpdates.status_audio);
   }
   if (statusUpdates.status_video !== undefined) {
-    fields.push('status_video = ?');
+    fields.push("status_video = ?");
     values.push(statusUpdates.status_video);
   }
   if (statusUpdates.status_payment !== undefined) {
-    fields.push('status_payment = ?');
+    fields.push("status_payment = ?");
     values.push(statusUpdates.status_payment);
   }
   if (statusUpdates.overall_status !== undefined) {
-    fields.push('overall_status = ?');
+    fields.push("overall_status = ?");
     values.push(statusUpdates.overall_status);
   }
   if (statusUpdates.song_name !== undefined) {
-    fields.push('song_name = ?');
+    fields.push("song_name = ?");
     values.push(statusUpdates.song_name);
   }
 
@@ -52,12 +77,29 @@ const updateSongApplicationStatus = async (connection, songId, statusUpdates) =>
     return null;
   }
 
-  fields.push('updated_at = NOW()');
+  fields.push("updated_at = NOW()");
   values.push(songId);
 
   const [result] = await connection.execute(
-    `UPDATE song_application_status SET ${fields.join(', ')} WHERE song_id = ?`,
-    values
+    `UPDATE song_application_status SET ${fields.join(", ")} WHERE song_id = ?`,
+    values,
+  );
+
+  return result;
+};
+
+const updateSongRelease = async (
+  connection,
+  oph_id,
+  songId,
+  song_name,
+  full_name,
+  secondaryArtists,
+) => {
+  console.log("dfdfdfdf 1323");
+  const [result] = await connection.execute(
+    `INSERT INTO song_release (oph_id,songId, song_name, primary_artist,featuring_artist ) VALUES (?,?,?,?,?)`,
+    [oph_id, songId, song_name,full_name,secondaryArtists],
   );
 
   return result;
@@ -66,7 +108,8 @@ const updateSongApplicationStatus = async (connection, songId, statusUpdates) =>
 module.exports = {
   getSongApplicationStatus,
   createSongApplicationStatus,
-  updateSongApplicationStatus
+  updateSongApplicationStatus,
+  updateSongRelease,
+  getPrimaryArtist,
+  getSecondaryArtist
 };
-
-

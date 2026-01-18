@@ -2,7 +2,7 @@ const db = require("../DB/connect");
 
 const getArtistInfo = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT ud.ophid, ud.full_name, ud.personal_photo ,ud.stage_name, pd.Profession, pd.Bio FROM user_details ud LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID WHERE ophid = ?",
+    "SELECT ud.oph_id, ud.full_name, ud.personal_photo ,ud.stage_name, pd.Profession, pd.Bio FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID WHERE ophid = ?",
     [ophid]
   );
   return rows;

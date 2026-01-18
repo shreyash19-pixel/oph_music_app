@@ -42,6 +42,7 @@ const findUserByOphId = async (connection, ophId) => {
     'SELECT * FROM user_details WHERE oph_id = ?',
     [ophId]
   );
+
   return rows;
 };
 

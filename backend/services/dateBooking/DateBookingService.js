@@ -10,7 +10,7 @@ class DateBookingService {
    * @param {string|null} songName - Song name (if linking to song)
    * @param {string|null} projectType - Project type (if linking to song)
    */
-  async createBooking(ophId, bookingDate, songName = null, projectType = null) {
+  async createBooking(ophId, bookingDate, songName = null, projectType = null, song_id = null) {
     const connection = await db.getConnection();
     
     try {
@@ -36,17 +36,17 @@ class DateBookingService {
         // Update existing booking
         await connection.query(
           `UPDATE calender 
-           SET song_name = ?, project_type = ?, updated_at = NOW()
+           SET song_name = ?, project_type = ?, song_id = ?, updated_at = NOW()
            WHERE oph_id = ? AND current_booking_date = ?`,
-          [songName, projectType, ophId, bookingDate]
+          [songName, projectType, song_id, ophId, bookingDate]
         );
       } else {
         // Create new booking
         await connection.query(
           `INSERT INTO calender 
-           (oph_id, current_booking_date, previous_booking_date, original_booking_date, song_name, project_type, created_at, updated_at)
-           VALUES (?, ?, NULL, ?, ?, ?, NOW(), NOW())`,
-          [ophId, bookingDate, bookingDate, songName, projectType]
+           (oph_id, song_id,  current_booking_date, previous_booking_date, original_booking_date, song_name, project_type, created_at, updated_at)
+           VALUES (?, ? , ?, NULL, ?, ?, ?, NOW(), NOW())`,
+          [ophId, song_id, bookingDate, bookingDate, songName, projectType]
         );
       }
 
@@ -74,7 +74,7 @@ class DateBookingService {
    * @param {string} projectType - Project type
    * @param {string} releaseDate - Release date (YYYY-MM-DD)
    */
-  async linkSongToBooking(ophId, songName, projectType, releaseDate) {
+  async linkSongToBooking(ophId, songName, projectType, releaseDate, song_id) {
     const connection = await db.getConnection();
     
     try {
@@ -93,9 +93,9 @@ class DateBookingService {
       // Update booking with song details
       const [result] = await connection.query(
         `UPDATE calender 
-         SET song_name = ?, project_type = ?, updated_at = NOW()
+         SET song_name = ?, song_id = ?, project_type = ?, updated_at = NOW()
          WHERE oph_id = ? AND current_booking_date = ?`,
-        [songName, projectType, ophId, releaseDate]
+        [songName, song_id, projectType, ophId, releaseDate]
       );
 
       if (result.affectedRows === 0) {

@@ -17,7 +17,7 @@ const insertSongAndProject = async (oph_id, song_name, project_type, release_dat
   }
   
   const [rows] = await db.execute(
-    "UPDATE calender SET song_name = ?, project_type = ? WHERE oph_id = ? AND current_booking_date = ?",
+    "UPDATE calender SET song_name = ?, project_type = ? , song_id = ? WHERE oph_id = ? AND current_booking_date = ?",
     [song_name, project_type, oph_id, release_date]
   );
 
@@ -58,9 +58,7 @@ const getAllBookings = async () => {
       COALESCE(ud.full_name, '') as full_name
     FROM calender c 
     LEFT JOIN payments p ON c.current_booking_date = p.release_date 
-      AND (p.from_source = 'Date booking' OR p.from_source = 'Release date change')
-    LEFT JOIN user_details ud ON c.oph_id = ud.oph_id
-    WHERE c.song_name IS NULL`
+    LEFT JOIN user_details ud ON c.oph_id = ud.oph_id`
   );
 
   const rowsWithIST = rows.map((row) => ({

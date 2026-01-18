@@ -8,7 +8,7 @@ const getSongsList = async () => {
 
 const getIndividualSongDetails = async (ophid, songId) => {
   const [rows] = await db.execute(
-    "SELECT * FROM special_artist_songs WHERE ophid = ? AND song_id = ?",
+    "SELECT * FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
     [ophid, songId]
   );
 
@@ -25,7 +25,7 @@ const setSongStatus = async (ophid, songId, type, reason) => {
   }
 
   const [rows] = await db.execute(
-    "UPDATE special_artist_songs SET status = ?, reject_reason = ? WHERE ophid = ? AND song_id = ?",
+    "UPDATE special_artist_songs SET status = ?, reject_reason = ? WHERE oph_id = ? AND song_id = ?",
     [type, getReason, ophid, songId]
   );
 

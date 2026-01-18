@@ -7,7 +7,7 @@ import ArtistSidebar from "../../../../components/ArtistSidebar";
 
 export default function TimeCalendar() {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(
-    new Date().getMonth()
+    new Date().getMonth(),
   );
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [blockedDatesInfo, setBlockedDatesInfo] = useState({});
@@ -31,11 +31,12 @@ export default function TimeCalendar() {
           response.data.data.forEach((item) => {
             const d = new Date(item.current_booking_date);
             const localDateStr = `${d.getFullYear()}-${String(
-              d.getMonth() + 1
+              d.getMonth() + 1,
             ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
             dateMap[localDateStr] = {
               content: item.oph_id,
               artist: item.full_name,
+              songId: item.song_id,
             };
           });
 
@@ -83,7 +84,7 @@ export default function TimeCalendar() {
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
     return blockedDatesInfo.hasOwnProperty(dateStr);
@@ -105,7 +106,7 @@ export default function TimeCalendar() {
     const oneYearFromNow = new Date(
       today.getFullYear() + 1,
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     );
     const checkDate = new Date(year, month, day);
     return checkDate <= oneYearFromNow;
@@ -138,7 +139,7 @@ export default function TimeCalendar() {
     const totalDays = daysInMonth(currentMonthIndex, currentYear);
     const prevMonthDays = daysInMonth(
       (currentMonthIndex - 1 + 12) % 12,
-      currentMonthIndex === 0 ? currentYear - 1 : currentYear
+      currentMonthIndex === 0 ? currentYear - 1 : currentYear,
     );
 
     const days = [];
@@ -195,7 +196,7 @@ export default function TimeCalendar() {
     const oneYearFromNow = new Date(
       today.getFullYear() + 1,
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     );
 
     // Calculate the first day of the next month
@@ -256,23 +257,23 @@ export default function TimeCalendar() {
     month,
     day,
     isCurrentMonth,
-    getCurrentGridStatus
+    getCurrentGridStatus,
   ) => {
     if (!isCurrentMonth || getCurrentGridStatus.Status === "approved") return; // Don't handle clicks on non-current month days
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
     const dateInfo = blockedDatesInfo[dateStr];
 
-    if (dateInfo) {
-      navigate("/verify-booking-dates", {
-        state: { selectedDate: dateStr },
-      });
+    console.log(dateInfo);
+
+    if (dateInfo && dateInfo.songId) {
+      navigate(`/ContentNew/${dateInfo.content}/${dateInfo.songId}`);
     } else {
-      return;
+      toast.error("User is yet to create a new song");
     }
   };
 
@@ -283,24 +284,23 @@ export default function TimeCalendar() {
     const isValidFutureDate = isWithinOneYear(
       currentYear,
       currentMonthIndex,
-      day
+      day,
     );
 
     const d = new Date(currentYear, currentMonthIndex, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(d.getDate()).padStart(2, "0")}`;
     const artist = blockedDatesInfo[dateStr];
 
     console.log(artist);
-    
 
     const getCurrentGridStatus = data.find(
-      (d) => d.current_booking_date === dateStr
+      (d) => d.current_booking_date === dateStr,
     );
 
-    // console.log(getCurrentGridStatus);
+    console.log(getCurrentGridStatus);
 
     return (
       <div
@@ -312,20 +312,20 @@ export default function TimeCalendar() {
               currentMonthIndex,
               day,
               isCurrentMonth,
-              getCurrentGridStatus
+              getCurrentGridStatus,
             );
           }
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
           isBlocked &&
           isCurrentMonth &&
-          getCurrentGridStatus.Status === "under review"
+          getCurrentGridStatus.payment_status === "under review"
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
             : isBlocked &&
-              isCurrentMonth &&
-              getCurrentGridStatus.Status === "approved"
-            ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
-            : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
+                isCurrentMonth &&
+                getCurrentGridStatus.payment_status === "approved"
+              ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
+              : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
         ${isPast ? "opacity-50" : ""}
         ${!isValidFutureDate ? " opacity-25" : ""}
@@ -436,10 +436,10 @@ export default function TimeCalendar() {
                         {calendarDays
                           .slice(weekIndex * 7, weekIndex * 7 + 7)
                           .map((dayData, index) =>
-                            renderCalendarCell(dayData, index)
+                            renderCalendarCell(dayData, index),
                           )}
                       </div>
-                    )
+                    ),
                   )}
                 </div>
               </div>
@@ -466,7 +466,7 @@ export default function TimeCalendar() {
                 >
                   {Array.from(
                     { length: 5 },
-                    (_, i) => new Date().getFullYear() + i
+                    (_, i) => new Date().getFullYear() + i,
                   ).map((year) => (
                     <option key={year} value={year}>
                       {year}

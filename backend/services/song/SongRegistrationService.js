@@ -42,6 +42,9 @@ class SongRegistrationService {
 
       const songDetails = {};
 
+      console.log();
+      
+
       rows.forEach((row) => {
         const songId = row.song_id;
 
