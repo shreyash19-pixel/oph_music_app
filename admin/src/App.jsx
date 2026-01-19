@@ -39,6 +39,8 @@ import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/P
 import ArtistSettings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
 import TicketMain from "./view/dashboard/artistPortal/Tickets/tickets";
+import ResolveTickets from "./view/dashboard/artistPortal/Tickets/resolveTickets";
+import ResolveIndex from "./view/dashboard/artistPortal/Tickets/resolveIndex";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
 import Artist_All from "./view/dashboard/artistPortal/artistAll/Artist_All";
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";
@@ -102,7 +104,7 @@ function App() {
           />
           <Route
             path="/ContentRelease/:ophid/:songId"
-            element={<ContentReleaseInd /> }
+            element={<ContentReleaseInd />}
           />
 
           <Route
@@ -146,6 +148,10 @@ function App() {
           />
           <Route path="/content/tv" element={<Tvpublishing />} />
           <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
+          <Route
+            path="/ResolvedTickets/:ophid/:ticketNumber"
+            element={<ResolveIndex />}
+          />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
           <Route path="/EventPayment/:ophid" element={<EventPayment />} />
           <Route
@@ -691,6 +697,22 @@ function App() {
                 ]}
               >
                 <TicketMain />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ResolveTickets"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
+                <ResolveTickets />
               </ProtectedRoute>
             }
           />

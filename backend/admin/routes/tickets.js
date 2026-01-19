@@ -11,6 +11,7 @@ const {
   getTicketSummaries,
   updateResolvedSummary,
   getTicket,
+  getResolveSummaries,
 } = require("../controllers/tickets");
 
 router.post(
@@ -29,5 +30,7 @@ router.get("/getAllTickets", getAllTickets);
 router.get("/getTicketSummaries", getTicketSummaries);
 
 router.get("/getTicket", getTicket);
+
+router.get("/getResolveSummaries", getResolveSummaries);
 
 module.exports = router;
