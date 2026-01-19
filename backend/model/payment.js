@@ -67,13 +67,6 @@ const getPaymentByTransactionId = async (connection, transactionId) => {
   return rows;
 };
 
-const getPaymentByTransactionId = async (Transaction_ID) => {
-  const [rows] = await db.execute(
-    "SELECT * FROM sign_up_payment WHERE Transaction_ID = ?",
-    [Transaction_ID]
-  );
-  return rows;
-};
 
 const getSignupPaymentByOphId = async (OPH_ID) => {
   const [rows] = await db.execute(
