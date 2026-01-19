@@ -28,7 +28,7 @@ LEFT JOIN (
         OPH_ID
 ) ep ON sm.OPH_ID = ep.OPH_ID
 LEFT JOIN
-    user_details ud ON sm.OPH_ID = ud.ophid
+    user_details ud ON sm.OPH_ID = ud.oph_id
 GROUP BY
     sm.OPH_ID;
 
@@ -76,7 +76,7 @@ const getTopSearchedArtists = async (searchQuery) => {
   const key = `%${searchQuery}%`;
 
   const [rows] = await db.execute(
-    "SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid WHERE ud.stage_name LIKE ? OR ud.stage_name LIKE ?",
+    "SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id WHERE ud.stage_name LIKE ? OR ud.stage_name LIKE ?",
     [key, key]
   );
 
@@ -84,7 +84,7 @@ const getTopSearchedArtists = async (searchQuery) => {
 };
 
 const getTopArtists = async () => {
-  const [rows] = await db.execute(`SELECT kpi.OPH_ID, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.ophid  LEFT JOIN professional_details pf ON ud.ophid = pf.OPH_ID `);
+  const [rows] = await db.execute(`SELECT kpi.OPH_ID, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id  LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID `);
   return rows;
 };
 
@@ -98,7 +98,7 @@ const getSpecialArtist = async () => {
 
 const getArtistProfile = async (ophid) => {
   const [rows] = await db.execute(
-    "WITH CTEArtistProfile AS ( SELECT ud.ophid, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, sa.artist_name,ud.location, kpi.total_views, pd.Bio,sr.song_id ,sr.Song_name,ssm.youtube_views,ad.audio_url , sr.`status` song_registeration_status, ad.`status` audio_details_status , vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id LEFT JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID WHERE ud.ophid = ?) SELECT * FROM CTEArtistProfile WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",
+    "WITH CTEArtistProfile AS ( SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, sa.artist_name,ud.location, kpi.total_views, pd.Bio,sr.song_id ,sr.Song_name,ssm.youtube_views,ad.audio_url , sr.`status` song_registeration_status, ad.`status` audio_details_status , vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID LEFT JOIN songs_register sr ON ud.oph_id = sr.OPH_ID JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID WHERE ud.oph_id = ?) SELECT * FROM CTEArtistProfile WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",
     [ophid]
   );
 
@@ -161,7 +161,7 @@ const getAllKpiScores = async () => {
   const [rows] = await db.execute(`
     WITH CTEKPI AS (
       SELECT
-        ud.ophid,
+        ud.oph_id,
         ud.full_name,
         ud.stage_name,
         ud.personal_photo,
@@ -175,11 +175,11 @@ const getAllKpiScores = async () => {
         ad.status AS audio_details_status,
         vd.status AS video_details_status
       FROM user_details ud
-      LEFT JOIN songs_register sr ON ud.ophid = sr.OPH_ID
+      LEFT JOIN songs_register sr ON ud.oph_id = sr.OPH_ID
       LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
       LEFT JOIN video_details vd ON sr.song_id = vd.song_id
       LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
-      JOIN KPI_score kpi ON ud.ophid = kpi.OPH_ID
+      JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID
     )
     SELECT *
     FROM CTEKPI`);

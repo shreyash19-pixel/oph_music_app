@@ -21,7 +21,11 @@ const VerifyBookingDates = () => {
         params: { release_date },
       });
 
-      if (response.data.success && response.data.data && response.data.data.length > 0) {
+      if (
+        response.data.success &&
+        response.data.data &&
+        response.data.data.length > 0
+      ) {
         const transactionData = response.data.data[0];
         console.log("Transaction data received:", transactionData);
         setTransactions(transactionData);
@@ -50,21 +54,29 @@ const VerifyBookingDates = () => {
     }
 
     // Send as JSON instead of FormData
-    const fromSource = transactions?.From || transactions?.from || transactions?.from_source || "Date booking";
-    
+    const fromSource =
+      transactions?.From ||
+      transactions?.from ||
+      transactions?.from_source ||
+      "Date booking";
+
     const requestData = {
       decision: dec,
       reason: reason || null,
       release_date: release_date,
-      from: fromSource
+      from: fromSource,
     };
 
     console.log("Sending payment verification request:", requestData);
 
     try {
-      const response = await axiosApi.post("/payment-verification", requestData, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await axiosApi.post(
+        "/payment-verification",
+        requestData,
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
 
       if (response.data.success) {
         if (dec === "rejected") {

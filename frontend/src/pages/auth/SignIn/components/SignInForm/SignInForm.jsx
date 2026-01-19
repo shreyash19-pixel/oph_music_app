@@ -39,6 +39,8 @@ const SignInForm = () => {
           navigate(response.step, { replace: true });
         } else {
           const path = `${response.step}`;
+          console.log(path);
+          
           navigate(path, {
             state: {
               from: "Registration",

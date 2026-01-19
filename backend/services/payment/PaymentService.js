@@ -117,6 +117,7 @@ class PaymentService {
       // Determine navigation path
       const user = await userModel.findUserByOphId(connection, oph_id);
       const applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, oph_id);
+      console.log(user[0] + "assasa");
       
       const navTo = this.determineNavigationPath(user[0], applicationStatus, step);
 
@@ -169,6 +170,9 @@ class PaymentService {
     const { user_status, professional_status, documentation_status, payment_status, overall_status } = applicationStatus;
 
     // All steps under review - show status page
+
+    
+
     if (
       user_status === "under review" &&
       professional_status === "under review" &&
@@ -177,6 +181,7 @@ class PaymentService {
     ) {
       return "/auth/profile-status";
     }
+    
 
     // Check for rejected steps (priority order)
     if (payment_status === "rejected") {
@@ -199,16 +204,16 @@ class PaymentService {
       documentation_status === "under review" ||
       payment_status === "under review"
     ) {
-      return defaultStep || user?.step_status || '/auth/payment';
+      
+      return user?.current_step || defaultStep || '/auth/payment';
     }
 
     // Application completed - go to dashboard
     if (overall_status === "completed") {
       return "/dashboard";
     }
-
     // Default to current step
-    return defaultStep || user?.step_status || '/auth/payment';
+    return user?.current_step || defaultStep ||  '/auth/payment';
   }
 
   /**

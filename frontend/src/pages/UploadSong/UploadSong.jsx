@@ -69,10 +69,10 @@ export default function UploadSongs() {
   // Get status color based on status
   const getStatusColor = (status) => {
     const colorMap = {
-      'draft': 'text-yellow-400 border-yellow-400/30',
+      'pending': 'text-yellow-400 border-yellow-400/30',
       'under review': 'text-cyan-400 border-cyan-400/30',
       'rejected': 'text-red-400 border-red-400/30',
-      'approved (pending)': 'text-green-400 border-green-400/30',
+      'approved': 'text-green-400 border-green-400/30',
       'Published': 'text-green-400 border-green-400/30'
     };
     return colorMap[status] || 'text-gray-400 border-gray-400/30';
@@ -129,7 +129,7 @@ export default function UploadSongs() {
             className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
             
             onClick={(e) => {
-              if (['draft', 'rejected'].includes(song.status)) {
+              if (['pending', 'rejected'].includes(song.status)) {
                 // Just navigate - status will be updated to "under review" only when user submits metadata
                 navigate(song.next_page, {
                   state: {

@@ -8,7 +8,7 @@ const getSongReleaseList = async () => {
 
 const getIndividualSongReleaseList = async (ophid, songId) => {
   const [rows] = await db.execute(
-    "SELECT * FROM song_release WHERE ophid = ? AND song_id = ?",
+    "SELECT * FROM song_release WHERE oph_id = ? AND songId = ?",
     [ophid, songId]
   );
 
@@ -51,7 +51,7 @@ const setSongReleaseDetails = async (
   
 
   const [rows] = await db.execute(
-    "UPDATE song_release SET release_time = ?, youtube_release_time = ?, spotify_release_time = ?, apple_release_time = ?, instagram_release_time = ?,facebook_release_time = ?, share_url = ?, youtube_url = ?, spotify_url = ?, apple_url = ?, instagram_url = ?, facebook_url = ? WHERE song_id = ?",
+    "UPDATE song_release SET release_time = ?, youtube_release_time = ?, spotify_release_time = ?, apple_release_time = ?, instagram_release_time = ?,facebook_release_time = ?, share_url = ?, youtube_url = ?, spotify_url = ?, apple_url = ?, instagram_url = ?, facebook_url = ? WHERE songId = ?",
     [
       release_time,
       youtube_release_time,

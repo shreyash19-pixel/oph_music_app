@@ -267,14 +267,16 @@ class UserService {
       this.isStatus(payment_status, "under review")
     ) {
       console.log("[Navigation] At least one step is under review, redirecting to /auth/profile-status");
-      return "/auth/profile-status";
+      console.log(user);
+      
+      return user.current_step;
     }
 
     // PRIORITY 3: If user has previously filled forms and overall_status is not complete,
     // redirect to profile-status instead of form pages
     if (this.hasPreviouslyFilledForms(user_status, professional_status, documentation_status, payment_status)) {
       console.log("[Navigation] User has previously filled forms, redirecting to /auth/profile-status");
-      return "/auth/profile-status";
+      return user.current_step;
     }
 
     // Find the first incomplete (pending) step and navigate there

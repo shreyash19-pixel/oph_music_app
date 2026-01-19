@@ -31,7 +31,7 @@ exports.insertSongAndProjectController = async (req, res) => {
     try {
         const { oph_id, song_name, project_type, release_date } = req.body;
 
-        if (!oph_id || !song_name || !project_type || !release_date) {
+        if (!oph_id || !song_name || !project_type || !release_date || song_id) {
             return res.status(400).json({
                 success: false,
                 message: "Missing required fields: oph_id, song_name, project_type, and release_date are required",
@@ -42,7 +42,7 @@ exports.insertSongAndProjectController = async (req, res) => {
             oph_id,
             song_name,
             project_type,
-            release_date
+            release_date,
         );
 
         if (response) {

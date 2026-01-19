@@ -11,7 +11,7 @@ class DateBookingService {
    * @param {string|null} projectType - Project type (if linking to song)
    * @param {number|null} songId - Song ID (if linking to song)
    */
-  async createBooking(ophId, bookingDate, songName = null, projectType = null, songId = null) {
+  async createBooking(ophId, bookingDate, songName = null, projectType = null, songId = null, song_id = null) {
     const connection = await db.getConnection();
     
     try {

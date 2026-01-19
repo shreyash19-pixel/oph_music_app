@@ -37,7 +37,7 @@ const ContentReleaseInd = () => {
         setContent({
           song_name: song.song_name || "",
           primary_artist: song.primary_artist || "",
-          featuring_artist: res.data.specialArtist || "",
+          featuring_artist: song.featuring_artist || "",
           release_time: song.release_time || "",
           youtube_release_time: song.youtube_release_time || "",
           spotify_release_time: song.spotify_release_time || "",
