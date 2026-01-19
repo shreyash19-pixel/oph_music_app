@@ -46,6 +46,21 @@ exports.insertNewSongRegDetails = async (req, res) => {
       // Use insertId from the insert result (auto-increment)
       const song_id = songRegModel.getSongIdFromInsert(RegSongRes);
       
+      // Create calendar entry with song_id (single source of truth for dates)
+      await connection.query(
+        `INSERT INTO calender (
+           oph_id, 
+           current_booking_date, 
+           original_booking_date, 
+           song_id,
+           song_name, 
+           project_type,
+           created_at,
+           updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [oph_id, release_date, release_date, song_id, name, normalizedProjectType]
+      );
+      
       // Initialize song_application_status entry with all statuses as 'pending'
       await SongApplicationStatusService.initializeSongApplicationStatus(
         connection,
@@ -117,6 +132,21 @@ exports.insertHybridSongRegDetails = async (req, res) => {
     if (RegSongRes) {
       // Use insertId from the insert result (auto-increment)
       const song_id = songRegModel.getSongIdFromInsert(RegSongRes);
+
+      // Create calendar entry with song_id (single source of truth for dates)
+      await connection.query(
+        `INSERT INTO calender (
+           oph_id, 
+           current_booking_date, 
+           original_booking_date, 
+           song_id,
+           song_name, 
+           project_type,
+           created_at,
+           updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [oph_id, release_date, release_date, song_id, name, normalizedProjectType]
+      );
 
       // Initialize song_application_status entry with all statuses as 'pending'
       await SongApplicationStatusService.initializeSongApplicationStatus(

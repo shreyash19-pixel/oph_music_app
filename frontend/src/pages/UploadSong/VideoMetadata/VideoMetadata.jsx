@@ -190,6 +190,7 @@ export default function VideoMetadataForm() {
             song_name: location.state.songName,
             project_type: projectType,
             release_date: location.state.release_date,
+            song_id: contentId,
           },
           {
             headers: {
