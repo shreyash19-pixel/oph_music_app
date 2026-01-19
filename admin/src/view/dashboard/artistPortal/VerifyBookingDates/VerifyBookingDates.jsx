@@ -26,7 +26,9 @@ const VerifyBookingDates = () => {
         response.data.data &&
         response.data.data.length > 0
       ) {
-        setTransactions(response.data.data[0]);
+        const transactionData = response.data.data[0];
+        console.log("Transaction data received:", transactionData);
+        setTransactions(transactionData);
       } else {
         console.error("No transaction data found for date:", release_date);
       }
@@ -110,30 +112,110 @@ const VerifyBookingDates = () => {
             {transactions.From}
           </p>
 
-          <p>
-            <strong>From : </strong>
-            {transactions.previous_booking_date ? (
-              <>
-                {new Date(
-                  transactions.previous_booking_date,
-                ).toLocaleDateString("en-IN", {
-                  timeZone: "Asia/Kolkata",
-                })}{" "}
-                to{" "}
-                {new Date(transactions.current_booking_date).toLocaleDateString(
-                  "en-IN",
-                  { timeZone: "Asia/Kolkata" },
-                )}
-              </>
-            ) : (
-              "-"
-            )}
-          </p>
+          {(() => {
+            const fromSource = transactions?.From || transactions?.from_source || transactions?.from || "";
+            const isReleaseDateChange = fromSource.toLowerCase().includes("release date change");
+            
+            // Check for previous_booking_date in various possible field names
+            const previousDate = transactions?.previous_booking_date || 
+                                transactions?.Previous_booking_date ||
+                                transactions?.previousBookingDate;
+            
+            const currentDate = transactions?.current_booking_date || 
+                               transactions?.Current_booking_date ||
+                               transactions?.currentBookingDate ||
+                               release_date;
+            
+            // Check if previous date is valid (not null, not epoch 0, not empty string)
+            const hasPreviousDate = previousDate && 
+                                   previousDate !== null && 
+                                   previousDate !== "" &&
+                                   previousDate !== "1970-01-01" &&
+                                   previousDate !== "1970-01-01T00:00:00.000Z" &&
+                                   new Date(previousDate).getTime() > 0;
+            
+            console.log("Date display check:", {
+              fromSource,
+              isReleaseDateChange,
+              hasPreviousDate,
+              previousDate,
+              currentDate,
+              allTransactionKeys: Object.keys(transactions || {})
+            });
 
-          <p>
-            <strong>Reason : </strong>
-            {transactions.reason}
-          </p>
+            if (isReleaseDateChange && hasPreviousDate) {
+              return (
+                <>
+                  <p>
+                    <strong>Old Date : </strong>
+                    {new Date(previousDate).toLocaleDateString(
+                      "en-IN",
+                      {
+                        timeZone: "Asia/Kolkata",
+                      }
+                    )}
+                  </p>
+                  <p>
+                    <strong>New Date : </strong>
+                    {new Date(currentDate).toLocaleDateString(
+                      "en-IN",
+                      {
+                        timeZone: "Asia/Kolkata",
+                      }
+                    )}
+                  </p>
+                </>
+              );
+            } else if (isReleaseDateChange) {
+              // Release date change but no previous date - show new date with note
+              return (
+                <>
+                  <p>
+                    <strong>New Date : </strong>
+                    {new Date(currentDate).toLocaleDateString(
+                      "en-IN",
+                      {
+                        timeZone: "Asia/Kolkata",
+                      }
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    (Previous date not available)
+                  </p>
+                </>
+              );
+            } else {
+              return (
+                <p>
+                  <strong>Date : </strong>
+                  {new Date(currentDate).toLocaleDateString(
+                    "en-IN",
+                    {
+                      timeZone: "Asia/Kolkata",
+                    }
+                  )}
+                </p>
+              );
+            }
+          })()}
+
+          {(() => {
+            // Show reason from calender table if it exists (for pending date changes)
+            // Otherwise show reject_reason from payments table (for rejected payments)
+            const calenderReason = transactions?.reason || transactions?.Reason;
+            const paymentRejectReason = transactions?.reject_reason || transactions?.rejectReason;
+            const displayReason = calenderReason || paymentRejectReason;
+            
+            if (displayReason) {
+              return (
+                <p>
+                  <strong>Reason : </strong>
+                  {displayReason}
+                </p>
+              );
+            }
+            return null;
+          })()}
 
           {confirmReject && (
             <div>

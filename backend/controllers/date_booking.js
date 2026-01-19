@@ -4,7 +4,7 @@ const DateBookingService = require("../services/dateBooking/DateBookingService")
 exports.createBooking = async (req, res) => {
   try {
     const { oph_id, booking_date, song_name, project_type, song_id } = req.body;
-    console.log(oph_id, booking_date, song_name, project_type, "calendar booking");
+    console.log(oph_id, booking_date, song_name, project_type, song_id, "calendar booking");
     
     if (!oph_id || !booking_date) {
       return res.status(400).json({ 
@@ -48,8 +48,7 @@ exports.insertSongAndProjectController = async (req, res) => {
       oph_id,
       song_name,
       project_type,
-      release_date,
-      song_id
+      release_date
     );
 
     return res.status(201).json(response);

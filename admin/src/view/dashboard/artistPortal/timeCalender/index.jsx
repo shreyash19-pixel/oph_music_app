@@ -240,15 +240,17 @@ export default function TimeCalendar() {
     "Saturday",
   ];
 
-  const UserAvatar = ({ artist }) => (
-    <div className="flex items-center gap-2 mb-2">
-      {/* Circle with Initial */}
-      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-400 text-gray-900 font-bold">
-        {artist?.charAt(0)?.toUpperCase() || "?"}
+  const UserAvatar = ({ artist, ophId, songId }) => (
+    <div className="flex flex-col gap-1 mb-2">
+      {/* OPH ID and Song ID */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold text-cyan-300">{ophId}</span>
+        {songId && (
+          <span className="text-xs font-semibold text-yellow-300">
+            Song: {songId}
+          </span>
+        )}
       </div>
-
-      {/* Full name only on larger screens */}
-      <span className="text-sm hidden lg:block">{artist}</span>
     </div>
   );
 
@@ -361,7 +363,13 @@ export default function TimeCalendar() {
               </svg>
             )}
         </div>
-        {isBlocked && isCurrentMonth && <UserAvatar artist={artist.content} />}
+        {isBlocked && isCurrentMonth && (
+          <UserAvatar 
+            artist={artist?.artist} 
+            ophId={artist?.content} 
+            songId={artist?.song_id} 
+          />
+        )}
       </div>
     );
   };

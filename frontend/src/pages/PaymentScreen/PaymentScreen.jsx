@@ -172,7 +172,7 @@ const PaymentScreen = () => {
       return parseFloat(matchedCosting.cost);
     }
 
-    // Fallback to hardcoded amounts if no costing data match
+    // Fallback to hardcoded amounts if no costing data match 
     if (lyrical_services) {
       return 499; // Lyrical video amount
     } else if (!from || from === "Registration") {
@@ -301,7 +301,7 @@ const PaymentScreen = () => {
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
-              song_id: song_id
+              song_id: location.state.song_id || song_id,
             },
             { headers: headers }
           );
@@ -359,7 +359,7 @@ const PaymentScreen = () => {
             song_name: location.state.songName,
             project_type: location.state.project_type,
             release_date: location.state.booking_date,
-            song_id:song_id
+            song_id: location.state.song_id || song_id,
           },
           {
             headers: {
