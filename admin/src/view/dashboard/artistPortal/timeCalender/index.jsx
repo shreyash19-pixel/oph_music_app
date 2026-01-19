@@ -240,17 +240,22 @@ export default function TimeCalendar() {
     "Saturday",
   ];
 
-  const UserAvatar = ({ artist, ophId, songId }) => (
-    <div className="flex flex-col gap-1 mb-2">
-      {/* OPH ID and Song ID */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-cyan-300">{ophId}</span>
-        {songId && (
-          <span className="text-xs font-semibold text-yellow-300">
-            Song: {songId}
-          </span>
-        )}
+  const UserAvatar = ({ artist, songId }) => (
+    <div className="flex items-center gap-2 mb-2">
+      {/* Circle with Initial */}
+      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-400 text-gray-900 font-bold">
+        {artist?.charAt(0)?.toUpperCase() || "?"}
       </div>
+
+      {/* Full name only on larger screens */}
+      <span className="text-sm hidden lg:block">{artist}</span>
+      
+      {/* Song ID from calender table */}
+      {songId && (
+        <span className="text-xs font-semibold text-yellow-300 ml-2">
+          Song: {songId}
+        </span>
+      )}
     </div>
   );
 
@@ -270,12 +275,12 @@ export default function TimeCalendar() {
 
     const dateInfo = blockedDatesInfo[dateStr];
 
-    console.log(dateInfo);
-
-    if (dateInfo && dateInfo.songId) {
-      navigate(`/ContentNew/${dateInfo.content}/${dateInfo.songId}`);
+    if (dateInfo) {
+      navigate("/verify-booking-dates", {
+        state: { selectedDate: dateStr },
+      });
     } else {
-      toast.error("User is yet to create a new song");
+      return;
     }
   };
 
@@ -365,9 +370,8 @@ export default function TimeCalendar() {
         </div>
         {isBlocked && isCurrentMonth && (
           <UserAvatar 
-            artist={artist?.artist} 
-            ophId={artist?.content} 
-            songId={artist?.song_id} 
+            artist={artist?.artist || artist?.content} 
+            songId={artist?.songId} 
           />
         )}
       </div>
