@@ -31,51 +31,133 @@ const ArtistNew = () => {
       setLoading(true);
       try {
         const res = await axiosApi.get(`/under-review/${ophid}`);
-        const { userDetails = {}, professionalDetails = {}, documentationDetails = {} } = res.data;
+        console.log("API Response from /under-review:", res);
+        console.log("Response data:", res.data);
+        console.log("Full response object:", JSON.stringify(res.data, null, 2));
+        const {
+          userDetails = {},
+          professionalDetails = null,
+          documentationDetails = {},
+        } = res.data;
+        console.log("Parsed userDetails:", userDetails);
+        console.log("Parsed professionalDetails:", professionalDetails);
+        console.log("Parsed documentationDetails:", documentationDetails);
 
         let parsedPhotos = [];
-        if (professionalDetails.PhotoURLs) {
+        // Try both snake_case and PascalCase for backward compatibility
+        // Add null check for professionalDetails
+        const photoUrls =
+          professionalDetails?.photo_urls ||
+          professionalDetails?.PhotoURLs ||
+          null;
+        console.log("Raw photo_urls:", photoUrls);
+        if (photoUrls) {
           try {
-            parsedPhotos = JSON.parse(professionalDetails.PhotoURLs);
+            parsedPhotos = JSON.parse(photoUrls);
+            console.log("Parsed photos array:", parsedPhotos);
           } catch (e) {
-            console.error("Error parsing PhotoURLs:", e);
+            console.error("Error parsing photo_urls:", e);
+            console.error("photo_urls value:", photoUrls);
           }
+        } else {
+          console.log("No photo_urls found in professionalDetails");
         }
 
-        const experienceMonths = (professionalDetails.ExperienceMonthly % 12) || 0;
-        const experienceYears = Math.floor(professionalDetails.ExperienceMonthly / 12);
+        // Use snake_case field names from API response
+        // Add null check for professionalDetails
+        const experienceMonthly =
+          professionalDetails?.experience_monthly ||
+          professionalDetails?.ExperienceMonthly ||
+          0;
+        const experienceMonths = experienceMonthly % 12 || 0;
+        const experienceYears = Math.floor(experienceMonthly / 12);
 
         const getValue = (val, fallback = "Not Provided") =>
           val && val.toString().trim() !== "" ? val : fallback;
 
         const newArtist = {
-          ophid: getValue(userDetails.ophid),
+          ophid: getValue(userDetails.oph_id || userDetails.ophid),
           full_name: getValue(userDetails.full_name),
           stage_name: getValue(userDetails.stage_name),
           email: getValue(userDetails.email),
-          contact_number: getValue(userDetails.contact_num),
+          contact_number: getValue(
+            userDetails.contact_number || userDetails.contact_num,
+          ),
           artist_type: getValue(userDetails.artist_type),
-          personal_photo: getValue(userDetails.personal_photo, "https://avatars.githubusercontent.com/u/49544693?v=4"),
+          personal_photo: getValue(
+            userDetails.personal_photo,
+            "https://avatars.githubusercontent.com/u/49544693?v=4",
+          ),
           location: getValue(userDetails.location),
-          profession: getValue(professionalDetails.Profession),
-          bio: getValue(professionalDetails.Bio),
-          video: getValue(professionalDetails.VideoURL, "https://www.w3schools.com/html/mov_bbb.mp4"),
-          spotify: getValue(professionalDetails.SpotifyLink),
-          instagram: getValue(professionalDetails.InstagramLink),
-          facebook: getValue(professionalDetails.FacebookLink),
-          apple_music: getValue(professionalDetails.AppleMusicLink),
+          profession: getValue(
+            professionalDetails?.profession || professionalDetails?.Profession,
+          ),
+          bio: getValue(professionalDetails?.bio || professionalDetails?.Bio),
+          video: getValue(
+            professionalDetails?.video_url || professionalDetails?.VideoURL,
+            "https://www.w3schools.com/html/mov_bbb.mp4",
+          ),
+          spotify: getValue(
+            professionalDetails?.spotify_link ||
+              professionalDetails?.SpotifyLink,
+          ),
+          instagram: getValue(
+            professionalDetails?.instagram_link ||
+              professionalDetails?.InstagramLink,
+          ),
+          facebook: getValue(
+            professionalDetails?.facebook_link ||
+              professionalDetails?.FacebookLink,
+          ),
+          apple_music: getValue(
+            professionalDetails?.apple_music_link ||
+              professionalDetails?.AppleMusicLink,
+          ),
           experience_yearly: getValue(experienceYears),
           experience_monthly: getValue(experienceMonths),
-          songs_planning_count: getValue(professionalDetails.SongsPlanningCount),
-          songs_planning_type: getValue(professionalDetails.SongsPlanningType),
-          aadhar_front: getValue(documentationDetails.AadharFrontURL, "https://avatars.githubusercontent.com/u/49544693?v=4"),
-          aadhar_back: getValue(documentationDetails.AadharBackURL, "https://avatars.githubusercontent.com/u/49544693?v=4"),
-          pan_front: getValue(documentationDetails.PanFrontURL, "https://avatars.githubusercontent.com/u/49544693?v=4"),
-          signature: getValue(documentationDetails.SignatureImageURL, "https://avatars.githubusercontent.com/u/49544693?v=4"),
-          bank_name: getValue(documentationDetails.BankName),
-          account_holder: getValue(documentationDetails.AccountHolderName),
-          account_number: getValue(documentationDetails.AccountNumber),
-          ifsc_code: getValue(documentationDetails.IFSCCode),
+          songs_planning_count: getValue(
+            professionalDetails?.songs_planning_count ||
+              professionalDetails?.SongsPlanningCount,
+          ),
+          songs_planning_type: getValue(
+            professionalDetails?.songs_planning_type ||
+              professionalDetails?.SongsPlanningType,
+          ),
+          aadhar_front: getValue(
+            documentationDetails?.aadhar_front_url ||
+              documentationDetails?.AadharFrontURL,
+            "https://avatars.githubusercontent.com/u/49544693?v=4",
+          ),
+          aadhar_back: getValue(
+            documentationDetails?.aadhar_back_url ||
+              documentationDetails?.AadharBackURL,
+            "https://avatars.githubusercontent.com/u/49544693?v=4",
+          ),
+          pan_front: getValue(
+            documentationDetails?.pan_front_url ||
+              documentationDetails?.PanFrontURL,
+            "https://avatars.githubusercontent.com/u/49544693?v=4",
+          ),
+          signature: getValue(
+            documentationDetails?.signature_image_url ||
+              documentationDetails?.SignatureImageURL,
+            "https://avatars.githubusercontent.com/u/49544693?v=4",
+          ),
+          bank_name: getValue(
+            documentationDetails?.bank_name || documentationDetails?.BankName,
+          ),
+          account_holder: getValue(
+            documentationDetails?.account_holder_name ||
+              documentationDetails?.AccountHolderName,
+          ),
+          account_number: getValue(
+            documentationDetails?.account_number ||
+              documentationDetails?.AccountNumber,
+          ),
+          ifsc_code: getValue(
+            documentationDetails?.ifsc_code || documentationDetails?.IFSCCode,
+          ),
+          photos: parsedPhotos, // Add photos array to artist object
         };
 
         setArtist(newArtist);
@@ -95,28 +177,55 @@ const ArtistNew = () => {
   useEffect(() => {
     const mapStepToUiStatus = (stepStatus) => {
       if (!stepStatus) return null; // Pending in UI
-      const normalized = String(stepStatus).toLowerCase();
-      if (normalized === "completed") return "Accepted";
+      const normalized = String(stepStatus).toLowerCase().trim();
+      if (normalized === "completed" || normalized === "approved")
+        return "Accepted";
       if (normalized === "rejected") return "Rejected";
-      return null; // 'under review' or any other -> Pending
+      if (normalized === "under review") return null; // Show as Pending when under review
+      return null; // Default to Pending
     };
 
     const fetchStatuses = async () => {
       if (!ophid) return;
       try {
-        const [personalRes, professionalRes, documentationRes] = await Promise.all([
+        const [
+          personalRes,
+          professionalRes,
+          documentationRes,
+          applicationStatusRes,
+        ] = await Promise.all([
           axiosApi.get(`/user-details-step-status/${ophid}`),
           axiosApi.get(`/professional-details-step-status/${ophid}`),
           axiosApi.get(`/documentation-details-step-status/${ophid}`),
+          axiosApi
+            .get(`/application-status/${ophid}`)
+            .catch(() => ({ data: {} })), // Fallback if endpoint doesn't exist
         ]);
 
         const personalRows = personalRes?.data?.userDetails || [];
-        const professionalRows = professionalRes?.data?.professionalDetails || [];
-        const documentationRows = documentationRes?.data?.documentationDetails || [];
+        const professionalRows =
+          professionalRes?.data?.professionalDetails || [];
+        const documentationRows =
+          documentationRes?.data?.documentationDetails || [];
+        const applicationStatus =
+          applicationStatusRes?.data?.applicationStatus || {};
 
-        const personalStep = personalRows[0]?.step_status;
-        const professionalStep = professionalRows[0]?.step_status;
-        const documentationStep = documentationRows[0]?.step_status;
+        // Get status from step tables first, fallback to application_status if step table is empty
+        const personalStep =
+          personalRows[0]?.step_status || applicationStatus.user_status;
+        const professionalStep =
+          professionalRows[0]?.step_status ||
+          applicationStatus.professional_status;
+        const documentationStep =
+          documentationRows[0]?.step_status ||
+          applicationStatus.documentation_status;
+
+        console.log("Status mapping:", {
+          personalStep,
+          professionalStep,
+          documentationStep,
+          applicationStatus,
+        });
 
         setStatuses({
           Personal: mapStepToUiStatus(personalStep),
@@ -147,7 +256,9 @@ const ArtistNew = () => {
     }));
 
     if (type === "Reject") {
-      toast.error(`Rejected ${section} with reason: ${reason || "No reason provided"}`);
+      toast.error(
+        `Rejected ${section} with reason: ${reason || "No reason provided"}`,
+      );
     } else if (type === "Accept") {
       toast.success(`Accepted ${section} successfully!`);
     }
@@ -163,34 +274,50 @@ const ArtistNew = () => {
 
   const submitFinalDecision = () => {
     setConfirmSubmit(true);
+    
   };
 
   const confirmFinalSubmit = async () => {
-    const result = { ophid: ophid };
+    try {
+      const result = { ophid: ophid };
 
-    Object.entries(statuses).forEach(([section, status]) => {
-      if (status === "Rejected") {
-        result[section] = {
-          status: "Rejected",
-          reason: reasons[section],
-        };
-      } else {
-        result[section] = {
-          status: "Accepted",
-        };
+      Object.entries(statuses).forEach(([section, status]) => {
+        // Only include sections that have been reviewed (status is not null)
+        if (status === "Rejected") {
+          result[section] = {
+            status: "Rejected",
+            reason: reasons[section] || "",
+          };
+        } else if (status === "Accepted") {
+          result[section] = {
+            status: "Accepted",
+          };
+        }
+        // If status is null, don't include it in the result
+      });
+
+      console.log("Final Decision Body:", result);
+      console.log("Statuses:", statuses);
+      console.log("Reasons:", reasons);
+
+      const res = await axiosApi.post("/update-status", result);
+
+      console.log("Update Status Response:", res);
+      console.log("Response Data:", res.data);
+
+      if (res.status === 200) {
+        toast.success("Submitted!");
       }
-    });
-
-    console.log("Final Decision Body:", result);
-    const res = await axiosApi.post("/update-status", result);
-
-    console.log(res);
-
-    if (res.status === 200) {
-      toast.success("Submitted!");
+    } catch (error) {
+      console.error("Error submitting final decision:", error);
+      console.error("Error response:", error.response);
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to update statuses. Please try again.",
+      );
+    } finally {
+      setConfirmSubmit(false);
     }
-
-    setConfirmSubmit(false);
   };
 
   if (loading) {
@@ -204,7 +331,6 @@ const ArtistNew = () => {
   return (
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
-
         <div className="bg-gray-50 rounded-xl shadow-md p-6">
           <SectionBlock
             section="Personal"
@@ -241,7 +367,7 @@ const ArtistNew = () => {
               experience_monthly: artist.experience_monthly,
               songs_planning_count: artist.songs_planning_count,
               songs_planning_type: artist.songs_planning_type,
-              photos,
+              photos: artist.photos || photos, // Use artist.photos if available, fallback to photos state
             }}
             reason={professionalReason}
             setReason={setProfessionalReason}
@@ -280,10 +406,11 @@ const ArtistNew = () => {
           <button
             disabled={!allSectionsDone}
             onClick={submitFinalDecision}
-            className={`w-full py-4 text-lg font-bold rounded-xl shadow ${allSectionsDone
+            className={`w-full py-4 text-lg font-bold rounded-xl shadow ${
+              allSectionsDone
                 ? "bg-[#0d3c44] text-white hover:bg-[#14565f]"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+            }`}
           >
             Submit Final Decision
           </button>
@@ -328,11 +455,12 @@ const SectionBlock = ({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#0d3c44] mb-2 border-b pb-1">{section} Details</h2>
+      <h2 className="text-2xl font-bold text-[#0d3c44] mb-2 border-b pb-1">
+        {section} Details
+      </h2>
       <div className="text-sm italic mb-2">Status: {status || "Pending"}</div>
 
       <div className="border p-4 rounded-xl mb-4 space-y-2">
-
         {isPersonal && artist.personal_photo && (
           <div className="grid grid-cols-2 gap-4">
             <img
@@ -347,7 +475,9 @@ const SectionBlock = ({
           <>
             <div className="grid grid-cols-2 gap-4">
               {Array.from({ length: 5 }).map((_, idx) => {
-                const url = professionalPhotos[idx] || "https://avatars.githubusercontent.com/u/49544693?v=4";
+                const url =
+                  professionalPhotos[idx] ||
+                  "https://avatars.githubusercontent.com/u/49544693?v=4";
                 return (
                   <img
                     key={idx}
@@ -396,7 +526,12 @@ const SectionBlock = ({
             }
             return (
               <div key={key}>
-                <strong>{key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}: </strong>
+                <strong>
+                  {key
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  :{" "}
+                </strong>
                 {value}
               </div>
             );
@@ -442,12 +577,15 @@ const SectionBlock = ({
 
 const ConfirmBlock = ({ section, type, reason, onConfirm, onCancel }) => (
   <div className="bg-gray-100 p-4 rounded-lg flex items-center justify-between mt-4">
-    <span className="text-gray-800">Are you sure you want to {type.toLowerCase()} {section} details?</span>
+    <span className="text-gray-800">
+      Are you sure you want to {type.toLowerCase()} {section} details?
+    </span>
     <div className="space-x-2">
       <button
         onClick={() => onConfirm(section, type, reason)}
-        className={`px-4 py-2 ${type === "Reject" ? "bg-red-600" : "bg-green-600"
-          } text-white rounded-lg shadow hover:opacity-90 transition-colors`}
+        className={`px-4 py-2 ${
+          type === "Reject" ? "bg-red-600" : "bg-green-600"
+        } text-white rounded-lg shadow hover:opacity-90 transition-colors`}
       >
         Yes, {type}
       </button>

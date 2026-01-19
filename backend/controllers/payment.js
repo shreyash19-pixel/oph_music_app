@@ -1,104 +1,52 @@
-const paymentInfo = require("../model/payment.js");
-const { setCurrentStep } = require("../model/common/set_step.js");
-const user_details = require("../model/signin.js");
+const PaymentService = require("../services/payment/PaymentService");
 
 const payment = async (req, res) => {
   try {
-    console.log("PAYMENT FUNCTION CALLED WITH:", req.body);
-    const {
-      OPH_ID,
-      Transaction_ID,
-      Review,
-      Status,
-      step, 
-      from,
+    // Normalize input - handle both old (OPH_ID) and new (oph_id) field names
+    const oph_id = req.body.OPH_ID || req.body.oph_id;
+    const transaction_id = req.body.Transaction_ID || req.body.transaction_id;
+    const review = req.body.Review || req.body.review;
+    const status = req.body.Status || req.body.status;
+    const from_source = req.body.from || req.body.from_source || "Registration";
+    const step = req.body.step;
+    const song_id = req.body.song_id;
+    const event_id = req.body.event_id;
+    const release_date = req.body.release_date;
+    const old_release_date = req.body.old_release_date;
+    const amount = req.body.amount;
+
+    if (!oph_id || !transaction_id || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: oph_id, transaction_id, status",
+      });
+    }
+
+    const result = await PaymentService.insertPayment({
+      oph_id,
+      transaction_id,
+      review,
+      status,
+      from_source,
       song_id,
       event_id,
       release_date,
       old_release_date,
       amount,
-    } = req.body;
-    const ophid = OPH_ID;
-
-    // Validate: only one of song_id or event_id should be present
-    if (song_id && event_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Only one of song_id or event_id should be provided.",
-      });
-    }
-
-    // Validate: 'from' field is required for event payments
-    if (event_id && !from) {
-      return res.status(400).json({
-        success: false,
-        message: "'from' field is required for event payments.",
-      });
-    }
-
-    // Validate: 'from' field is required for all payments
-    if (!from || from === null || from === undefined || from === '') {
-      return res.status(400).json({
-        success: false,
-        message: "'from' field is required to identify payment source.",
-      });
-    }
-
-    // Call insertPayment with song_id or event_id (whichever is provided, null for the other)
-    const dbResponse = await paymentInfo.insertPayment(
-      OPH_ID,
-      Transaction_ID,
-      Review,
-      Status,
-      from || null,
-      song_id || null,
-      event_id || null,
-      release_date || null,
-      old_release_date || null,
-      amount || null
-    );
-
-    if (dbResponse) {
-      console.log("in response", step);
-      
-      let navTo = "";
-      
-      // Check if this is event payment
-      if (event_id) {
-        const eventPayment = await paymentInfo.getEventPaymentByOphId(OPH_ID);
-        if (eventPayment && eventPayment.length > 0) {
-          console.log("Event payment status:", eventPayment[0].Status);
-          navTo = eventPayment[0].Status === "approved" ? "/dashboard" : step || "/dashboard/events";
-        }
-      } else {
-        // Check signup payment
-        const result = await paymentInfo.getSignupPaymentByOphId(OPH_ID);
-        if (result && result.length > 0) {
-          const signupPayment = result[0];
-          console.log("Signup payment status:", signupPayment.Status);
-          navTo = signupPayment.Status === "approved" ? "/dashboard" : step || "/auth/create-profile/personal-details";
-        } else {
-          navTo = "/auth/create-profile/personal-details";
-        }
-      }
-
-      if (from === "Registration") {
-        await setCurrentStep(step, ophid);
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: "Payment ID sent for verification",
-        step: navTo,
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Payment - server Error",
+      step
     });
-  } catch (err) {
-    console.error(err);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Payment error:", error);
+    
+    if (error.message === 'Only one of song_id or event_id should be provided.') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Payment - server Error",
@@ -108,49 +56,46 @@ const payment = async (req, res) => {
 
 const insertSongIDController = async (req, res) => {
   try {
-    const { ophid, song_id } = req.body;
+    // Handle both old (ophid) and new (oph_id) field names
+    const ophId = req.body.ophid || req.body.oph_id;
+    const song_id = req.body.song_id;
 
-    if (!ophid || !song_id) {
+    if (!ophId || !song_id) {
       return res.status(400).json({
         success: false,
-        message: "Missing required field",
+        message: "Missing required fields: oph_id, song_id",
       });
     }
 
-    const response = await paymentInfo.insertSongID(ophid, song_id);
+    const response = await PaymentService.insertSongId(ophId, song_id);
 
-    if (response) {
-      return res.status(201).json({
-        success: true,
-        message: "Data updated successfully",
-      });
-    }
-  } catch (err) {
+    return res.status(201).json(response);
+  } catch (error) {
+    console.error("Insert song ID error:", error);
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message || "Server error",
     });
   }
 };
 
 const songRepaymentController = async (req, res) => {
   try {
-    const {
-      OPH_ID,
-      Transaction_ID,
-      Review,
-      Status,
-      step,
-      song_id,
-      event_id,
-      release_date,
-      amount,
-    } = req.body;
+    // Normalize input - handle both old and new field names
+    const oph_id = req.body.OPH_ID || req.body.oph_id;
+    const transaction_id = req.body.Transaction_ID || req.body.transaction_id;
+    const review = req.body.Review || req.body.review;
+    const status = req.body.Status || req.body.status;
+    const step = req.body.step;
+    const song_id = req.body.song_id;
+    const event_id = req.body.event_id;
+    const release_date = req.body.release_date;
+    const amount = req.body.amount;
 
     if (
-      !OPH_ID ||
-      !Transaction_ID ||
-      !Status ||
+      !oph_id ||
+      !transaction_id ||
+      !status ||
       !step ||
       !song_id ||
       !release_date
@@ -161,27 +106,23 @@ const songRepaymentController = async (req, res) => {
       });
     }
 
-    const response = await paymentInfo.songRepayment(
-      OPH_ID,
-      Transaction_ID,
-      Review,
-      Status,
-      song_id || null,
-      event_id || null,
+    const response = await PaymentService.songRepayment({
+      oph_id,
+      transaction_id,
+      review,
+      status,
+      song_id,
+      event_id,
       release_date,
-      amount || null
-    );
+      amount
+    });
 
-    if (response) {
-      return res.status(201).json({
-        success: true,
-        message: "Data updated successfully",
-      });
-    }
-  } catch (err) {
+    return res.status(201).json(response);
+  } catch (error) {
+    console.error("Song repayment error:", error);
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message || "Server error",
     });
   }
 };

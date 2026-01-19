@@ -462,7 +462,14 @@ const DynamicTable = ({
                   const withdrawIdValue = row.withdrawal_id || row.withdrawId;
                   const tvValue = row.song_id || row.songId; // if TV is tied to song_id
                   const field = row.field;
-                  const eventIdValue = row.event_id || row.eventId;
+                  const eventIdValue = row.event_id || row.eventId || row.id; // Also check for 'id' field
+                  
+                  // Handle detailsPrefer for event_id first
+                  if (detailsPrefer === "event_id" && eventIdValue) {
+                    navigate(`${detailsUrl}/${eventIdValue}`);
+                    return;
+                  }
+                  
                   console.log("Values",ophidValue , songIdValue ,ticketIdValue ,withdrawIdValue, tvValue, field, eventIdValue)
                   if (ophidValue && songIdValue) {
                     console.log(detailsPrefer);

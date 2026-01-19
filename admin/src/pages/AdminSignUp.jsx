@@ -139,12 +139,21 @@ const AdminSignUpForm = () => {
       const response = await signupUser(formData);
       console.log(response);
 
-      if (response.success) {
+      if (response && response.success) {
         localStorage.setItem("token", response.token);
         navigate("/home");
+      } else {
+        const errorMsg = response?.message || "Signup failed. Please try again.";
+        toast.error(errorMsg);
       }
-    } catch (e) {
-      toast.error(e.response);
+    } catch (error) {
+      console.error("Signup error:", error);
+      // Extract error message safely - never render the error object directly
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        "Signup failed. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

@@ -81,7 +81,8 @@ const PersonalDetailsForm = () => {
   // useEffect(() => {
   //   fetchVideo();
   // }, []);
-  const [loading, setLoading] = useState(true);
+  // Only show the blocking loader while actually fetching/submitting.
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     legalName: "",
     stageName: "",
@@ -127,6 +128,7 @@ const PersonalDetailsForm = () => {
   // }, []);
 
   const fetchPersonalDetails = async () => {
+    setLoading(true);
     try {
       if (!headers || !headers.Authorization) {
         console.warn("Headers not ready yet");
@@ -136,13 +138,17 @@ const PersonalDetailsForm = () => {
       const response = await getPersonalDetails(headers, ophid);
 
       if (response.success) {
+        // Handle contact number - support both contact_num and contact_number
+        const contactNum = response.data.contact_number || response.data.contact_num || "";
+        const processedContactNum = contactNum 
+          ? (contactNum.includes("+91") ? contactNum.split("+91")[1] : contactNum)
+          : "";
+
         setFormData({
           profileImage: response.data.profile_pic || null,
           legalName: response.data.full_name || "",
           stageName: response.data.stage_name || "",
-          contactNumber:
-            response.data.contact_num.split("+91")[1] ||
-            response.data.contact_num,
+          contactNumber: processedContactNum,
           email: response.data.email || "",
           location: response.data.location || "",
           step_status: response.data.step_status || "",
@@ -153,9 +159,7 @@ const PersonalDetailsForm = () => {
           profileImage: response.data.profile_pic || null,
           legalName: response.data.full_name || "",
           stageName: response.data.stage_name || "",
-          contactNumber:
-            response.data.contact_num.split("+91")[1] ||
-            response.data.contact_num,
+          contactNumber: processedContactNum,
           email: response.data.email || "",
           location: response.data.location || "",
           step_status: response.data.step_status || "",
@@ -277,16 +281,10 @@ const PersonalDetailsForm = () => {
 
       formDataToSend.append("location", formData.location);
       formDataToSend.append("email", formData.email);
-      let stepPath;
-
-      if (formData.step_status === "under review" || formData.step_status === null) {
-        stepPath = "/auth/create-profile/professional-details";
-      } else if (formData.step_status === "rejected") {
-        stepPath = `/auth/profile-status`;
-      } else {
-        stepPath = "/auth/create-profile/professional-details";
-      }
-      formDataToSend.append("step", stepPath);
+      
+      // Backend will determine the next step based on application status
+      // Just send a placeholder - backend will override it
+      formDataToSend.append("step", "/auth/create-profile/professional-details");
 
       // Append profile image if it exists
       if (formData.profileImage?.file) {

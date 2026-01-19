@@ -2,12 +2,12 @@ const db = require("../DB/connect");
 
 const getSpecialArtistDetails = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT ud.full_name, sp.Status AS payment_status, ud.artist_story_video, pd.PhotoURLs, ud.stage_name, pd.VideoURL, ud.personal_photo, pd.Profession, ud.location, pd.Bio, pd.FacebookLink, pd.InstagramLink, pd.AppleMusicLink, pd.SpotifyLink, sps.song_id, sps.song_name, sps.audio_url, sps.views, sps.status FROM user_details ud LEFT JOIN professional_details pd on ud.ophid = pd.OPH_ID LEFT JOIN special_artist_songs sps ON ud.ophid = sps.ophid LEFT JOIN sign_up_payment sp ON sps.song_id = sp.song_id WHERE ud.ophid = ?",
+    "SELECT ud.full_name, sp.Status AS payment_status, ud.artist_story_video, pd.photo_urls, ud.stage_name, pd.video_url, ud.personal_photo, pd.profession, ud.location, pd.bio, pd.facebook_link, pd.instagram_link, pd.apple_music_link, pd.spotify_link, sps.song_id, sps.song_name, sps.audio_url, sps.views, sps.status FROM user_details ud LEFT JOIN professional_details pd on ud.oph_id = pd.OPH_ID LEFT JOIN special_artist_songs sps ON ud.oph_id = sps.oph_id LEFT JOIN payments sp ON sps.song_id = sp.song_id WHERE ud.oph_id = ?",
     [ophid]
   );
 
   const [song_count] = await db.execute(
-    "SELECT ophid, COUNT(ophid) FROM special_artist_songs WHERE ophid = ? AND `status` = 'approved' GROUP BY ophid",
+    "SELECT oph_id, COUNT(oph_id) FROM special_artist_songs WHERE oph_id = ? AND `status` = 'approved' GROUP BY oph_id",
     [ophid]
   );
 
@@ -18,19 +18,19 @@ const getSpecialArtistDetails = async (ophid) => {
       songMap[ophid] = {
         name: row.full_name,
         artist_story_video: row.artist_story_video,
-        photos: JSON.parse(row.PhotoURLs),
+        photos: JSON.parse(row.photo_urls),
         stage_name: row.stage_name,
-        video_bio: row.VideoURL,
+        video_bio: row.video_url,
         personal_photo: row.personal_photo,
-        profession: row.Profession,
+        profession: row.profession,
         location: row.location,
         total_content: song_count.length > 0 ? song_count[0].total_content : 0,
         // total_views: row.total_views,
         bio: row.Bio,
-        facebook_url: row.FacebookLink,
-        instagram_url: row.InstagramLink,
-        apple_url: row.AppleMusicLink,
-        spotify_url : row.SpotifyLink,
+        facebook_url: row.facebook_link,
+        instagram_url: row.instagram_link,
+        apple_url: row.apple_music_link,
+        spotify_url : row.spotify_link,
         songs: [
           {
             id: row.song_id,

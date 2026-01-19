@@ -32,17 +32,21 @@ const SignInForm = () => {
 
       if (response.success) {
         toast.success("Login Successful");
-        localStorage.setItem("token", response.token);
+        // Hydrate auth context immediately (avoids post-login blank screen until refresh)
+        login(response.token);
 
         if (response.step === "/dashboard") {
-          navigate(response.step);
+          navigate(response.step, { replace: true });
         } else {
           const path = `${response.step}`;
+          console.log(path);
+          
           navigate(path, {
             state: {
               from: "Registration",
               user_type: response.artist_type
             },
+            replace: true,
           });
         }
       }

@@ -21,7 +21,7 @@ const months = [
 ];
 
 const ArtistRankingSection = ({ data, selectedMonth }) => {
-  const leaderboard = useSelector((state) => state.newRelease.leaderboard);
+  const leaderboard = useSelector((state) => state.newRelease?.leaderboard) || [];
 
   const [currentMonth, setCurrentMonth] = useState("");
   const {headers} = useArtist()
@@ -85,7 +85,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
 
       {/* Rows */}
       <div className="space-y-2">
-        {leaderboard.length > 0 ? (
+        {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
           leaderboard.map((artist, index) => (
             <div
               key={artist.OPH_ID}

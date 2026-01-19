@@ -55,8 +55,8 @@ const getOrCreateHash = async (ophId) => {
     const [artistData] = await db.execute(
       `SELECT ud.stage_name, pd.Profession 
        FROM user_details ud 
-       LEFT JOIN professional_details pd ON ud.ophid = pd.OPH_ID 
-       WHERE ud.ophid = ?`,
+       LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID 
+       WHERE ud.oph_id = ?`,
       [ophId]
     );
 

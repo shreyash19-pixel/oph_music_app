@@ -52,7 +52,14 @@ const SidebarNav = ({ onClose }) => {
     } catch (err) {
       console.error(err?.message || err);
     }
-  };
+    catch(err)
+    {
+      // Axios error structure: err.response.data.message
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to fetch artist type";
+      console.error("Error fetching artist type:", errorMessage);
+    }
+
+  }
 
   useEffect(() => {
     getArtistType();

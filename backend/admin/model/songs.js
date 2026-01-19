@@ -18,11 +18,10 @@ AND vd.status != 'rejected'
 const getSongsByOphIdUnderReview = async (ophId,songId) => {
    const [rows] = await db.execute(`
     SELECT 
-    sr.OPH_ID,
+    sr.oph_id AS OPH_ID,
     sr.project_type,
     sr.Song_name AS register_song_name,
     sr.release_date,
-    sr.payment,
     sr.Lyrics_services,
     sr.availability_on_music_platform,
     sr.song_id,
@@ -60,7 +59,7 @@ LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
 LEFT JOIN video_details vd ON sr.song_id = vd.song_id
 LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
 
-WHERE sr.OPH_ID = ?
+WHERE sr.oph_id = ?
   AND sr.song_id = ?
   AND (
         sr.status = 'Pending'
@@ -77,11 +76,10 @@ GROUP BY sr.song_id;
 const getAllApprovedSongs = async () => {
   const query = `
     SELECT 
-    sr.OPH_ID,
+    sr.oph_id AS OPH_ID,
     sr.project_type,
     sr.Song_name AS register_song_name,
     sr.release_date,
-    sr.payment,
     sr.Lyrics_services,
     sr.availability_on_music_platform,
     sr.song_id,
@@ -138,12 +136,10 @@ const updateSongSectionStatus = async (table, status, reason, songId, ophid) => 
 
 const getSongsByOphIdApproved= async (ophId,songId) => {
    const [rows] = await db.execute(`SELECT 
-    sr.OPH_ID,
+    sr.oph_id AS OPH_ID,
     sr.project_type,
     sr.Song_name AS register_song_name,
     sr.release_date,
-    sr.payment,
-    sr.Lyrics_services,
     sr.availability_on_music_platform,
     sr.song_id,
     sr.current_page,
@@ -176,7 +172,7 @@ LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
 LEFT JOIN video_details vd ON sr.song_id = vd.song_id
 LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
 
-WHERE sr.OPH_ID = ?
+WHERE sr.oph_id = ?
   AND sr.song_id = ?
   AND (ad.status = 'approved' AND vd.status = 'approved')
 
@@ -187,26 +183,18 @@ GROUP BY sr.song_id;
 };
 
 const updateSongStatus = async (songId, ophid, reason) => {
-  let query = `CALL sp_sync_song_status(?,?,?)`;
-  const values = [songId, ophid, reason];
-
-  console.log("Calling stored procedure with query:", query);
-  console.log("Values:", values);
-  console.log("Value types:", values.map(v => typeof v));
-
+  // This function is now handled by AdminSongService.recalculateSongStatus
+  // Keeping for backward compatibility but delegating to service
+  const AdminSongService = require('../services/AdminSongService');
+  const connection = await db.getConnection();
+  
   try {
-    const [result] = await db.execute(query, values);
-    console.log("Stored procedure result:", result);
-    return result;
+    await AdminSongService.recalculateSongStatus(connection, songId, ophid, reason);
+    return { affectedRows: 1 };
   } catch (error) {
-    console.error("Stored procedure error details:", {
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState,
-      sqlMessage: error.sqlMessage
-    });
     throw error;
+  } finally {
+    connection.release();
   }
 };
 

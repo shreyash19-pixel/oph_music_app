@@ -1,93 +1,69 @@
-const db = require("../DB/connect"); // MySQL connectionAdd commentMore actions
+const db = require("../DB/connect");
+
+/**
+ * Payment model - Database operations only
+ * Uses standardized column names: oph_id (not OPH_ID)
+ * Uses table name: payments (not sign_up_payment)
+ */
 
 const insertPayment = async (
-  OPH_ID,
-  Transaction_ID,
-  Review,
-  Status,
-  From,
+  connection,
+  oph_id,
+  transaction_id,
+  review,
+  status,
+  from_source,
   song_id,
   event_id,
   release_date,
-  old_release_date,
   amount
 ) => {
-  if (From === "Release date change") {
-    await db.execute(
-      "UPDATE sign_up_payment SET reject_for = ?, release_date = ? WHERE release_date = ? AND (`From` = ? OR `From` = ?)",
-      [
-        old_release_date,
-        null,
-        old_release_date,
-        "Date booking",
-        "Release date change",
-      ]
-    );
-  }
-
-  const [result] = await db.execute(
-    "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  // Convert undefined values to null (MySQL2 doesn't accept undefined)
+  const [result] = await connection.execute(
+    "INSERT INTO payments (oph_id, transaction_id, review, status, from_source, song_id, event_id, release_date, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
-      OPH_ID,
-      Transaction_ID,
-      Review,
-      Status,
-      From,
-      song_id,
-      event_id,
-      release_date,
-      amount || null,
+      oph_id,
+      transaction_id,
+      review ?? null,
+      status,
+      from_source,
+      song_id ?? null,
+      event_id ?? null,
+      release_date ?? null,
+      amount ?? null,
     ]
   );
   return result;
 };
 
-const insertSongID = async (ophid, song_id) => {
-  const [rows] = await db.execute(
-    "UPDATE sign_up_payment SET song_id = ? WHERE OPH_ID = ?",
-    [song_id, ophid]
+const insertSongId = async (connection, ophId, songId) => {
+  const [rows] = await connection.execute(
+    "UPDATE payments SET song_id = ? WHERE oph_id = ? AND from_source = 'Song Registration' AND song_id IS NULL",
+    [songId, ophId]
   );
   return rows;
 };
 
-const songRepayment = async (
-  OPH_ID,
-  Transaction_ID,
-  Review,
-  Status,
-  song_id,
-  event_id,
-  release_date,
-  amount
-) => {
-  let rows = [];
+const getPaymentByOphId = async (connection, ophId, fromSource = null) => {
+  let query = "SELECT * FROM payments WHERE oph_id = ?";
+  const params = [ophId];
 
-  console.log(OPH_ID, Transaction_ID, Review, Status, song_id, release_date);
+  if (fromSource) {
+    query += " AND from_source = ?";
+    params.push(fromSource);
+  }
 
-  rows.push(
-    await db.execute(
-      "UPDATE sign_up_payment SET reject_for = ?, song_id = ? WHERE song_id = ?",
-      [song_id, null, song_id]
-    )
+  query += " ORDER BY created_at DESC";
+
+  const [rows] = await connection.execute(query, params);
+  return rows;
+};
+
+const getPaymentByTransactionId = async (connection, transactionId) => {
+  const [rows] = await connection.execute(
+    "SELECT * FROM payments WHERE transaction_id = ?",
+    [transactionId]
   );
-
-  rows.push(
-    await db.execute(
-      "INSERT INTO sign_up_payment (OPH_ID, Transaction_ID, Review, Status, `From`, song_id, event_id, release_date, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        OPH_ID,
-        Transaction_ID,
-        Review,
-        Status,
-        "Song Registration",
-        song_id,
-        event_id,
-        release_date,
-        amount || null,
-      ]
-    )
-  );
-
   return rows;
 };
 
@@ -109,8 +85,7 @@ const getSignupPaymentByOphId = async (OPH_ID) => {
 
 module.exports = {
   insertPayment,
-  insertSongID,
-  songRepayment,
-  getPaymentByTransactionId,
-  getSignupPaymentByOphId,
+  insertSongId,
+  getPaymentByOphId,
+  getPaymentByTransactionId
 };

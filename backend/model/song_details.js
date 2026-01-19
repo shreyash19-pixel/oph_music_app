@@ -4,16 +4,16 @@ const getSongDetails = async (ophid, songId) => {
   const [content] = await db.execute(
     `SELECT DISTINCT sre.song_name, sre.primary_artist, sr.release_date, vd.image_url, ud.stage_name, ud.full_name
 FROM song_release sre
-LEFT JOIN user_details ud ON ud.ophid = sre.ophid
-LEFT JOIN songs_register sr ON sre.song_id = sr.song_id 
+LEFT JOIN user_details ud ON ud.oph_id = sre.oph_id
+LEFT JOIN songs_register sr ON sre.songId = sr.song_id 
 LEFT JOIN video_details vd ON sr.song_id = vd.song_id
-WHERE sre.ophid = ? AND sre.song_id = ?`,
+WHERE sre.oph_id = ? AND sre.songId = ?`,
     [ophid, songId]
   );
 
   const [secondary_artist] = await db.execute(
-    `SELECT DISTINCT sre.ophid, sa.artist_type, sa.artist_name FROM song_release sre LEFT JOIN secondary_artist sa ON sre.song_id = sa.song_id WHERE 
-    sre.ophid = ? AND sre.song_id = ?
+    `SELECT DISTINCT sre.oph_id, sa.artist_type, sa.artist_name FROM song_release sre LEFT JOIN secondary_artist sa ON sre.songId = sa.song_id WHERE 
+    sre.oph_id = ? AND sre.songId = ?
     `,
     [ophid, songId]
   );
@@ -21,8 +21,8 @@ WHERE sre.ophid = ? AND sre.song_id = ?`,
   const saMap = {};
 
   secondary_artist.forEach((row) => {
-    if (!saMap[row.ophid]) {
-      saMap[row.ophid] = {
+    if (!saMap[row.oph_id]) {
+      saMap[row.oph_id] = {
         featuring: [],
         lyricist: [],
         producer: [],
@@ -32,16 +32,16 @@ WHERE sre.ophid = ? AND sre.song_id = ?`,
 
     switch (row.artist_type) {
       case "Featuring Artist":
-        saMap[row.ophid].featuring.push(row.artist_name);
+        saMap[row.oph_id].featuring.push(row.artist_name);
         break;
       case "Lyricist Artist":
-        saMap[row.ophid].lyricist.push(row.artist_name);
+        saMap[row.oph_id].lyricist.push(row.artist_name);
         break;
       case "Producer Artist":
-        saMap[row.ophid].producer.push(row.artist_name);
+        saMap[row.oph_id].producer.push(row.artist_name);
         break;
       case "Composer Artist":
-        saMap[row.ophid].composer.push(row.artist_name);
+        saMap[row.oph_id].composer.push(row.artist_name);
         break;
     }
   });
@@ -52,7 +52,7 @@ WHERE sre.ophid = ? AND sre.song_id = ?`,
      instagram_release_time, facebook_release_time, 
      share_url, youtube_url, spotify_url, apple_url, instagram_url, facebook_url 
    FROM song_release 
-   WHERE ophid = ? AND song_id = ?`,
+   WHERE oph_id = ? AND songId = ?`,
     [ophid, songId]
   );
 
@@ -100,6 +100,9 @@ WHERE sre.ophid = ? AND sre.song_id = ?`,
       }
     );
   }
+
+  console.log(saMap[ophid]);
+  
 
   const songMap = {
     content: content[0],

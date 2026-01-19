@@ -1,146 +1,43 @@
 const payment_details = require("../model/payments");
 const { saveNotification } = require("../../utils/notify");
 const { updateSongStatus } = require("../model/songs");
-const { sendEmail } = require("../../emailService");
-const user_details = require("../../model/signin.js");
-const eventsModel = require("../model/events");
 
 const updateStatus = async (req, res) => {
   try {
     const { ophId, transactionId, status, reject_reason, songId } = req.body;
 
-    if (!ophId || !transactionId || !status) {
+    console.log("updateStatus received body:", req.body);
+    console.log("ophId:", ophId, "transactionId:", transactionId, "status:", status);
+
+    // Handle both camelCase and snake_case
+    const ophIdValue = ophId || req.body.oph_id;
+    const transactionIdValue = transactionId || req.body.transaction_id;
+    const statusValue = status || req.body.Status;
+
+    if (!ophIdValue || !transactionIdValue || !statusValue) {
       return res
         .status(400)
-        .json({ message: "ophId, transactionId, and status are required" });
+        .json({ 
+          message: "ophId, transactionId, and status are required",
+          received: {
+            ophId: ophIdValue,
+            transactionId: transactionIdValue,
+            status: statusValue
+          }
+        });
     }
 
-    // If songId is provided, update song status
-    if (songId) {
-      await updateSongStatus(parseInt(songId), ophId, (reject_reason || "").trim() || null);
-    }
-
-    const result = await payment_details.updateStatus(
-      ophId,
-      transactionId,
-      status,
+    // Use AdminPaymentService to handle all admin application logic
+    const result = await AdminPaymentService.updatePaymentStatus({
+      ophId: ophIdValue,
+      transactionId: transactionIdValue,
+      status: statusValue,
       reject_reason,
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "No record found to update" });
-    }
+      songId
+    });
 
     const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionId);
-    console.log("Payment details:", paymentDetails[0]);
-    const place = paymentDetails[0].From || paymentDetails[0].from || paymentDetails[0]['From'];
-
-    // Send email when payment is approved
-    if (status === "approved" && paymentDetails && paymentDetails.length > 0) {
-      try {
-        console.log("Payment approved, sending confirmation email...");
-        const payment = paymentDetails[0];
-        
-        // Get user details
-        const user = await user_details.findUserByOphId(ophId);
-        
-        if (user && user.length > 0) {
-          const userEmail = user[0].email;
-          const userName = user[0].full_name || user[0].stage_name || "Artist";
-          
-          // Send event registration email
-          if (payment.event_id && place === "Event Registeration") {
-            const eventDetails = await eventsModel.getEventById(payment.event_id);
-            
-            if (eventDetails) {
-              const htmlContent = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #8458B3;">🎉 Event Registration Confirmed!</h2>
-                  <p>Hi ${userName},</p>
-                  <p>Great news! Your registration for <strong>${eventDetails.EventName}</strong> has been confirmed and your payment has been approved.</p>
-                  
-                  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="color: #333; margin-top: 0;">Event Details:</h3>
-                    <p><strong>Event:</strong> ${eventDetails.EventName}</p>
-                    <p><strong>Date & Time:</strong> ${new Date(eventDetails.dateTime).toLocaleString()}</p>
-                    <p><strong>Location:</strong> ${eventDetails.location}</p>
-                    <p><strong>Registration Fee:</strong> ₹${eventDetails.registrationFee_normal}</p>
-                    <p><strong>Winner Reward:</strong> ${eventDetails.winnerReward}</p>
-                    <p><strong>Transaction ID:</strong> ${transactionId}</p>
-                  </div>
-                  
-                  <p><strong>What's Next?</strong></p>
-                  <ul>
-                    <li>Keep this email as your registration confirmation</li>
-                    <li>Arrive at the venue 30 minutes before the event starts</li>
-                    <li>Bring a valid ID for verification</li>
-                    <li>Check your dashboard for any updates</li>
-                  </ul>
-                  
-                  <p>We're excited to see you perform! If you have any questions, feel free to reach out to us.</p>
-                  
-                  <p>Best of luck!</p>
-                  <br/>
-                  <p>Best regards,<br/>
-                  OPH Community Team<br/>
-                  <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947 | <a href="https://ophcommunity.com/contact/">ophcommunity.com/contact</a></p>
-                </div>`;
-
-              await sendEmail(
-                userEmail,
-                `🎉 Registration Confirmed - ${eventDetails.EventName}`,
-                htmlContent
-              );
-              console.log("Event registration confirmation email sent successfully");
-            }
-          }
-          // Send signup completion email
-          else if (!payment.event_id && !payment.song_id && place === "Registration") {
-            const htmlContent = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #8458B3;">🎉 Welcome to OPH Community!</h2>
-                <p>Hi ${userName},</p>
-                <p>Congratulations! Your registration payment has been approved and you're now officially part of the OPH Community family.</p>
-                
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h3 style="color: #333; margin-top: 0;">Registration Details:</h3>
-                  <p><strong>OPH ID:</strong> ${ophId}</p>
-                  <p><strong>Transaction ID:</strong> ${transactionId}</p>
-                  <p><strong>Amount:</strong> ₹${payment.amount || 'N/A'}</p>
-                  <p><strong>Status:</strong> Payment Approved</p>
-                </div>
-                
-                <p><strong>What's Next?</strong></p>
-                <ul>
-                  <li>Complete your profile setup if not already done</li>
-                  <li>Explore upcoming events and competitions</li>
-                  <li>Connect with other artists in the community</li>
-                  <li>Start uploading your music and content</li>
-                </ul>
-                
-                <p>We're excited to have you on board! Your journey as an OPH Community artist starts now.</p>
-                
-                <p>If you have any questions or need assistance, don't hesitate to reach out to our support team.</p>
-                
-                <p>Welcome aboard!</p>
-                <br/>
-                <p>Best regards,<br/>
-                OPH Community Team<br/>
-                <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947 | <a href="https://ophcommunity.com/contact/">ophcommunity.com/contact</a></p>
-              </div>`;
-
-            await sendEmail(
-              userEmail,
-              `🎉 Welcome to OPH Community - Registration Approved!`,
-              htmlContent
-            );
-            console.log("Signup completion email sent successfully");
-          }
-        }
-      } catch (emailError) {
-        console.error("Failed to send approval email:", emailError);
-      }
-    }
+    const place = paymentDetails[0].From;
 
     let link = null;
     if (status === "rejected") {
@@ -148,7 +45,7 @@ const updateStatus = async (req, res) => {
         case "Song Registration":
           link = "/dashboard/upload-song";
           break;
-        case "Event Registeration":
+        case "Event Registration":
           link = "/dashboard/events";
           break;
         case "Date booking":
@@ -185,7 +82,10 @@ const updateStatus = async (req, res) => {
     res.status(200).json({ message: "Status updated successfully" });
   } catch (error) {
     console.error("Error updating status:", error);
-    res.status(500).json({ message: "Internal server error" });
+    const errorMessage = error.message || "Internal server error";
+    const statusCode = error.message === 'Payment not found' || error.message === 'No record found to update' ? 404 : 
+                      error.message.includes('required') ? 400 : 500;
+    res.status(statusCode).json({ message: errorMessage });
   }
 };
 
@@ -193,17 +93,19 @@ const getAllSongPayments = async (req, res) => {
   try {
     const payments = await payment_details.getPaymentDetailsForAllSong();
 
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No song payments under review found" });
-    }
-
     return res.status(200).json({
-      message: "Song payments fetched successfully",
-      data: payments,
+      success: true,
+      message: payments && payments.length > 0 
+        ? "Song payments fetched successfully" 
+        : "No song payments under review found",
+      data: payments || [],
     });
   } catch (error) {
     console.error("Error fetching song payments:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
   }
 };
 
@@ -211,17 +113,19 @@ const getAllEventsPayments = async (req, res) => {
   try {
     const payments = await payment_details.getPaymentDetailsForAllEvents();
 
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No event payments under review found" });
-    }
-
     return res.status(200).json({
-      message: "Event payments fetched successfully",
-      data: payments,
+      success: true,
+      message: payments && payments.length > 0 
+        ? "Event payments fetched successfully" 
+        : "No event payments under review found",
+      data: payments || [],
     });
   } catch (error) {
     console.error("Error fetching event payments:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
   }
 };
 
@@ -229,17 +133,19 @@ const getAllBookingPayments = async (req, res) => {
   try {
     const payments = await payment_details.getPaymentDetailsForAllBooking();
 
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No booking payments under review found" });
-    }
-
     return res.status(200).json({
-      message: "Booking payments fetched successfully",
-      data: payments,
+      success: true,
+      message: payments && payments.length > 0 
+        ? "Booking payments fetched successfully" 
+        : "No booking payments under review found",
+      data: payments || [],
     });
   } catch (error) {
     console.error("Error fetching booking payments:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
   }
 };
 
@@ -296,28 +202,56 @@ const updateEventPaymentSp = async (req, res) => {
     if (!ophId || !transactionId || !status || !eventId) {
       return res
         .status(400)
-        .json({ message: "ophId, transactionId, status and eventId are required" });
+        .json({ 
+          success: false,
+          message: "ophId, transactionId, status and eventId are required" 
+        });
     }
 
-    const result = await payment_details.updateEventPaymentSp(
+    // Use AdminPaymentService to handle all admin application logic
+    // This will update both payments and event_participants tables
+    const result = await AdminPaymentService.updateEventPaymentStatus({
       ophId,
       transactionId,
       status,
       reject_reason,
-      parseInt(eventId)
-    );
+      eventId
+    });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "No record found to update" });
-    }
-    else{
-      // Event payment status updated
+    // Send notification to user
+    const { saveNotification } = require("../../utils/notify");
+    const message = status === "rejected" 
+      ? `Your event payment with Transaction ID: ${transactionId} has been ${status}${reject_reason ? ` due to: ${reject_reason}` : ''}.`
+      : `Your event payment with Transaction ID: ${transactionId} has been ${status}.`;
+
+    const notificationPayload = {
+      ophid: ophId,
+      message: message,
+      title: `Event Payment ${status}`,
+      link: status === "rejected" ? "/dashboard/events" : null
+    };
+    
+    await saveNotification(notificationPayload);
+    
+    // Emit socket event if user is online
+    const io = req.app.get("io");
+    const onlineUsers = req.app.get("onlineUsers");
+    const userSocketId = onlineUsers?.get(ophId);
+    if (userSocketId) {
+      io.to(userSocketId).emit("Payment-update", notificationPayload);
     }
 
-    res.status(200).json({ message: "Event payment updated successfully" });
+    res.status(200).json({ 
+      success: true,
+      message: "Event payment updated successfully",
+      affectedRows: result.affectedRows
+    });
   } catch (error) {
     console.error("Error updating event payment:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ 
+      success: false,
+      message: error.message || "Internal server error" 
+    });
   }
 };
 
@@ -412,19 +346,44 @@ const setPaymentVerificationController = async (req, res) => {
   try {
     const { decision, reason, release_date, from } = req.body;
 
-    if ((decision === "rejected" && reason === null) || decision === "" ||  !release_date || !from) {
+    console.log("[setPaymentVerificationController] Received request:", {
+      decision,
+      reason: reason ? "provided" : "missing",
+      release_date,
+      from
+    });
+
+    if (!decision || !release_date || !from) {
+      console.log("[setPaymentVerificationController] Missing required fields");
       return res.status(400).json({
         success: false,
-        message: "Missing required fields"
+        message: "Missing required fields: decision, release_date, and from are required"
+      });
+    }
+
+    if (decision === "rejected" && (!reason || reason.trim() === "")) {
+      console.log("[setPaymentVerificationController] Missing rejection reason");
+      return res.status(400).json({
+        success: false,
+        message: "Rejection reason is required when rejecting"
       });
     }
     
     const response = await payment_details.setPaymentVerification(decision, reason, release_date, from);
 
-    if (response) {
-      return res.status(201).json({
+    console.log("[setPaymentVerificationController] Response:", response);
+
+    if (response && response.success) {
+      return res.status(200).json({
         success: true,
-        message: "Data updated successfully"
+        message: "Data updated successfully",
+        affectedRows: response.affectedRows
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update payment verification",
+        affectedRows: response?.affectedRows || 0
       });
     }
 

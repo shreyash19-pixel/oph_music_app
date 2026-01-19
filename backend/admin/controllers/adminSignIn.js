@@ -47,6 +47,15 @@ const signin = async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
+    
+    // Handle database connection errors specifically
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        success: false, 
+        message: "Database connection error. Please check database credentials and permissions.",
+        error: "Access denied"
+      });
+    }
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -1,7 +1,29 @@
 const db = require("../../DB/connect");
 
 const getAllEvents = async () => {
-  const [rows] = await db.query("SELECT * FROM events ORDER BY dateTime DESC");
+  const [rows] = await db.query(`
+    SELECT 
+      id AS event_id,
+      EventName,
+      dateTime,
+      location,
+      description,
+      long_desc,
+      hashtags,
+      registrationFee_normal,
+      registrationFee_offer_availableFor,
+      registrationFee_offer_discount,
+      registrationStart,
+      registrationEnd,
+      winnerReward,
+      image,
+      payment_qr,
+      payment_qr_discount,
+      created_at,
+      updated_at
+    FROM events 
+    ORDER BY dateTime DESC
+  `);
   return rows;
 };
 
@@ -63,7 +85,7 @@ const insertEvent = async (eventData) => {
 const getAllEventsWithStatus = async () => {
   const [rows] = await db.query(
     `SELECT
-      event_id,
+      id AS event_id,
       EventName,
       dateTime,
       location,
@@ -94,7 +116,7 @@ const getAllEventsWithStatus = async () => {
 
 const getEventById = async (eventId) => {
   const sql = `SELECT
-                 event_id,
+                 id AS event_id,
                  EventName,
                  dateTime,
                  location,
@@ -109,9 +131,11 @@ const getEventById = async (eventId) => {
                  winnerReward,
                  image,
                  payment_qr,
-                 payment_qr_discount
+                 payment_qr_discount,
+                 created_at,
+                 updated_at
                FROM events
-               WHERE event_id = ?
+               WHERE id = ?
                LIMIT 1`;
 
   const [rows] = await db.query(sql, [eventId]);
@@ -150,7 +174,7 @@ const updateEvent = async (eventId, eventData) => {
       image = ?,
       payment_qr = ?,
       payment_qr_discount = ?
-    WHERE event_id = ?`,
+    WHERE id = ?`,
     [
       EventName,
       dateTime,
@@ -174,7 +198,7 @@ const updateEvent = async (eventId, eventData) => {
 
 const deleteEvent = async (eventId) => {
   const [result] = await db.execute(
-    `DELETE FROM OphData.events WHERE event_id = ?`,
+    `DELETE FROM OphData.events WHERE id = ?`,
     [eventId]
   );
   return result;

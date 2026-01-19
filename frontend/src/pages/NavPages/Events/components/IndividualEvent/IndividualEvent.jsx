@@ -289,6 +289,7 @@ const IndividualEvent = () => {
               heading: "Event Registration Fee",
               planIds: [singleEvent.payment_plan_id].filter(Boolean),
               event_id: id,
+              from: "Event Registration",
               bookingId:
                 response?.data?.id ?? response?.data?.bookingId ?? null,
             },

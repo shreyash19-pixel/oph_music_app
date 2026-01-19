@@ -2,7 +2,7 @@ const db = require("../DB/connect");
 
 const getSpeicalArtistSongStatus = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT * FROM special_artist_songs WHERE ophid = ?",
+    "SELECT * FROM special_artist_songs WHERE oph_id = ?",
     [ophid]
   );
 
@@ -22,13 +22,13 @@ const insertSpecialArtistSongs = async (
 
   const [rows] = 
     await db.execute(
-      "INSERT INTO special_artist_songs (ophid, song_name, views,credits,duration,proof, audio_url) VALUES (?,?,?,?,?,?,?)",
+      "INSERT INTO special_artist_songs (oph_id, song_name, views,credits,duration,proof, audio_url) VALUES (?,?,?,?,?,?,?)",
       [ophid, song_name, views, credits, duration, proof, audio_url]
     )
   // console.log(rows);
   
   const [songId] =  await db.execute(
-      "SELECT song_id FROM special_artist_songs WHERE ophid = ? AND song_name = ?",
+      "SELECT song_id FROM special_artist_songs WHERE oph_id = ? AND song_name = ?",
       [ophid, song_name]
     )
 
@@ -49,8 +49,8 @@ const getSongCount = async (ophid) => {
   const [count] = await db.execute(
     `WITH CTECount 
 AS 
-(SELECT ophid, COUNT(*) cnt FROM special_artist_songs GROUP BY ophid)
-SELECT cnt FROM CTECount WHERE ophid = ?`,
+(SELECT oph_id, COUNT(*) cnt FROM special_artist_songs GROUP BY oph_id)
+SELECT cnt FROM CTECount WHERE oph_id = ?`,
     [ophid]
   );
 

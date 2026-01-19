@@ -327,7 +327,7 @@ const AddNewSong = () => {
               {status.map((stat) => (
                 <tr>
                   <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.date).toLocaleDateString()}
+                    {new Date(stat.created_at).toLocaleDateString()}
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.song_name}

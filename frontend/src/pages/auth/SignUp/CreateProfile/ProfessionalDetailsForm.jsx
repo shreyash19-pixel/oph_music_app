@@ -21,7 +21,9 @@ import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVi
 const ProfessionalDetailsForm = () => {
   const { headers, ophid } = useArtist();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  // Keep this for "fetch details" + "submit" only.
+  // (Previously it could stay stuck forever if prereqs weren't ready.)
+  const [loading, setLoading] = useState(false);
   const [videoBio, setVideoBio] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false); // Track video play state
@@ -81,6 +83,7 @@ const ProfessionalDetailsForm = () => {
   // }, []);
   const [formData, setFormData] = useState({
     profession: "",
+    professionName: "",
     bio: "",
     photos: [],
     spotifyUrl: "",
@@ -95,6 +98,7 @@ const ProfessionalDetailsForm = () => {
 
   const [checkSimilarData, setcheckSimilarData] = useState({
     profession: "",
+    professionName: "",
     bio: "",
     photos: [],
     spotifyUrl: "",
@@ -113,10 +117,24 @@ const ProfessionalDetailsForm = () => {
   }, []);
 
   useEffect(() => {
-    if (ophid && professions.length > 0) {
-      fetchProfessionalDetails();
-    }
-  }, [ophid, professions]);
+    // Fetch details as soon as auth context is ready.
+    // Do NOT block on professions; we can map profession id later when professions arrive.
+    if (!ophid) return;
+    if (!headers?.Authorization) return;
+    fetchProfessionalDetails();
+  }, [ophid, headers?.Authorization]);
+
+  // If we fetched the profession name before professions list arrived, map it to the select id once possible.
+  useEffect(() => {
+    if (!formData.professionName) return;
+    if (formData.profession) return;
+    if (!Array.isArray(professions) || professions.length === 0) return;
+    const professionId =
+      professions.find((p) => p.name === formData.professionName)?.id || "";
+    if (!professionId) return;
+    setFormData((prev) => ({ ...prev, profession: professionId }));
+    setcheckSimilarData((prev) => ({ ...prev, profession: professionId }));
+  }, [professions, formData.professionName, formData.profession]);
 
   // useEffect(() => {
   //   const loadVideo = async () => {
@@ -151,14 +169,8 @@ const ProfessionalDetailsForm = () => {
   };
 
   const fetchProfessionalDetails = async () => {
-    console.log("hekekekfnds");
-
+    setLoading(true);
     try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers not ready yet");
-        return;
-      }
-
       const response = await getProfessionalDetails(headers, ophid);
 
       if (response.success && response.data.length > 0) {
@@ -173,6 +185,7 @@ const ProfessionalDetailsForm = () => {
           professions.find((p) => p.name === artist.Profession)?.id || "";
         setFormData({
           profession: professionId,
+          professionName: artist.Profession || "",
           bio: artist.Bio || "",
           photos: JSON.parse(artist.PhotoURLs) || [],
           spotifyUrl: artist.SpotifyLink || "",
@@ -189,6 +202,7 @@ const ProfessionalDetailsForm = () => {
 
         setcheckSimilarData({
           profession: professionId,
+          professionName: artist.Profession || "",
           bio: artist.Bio || "",
           photos: JSON.parse(artist.PhotoURLs) || [],
           spotifyUrl: artist.SpotifyLink || "",

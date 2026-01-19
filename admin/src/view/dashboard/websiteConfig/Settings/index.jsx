@@ -33,16 +33,28 @@ const WebsiteSettings = () => {
     const fetchCostingData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const response = await axiosApi.get('/get_costing');
-        if (response.data.success) {
+        
+        // Ensure response and response.data exist
+        if (response && response.data) {
+          if (response.data.success && Array.isArray(response.data.data)) {
           console.log('Costing data received:', response.data.data);
           setCostingItems(response.data.data);
+          } else {
+            setError('Failed to load costing data: Invalid response format');
+            setCostingItems([]);
+          }
         } else {
-          setError('Failed to load costing data');
+          setError('Failed to load costing data: No response received');
+          setCostingItems([]);
         }
       } catch (err) {
         console.error('Error fetching costing data:', err);
-        setError('Failed to load costing data');
+        // Ensure we're setting a string, not the error object
+        const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load costing data';
+        setError(errorMessage);
+        setCostingItems([]);
       } finally {
         setLoading(false);
       }
@@ -102,10 +114,10 @@ const WebsiteSettings = () => {
         },
       });
 
-      if (response.data.success) {
+      if (response && response.data && response.data.success) {
         // Refresh the costing data
         const fetchResponse = await axiosApi.get('/get_costing');
-        if (fetchResponse.data.success) {
+        if (fetchResponse && fetchResponse.data && fetchResponse.data.success && Array.isArray(fetchResponse.data.data)) {
           setCostingItems(fetchResponse.data.data);
         }
         
@@ -116,12 +128,14 @@ const WebsiteSettings = () => {
         setError(null);
         toast.success('Costing package added successfully!');
       } else {
-        setError('Failed to add costing item');
+        const errorMsg = response?.data?.message || 'Failed to add costing item';
+        setError(errorMsg);
         toast.error('Failed to add costing package');
       }
     } catch (err) {
       console.error('Error adding costing item:', err);
-      setError('Failed to add costing item');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to add costing item';
+      setError(errorMessage);
       toast.error('Failed to add costing package');
     }
   };
@@ -151,10 +165,10 @@ const WebsiteSettings = () => {
         },
       });
 
-      if (response.data.success) {
+      if (response && response.data && response.data.success) {
         // Refresh the entire costing list from server
         const refreshResponse = await axiosApi.get('/get_costing');
-        if (refreshResponse.data.success) {
+        if (refreshResponse && refreshResponse.data && refreshResponse.data.success && Array.isArray(refreshResponse.data.data)) {
           setCostingItems(refreshResponse.data.data);
         }
         
@@ -164,11 +178,13 @@ const WebsiteSettings = () => {
         setError(null);
         toast.success('Costing item updated successfully');
       } else {
-        setError('Failed to update costing item');
+        const errorMsg = response?.data?.message || 'Failed to update costing item';
+        setError(errorMsg);
       }
     } catch (err) {
       console.error('Error updating costing item:', err);
-      setError('Failed to update costing item');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update costing item';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

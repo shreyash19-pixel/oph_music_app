@@ -5,6 +5,38 @@ const {
 } = require("../model/documentation_details");
 const { uploadToS3 } = require("../utils");
 const { setCurrentStep } = require("../model/common/set_step.js");
+const ApplicationStatusService = require("../services/application/ApplicationStatusService");
+const db = require("../DB/connect");
+
+/**
+ * Determine next step based on application status after documentation details submission
+ */
+const determineNextStepAfterDocumentation = (applicationStatus) => {
+  if (!applicationStatus) {
+    return "/auth/membership-form";
+  }
+
+  const { user_status, professional_status, documentation_status, payment_status, overall_status } = applicationStatus;
+
+  // If completed, go to dashboard
+  if (overall_status === "completed") {
+    return "/dashboard";
+  }
+
+  // PRIORITY 1: Check for rejected steps (user just resubmitted documentation, so check payment)
+  if (payment_status === "rejected") {
+    return "/auth/payment";
+  }
+
+  // PRIORITY 2: Continue to next step in sequence
+  if (!payment_status || payment_status === "pending") {
+    return "/auth/payment";
+  }
+
+  // PRIORITY 3: If all steps are approved or under review, go to membership form
+  // After filling a form, user should see membership form instead of status page
+  return "/auth/membership-form";
+};
 
 const insertDocumentationController = async (req, res) => {
   try {
@@ -49,27 +81,57 @@ const insertDocumentationController = async (req, res) => {
       : null;
 
 
-    // Save to DB
-    const result = await insertDocumentationDetails(
-      OPH_ID,
-      AadharFrontURL,
-      AadharBackURL,
-      PanFrontURL,
-      SignatureImageURL,
-      BankName,
-      AccountHolderName,
-      AccountNumber,
-      IFSCCode,
-      AgreementAccepted
-    );
+    // 🟢 Update using transaction to ensure both documentation_details and application_status are updated atomically
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    if (result) {
-      await setCurrentStep(step, OPH_ID);
+      // Save to DB - Map PascalCase from frontend to snake_case for database
+      const result = await insertDocumentationDetails(
+        OPH_ID, // ophId
+        AadharFrontURL || null, // aadharFrontUrl
+        AadharBackURL || null, // aadharBackUrl
+        PanFrontURL || null, // panFrontUrl
+        SignatureImageURL || null, // signatureImageUrl
+        BankName || null, // bankName
+        AccountHolderName || null, // accountHolderName
+        AccountNumber || null, // accountNumber
+        IFSCCode || null, // ifscCode
+        AgreementAccepted || 0, // agreementAccepted
+        connection // Pass connection for transaction
+      );
+
+      if (!result) {
+        await connection.rollback();
+        return res.status(500).json({
+          success: false,
+          message: "Failed to insert documentation details",
+        });
+      }
+
+      // Update application_status table (sets documentation_status to "under review")
+      await ApplicationStatusService.updateStepStatus(connection, OPH_ID, "documentation", "under review");
+      
+      // Determine next step based on application status
+      const applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, OPH_ID);
+      const nextStep = determineNextStepAfterDocumentation(applicationStatus);
+      
+      // Commit transaction
+      await connection.commit();
+      
+      // Update current_step (outside transaction as it's not critical)
+      await setCurrentStep(nextStep, OPH_ID);
+      
       return res.status(200).json({
         success: true,
         message: "Documentation details inserted/updated successfully",
-        step: step,
+        step: nextStep,
       });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
 
     
@@ -88,11 +150,16 @@ const getDocumentByOphIdController = async (req, res) => {
   try {
     const { ophid } = req.query;
     
+    if (!ophid) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing ophid parameter",
+      });
+    }
 
     const data = await getDocumentationDetailsByOphId(ophid);
     
-
-    if (!data) {
+    if (!data || data.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Data not found for the given OPH_ID",
@@ -101,7 +168,12 @@ const getDocumentByOphIdController = async (req, res) => {
 
     res.status(200).json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error fetching documentation details:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error",
+      error: error.message 
+    });
   }
 };
 

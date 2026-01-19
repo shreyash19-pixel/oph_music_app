@@ -2,3 +2,22 @@ personal.todo
 doubt.todo
 Project_update.md
 .DS_Store
+
+# SQL files (database scripts) - never track these
+*.sql
+
+# Planning and documentation files (never track these)
+*DATABASE*.md
+*APPLICATION*.md
+*CREATE_NEW*.md
+*MAKE_RDS*.md
+*UNTrack*.md
+*CRON*.md
+*AWS-EVENTBRIDGE*.md
+*QUICK-START*.md
+deloyment.md
+hashing-*.md
+
+# Backup and config files
+backend/monthly_*_backup_*.json
+nginx-*.conf

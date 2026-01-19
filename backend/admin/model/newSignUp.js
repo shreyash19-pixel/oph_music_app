@@ -4,23 +4,23 @@ const db = require('../../DB/connect');
 
 const getUniqueOphIdsWithRegistration = async () => {
   const [rows] = await db.execute(
-    `SELECT t.OPH_ID
-     FROM sign_up_payment t
+    `SELECT t.oph_id AS OPH_ID
+     FROM payments t
      INNER JOIN (
-       SELECT OPH_ID, MAX(CreatedAt) AS max_created
-       FROM sign_up_payment
-       WHERE \`From\` = ? 
-         AND OPH_ID IS NOT NULL 
-         AND OPH_ID != ''
-         AND (Status = 'Under Review' OR Status = 'under review')
-       GROUP BY OPH_ID
+       SELECT oph_id, MAX(created_at) AS max_created
+       FROM payments
+       WHERE from_source = ? 
+         AND oph_id IS NOT NULL 
+         AND oph_id != ''
+         AND (status = 'Under Review' OR status = 'under review')
+       GROUP BY oph_id
      ) latest 
-     ON t.OPH_ID = latest.OPH_ID 
-        AND t.CreatedAt = latest.max_created
-     WHERE t.\`From\` = ? 
-       AND t.OPH_ID IS NOT NULL 
-       AND t.OPH_ID != ''
-       AND (t.Status = 'Under Review' OR t.Status = 'under review')`,
+     ON t.oph_id = latest.oph_id 
+        AND t.created_at = latest.max_created
+     WHERE t.from_source = ? 
+       AND t.oph_id IS NOT NULL 
+       AND t.oph_id != ''
+       AND (t.status = 'Under Review' OR t.status = 'under review')`,
     ["Registration", "Registration"]
   );
   return rows;
@@ -35,7 +35,7 @@ const getUniqueOphIdsWithRegistration = async () => {
   const [rows] = await db.execute(
     `SELECT *
      FROM user_details
-     WHERE ophid IN (${placeholders})`,
+     WHERE oph_id IN (${placeholders})`,
     ophIds
   );
 
@@ -46,7 +46,7 @@ const getUserDetailsByOphId = async (ophId) => {
   const [rows] = await db.execute(
     `SELECT *
      FROM user_details
-     WHERE ophid = ?`,
+     WHERE oph_id = ?`,
     [ophId]
   );
   return rows[0] || null;
@@ -54,10 +54,10 @@ const getUserDetailsByOphId = async (ophId) => {
 
 const getTransactionsByOphId = async (ophid) => {
   const [rows] = await db.execute(
-    `SELECT Transaction_ID, CreatedAt
-     FROM sign_up_payment
-     WHERE OPH_ID = ? AND \`From\` = 'Registration'
-     ORDER BY CreatedAt DESC`,
+    `SELECT transaction_id AS Transaction_ID, created_at AS CreatedAt
+     FROM payments
+     WHERE oph_id = ? AND from_source = 'Registration'
+     ORDER BY created_at DESC`,
     [ophid]
   );
   return rows;

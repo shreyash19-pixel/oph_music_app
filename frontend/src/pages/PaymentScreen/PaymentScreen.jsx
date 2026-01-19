@@ -17,16 +17,16 @@ const PaymentScreen = () => {
   const [error, setError] = useState(null);
   const [costingData, setCostingData] = useState([]);
   const [matchedCosting, setMatchedCosting] = useState(null);
+  const event_id = location.state?.event_id;
+  // Set from_source based on event_id if not provided
+  const from = location.state?.from || (event_id ? "Event Registration" : null);
+  const song_id = location.state?.song_id;
+
+  console.log(song_id);
   
-  const from = location.state?.from || null;
-  const song_id = location.state?.song_id || null;
-  const event_id = location.state?.event_id || null;
-  const outside_user = location.state?.outside_user || null;
-  const user_type = location.state?.user_type || null;
-  
-  console.log("PaymentScreen location.state:", location.state);
-  console.log("Extracted from:", from);
-  console.log("Extracted event_id:", event_id);
+
+  const outside_user = location.state?.outside_user;
+  const user_type = location.state.user_type;
   const [oph_id, setoph_id] = useState("");
 
   const {
@@ -45,7 +45,7 @@ const PaymentScreen = () => {
       setLoading(true);
 
       // Check if this is an event registration
-      if (from === "Event Registeration" && event_id) {
+      if (from === "Event Registration" && event_id) {
         const response = await axiosApi.get(`/event/${event_id}`);
 
         if (response.status === 200) {
@@ -65,7 +65,7 @@ const PaymentScreen = () => {
           
           // Create a mock costing object for event data
           const eventCosting = {
-            name: "Event Registeration",
+            name: "Event Registration",
             cost: finalAmount,
             qr_image_path: (outside_user === true || outside_user === 1)
               ? eventData.payment_qr || "/qr.png"
@@ -172,7 +172,7 @@ const PaymentScreen = () => {
       return parseFloat(matchedCosting.cost);
     }
 
-    // Fallback to hardcoded amounts if no costing data match
+    // Fallback to hardcoded amounts if no costing data match 
     if (lyrical_services) {
       return 499; // Lyrical video amount
     } else if (!from || from === "Registration") {
@@ -183,7 +183,7 @@ const PaymentScreen = () => {
       from === "Date booking"
     ) {
       return 799; // Song Registration amount (used by multiple services)
-    } else if (from === "Event Registeration") {
+    } else if (from === "Event Registration") {
       return 1000;
     } else if (from === "Release date change") {
       return 300;
@@ -315,18 +315,48 @@ const PaymentScreen = () => {
               booking_date: location.state.booking_date,
               song_name: location.state.songName,
               project_type: location.state.project_type,
+              song_id: location.state.song_id || song_id,
             },
             { headers: headers }
           );
 
           if (CalenderRes.data.success) {
-            navigate("/dashboard/success", {
-              state: {
-                heading: "Your Song Registration has been done successfully!",
-                btnText: "Register another song",
-                redirectTo: "/dashboard/upload-song",
-              },
-            });
+            // Check if there's a redirect path from backend (for rejected sections)
+            if (response.data.redirectPath && response.data.redirectPath !== '/dashboard/success') {
+              if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+                navigate("/dashboard/upload-song/audio-metadata/", {
+                  state: {
+                    song_id: location.state.song_id,
+                    songName: response.data.songName || location.state.songName,
+                    release_date: location.state.booking_date,
+                    project_type: location.state.project_type,
+                    lyrical_services: location.state.lyrical_services,
+                    isFixingRejected: true,
+                  },
+                });
+              } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+                navigate("/dashboard/upload-song/video-metadata/", {
+                  state: {
+                    song_id: location.state.song_id,
+                    songName: response.data.songName || location.state.songName,
+                    release_date: location.state.booking_date,
+                    project_type: location.state.project_type,
+                    lyrical_services: location.state.lyrical_services,
+                    isFixingRejected: true,
+                  },
+                });
+              } else {
+                navigate(response.data.redirectPath);
+              }
+            } else {
+              navigate("/dashboard/success", {
+                state: {
+                  heading: "Your Song Registration has been done successfully!",
+                  btnText: "Register another song",
+                  redirectTo: "/dashboard/upload-song",
+                },
+              });
+            }
           }
         }
       } else if (
@@ -343,6 +373,7 @@ const PaymentScreen = () => {
             song_name: location.state.songName,
             project_type: location.state.project_type,
             release_date: location.state.booking_date,
+            song_id: location.state.song_id || song_id,
           },
           {
             headers: {
@@ -362,14 +393,55 @@ const PaymentScreen = () => {
           });
         }
       } else if (response.data.success && from === "Song Repayment") {
-        navigate("/dashboard/success", {
-          state: {
-            heading: "Your Song Registration has been done successfully!",
-            btnText: "View Song Registration",
-            redirectTo: "/dashboard/upload-song",
-          },
-        });
-      } else if (response.data.success && from === "Event Registeration") {
+        // Check if there's a redirect path from backend (for rejected sections)
+        if (response.data.redirectPath) {
+          if (response.data.redirectPath === '/dashboard/success') {
+            navigate("/dashboard/success", {
+              state: {
+                heading: "Your song registration has been completed successfully!",
+                btnText: "Back to Home",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+            // Redirect to audio metadata
+            navigate("/dashboard/upload-song/audio-metadata/", {
+              state: {
+                song_id: location.state.song_id,
+                songName: response.data.songName || location.state.songName,
+                release_date: location.state.booking_date,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+            // Redirect to video metadata
+            navigate("/dashboard/upload-song/video-metadata/", {
+              state: {
+                song_id: location.state.song_id,
+                songName: response.data.songName || location.state.songName,
+                release_date: location.state.booking_date,
+                project_type: location.state.project_type,
+                lyrical_services: location.state.lyrical_services,
+                isFixingRejected: true,
+              },
+            });
+          } else {
+            // Fallback to default navigation
+            navigate(response.data.redirectPath);
+          }
+        } else {
+          // Default behavior
+          navigate("/dashboard/success", {
+            state: {
+              heading: "Your Song Registration has been done successfully!",
+              btnText: "View Song Registration",
+              redirectTo: "/dashboard/upload-song",
+            },
+          });
+        }
+      } else if (response.data.success && from === "Event Registration") {
         {
           console.log(oph_id,"test oph_id");
           

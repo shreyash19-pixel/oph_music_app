@@ -9,6 +9,7 @@ router.post("/update-status", userDetailsController.updateStatus);
 router.get("/getAllSales", userDetailsController.getAllSales);
 router.get("/user-details-step-status/:ophid", userDetailsController.getUserDetailsStepStatus);
 router.get("/professional-details-step-status/:ophid", userDetailsController.getProfessionalDetailsStepStatus);
-router.get("/documentation-details-step-status/:ophid", userDetailsController.getDocumentationDetailsStepStatus);   
+router.get("/documentation-details-step-status/:ophid", userDetailsController.getDocumentationDetailsStepStatus);
+router.get("/application-status/:ophid", userDetailsController.getApplicationStatus);   
 
 module.exports = router;
