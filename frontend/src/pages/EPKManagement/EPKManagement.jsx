@@ -91,22 +91,24 @@ const EPKManagement = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
-    if (!formData.terms) {
-      toast.error("Please accept terms and conditions");
-      return;
-    }
+    const hasData =
+      (formData.bio && formData.bio.trim() !== "") ||
+      formData.bioVideo ||
+      (formData.artistStory && formData.artistStory.trim() !== "") ||
+      formData.artistStoryVideo ||
+      formData.artistPhoto ||
+      (formData.updateImages && formData.updateImages.length > 0);
 
-    if (
-      formData.bio !== "" ||
-      formData.bioVideo !== null ||
-      formData.artistStory !== null ||
-      formData.artistStoryVideo !== null ||
-      formData.artistPhoto !== null ||
-      formData.updateImages !== null
-    ) {
+    if (hasData) {
+      if (!formData.terms) {
+        toast.error("Please accept terms and conditions");
+        return;
+      }
+
+      setLoading(true);
       const sendFormData = new FormData();
+
       sendFormData.append("ophid", ophid);
       if (formData.bio !== "") {
         sendFormData.append("bio", formData.bio);
@@ -135,7 +137,7 @@ const EPKManagement = () => {
             headers: {
               ...headers,
             },
-          }
+          },
         );
 
         if (response.data.success) {
