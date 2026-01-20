@@ -61,6 +61,8 @@ const updateSongApplicationStatus = async (
     values.push(statusUpdates.status_video);
   }
   if (statusUpdates.status_payment !== undefined) {
+    console.log("dfsfffsdfdsf dfsdfdsfsdf");
+    
     fields.push("status_payment = ?");
     values.push(statusUpdates.status_payment);
   }
@@ -79,6 +81,7 @@ const updateSongApplicationStatus = async (
 
   fields.push("updated_at = NOW()");
   values.push(songId);
+
 
   const [result] = await connection.execute(
     `UPDATE song_application_status SET ${fields.join(", ")} WHERE song_id = ?`,

@@ -1,4 +1,5 @@
 const db = require("../../DB/connect");
+const SongApplicationStatusService = require("../../services/song/SongApplicationStatusService");
 
 const updateStatus = async (connection, ophId, transactionId, newStatus, reject_reason) => {
   try {
@@ -369,7 +370,8 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         );
         affectedRows += updateResult.affectedRows;
       }
-    } else if (from === "Release date change") {
+    } 
+    else if (from === "Release date change") {
       if (decision === "rejected") {
         // When rejecting a date change, restore previous date in calender
         // Get the calendar entry to find song_id, previous_booking_date, reason, and reason_history
@@ -507,7 +509,8 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         );
         affectedRows += updateResult.affectedRows;
       }
-    } else if (from === "Song Registration") {
+    } 
+    else if (from === "Song Registration") {
       if (decision === "rejected" || decision === "approved") {
         // Get song_id from payment record before updating
         const [paymentRecords] = await connection.execute(
@@ -555,6 +558,10 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         }
       }
     }
+
+    const transactionDet = await getTransactionDetails(release_date);
+    
+    await SongApplicationStatusService.updateStepStatus(connection, transactionDet[0].song_id, "payment", decision, reason)
     
     await connection.commit();
     
