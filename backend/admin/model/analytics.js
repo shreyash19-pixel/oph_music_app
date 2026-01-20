@@ -14,9 +14,27 @@ const SongSocialMetrics = {
     } = metrics;
 
     const [result] = await db.execute(
-      `INSERT INTO song_social_metrics
-        (song_id, OPH_ID, song_name, youtube_views, youtube_engagement, youtube_avg_view_duration, youtube_revenue, insta_engagement, date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      `
+  INSERT INTO song_social_metrics
+  (
+    song_id,
+    OPH_ID,
+    song_name,
+    youtube_views,
+    youtube_engagement,
+    youtube_avg_view_duration,
+    youtube_revenue,
+    insta_engagement
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  ON DUPLICATE KEY UPDATE
+    song_name = VALUES(song_name),
+    youtube_views = VALUES(youtube_views),
+    youtube_engagement = VALUES(youtube_engagement),
+    youtube_avg_view_duration = VALUES(youtube_avg_view_duration),
+    youtube_revenue = VALUES(youtube_revenue),
+    insta_engagement = VALUES(insta_engagement)
+  `,
       [
         song_id,
         OPH_ID,
@@ -26,7 +44,7 @@ const SongSocialMetrics = {
         youtube_avg_view_duration,
         youtube_revenue,
         insta_engagement,
-      ]
+      ],
     );
 
     return result;
@@ -42,7 +60,7 @@ const SongSocialMetrics = {
   getMetricById: async (id) => {
     const [rows] = await db.query(
       `SELECT * FROM song_social_metrics WHERE song_id = ?`,
-      [id]
+      [id],
     );
     return rows[0];
   },
@@ -50,7 +68,7 @@ const SongSocialMetrics = {
   getMetricByOph: async (OPH_ID) => {
     const [rows] = await db.query(
       `SELECT * FROM song_social_metrics WHERE OPH_ID = ?`,
-      [OPH_ID]
+      [OPH_ID],
     );
     return rows;
   },
@@ -58,7 +76,7 @@ const SongSocialMetrics = {
   getVideoyId: async (id) => {
     const [rows] = await db.query(
       `SELECT * FROM video_details WHERE song_id = ?`,
-      [id]
+      [id],
     );
     return rows[0];
   },

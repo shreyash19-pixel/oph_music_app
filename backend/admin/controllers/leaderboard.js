@@ -10,7 +10,7 @@ const saveLeaderBoardScore = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    await leaderboardController.insertOrUpdateScore({ OPH_ID, song_count, total_views, score });
+    await leaderboardController.insertOrUpdateScore( OPH_ID, song_count, total_views, score );
     res.status(200).json({ message: 'Score saved successfully' });
   } catch (err) {
     console.error('Error saving leaderboard score:', err);

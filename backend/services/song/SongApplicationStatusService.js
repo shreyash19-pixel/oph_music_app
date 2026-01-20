@@ -212,7 +212,7 @@ class SongApplicationStatusService {
    * This initializes the social metrics record when song is fully approved
    */
   async insertSongSocialMetrics(connection, songData) {
-    const { oph_id, song_id } = songData;
+    const { oph_id, song_id, song_name } = songData;
 
     // Check if record already exists
     const [existing] = await connection.query(
@@ -229,10 +229,10 @@ class SongApplicationStatusService {
     // Insert new record with default/zero values
     await connection.query(
       `INSERT INTO song_social_metrics 
-        (oph_id, song_id, youtube_views, youtube_avg_view_duration, insta_engagement, created_at, updated_at)
-        VALUES (?, ?, 0, '00:00:00', 0, NOW(), NOW())
+        (oph_id, song_name, song_id, youtube_views, youtube_avg_view_duration, insta_engagement, created_at, updated_at)
+        VALUES (?, ?, ?, 0, '00:00:00', 0, NOW(), NOW())
         ON DUPLICATE KEY UPDATE updated_at = NOW()`,
-      [oph_id, song_id],
+      [oph_id, song_name, song_id],
     );
 
     console.log(`Song social metrics initialized for song_id: ${song_id}`);

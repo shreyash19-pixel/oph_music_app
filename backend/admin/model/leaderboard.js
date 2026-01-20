@@ -1,28 +1,32 @@
-const db = require('../../DB/connect');
+const db = require("../../DB/connect");
 
-const insertOrUpdateScore = async ({ OPH_ID, song_count, total_views, score }) => {
+const insertOrUpdateScore = async (OPH_ID, song_count, total_views, score) => {
   const query = `
-    INSERT INTO leaderBoard_scores (OPH_ID, song_count, total_views, score)
+    INSERT INTO leaderBoard_scores (oph_id, song_count, total_views, score)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       song_count = VALUES(song_count),
       total_views = VALUES(total_views),
       score = VALUES(score),
-      updatedAt = CURRENT_TIMESTAMP
+      updated_at = CURRENT_TIMESTAMP
   `;
 
   await db.execute(query, [OPH_ID, song_count, total_views, score]);
 };
 
 const getAllScores = async () => {
-  const [rows] = await db.execute(`WITH CTELeaderboard AS (SELECT ud.stage_name, ud.personal_photo, ud.location ,ls.* FROM 
+  const [rows] =
+    await db.execute(`WITH CTELeaderboard AS (SELECT ud.stage_name, ud.personal_photo, ud.location ,ls.* FROM 
     user_details ud JOIN leaderBoard_scores ls ON ud.oph_id = ls.OPH_ID) SELECT *, ROW_NUMBER() OVER (ORDER BY score DESC) AS ranks FROM CTELeaderboard`);
   return rows;
 };
 
 // Get single score by OPH_ID
 const getScoreByOphId = async (OPH_ID) => {
-  const [rows] = await db.execute(`SELECT * FROM leaderBoard_scores WHERE OPH_ID = ?`, [OPH_ID]);
+  const [rows] = await db.execute(
+    `SELECT * FROM leaderBoard_scores WHERE oph_id = ?`,
+    [OPH_ID],
+  );
   return rows[0]; // Return single object
 };
 
@@ -31,4 +35,3 @@ module.exports = {
   getAllScores,
   getScoreByOphId,
 };
-
