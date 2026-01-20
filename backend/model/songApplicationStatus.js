@@ -91,28 +91,28 @@ const updateSongApplicationStatus = async (
   return result;
 };
 
-const updateSongRelease = async (
-  connection,
-  oph_id,
-  songId,
-  song_name,
-  full_name,
-  secondaryArtists,
-) => {
-  console.log("dfdfdfdf 1323");
-  const [result] = await connection.execute(
-    `INSERT INTO song_release (oph_id,songId, song_name, primary_artist,featuring_artist ) VALUES (?,?,?,?,?)`,
-    [oph_id, songId, song_name,full_name,secondaryArtists],
-  );
+// const updateSongRelease = async (
+//   connection,
+//   oph_id,
+//   songId,
+//   song_name,
+//   full_name,
+//   secondaryArtists,
+// ) => {
+//   console.log("dfdfdfdf 1323");
+//   const [result] = await connection.execute(
+//     `INSERT INTO song_release (oph_id,songId, song_name, primary_artist,featuring_artist ) VALUES (?,?,?,?,?)`,
+//     [oph_id, songId, song_name,full_name,secondaryArtists],
+//   );
 
-  return result;
-};
+//   return result;
+// };
 
 module.exports = {
   getSongApplicationStatus,
   createSongApplicationStatus,
   updateSongApplicationStatus,
-  updateSongRelease,
+  // updateSongRelease,
   getPrimaryArtist,
   getSecondaryArtist
 };

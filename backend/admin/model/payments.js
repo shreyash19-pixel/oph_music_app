@@ -561,7 +561,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
 
     const transactionDet = await getTransactionDetails(release_date);
     
-    await SongApplicationStatusService.updateStepStatus(connection, transactionDet[0]git .song_id, "payment", decision, reason)
+    await SongApplicationStatusService.updateStepStatus(connection, transactionDet[0].song_id, "payment", decision, reason)
     
     await connection.commit();
     

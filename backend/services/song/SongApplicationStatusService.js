@@ -144,7 +144,7 @@ class SongApplicationStatusService {
       oph_id,
     );
     console.log(primaryArtist);
-    
+
     const { full_name } = primaryArtist[0];
 
     const secondaryArtistRows =
@@ -155,9 +155,8 @@ class SongApplicationStatusService {
       secondaryArtistRows.length > 0
         ? secondaryArtistRows.map((r) => r.artist_name).join(",")
         : null;
-      
+
     console.log(full_name + " " + secondaryArtists);
-    
 
     if (
       status_audio === "approved" &&
@@ -186,6 +185,7 @@ class SongApplicationStatusService {
   async processApprovedSongHandlers(connection, songData) {
     const handlers = [
       this.insertSongSocialMetrics.bind(this),
+      this.updateSongRelease.bind(this),
       // Add more handlers here in the future:
       // this.insertSongAnalytics.bind(this),
       // this.insertSongRevenue.bind(this),
@@ -197,7 +197,10 @@ class SongApplicationStatusService {
         await handler(connection, songData);
       } catch (error) {
         // Log error but continue with other handlers
-        console.error(`Error in approved song handler ${handler.name}:`, error.message);
+        console.error(
+          `Error in approved song handler ${handler.name}:`,
+          error.message,
+        );
         // Optionally: throw error to stop all handlers, or continue with others
         // For now, we continue with other handlers even if one fails
       }
@@ -214,7 +217,7 @@ class SongApplicationStatusService {
     // Check if record already exists
     const [existing] = await connection.query(
       `SELECT id FROM song_social_metrics WHERE song_id = ?`,
-      [song_id]
+      [song_id],
     );
 
     if (existing.length > 0) {
@@ -229,10 +232,26 @@ class SongApplicationStatusService {
         (oph_id, song_id, youtube_views, youtube_avg_view_duration, insta_engagement, created_at, updated_at)
         VALUES (?, ?, 0, '00:00:00', 0, NOW(), NOW())
         ON DUPLICATE KEY UPDATE updated_at = NOW()`,
-      [oph_id, song_id]
+      [oph_id, song_id],
     );
 
     console.log(`Song social metrics initialized for song_id: ${song_id}`);
+  }
+
+  async updateSongRelease(
+    connection,
+    songData
+  )
+   {
+
+    const { oph_id, song_id, song_name, primary_artist, secondary_artists} = songData;
+    
+    await connection.execute(
+      `INSERT INTO song_release (oph_id,songId, song_name, primary_artist,featuring_artist ) VALUES (?,?,?,?,?)`,
+      [oph_id, song_id, song_name, primary_artist, secondary_artists],
+    );
+
+    console.log(`Song release initialized for song_id: ${song_id}`);
   }
 }
 
