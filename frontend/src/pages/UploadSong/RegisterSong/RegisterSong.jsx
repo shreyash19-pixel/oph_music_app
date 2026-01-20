@@ -25,7 +25,7 @@ export default function RegisterSongForm() {
   const [isLoading, setIsLoading] = useState(true);
   const [costingData, setCostingData] = useState([]);
   const [songRegAmount, setSongRegAmount] = useState(799); // Default fallback
-  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(499); // Default fallback
+  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(399); // Default fallback
   const { headers, artist, user, ophid } = useArtist();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false); // Add state for success message
   const [agreement, setAgreement] = useState(false);
@@ -130,7 +130,7 @@ export default function RegisterSongForm() {
             item.name && item.name.toLowerCase().includes("lyrics service")
         );
         if (lyricalVideoCost) {
-          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 499);
+          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 399);
           console.log("Lyrical Video amount:", lyricalVideoCost.cost);
         }
 

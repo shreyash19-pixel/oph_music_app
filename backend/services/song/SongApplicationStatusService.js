@@ -164,15 +164,75 @@ class SongApplicationStatusService {
       status_video === "approved" &&
       status_payment === "approved"
     ) {
-      await songApplicationStatusModel.updateSongRelease(
-        connection,
+      // Prepare song data for handlers
+      const songData = {
         oph_id,
-        songId,
+        song_id: song_id,
         song_name,
-        full_name,
-        secondaryArtists   
-      );
+        primary_artist: full_name,
+        secondary_artists: secondaryArtists,
+      };
+
+      // Process all registered handlers for approved songs
+      await this.processApprovedSongHandlers(connection, songData);
     }
+  }
+
+  /**
+   * Registry of handlers for approved songs
+   * Each handler is a function that receives (connection, songData) and inserts into its table
+   * Add new handlers here for future tables
+   */
+  async processApprovedSongHandlers(connection, songData) {
+    const handlers = [
+      this.insertSongSocialMetrics.bind(this),
+      // Add more handlers here in the future:
+      // this.insertSongAnalytics.bind(this),
+      // this.insertSongRevenue.bind(this),
+    ];
+
+    // Execute all handlers sequentially (use Promise.all for parallel if needed)
+    for (const handler of handlers) {
+      try {
+        await handler(connection, songData);
+      } catch (error) {
+        // Log error but continue with other handlers
+        console.error(`Error in approved song handler ${handler.name}:`, error.message);
+        // Optionally: throw error to stop all handlers, or continue with others
+        // For now, we continue with other handlers even if one fails
+      }
+    }
+  }
+
+  /**
+   * Handler: Insert song details into song_social_metrics table
+   * This initializes the social metrics record when song is fully approved
+   */
+  async insertSongSocialMetrics(connection, songData) {
+    const { oph_id, song_id } = songData;
+
+    // Check if record already exists
+    const [existing] = await connection.query(
+      `SELECT id FROM song_social_metrics WHERE song_id = ?`,
+      [song_id]
+    );
+
+    if (existing.length > 0) {
+      // Record already exists, skip insertion
+      console.log(`Song social metrics already exists for song_id: ${song_id}`);
+      return;
+    }
+
+    // Insert new record with default/zero values
+    await connection.query(
+      `INSERT INTO song_social_metrics 
+        (oph_id, song_id, youtube_views, youtube_avg_view_duration, insta_engagement, created_at, updated_at)
+        VALUES (?, ?, 0, '00:00:00', 0, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE updated_at = NOW()`,
+      [oph_id, song_id]
+    );
+
+    console.log(`Song social metrics initialized for song_id: ${song_id}`);
   }
 }
 
