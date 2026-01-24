@@ -61,6 +61,8 @@ const updateSongApplicationStatus = async (
     values.push(statusUpdates.status_video);
   }
   if (statusUpdates.status_payment !== undefined) {
+    console.log("dfsfffsdfdsf dfsdfdsfsdf");
+    
     fields.push("status_payment = ?");
     values.push(statusUpdates.status_payment);
   }
@@ -80,6 +82,7 @@ const updateSongApplicationStatus = async (
   fields.push("updated_at = NOW()");
   values.push(songId);
 
+
   const [result] = await connection.execute(
     `UPDATE song_application_status SET ${fields.join(", ")} WHERE song_id = ?`,
     values,
@@ -88,28 +91,28 @@ const updateSongApplicationStatus = async (
   return result;
 };
 
-const updateSongRelease = async (
-  connection,
-  oph_id,
-  songId,
-  song_name,
-  full_name,
-  secondaryArtists,
-) => {
-  console.log("dfdfdfdf 1323");
-  const [result] = await connection.execute(
-    `INSERT INTO song_release (oph_id,songId, song_name, primary_artist,featuring_artist ) VALUES (?,?,?,?,?)`,
-    [oph_id, songId, song_name,full_name,secondaryArtists],
-  );
+// const updateSongRelease = async (
+//   connection,
+//   oph_id,
+//   songId,
+//   song_name,
+//   full_name,
+//   secondaryArtists,
+// ) => {
+//   console.log("dfdfdfdf 1323");
+//   const [result] = await connection.execute(
+//     `INSERT INTO song_release (oph_id,songId, song_name, primary_artist,featuring_artist ) VALUES (?,?,?,?,?)`,
+//     [oph_id, songId, song_name,full_name,secondaryArtists],
+//   );
 
-  return result;
-};
+//   return result;
+// };
 
 module.exports = {
   getSongApplicationStatus,
   createSongApplicationStatus,
   updateSongApplicationStatus,
-  updateSongRelease,
+  // updateSongRelease,
   getPrimaryArtist,
   getSecondaryArtist
 };

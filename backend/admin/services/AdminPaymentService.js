@@ -22,6 +22,7 @@ class AdminPaymentService {
       // Get payment details before updating to check if it's a Registration payment
       const paymentModel = require('../../model/payment');
       const paymentDetailsBefore = await paymentModel.getPaymentByTransactionId(connection, transactionId);
+      console.log(paymentDetailsBefore + "DDSDSD");
       
       if (!paymentDetailsBefore || paymentDetailsBefore.length === 0) {
         throw new Error('Payment not found');

@@ -1,4 +1,5 @@
 const db = require("../../DB/connect");
+const SongApplicationStatusService = require("../../services/song/SongApplicationStatusService");
 
 const updateStatus = async (connection, ophId, transactionId, newStatus, reject_reason) => {
   try {
@@ -369,7 +370,8 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         );
         affectedRows += updateResult.affectedRows;
       }
-    } else if (from === "Release date change") {
+    } 
+    else if (from === "Release date change") {
       if (decision === "rejected") {
         // When rejecting a date change, restore previous date in calender
         // Get the calendar entry to find song_id, previous_booking_date, reason, and reason_history
@@ -507,8 +509,18 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
         );
         affectedRows += updateResult.affectedRows;
       }
-    } else if (from === "Song Registration") {
+    } 
+    else if (from === "Song Registration") {
       if (decision === "rejected" || decision === "approved") {
+        // Get song_id from payment record before updating
+        const [paymentRecords] = await connection.execute(
+          `SELECT song_id, oph_id FROM payments 
+           WHERE release_date = ? 
+           AND from_source = 'Song Registration'
+           LIMIT 1`,
+          [release_date]
+        );
+
         const [updateResult] = await connection.execute(
           `UPDATE payments 
            SET status = ?, 
@@ -519,8 +531,37 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
           [decision, isReasonEmpty, release_date]
         );
         affectedRows += updateResult.affectedRows;
+
+        // Update song_application_status if song_id exists
+        if (paymentRecords.length > 0 && paymentRecords[0].song_id) {
+          const songId = paymentRecords[0].song_id;
+          
+          // Normalize decision to match song_application_status format
+          let paymentStatus = 'pending';
+          if (decision === 'rejected' || decision === 'Rejected') {
+            paymentStatus = 'rejected';
+          } else if (decision === 'approved' || decision === 'Approved') {
+            paymentStatus = 'approved';
+          } else if (decision === 'under review' || decision === 'Under Review') {
+            paymentStatus = 'under review';
+          }
+
+          // Update song_application_status table
+          const SongApplicationStatusService = require('../../services/song/SongApplicationStatusService');
+          await SongApplicationStatusService.updateStepStatus(
+            connection,
+            songId,
+            'payment',
+            paymentStatus,
+            isReasonEmpty
+          );
+        }
       }
     }
+
+    const transactionDet = await getTransactionDetails(release_date);
+    
+    await SongApplicationStatusService.updateStepStatus(connection, transactionDet[0].song_id, "payment", decision, reason)
     
     await connection.commit();
     
