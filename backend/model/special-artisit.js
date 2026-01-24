@@ -11,7 +11,7 @@ const getSpecialArtistStatus = async (ophid) => {
 
 const getSpecialArtistPic = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT personal_photo FROM user_details WHERE ophid = ?",
+    "SELECT personal_photo FROM user_details WHERE oph_id = ?",
     [ophid]
   );
 

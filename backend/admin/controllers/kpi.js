@@ -76,7 +76,7 @@ const insertOrUpdateKpiScore = async (req, res) => {
       return res.status(400).json({ error: "Missing OPH_ID" });
     }
 
-    await SongSocialMetrics.KpiScore({
+    await SongSocialMetrics.KpiScore(
       OPH_ID,
       user_traffic,
       song_count,
@@ -84,7 +84,7 @@ const insertOrUpdateKpiScore = async (req, res) => {
       avg_view_duration,
       total_accepted_events,
       score
-    });
+    );
 
     res.status(200).json({ message: "Score inserted/updated successfully." });
   } catch (error) {
