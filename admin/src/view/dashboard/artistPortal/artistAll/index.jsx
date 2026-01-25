@@ -71,7 +71,7 @@ const ArtistAll = () => {
           profession: professionalDetails.Profession || professionalDetails.profession || "",
           bio: professionalDetails.Bio || "",
           video: professionalDetails.VideoURL || "",
-          photos: JSON.parse(professionalDetails.PhotoURLs || "[]"),
+          photos: JSON.parse(professionalDetails.photo_urls || "[]"),
           spotify: professionalDetails.SpotifyLink || "",
           instagram: professionalDetails.InstagramLink || "",
           facebook: professionalDetails.FacebookLink || "",

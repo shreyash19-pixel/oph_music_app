@@ -5,9 +5,11 @@ import { useSelector } from "react-redux";
 import { useArtist } from "../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
 
-function Leaderboard({ leaderboardData, artist_id }) {
+function Leaderboard({ leaderboardData, artistId }) {
   const navigate = useNavigate();
   const { headers, ophid } = useArtist();
+  console.log(artistId);
+  
 
   const incrementTraffic = async (artistId) => {
     try {
@@ -48,10 +50,10 @@ function Leaderboard({ leaderboardData, artist_id }) {
           {leaderboardData &&
             leaderboardData.map((artist, index) => (
               <tr
-                onClick={() => incrementTraffic(artist.OPH_ID)}
+                onClick={() => incrementTraffic(artist.oph_id)}
                 key={artist.ranks}
                 className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
-                  artist.OPH_ID == artist_id ? "bg-[#6F4aA0]" : ""
+                  artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
                 }`}
               >
                 <td className="px-3 lg:px-4 py-2">
@@ -380,7 +382,7 @@ export default function ArtistSpotlight() {
       });
       if (response.data.success) {
         setArtist(response.data.data[0]);
-        setArtistID(response.data.data[0].ophid);
+        setArtistID(response.data.data[0].oph_id);
         setIsLoading(false);
       }
     } catch (err) {
@@ -401,12 +403,12 @@ export default function ArtistSpotlight() {
   }
 
   const getArtistRank = () => {
-    if (!leaderboard || !artist || !artist.ophid) return null;
+    if (!leaderboard || !artist || !artist.oph_id) return null;
 
     const found = leaderboard.find(
       (entry) =>
-        entry.OPH_ID?.toString() === artist.ophid?.toString() ||
-        entry.ophid?.toString() === artist.ophid?.toString(),
+        entry.OPH_ID?.toString() === artist.oph_id?.toString() ||
+        entry.ophid?.toString() === artist.oph_id?.toString(),
     );
 
     return found ? found.ranks || found.rank || null : null;
@@ -527,7 +529,7 @@ export default function ArtistSpotlight() {
             {activeTab === "leaderboard" ? (
               <Leaderboard
                 leaderboardData={leaderboard}
-                artist_id={artist.ophid}
+                artistId={artist.oph_id}
               />
             ) : (
               <Songs />
