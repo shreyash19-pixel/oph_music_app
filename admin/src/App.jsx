@@ -40,7 +40,7 @@ import ArtistSettings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
 import TicketMain from "./view/dashboard/artistPortal/Tickets/tickets";
 import ResolveTickets from "./view/dashboard/artistPortal/Tickets/resolveTickets";
-import ResolveIndex from "./view/dashboard/artistPortal/Tickets/resolveIndex";
+import ResolveIndex from "./view/dashboard/artistPortal/Tickets/ResolveIndex";
 import Artist_new from "./view/dashboard/artistPortal/artistNew/Artist_new";
 import Artist_All from "./view/dashboard/artistPortal/artistAll/Artist_All";
 import TimeCalender from "./view/dashboard/artistPortal/timeCalender";

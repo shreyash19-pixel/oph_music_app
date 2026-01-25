@@ -1,4 +1,4 @@
-const { getIncome } = require("../model/income");
+const { getIncome, getTransactionHistory } = require("../model/income");
 
 const getIncomeController = async (req, res) => {
   try {
@@ -10,4 +10,14 @@ const getIncomeController = async (req, res) => {
   }
 };
 
-module.exports = { getIncomeController };
+const getTransactionHistoryController = async (req, res) => {
+  try {
+    const { ophid } = req.params;
+    const history = await getTransactionHistory(ophid);
+    res.status(200).json({ success: true, data: history });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getIncomeController, getTransactionHistoryController };

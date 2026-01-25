@@ -56,6 +56,22 @@ const createSongAudioMetric = async (payload) => {
   ];
 
   const [result] = await db.execute(sql, params);
+  
+  // If audio_platform_revenue is provided and > 0, try to insert into artist_income table
+  // This is optional - fails gracefully if table doesn't exist
+  const revenue = parseFloat(p.audio_platform_revenue);
+  if (revenue && revenue > 0) {
+    try {
+      await db.execute(
+        `INSERT INTO artist_income (oph_id, song_id, song_name, income_type, amount, description, created_at)
+         VALUES (?, ?, ?, 'audio_platform_revenue', ?, ?, NOW())`,
+        [p.OPH_ID, p.song_id, p.song_name, revenue, `${p.audio_platform_name} revenue`]
+      );
+    } catch (err) {
+      console.log('Note: artist_income table insert skipped (table may not exist yet)');
+    }
+  }
+  
   // result.insertId contains the newly created id
   const [rows] = await db.execute(
     "SELECT * FROM song_audio_metrics WHERE id = ?",
