@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import axiosApi from '../../../conf/axios';
 import { toast } from 'react-hot-toast';
 
 const ResetPassword = () => {
@@ -18,9 +18,9 @@ const ResetPassword = () => {
     }
     setIsLoading(true);
     try {
-      await axios.post('/api/auth/reset-password', { token, new_password: newPassword });
+      await axiosApi.post('auth/reset-password', { token, new_password: newPassword });
       toast.success('Password reset successfully');
-      navigate('/login');
+      navigate('/auth/login');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Something went wrong');
     } finally {
@@ -93,4 +93,4 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword; 
+export default ResetPassword;

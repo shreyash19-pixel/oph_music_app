@@ -27,4 +27,12 @@ const getArtistDetail = async (ophid) => {
   return rows;
 };
 
-module.exports = { findUserByEmail, checkRejectedStep, getArtistDetail };
+const findUserByOphId = async (ophid) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM user_details WHERE ophid = ?",
+    [ophid],
+  );
+  return rows;
+};
+
+module.exports = { findUserByEmail, checkRejectedStep, getArtistDetail, findUserByOphId };

@@ -1,6 +1,6 @@
 const payment_details = require("../model/payments");
 const { saveNotification } = require("../../utils/notify");
-const AdminPaymentService = require("../services/AdminPaymentService");
+const { updateSongStatus } = require("../model/songs");
 
 const updateStatus = async (req, res) => {
   try {
@@ -36,7 +36,8 @@ const updateStatus = async (req, res) => {
       songId
     });
 
-    const { place } = result;
+    const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionId);
+    const place = paymentDetails[0].From;
 
     let link = null;
     if (status === "rejected") {

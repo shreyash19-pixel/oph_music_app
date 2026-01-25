@@ -314,8 +314,7 @@ export default function RequestTicketForm() {
   useEffect(() => {
     fetchTicketCategories();
   }, []);
-
-
+  
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-6 p-6">
       <div className="max-w-xl">
@@ -348,12 +347,14 @@ export default function RequestTicketForm() {
                     </p>
                     <p className="text-sm">{ticket.category}</p>
                     <p className="text-xs text-gray-400">
-                      {new Date(ticket.created_at).toLocaleDateString()}
+                      {new Date(ticket.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <span
                     className={`text-sm font-semibold ${
-                      ticket.status == 'Resolved' ? "text-green-400" : "text-red-400"
+                      ticket.status == "Resolved"
+                        ? "text-green-400"
+                        : "text-red-400"
                     }`}
                   >
                     {STATUS_MAP[ticket.status]}
