@@ -103,7 +103,7 @@ async function saveMonthlyKPIMetrics() {
     Object.keys(updatedData).forEach(year => {
       Object.keys(updatedData[year]).forEach(month => {
         updatedData[year][month].forEach(record => {
-          existingOPHIDs.add(record.OPH_ID);
+          existingOPHIDs.add(record.oph_id);
         });
       });
     });
@@ -136,12 +136,12 @@ async function saveMonthlyKPIMetrics() {
       // For first run, process all records including historical data
       // For subsequent runs, only process records that are relevant to current or future months
       if (!isFirstRun && !isCreatedInCurrentOrFuture && !isUpdatedInCurrentOrFuture) {
-        console.log(`SKIPPED: Record for OPH_ID: ${record.OPH_ID} is from past months only - not processing`);
+        console.log(`SKIPPED: Record for OPH_ID: ${record.oph_id} is from past months only - not processing`);
         return; // Skip this record completely
       }
 
       if (isFirstRun) {
-        console.log(`FIRST RUN: Processing all records including historical data for OPH_ID: ${record.OPH_ID}`);
+        console.log(`FIRST RUN: Processing all records including historical data for OPH_ID: ${record.oph_id}`);
       }
 
       // Place record in creation month
@@ -151,12 +151,12 @@ async function saveMonthlyKPIMetrics() {
         
         // Check if this OPH_ID already exists in creation month
         const existingInCreatedMonth = organizedData[createdYear][createdMonthName].some(existingRecord => 
-          existingRecord.OPH_ID === record.OPH_ID
+          existingRecord.oph_id === record.oph_id
         );
         
         if (!existingInCreatedMonth) {
           organizedData[createdYear][createdMonthName].push(record);
-          console.log(`Added record for OPH_ID: ${record.OPH_ID} in ${createdMonthName} ${createdYear} (creation month)`);
+          console.log(`Added record for OPH_ID: ${record.oph_id} in ${createdMonthName} ${createdYear} (creation month)`);
         }
       }
 
@@ -167,15 +167,15 @@ async function saveMonthlyKPIMetrics() {
         
         // Check if this OPH_ID already exists in update month
         const existingInUpdatedMonth = organizedData[updatedYear][updatedMonthName].some(existingRecord => 
-          existingRecord.OPH_ID === record.OPH_ID
+          existingRecord.oph_id === record.oph_id
         );
         
         if (!existingInUpdatedMonth) {
           organizedData[updatedYear][updatedMonthName].push(record);
-          console.log(`Added record for OPH_ID: ${record.OPH_ID} in ${updatedMonthName} ${updatedYear} (update month)`);
+          console.log(`Added record for OPH_ID: ${record.oph_id} in ${updatedMonthName} ${updatedYear} (update month)`);
         }
       } else if ((isFirstRun || isCreatedInCurrentOrFuture) && (isFirstRun || isUpdatedInCurrentOrFuture)) {
-        console.log(`Record for OPH_ID: ${record.OPH_ID} created and updated in same month (${createdMonthName} ${createdYear})`);
+        console.log(`Record for OPH_ID: ${record.oph_id} created and updated in same month (${createdMonthName} ${createdYear})`);
       }
     });
 
@@ -211,15 +211,15 @@ async function saveMonthlyKPIMetrics() {
           // Update only the records that were actually updated in current month
           currentMonthUpdatedRecords.forEach(updatedRecord => {
             const existingIndex = updatedData[year][month].findIndex(existingRecord => 
-              existingRecord.OPH_ID === updatedRecord.OPH_ID
+              existingRecord.oph_id === updatedRecord.oph_id
             );
             
             if (existingIndex !== -1) {
               updatedData[year][month][existingIndex] = updatedRecord;
-              console.log(`Updated record for OPH_ID: ${updatedRecord.OPH_ID} in current month (${month} ${year})`);
+              console.log(`Updated record for OPH_ID: ${updatedRecord.oph_id} in current month (${month} ${year})`);
             } else {
               updatedData[year][month].push(updatedRecord);
-              console.log(`Added new record for OPH_ID: ${updatedRecord.OPH_ID} in current month (${month} ${year})`);
+              console.log(`Added new record for OPH_ID: ${updatedRecord.oph_id} in current month (${month} ${year})`);
             }
           });
           
@@ -239,12 +239,12 @@ async function saveMonthlyKPIMetrics() {
           
           currentMonthCreatedRecords.forEach(newRecord => {
             const recordExists = updatedData[year][month].some(existingRecord => 
-              existingRecord.OPH_ID === newRecord.OPH_ID
+              existingRecord.oph_id === newRecord.oph_id
             );
             
             if (!recordExists) {
               updatedData[year][month].push(newRecord);
-              console.log(`Added new record for OPH_ID: ${newRecord.OPH_ID} in current month (${month} ${year}) - created but not updated`);
+              console.log(`Added new record for OPH_ID: ${newRecord.oph_id} in current month (${month} ${year}) - created but not updated`);
             }
           });
         } else {
@@ -253,16 +253,16 @@ async function saveMonthlyKPIMetrics() {
           
           organizedData[year][month].forEach(newRecord => {
             const recordExists = updatedData[year][month].some(existingRecord => 
-              existingRecord.OPH_ID === newRecord.OPH_ID
+              existingRecord.oph_id === newRecord.oph_id
             );
             
             if (!recordExists) {
               updatedData[year][month].push(newRecord);
-              console.log(`Added new record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year})`);
+              console.log(`Added new record for OPH_ID: ${newRecord.oph_id} in future month (${month} ${year})`);
             } else {
               // Update existing record only if the new one has a more recent updated_at
               const existingRecord = updatedData[year][month].find(existingRecord => 
-                existingRecord.OPH_ID === newRecord.OPH_ID
+                existingRecord.oph_id === newRecord.oph_id
               );
               
               if (existingRecord) {
@@ -271,12 +271,12 @@ async function saveMonthlyKPIMetrics() {
                 
                 if (newUpdatedAt > existingUpdatedAt) {
                   const existingIndex = updatedData[year][month].findIndex(existingRecord => 
-                    existingRecord.OPH_ID === newRecord.OPH_ID
+                    existingRecord.oph_id === newRecord.oph_id
                   );
                   updatedData[year][month][existingIndex] = newRecord;
-                  console.log(`Updated record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year}) - newer data`);
+                  console.log(`Updated record for OPH_ID: ${newRecord.oph_id} in future month (${month} ${year}) - newer data`);
                 } else {
-                  console.log(`PROTECTED: Kept existing record for OPH_ID: ${newRecord.OPH_ID} in future month (${month} ${year}) - existing data is newer`);
+                  console.log(`PROTECTED: Kept existing record for OPH_ID: ${newRecord.oph_id} in future month (${month} ${year}) - existing data is newer`);
                 }
               }
             }

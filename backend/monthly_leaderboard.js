@@ -104,7 +104,7 @@ async function saveMonthlyLeaderboardMetrics() {
     Object.keys(updatedData).forEach(year => {
       Object.keys(updatedData[year]).forEach(month => {
         updatedData[year][month].forEach(record => {
-          existingOPHIDs.add(record.OPH_ID);
+          existingOPHIDs.add(record.oph_id);
         });
       });
     });
@@ -116,9 +116,9 @@ async function saveMonthlyLeaderboardMetrics() {
     const organizedData = {};
     
     leaderboardData.forEach((record) => {
-      // Get both creation and update dates
-      const createdAt = new Date(record.createdAt);
-      const updatedAt = new Date(record.updatedAt);
+      // Get both creation and update dates (API returns snake_case)
+      const createdAt = new Date(record.created_at);
+      const updatedAt = new Date(record.updated_at);
       
       const createdYear = createdAt.getFullYear();
       const createdMonth = createdAt.getMonth();
@@ -137,12 +137,12 @@ async function saveMonthlyLeaderboardMetrics() {
       // For first run, process all records including historical data
       // For subsequent runs, only process records that are relevant to current or future months
       if (!isFirstRun && !isCreatedInCurrentOrFuture && !isUpdatedInCurrentOrFuture) {
-        console.log(`SKIPPED: Record for OPH_ID: ${record.OPH_ID} is from past months only - not processing`);
+        console.log(`SKIPPED: Record for OPH_ID: ${record.oph_id} is from past months only - not processing`);
         return; // Skip this record completely
       }
 
       if (isFirstRun) {
-        console.log(`FIRST RUN: Processing all records including historical data for OPH_ID: ${record.OPH_ID}`);
+        console.log(`FIRST RUN: Processing all records including historical data for OPH_ID: ${record.oph_id}`);
       }
 
       // Place record in creation month
@@ -152,12 +152,12 @@ async function saveMonthlyLeaderboardMetrics() {
         
         // Check if this OPH_ID already exists in creation month
         const existingInCreatedMonth = organizedData[createdYear][createdMonthName].some(existingRecord => 
-          existingRecord.OPH_ID === record.OPH_ID
+          existingRecord.oph_id === record.oph_id
         );
         
         if (!existingInCreatedMonth) {
           organizedData[createdYear][createdMonthName].push(record);
-          console.log(`Added record for OPH_ID: ${record.OPH_ID} in ${createdMonthName} ${createdYear} (creation month)`);
+          console.log(`Added record for OPH_ID: ${record.oph_id} in ${createdMonthName} ${createdYear} (creation month)`);
         }
       }
 
@@ -168,15 +168,15 @@ async function saveMonthlyLeaderboardMetrics() {
         
         // Check if this OPH_ID already exists in update month
         const existingInUpdatedMonth = organizedData[updatedYear][updatedMonthName].some(existingRecord => 
-          existingRecord.OPH_ID === record.OPH_ID
+          existingRecord.oph_id === record.oph_id
         );
         
         if (!existingInUpdatedMonth) {
           organizedData[updatedYear][updatedMonthName].push(record);
-          console.log(`Added record for OPH_ID: ${record.OPH_ID} in ${updatedMonthName} ${updatedYear} (update month)`);
+          console.log(`Added record for OPH_ID: ${record.oph_id} in ${updatedMonthName} ${updatedYear} (update month)`);
         }
       } else if ((isFirstRun || isCreatedInCurrentOrFuture) && (isFirstRun || isUpdatedInCurrentOrFuture)) {
-        console.log(`Record for OPH_ID: ${record.OPH_ID} created and updated in same month (${createdMonthName} ${createdYear})`);
+        console.log(`Record for OPH_ID: ${record.oph_id} created and updated in same month (${createdMonthName} ${createdYear})`);
       }
     });
 
@@ -201,9 +201,9 @@ async function saveMonthlyLeaderboardMetrics() {
           if (isBeforeTarget) {
             data[year][month].forEach(record => {
               // Keep the latest version of each OPH_ID
-              const existing = cumulativeRecords.get(record.OPH_ID);
-              if (!existing || new Date(record.updatedAt) > new Date(existing.updatedAt)) {
-                cumulativeRecords.set(record.OPH_ID, record);
+              const existing = cumulativeRecords.get(record.oph_id);
+              if (!existing || new Date(record.updated_at) > new Date(existing.updated_at)) {
+                cumulativeRecords.set(record.oph_id, record);
               }
             });
           }
@@ -217,14 +217,14 @@ async function saveMonthlyLeaderboardMetrics() {
     const calculateMonthlyDifference = (targetYear, targetMonthName, newRecords, existingData) => {
       // Get all records that existed before this month (cumulative)
       const previousRecords = getCumulativeRecordsUpToMonth(targetYear, targetMonthName, existingData);
-      const previousOPHIDs = new Set(previousRecords.map(r => r.OPH_ID));
-      const previousRecordsMap = new Map(previousRecords.map(r => [r.OPH_ID, r]));
+      const previousOPHIDs = new Set(previousRecords.map(r => r.oph_id));
+      const previousRecordsMap = new Map(previousRecords.map(r => [r.oph_id, r]));
       
       // Find records that are new or changed
       const differences = [];
       
       newRecords.forEach(newRecord => {
-        const ophId = newRecord.OPH_ID;
+        const ophId = newRecord.oph_id;
         const previousRecord = previousRecordsMap.get(ophId);
         
         if (!previousRecord) {
@@ -237,7 +237,7 @@ async function saveMonthlyLeaderboardMetrics() {
             newRecord.song_count !== previousRecord.song_count ||
             newRecord.total_views !== previousRecord.total_views ||
             newRecord.score !== previousRecord.score ||
-            new Date(newRecord.updatedAt).getTime() !== new Date(previousRecord.updatedAt).getTime();
+            new Date(newRecord.updated_at).getTime() !== new Date(previousRecord.updated_at).getTime();
           
           if (hasChanged) {
             differences.push(newRecord);
