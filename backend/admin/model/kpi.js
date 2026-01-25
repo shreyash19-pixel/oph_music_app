@@ -176,11 +176,11 @@ const getAllKpiScores = async () => {
         ad.status AS audio_details_status,
         vd.status AS video_details_status
       FROM user_details ud
-      LEFT JOIN songs_register sr ON ud.oph_id = sr.OPH_ID
+      LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
       LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
       LEFT JOIN video_details vd ON sr.song_id = vd.song_id
       LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
-      JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID
+      JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
     )
     SELECT *
     FROM CTEKPI`);
@@ -190,11 +190,11 @@ const getAllKpiScores = async () => {
   const songMap = {};
 
   rows.forEach((row) => {
-    const ophid = row.ophid;
+    const ophid = row.oph_id;
 
     if (!songMap[ophid]) {
       songMap[ophid] = {
-        ophid: row.ophid,
+        ophid: row.oph_id,
         fullName: row.full_name,
         stageName: row.stage_name,
         personalPhoto: row.personal_photo,

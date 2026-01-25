@@ -2,7 +2,7 @@ const db = require("../DB/connect");
 
 const getArtistInfo = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT ud.oph_id, ud.full_name, ud.personal_photo ,ud.stage_name, pd.Profession, pd.Bio FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID WHERE ophid = ?",
+    "SELECT ud.oph_id, ud.full_name, ud.personal_photo ,ud.stage_name, pd.Profession, pd.Bio FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID WHERE ud.oph_id = ?",
     [ophid]
   );
   return rows;
@@ -35,7 +35,7 @@ const getSongsRankingsById = async (ophid) => {
         LEFT JOIN audio_details ad ON sr.song_id = ad.song_id 
         LEFT JOIN video_details vd ON sr.song_id = vd.song_id 
         LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id 
-        LEFT JOIN sign_up_payment sup ON sr.song_id = sup.song_id
+        LEFT JOIN payments sup ON sr.song_id = sup.song_id
         WHERE sr.OPH_ID = ?
       ) 
       SELECT * FROM CTESongStatus 

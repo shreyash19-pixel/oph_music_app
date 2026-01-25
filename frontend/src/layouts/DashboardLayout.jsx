@@ -60,7 +60,7 @@ const ArtistLayout = () => {
 
       {/* Mobile Sidebar */}
       <div
-        className={`lg:block fixed inset-0 bg-transparent z-50 transition-transform duration-300 overflow-y-auto ${
+        className={`lg:hidden fixed inset-0 bg-transparent z-50 transition-transform duration-300 overflow-y-auto ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -70,7 +70,7 @@ const ArtistLayout = () => {
       {/* Backdrop - only shows when mobile sidebar is open */}
       {isSidebarOpen && (
         <div
-          className="lg:block fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

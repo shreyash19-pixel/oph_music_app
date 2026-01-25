@@ -4,42 +4,90 @@ require("dotenv").config();
 const signin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    let navTo = "";
 
-    // Call service to handle all business logic
-    const result = await UserService.signin(email, password);
+    const user = await user_details.findUserByEmail(email);
 
-    return res.status(200).json(result);
-  } catch (error) {
-    console.error("Login error:", error);
-    
-    // Handle database connection errors specifically
-    if (error.code === 'ER_ACCESS_DENIED_ERROR') {
-      return res.status(503).json({ 
-        success: false, 
-        message: "Database connection error. Please check database credentials and permissions.",
-        error: "Access denied"
-      });
+    if (user.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User not found" });
     }
-    
-    // Handle specific errors
-    if (error.message === 'User not found') {
-      return res.status(400).json({ 
-        success: false, 
-        message: error.message 
-      });
+
+    const dbUser = user[0];
+
+    const ophId = user[0].ophid;
+    const isPasswordValid = await bcrypt.compare(password, dbUser.user_pass);
+
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
-    
-    if (error.message === 'Invalid credentials') {
-      return res.status(401).json({ 
-        success: false, 
-        message: error.message 
+
+    // const token = jwt.sign({ email }, process.env.SECRET_KEY, {
+    //   expiresIn: "1h",
+    // });
+    const token = jwt.sign(
+      {
+        email: email,
+        userData: {
+          artist: {
+            id: ophId,
+            name: dbUser.full_name,
+            stage_name: dbUser.stage_name,
+          },
+        },
+      },
+      process.env.SECRET_KEY,
+      { expiresIn: "1h" }
+    );
+
+    const result = await user_details.checkRejectedStep(dbUser.ophid);
+
+    const checkRejectedStep = result[0];
+
+    if (
+      checkRejectedStep.user_status === "under review" &&
+      checkRejectedStep.professional_status === "under review" &&
+      checkRejectedStep.documentation_status === "under review" &&
+      checkRejectedStep.payment_status === "under review"
+    ) {
+      navTo = "/auth/profile-status";
+    } else if (checkRejectedStep.payment_status === "rejected") {
+      navTo = "/auth/payment";
+    } else if (checkRejectedStep.user_status === "rejected") {
+      navTo = "/auth/create-profile/personal-details";
+    } else if (checkRejectedStep.professional_status === "rejected") {
+      navTo = "/auth/create-profile/professional-details";
+    } else if (checkRejectedStep.documentation_status === "rejected") {
+      navTo = "/auth/create-profile/documentation-details";
+    } else if (
+      checkRejectedStep.user_status === "under review" ||
+      checkRejectedStep.professional_status === "under review" ||
+      checkRejectedStep.documentation_status === "under review" ||
+      checkRejectedStep.payment_status === "under review"
+    ) {
+      navTo = dbUser.current_step;
+    } else if (checkRejectedStep.overall_status === "completed") {
+      navTo = "/dashboard";
+    } else {
+      navTo = dbUser.current_step;
+    }
+
+    console.log(navTo);
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token: token,
+      ophid: dbUser.ophid,
+      step: navTo,
+      artist_type: dbUser.artist_type,
     });
-    }
-
-    return res.status(500).json({ 
-      success: false, 
-      message: error.message || "Server error" 
-    });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

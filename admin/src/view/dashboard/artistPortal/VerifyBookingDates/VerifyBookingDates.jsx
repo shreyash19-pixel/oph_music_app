@@ -65,6 +65,8 @@ const VerifyBookingDates = () => {
       reason: reason || null,
       release_date: release_date,
       from: fromSource,
+      song_id: transactions?.calendar_song_id,
+      oph_id : transactions?.OPH_ID
     };
 
     console.log("Sending payment verification request:", requestData);

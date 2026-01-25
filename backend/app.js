@@ -46,7 +46,6 @@ const income = require("./routes/income");
 const banks = require("./routes/banks");
 const navleaderboard = require("./routes/leaderboard")
 const artistHash = require("./routes/artist_hash");
-const email = require("./routes/email")
 
 
 //Admin route assignment
@@ -180,7 +179,6 @@ app.use("/", income);
 app.use("/", banks);
 app.use("/", navleaderboard);
 app.use("/", artistHash);
-app.use("/", email)
 
 //Admin Routes
 
