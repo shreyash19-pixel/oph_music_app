@@ -51,6 +51,8 @@ import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
 import EventParticipation from "./view/dashboard/websiteConfig/Events/EventParticipation";
 import EventManagement from "./view/dashboard/websiteConfig/Events/EventManagement";
+import EventWinning from "./view/dashboard/websiteConfig/Events/EventWinning";
+import EventWinnerAssign from "./view/dashboard/websiteConfig/Events/EventWinnerAssign";
 import Artist_Kpi from "./view/dashboard/artistPortal/artistKPI";
 import AddNote from "./view/dashboard/artistPortal/artistKPI/AddNote";
 import CreateResource from "./view/dashboard/websiteConfig/resource";
@@ -143,6 +145,42 @@ function App() {
                 ]}
               >
                 <EventParticipation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event-winning"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                  ROLES.PROJECT_HEAD,
+                  ROLES.PROJECT_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
+                <EventWinning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event-winner-assign/:event_id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                  ROLES.PROJECT_HEAD,
+                  ROLES.PROJECT_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
+                ]}
+              >
+                <EventWinnerAssign />
               </ProtectedRoute>
             }
           />

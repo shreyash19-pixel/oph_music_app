@@ -13,11 +13,13 @@ const SongSocialMetrics = {
       insta_engagement,
     } = metrics;
 
-    // Check if an entry was created within the last 48 hours for this song
+    // Check if a MANUAL entry (with non-zero values) was created within the last 48 hours
+    // Skip the initial auto-created entry (which has all zero values) from song approval
     const [recentEntry] = await db.execute(
       `SELECT id, created_at FROM song_social_metrics 
        WHERE song_id = ? 
        AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+       AND (youtube_views > 0 OR youtube_engagement > 0 OR youtube_revenue > 0 OR insta_engagement > 0)
        ORDER BY created_at DESC 
        LIMIT 1`,
       [song_id]
