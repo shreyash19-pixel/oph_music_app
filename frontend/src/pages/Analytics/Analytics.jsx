@@ -133,7 +133,7 @@ useEffect(() => {
     .concat(contents.s3Metrics || [])
     .map((metric) => ({
       name: metric.song_name,
-      date: metric.date || null,
+      date: metric.updated_at || null,
       Id: metric.Id || metric.id,
       song_id: metric.song_id,
       video_url: metric.video_url,
@@ -170,19 +170,30 @@ useEffect(() => {
   };
 
   const chartData = Array.isArray(selectedContent)
-    ? selectedContent.map((c) => ({
-        name: c.date ? new Date(c.date).toLocaleDateString() : "Unknown Date",
-        value: c.youtube_views,
-        valueEngagement: c.youtube_engagement,
-        valueDuration: parseDuration(c.youtube_avg_view_duration),
-        valueInstagram: c.insta_engagement,
-      }))
+    ? selectedContent.map((c) => {
+        console.log("📊 Mapping chartData for:", {
+          date: c.date,
+          youtube_views: c.youtube_views,
+          youtube_engagement: c.youtube_engagement,
+          youtube_avg_view_duration: c.youtube_avg_view_duration,
+          insta_engagement: c.insta_engagement,
+        });
+        return {
+          name: c.date ? new Date(c.date).toLocaleDateString() : "Unknown Date",
+          date: c.date,
+          value: c.youtube_views,
+          valueEngagement: c.youtube_engagement,
+          valueDuration: parseDuration(c.youtube_avg_view_duration),
+          valueInstagram: c.insta_engagement,
+        };
+      })
     : selectedContent
     ? [
         {
           name: selectedContent.date
             ? new Date(selectedContent.date).toLocaleDateString()
             : "Unknown Date",
+          date: selectedContent.date,
           value: selectedContent.youtube_views,
           valueEngagement: selectedContent.youtube_engagement,
           valueInstagram: selectedContent.insta_engagement,
@@ -196,7 +207,8 @@ useEffect(() => {
   const AudiochartData = Array.isArray(selectedContent)
     ? selectedContent.map((c) => ({
         name: c.audio_platform_name,
-        date: c.audioDate
+        date: c.audioDate,
+        dateFormatted: c.audioDate
           ? new Date(c.audioDate).toLocaleDateString()
           : "Unknown Date",
         value: c.audio_platform_streams,
@@ -205,7 +217,8 @@ useEffect(() => {
     ? [
         {
           name: selectedContent.audio_platform_name,
-          date: selectedContent.audioDate
+          date: selectedContent.audioDate,
+          dateFormatted: selectedContent.audioDate
             ? new Date(selectedContent.audioDate).toLocaleDateString()
             : "Unknown Date",
           value: selectedContent.audio_platform_streams,
@@ -252,11 +265,21 @@ useEffect(() => {
   const filterByDuration = (data, dateField) => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - selectedDuration);
-    return data.filter((d) => d[dateField] && new Date(d[dateField]) >= cutoff);
+    return data.filter((d) => {
+      if (!d[dateField]) return true; // Include records with null dates
+      return new Date(d[dateField]) >= cutoff;
+    });
   };
 
-  const filteredChartData = filterByDuration(chartData, "name");
+  const filteredChartData = filterByDuration(chartData, "date");
   const filteredAudioChartData = filterByDuration(AudiochartData, "date");
+
+  console.log("🔍 FILTER RESULTS:", {
+    originalChartData: chartData.length,
+    filteredChartData: filteredChartData.length,
+    selectedStream,
+    data: filteredChartData,
+  });
 
   const getPaginatedCharts = (charts) => {
     const start = currentPage * chartsPerPage;
@@ -267,7 +290,6 @@ useEffect(() => {
 
   console.log("DEBUG selectedContent:", selectedContent);
 
-  // console.log("testline", chartData.name, chartData.value);
 
   console.log(
     "testLine",
