@@ -13,28 +13,41 @@ const SongSocialMetrics = {
       insta_engagement,
     } = metrics;
 
+    // Check if an entry was created within the last 48 hours for this song
+    const [recentEntry] = await db.execute(
+      `SELECT id, created_at FROM song_social_metrics 
+       WHERE song_id = ? 
+       AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [song_id]
+    );
+
+    if (recentEntry.length > 0) {
+      const lastCreatedAt = new Date(recentEntry[0].created_at);
+      const nextAllowedTime = new Date(lastCreatedAt.getTime() + 48 * 60 * 60 * 1000);
+      const hoursRemaining = Math.ceil((nextAllowedTime - new Date()) / (1000 * 60 * 60));
+      throw new Error(
+        `An entry was already created within the last 48 hours. Please wait approximately ${hoursRemaining} hour(s) before creating a new entry.`
+      );
+    }
+
+    // Create a new entry with the provided data
     const [result] = await db.execute(
-      `
-  INSERT INTO song_social_metrics
-  (
-    song_id,
-    OPH_ID,
-    song_name,
-    youtube_views,
-    youtube_engagement,
-    youtube_avg_view_duration,
-    youtube_revenue,
-    insta_engagement
-  )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  ON DUPLICATE KEY UPDATE
-    song_name = VALUES(song_name),
-    youtube_views = VALUES(youtube_views),
-    youtube_engagement = VALUES(youtube_engagement),
-    youtube_avg_view_duration = VALUES(youtube_avg_view_duration),
-    youtube_revenue = VALUES(youtube_revenue),
-    insta_engagement = VALUES(insta_engagement)
-  `,
+      `INSERT INTO song_social_metrics
+      (
+        song_id,
+        OPH_ID,
+        song_name,
+        youtube_views,
+        youtube_engagement,
+        youtube_avg_view_duration,
+        youtube_revenue,
+        insta_engagement,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         song_id,
         OPH_ID,
@@ -44,8 +57,17 @@ const SongSocialMetrics = {
         youtube_avg_view_duration,
         youtube_revenue,
         insta_engagement,
-      ],
+      ]
     );
+
+    // If youtube_revenue is provided and > 0, insert into artist_income table
+    if (youtube_revenue && parseFloat(youtube_revenue) > 0) {
+      await db.execute(
+        `INSERT INTO artist_income (oph_id, song_id, song_name, income_type, amount, description, created_at)
+         VALUES (?, ?, ?, 'youtube_revenue', ?, 'YouTube revenue from Content Analysis', NOW())`,
+        [OPH_ID, song_id, song_name, youtube_revenue]
+      );
+    }
 
     return result;
   },
@@ -58,8 +80,21 @@ const SongSocialMetrics = {
   },
 
   getMetricById: async (id) => {
+    // Return aggregated/cumulative metrics for the song across all entries
     const [rows] = await db.query(
-      `SELECT * FROM song_social_metrics WHERE song_id = ?`,
+      `SELECT 
+        song_id,
+        OPH_ID as oph_id,
+        song_name,
+        SUM(youtube_views) as youtube_views,
+        SUM(youtube_engagement) as youtube_engagement,
+        SEC_TO_TIME(SUM(TIME_TO_SEC(youtube_avg_view_duration))) as youtube_avg_view_duration,
+        SUM(youtube_revenue) as youtube_revenue,
+        SUM(insta_engagement) as insta_engagement,
+        MAX(created_at) as last_updated
+      FROM song_social_metrics 
+      WHERE song_id = ?
+      GROUP BY song_id, OPH_ID, song_name`,
       [id],
     );
     return rows[0];
