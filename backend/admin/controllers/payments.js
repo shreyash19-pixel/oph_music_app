@@ -1,6 +1,7 @@
 const payment_details = require("../model/payments");
 const { saveNotification } = require("../../utils/notify");
 const { updateSongStatus } = require("../model/songs");
+const AdminPaymentService = require("../services/AdminPaymentService");
 
 const updateStatus = async (req, res) => {
   try {
