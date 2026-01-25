@@ -60,13 +60,18 @@ const SongSocialMetrics = {
       ]
     );
 
-    // If youtube_revenue is provided and > 0, insert into artist_income table
+    // If youtube_revenue is provided and > 0, try to insert into artist_income table
+    // This is optional - fails gracefully if table doesn't exist
     if (youtube_revenue && parseFloat(youtube_revenue) > 0) {
-      await db.execute(
-        `INSERT INTO artist_income (oph_id, song_id, song_name, income_type, amount, description, created_at)
-         VALUES (?, ?, ?, 'youtube_revenue', ?, 'YouTube revenue from Content Analysis', NOW())`,
-        [OPH_ID, song_id, song_name, youtube_revenue]
-      );
+      try {
+        await db.execute(
+          `INSERT INTO artist_income (oph_id, song_id, song_name, income_type, amount, description, created_at)
+           VALUES (?, ?, ?, 'youtube_revenue', ?, 'YouTube revenue from Content Analysis', NOW())`,
+          [OPH_ID, song_id, song_name, youtube_revenue]
+        );
+      } catch (err) {
+        console.log('Note: artist_income table insert skipped (table may not exist yet)');
+      }
     }
 
     return result;
