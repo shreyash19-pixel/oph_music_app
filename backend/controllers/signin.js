@@ -1,4 +1,7 @@
 const UserService = require("../services/user/UserService");
+const user_details = require("../model/signin");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const signin = async (req, res) => {
@@ -16,7 +19,7 @@ const signin = async (req, res) => {
 
     const dbUser = user[0];
 
-    const ophId = user[0].ophid;
+    const ophId = dbUser.oph_id;
     const isPasswordValid = await bcrypt.compare(password, dbUser.user_pass);
 
     if (!isPasswordValid) {
@@ -43,7 +46,7 @@ const signin = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    const result = await user_details.checkRejectedStep(dbUser.ophid);
+    const result = await user_details.checkRejectedStep(dbUser.oph_id);
 
     const checkRejectedStep = result[0];
 
@@ -81,7 +84,7 @@ const signin = async (req, res) => {
       success: true,
       message: "Login successful",
       token: token,
-      ophid: dbUser.ophid,
+      ophid: dbUser.oph_id,
       step: navTo,
       artist_type: dbUser.artist_type,
     });
