@@ -217,6 +217,17 @@ const PaymentScreen = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    // Debug logs for payment data
+    console.log("=== PAYMENT DEBUG LOGS ===");
+    console.log("Raw location.state:", location.state);
+    console.log("Extracted values:");
+    console.log("- from:", from, "(type:", typeof from, ")");
+    console.log("- event_id:", event_id, "(type:", typeof event_id, ")");
+    console.log("- song_id:", song_id, "(type:", typeof song_id, ")");
+    console.log("- oph_id:", oph_id, "(type:", typeof oph_id, ")");
+    console.log("- trans:", trans, "(type:", typeof trans, ")");
+    
     try {
       const formData = {
         OPH_ID: oph_id,
@@ -233,7 +244,10 @@ const PaymentScreen = () => {
         lyricalVid: lyrical_services,
         amount: getDisplayAmount(),
       };
-      console.log(formData);
+      
+      console.log("Final formData being sent:", formData);
+      console.log("API Path:", from === "Song Repayment" ? "/song-payment" : "/auth/payment");
+      console.log("=========================");
       
       const apiPath =
         from === "Song Repayment" ? "/song-payment" : "/auth/payment";

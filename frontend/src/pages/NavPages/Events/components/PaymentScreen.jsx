@@ -17,10 +17,10 @@ const PaymentScreen = () => {
     returnPath = "/",
     heading = "Payment Required",
     event_id = null,
-    event_booking_id = null
+    event_booking_id = null,
+    from = null
   } = location.state || {};
   console.log(location.state);
-  
 
   const handlePaymentSuccess = async (e) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ const PaymentScreen = () => {
       // check if this payment is from date change
       if (location.state?.fromDateChange) {
         console.log("date change");
-        
+
         // if yes, then navigate to date change success page
         navigate("/dashboard/success", {
           state: {
@@ -51,19 +51,16 @@ const PaymentScreen = () => {
           replace: true,
         });
       } else if (returnPath === "/events/online-music-events") {
-        
         // Navigate to success page for ticket submission
         navigate("/success", {
           state: {
             heading: "Registration Successful!",
             btnText: "Check Out More Online Events",
             redirectTo: "/events/online-music-events",
-
           },
           replace: true,
         });
       } else {
-        
         // preserve the toast parameters from the original navigation
         const { showSuccessToast, successMessage } = location.state || {};
 
@@ -104,7 +101,6 @@ const PaymentScreen = () => {
 
   return (
     <div className="relative">
-      
       <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center p-8">
         <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
           {heading} <span className="text-cyan-400">₹{amount}/-</span>
@@ -155,7 +151,6 @@ const PaymentScreen = () => {
               >
                 {/* {loading ? "Processing..." : "Confirm Payment"} */}
                 Confirm Payment
-
               </button>
             </div>
           </form>

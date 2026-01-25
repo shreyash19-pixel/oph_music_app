@@ -138,6 +138,16 @@ const getTicketSummaries = async (req, res) => {
   }
 };
 
+const getResolveSummaries = async (req, res) => {
+  try {
+    const tickets = await ticketModel.getResolveSummaries();
+    res.status(200).json({ success: true, data: tickets });
+  } catch (error) {
+    console.error("Error fetching tickets:", error.message);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 const getTicket = async (req, res) => {
   const { ticketNumber } = req.query;
   if (!ticketNumber) {
@@ -166,4 +176,5 @@ module.exports = {
   getTicketSummaries,
   updateResolvedSummary,
   getTicket,
+  getResolveSummaries,
 };

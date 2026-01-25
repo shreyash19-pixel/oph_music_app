@@ -7,6 +7,10 @@ const updatePassword = async (ophid, password) => {
     return rows
 }
 
+const checkExistingEmail = async (email) => {
+    const [rows] = await db.execute("SELECT * FROM user_details WHERE email = ?", [email])
+    return rows
+}
 
 
-module.exports = {updatePassword}
+module.exports = {updatePassword, checkExistingEmail}

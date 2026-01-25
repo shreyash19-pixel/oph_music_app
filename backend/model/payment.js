@@ -67,6 +67,15 @@ const getPaymentByTransactionId = async (connection, transactionId) => {
   return rows;
 };
 
+
+const getSignupPaymentByOphId = async (OPH_ID) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM sign_up_payment WHERE OPH_ID = ? AND `From` = 'Registration' ORDER BY createdAt DESC LIMIT 1",
+    [OPH_ID]
+  );
+  return rows;
+};
+
 module.exports = {
   insertPayment,
   insertSongId,
