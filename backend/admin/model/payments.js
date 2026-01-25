@@ -1,7 +1,14 @@
 const db = require("../../DB/connect");
+const AdminSongService = require("../services/AdminSongService");
 const SongApplicationStatusService = require("../../services/song/SongApplicationStatusService");
 
-const updateStatus = async (connection, ophId, transactionId, newStatus, reject_reason) => {
+const updateStatus = async (
+  connection,
+  ophId,
+  transactionId,
+  newStatus,
+  reject_reason,
+) => {
   try {
     // Use provided connection if available (for transactions), otherwise use default db
     const dbConnection = connection || db;
@@ -9,7 +16,7 @@ const updateStatus = async (connection, ophId, transactionId, newStatus, reject_
       `UPDATE payments 
        SET status = ?, reject_reason = ?
        WHERE oph_id = ? AND transaction_id = ?`,
-      [newStatus, reject_reason, ophId, transactionId]
+      [newStatus, reject_reason, ophId, transactionId],
     );
 
     return result;
@@ -24,7 +31,7 @@ const getPaymentDetailsForAllSong = async () => {
       `SELECT *
         FROM payments
         WHERE (from_source = 'Song Registration' OR from_source = 'Special artist song registration')
-        AND status = 'under review'`
+        AND status = 'under review'`,
     );
     return rows;
   } catch (error) {
@@ -34,7 +41,7 @@ const getPaymentDetailsForAllSong = async () => {
 
 const getPaymentDetailsForAllEvents = async () => {
   try {
-    // Query for event payments - check by event_id (most reliable) 
+    // Query for event payments - check by event_id (most reliable)
     // and also check from_source for backward compatibility
     const [rows] = await db.query(
       `SELECT *
@@ -44,11 +51,11 @@ const getPaymentDetailsForAllEvents = async () => {
           OR from_source = 'Event Registration'
           OR from_source LIKE 'Event Regist%'
         )
-        AND status = 'under review'`
+        AND status = 'under review'`,
     );
     return rows;
   } catch (error) {
-    console.error('Error in getPaymentDetailsForAllEvents:', error);
+    console.error("Error in getPaymentDetailsForAllEvents:", error);
     throw error;
   }
 };
@@ -59,7 +66,7 @@ const getPaymentDetailsForAllBooking = async () => {
       `SELECT *
         FROM payments
         WHERE (from_source = 'Date booking' OR from_source = 'Date Booking')
-        AND status = 'under review'`
+        AND status = 'under review'`,
     );
     return rows;
   } catch (error) {
@@ -96,11 +103,11 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
       )
       AND oph_id = ?
       ORDER BY created_at DESC`,
-      [ophid]
+      [ophid],
     );
     return rows;
   } catch (error) {
-    console.error('Error in getPaymentDetailsForEventsByOphId:', error);
+    console.error("Error in getPaymentDetailsForEventsByOphId:", error);
     throw error;
   }
 };
@@ -112,7 +119,7 @@ const updateSongPaymentSp = async (ophid, transactionId, FormData, status) => {
   console.log("Values:", values);
   console.log(
     "Value types:",
-    values.map((v) => typeof v)
+    values.map((v) => typeof v),
   );
 
   try {
@@ -138,12 +145,12 @@ const updateEventPaymentSp = async (
   status,
   reject_reason,
   eventId,
-  isRejected = false
+  isRejected = false,
 ) => {
   try {
     // Use provided connection if available (for transactions), otherwise use default db
     const dbConnection = connection || db;
-    
+
     // If payment is rejected, move event_id to reject_for and set event_id to NULL
     if (isRejected) {
       const [result] = await dbConnection.query(
@@ -156,7 +163,14 @@ const updateEventPaymentSp = async (
          WHERE oph_id = ? 
            AND transaction_id = ? 
            AND event_id = ?`,
-        [status, reject_reason || null, eventId, ophId, transactionId, parseInt(eventId)]
+        [
+          status,
+          reject_reason || null,
+          eventId,
+          ophId,
+          transactionId,
+          parseInt(eventId),
+        ],
       );
 
       console.log("Update event payment result (rejected):", result);
@@ -171,7 +185,13 @@ const updateEventPaymentSp = async (
          WHERE oph_id = ? 
            AND transaction_id = ? 
            AND event_id = ?`,
-        [status, reject_reason || null, ophId, transactionId, parseInt(eventId)]
+        [
+          status,
+          reject_reason || null,
+          ophId,
+          transactionId,
+          parseInt(eventId),
+        ],
       );
 
       console.log("Update event payment result:", result);
@@ -195,7 +215,7 @@ const getPaymentDetailsByTransactionId = async (transactionId) => {
       `SELECT *
         FROM payments
         WHERE transaction_id = ?`,
-      [transactionId]
+      [transactionId],
     );
     return rows;
   } catch (error) {
@@ -212,7 +232,7 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
         AND oph_id = ?
         AND song_id = ?
         ORDER BY created_at DESC`,
-      [ophid, songid]
+      [ophid, songid],
     );
     return rows;
   } catch (error) {
@@ -226,7 +246,7 @@ const updateStatusPayment = async (ophId, songId, status) => {
       `UPDATE payments 
        SET status = ?
        WHERE oph_id = ? AND song_id = ?`,
-      [status, ophId, songId]
+      [status, ophId, songId],
     );
 
     return result;
@@ -262,7 +282,7 @@ const getTransactionDetails = async (release_date) => {
       WHERE sp.release_date = ?
       ORDER BY sp.created_at DESC
       LIMIT 1`,
-      [release_date]
+      [release_date],
     );
     return rows;
   } catch (error) {
@@ -270,13 +290,14 @@ const getTransactionDetails = async (release_date) => {
   }
 };
 
-const setPaymentVerification = async (decision, reason, release_date, from) => {
+const setPaymentVerification = async (decision, reason, release_date, from, song_id, oph_id) => {
   const connection = await db.getConnection();
-  
+
   try {
     await connection.beginTransaction();
-    
-    let isReasonEmpty = reason === "null" || reason === null || reason === "" ? null : reason;
+
+    let isReasonEmpty =
+      reason === "null" || reason === null || reason === "" ? null : reason;
     let affectedRows = 0;
 
     if (from === "Date booking" || from === "Date Booking") {
@@ -288,40 +309,50 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
            WHERE release_date = ? 
            AND (LOWER(from_source) = 'date booking' OR from_source = 'Release date change')
            AND status != 'rejected'`,
-          [release_date]
+          [release_date],
         );
-        
+
         // If no payments found with status != 'rejected', try to find any payments for this date
         if (paymentsToUpdate.length === 0) {
           const [allPayments] = await connection.execute(
             `SELECT id, oph_id, release_date, from_source, status FROM payments 
              WHERE release_date = ? 
              AND (LOWER(from_source) = 'date booking' OR from_source = 'Release date change')`,
-            [release_date]
+            [release_date],
           );
-          console.log(`[setPaymentVerification] No non-rejected payments found. All payments for this date:`, allPayments);
+          console.log(
+            `[setPaymentVerification] No non-rejected payments found. All payments for this date:`,
+            allPayments,
+          );
         }
 
-        console.log(`[setPaymentVerification] Found ${paymentsToUpdate.length} payments to update for date: ${release_date}`);
+        console.log(
+          `[setPaymentVerification] Found ${paymentsToUpdate.length} payments to update for date: ${release_date}`,
+        );
         console.log(`[setPaymentVerification] Payments:`, paymentsToUpdate);
 
         // Delete calendar entry
         const [deleteResult] = await connection.execute(
           "DELETE FROM calender WHERE current_booking_date = ?",
-          [release_date]
+          [release_date],
         );
-        console.log(`[setPaymentVerification] Deleted ${deleteResult.affectedRows} calendar entries`);
+        console.log(
+          `[setPaymentVerification] Deleted ${deleteResult.affectedRows} calendar entries`,
+        );
         affectedRows += deleteResult.affectedRows;
 
         // Update payments: set status, reject_reason, and move release_date to reject_for
         if (paymentsToUpdate.length > 0) {
-          const paymentIds = paymentsToUpdate.map(p => p.id);
-          console.log(`[setPaymentVerification] Updating payment IDs:`, paymentIds);
-          
+          const paymentIds = paymentsToUpdate.map((p) => p.id);
+          console.log(
+            `[setPaymentVerification] Updating payment IDs:`,
+            paymentIds,
+          );
+
           // For single payment, use direct WHERE clause; for multiple, use IN clause
           let updateQuery;
           let updateParams;
-          
+
           if (paymentIds.length === 1) {
             updateQuery = `UPDATE payments 
              SET status = ?, 
@@ -332,7 +363,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
              WHERE id = ?`;
             updateParams = [decision, isReasonEmpty, paymentIds[0]];
           } else {
-            const placeholders = paymentIds.map(() => '?').join(',');
+            const placeholders = paymentIds.map(() => "?").join(",");
             updateQuery = `UPDATE payments 
              SET status = ?, 
                  reject_reason = ?, 
@@ -342,19 +373,28 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
              WHERE id IN (${placeholders})`;
             updateParams = [decision, isReasonEmpty, ...paymentIds];
           }
-          
+
           console.log(`[setPaymentVerification] Executing query:`, updateQuery);
           console.log(`[setPaymentVerification] With params:`, updateParams);
-          
-          const [updateResult] = await connection.execute(updateQuery, updateParams);
-          console.log(`[setPaymentVerification] Updated ${updateResult.affectedRows} payment records`);
+
+          const [updateResult] = await connection.execute(
+            updateQuery,
+            updateParams,
+          );
+          console.log(
+            `[setPaymentVerification] Updated ${updateResult.affectedRows} payment records`,
+          );
           affectedRows += updateResult.affectedRows;
-          
+
           if (updateResult.affectedRows === 0) {
-            console.log(`[setPaymentVerification] WARNING: Update query executed but no rows were affected!`);
+            console.log(
+              `[setPaymentVerification] WARNING: Update query executed but no rows were affected!`,
+            );
           }
         } else {
-          console.log(`[setPaymentVerification] WARNING: No payments found to update for date ${release_date}`);
+          console.log(
+            `[setPaymentVerification] WARNING: No payments found to update for date ${release_date}`,
+          );
         }
       } else if (decision === "approved") {
         // Approve the payment
@@ -366,12 +406,23 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
            WHERE release_date = ? 
            AND (from_source = 'Date booking' OR from_source = 'Release date change')
            AND status != 'approved'`,
-          [decision, release_date]
+          [decision, release_date],
         );
+
+        const [updatedSongApplication] = await connection.execute(
+          `UPDATE song_application_status 
+           SET status_payment = ? 
+           WHERE song_id = ?`,
+          [decision,song_id],
+        );
+
+
+        await AdminSongService.recalculateSongStatus(connection,song_id,oph_id, reason)
+
         affectedRows += updateResult.affectedRows;
+        affectedRows += updatedSongApplication.affectedRows;
       }
-    } 
-    else if (from === "Release date change") {
+    } else if (from === "Release date change") {
       if (decision === "rejected") {
         // When rejecting a date change, restore previous date in calender
         // Get the calendar entry to find song_id, previous_booking_date, reason, and reason_history
@@ -380,7 +431,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
            FROM calender 
            WHERE current_booking_date = ? 
            AND oph_id = (SELECT oph_id FROM payments WHERE release_date = ? AND from_source = 'Release date change' LIMIT 1)`,
-          [release_date, release_date]
+          [release_date, release_date],
         );
 
         if (calendarEntries.length > 0) {
@@ -388,17 +439,22 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
           const songId = entry.song_id;
           const previousDate = entry.previous_booking_date;
           const ophId = entry.oph_id;
-          const existingHistory = entry.reason_history ? JSON.parse(entry.reason_history) : [];
+          const existingHistory = entry.reason_history
+            ? JSON.parse(entry.reason_history)
+            : [];
 
           if (previousDate) {
             // Update reason_history - mark the latest pending entry as rejected
             const updatedHistory = existingHistory.map((item, index) => {
-              if (index === existingHistory.length - 1 && item.status === 'pending') {
+              if (
+                index === existingHistory.length - 1 &&
+                item.status === "pending"
+              ) {
                 return {
                   ...item,
-                  status: 'rejected',
+                  status: "rejected",
                   rejected_at: new Date().toISOString(),
-                  admin_reject_reason: isReasonEmpty || null
+                  admin_reject_reason: isReasonEmpty || null,
                 };
               }
               return item;
@@ -414,7 +470,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                    updated_at = NOW()
                WHERE current_booking_date = ? 
                AND oph_id = ?`,
-              [JSON.stringify(updatedHistory), release_date, ophId]
+              [JSON.stringify(updatedHistory), release_date, ophId],
             );
 
             // Sync songs_register.release_date from calender if song_id exists
@@ -426,7 +482,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                      sr.updated_at = NOW()
                  WHERE sr.song_id = ?
                  AND c.oph_id = ?`,
-                [songId, ophId]
+                [songId, ophId],
               );
             }
           }
@@ -440,7 +496,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                updated_at = NOW()
            WHERE release_date = ? 
            AND from_source = 'Release date change'`,
-          [decision, isReasonEmpty, release_date]
+          [decision, isReasonEmpty, release_date],
         );
         affectedRows += updateResult.affectedRows;
       } else if (decision === "approved") {
@@ -451,22 +507,27 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
            FROM calender 
            WHERE current_booking_date = ? 
            AND oph_id = (SELECT oph_id FROM payments WHERE release_date = ? AND from_source = 'Release date change' LIMIT 1)`,
-          [release_date, release_date]
+          [release_date, release_date],
         );
 
         if (calendarEntries.length > 0) {
           const entry = calendarEntries[0];
           const songId = entry.song_id;
           const ophId = entry.oph_id;
-          const existingHistory = entry.reason_history ? JSON.parse(entry.reason_history) : [];
+          const existingHistory = entry.reason_history
+            ? JSON.parse(entry.reason_history)
+            : [];
 
           // Update reason_history - mark the latest pending entry as approved
           const updatedHistory = existingHistory.map((item, index) => {
-            if (index === existingHistory.length - 1 && item.status === 'pending') {
+            if (
+              index === existingHistory.length - 1 &&
+              item.status === "pending"
+            ) {
               return {
                 ...item,
-                status: 'approved',
-                approved_at: new Date().toISOString()
+                status: "approved",
+                approved_at: new Date().toISOString(),
               };
             }
             return item;
@@ -480,7 +541,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                  updated_at = NOW()
              WHERE current_booking_date = ? 
              AND oph_id = ?`,
-            [JSON.stringify(updatedHistory), release_date, ophId]
+            [JSON.stringify(updatedHistory), release_date, ophId],
           );
 
           // Sync songs_register.release_date from calender if song_id exists
@@ -492,7 +553,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                    sr.updated_at = NOW()
                WHERE sr.song_id = ?
                AND c.oph_id = ?`,
-              [songId, ophId]
+              [songId, ophId],
             );
           }
         }
@@ -505,12 +566,11 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                updated_at = NOW()
            WHERE release_date = ? 
            AND from_source = 'Release date change'`,
-          [decision, release_date]
+          [decision, release_date],
         );
         affectedRows += updateResult.affectedRows;
       }
-    } 
-    else if (from === "Song Registration") {
+    } else if (from === "Song Registration") {
       if (decision === "rejected" || decision === "approved") {
         // Get song_id from payment record before updating
         const [paymentRecords] = await connection.execute(
@@ -518,7 +578,7 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
            WHERE release_date = ? 
            AND from_source = 'Song Registration'
            LIMIT 1`,
-          [release_date]
+          [release_date],
         );
 
         const [updateResult] = await connection.execute(
@@ -528,43 +588,52 @@ const setPaymentVerification = async (decision, reason, release_date, from) => {
                updated_at = NOW()
            WHERE release_date = ? 
            AND from_source = 'Song Registration'`,
-          [decision, isReasonEmpty, release_date]
+          [decision, isReasonEmpty, release_date],
         );
         affectedRows += updateResult.affectedRows;
 
         // Update song_application_status if song_id exists
         if (paymentRecords.length > 0 && paymentRecords[0].song_id) {
           const songId = paymentRecords[0].song_id;
-          
+
           // Normalize decision to match song_application_status format
-          let paymentStatus = 'pending';
-          if (decision === 'rejected' || decision === 'Rejected') {
-            paymentStatus = 'rejected';
-          } else if (decision === 'approved' || decision === 'Approved') {
-            paymentStatus = 'approved';
-          } else if (decision === 'under review' || decision === 'Under Review') {
-            paymentStatus = 'under review';
+          let paymentStatus = "pending";
+          if (decision === "rejected" || decision === "Rejected") {
+            paymentStatus = "rejected";
+          } else if (decision === "approved" || decision === "Approved") {
+            paymentStatus = "approved";
+          } else if (
+            decision === "under review" ||
+            decision === "Under Review"
+          ) {
+            paymentStatus = "under review";
           }
 
           // Update song_application_status table
-          const SongApplicationStatusService = require('../../services/song/SongApplicationStatusService');
+          const SongApplicationStatusService = require("../../services/song/SongApplicationStatusService");
           await SongApplicationStatusService.updateStepStatus(
             connection,
             songId,
-            'payment',
+            "payment",
             paymentStatus,
-            isReasonEmpty
+            isReasonEmpty,
           );
         }
       }
     }
 
     const transactionDet = await getTransactionDetails(release_date);
-    
-    await SongApplicationStatusService.updateStepStatus(connection, transactionDet[0].song_id, "payment", decision, reason)
-    
+
+    await SongApplicationStatusService.updateStepStatus(
+      connection,
+      transactionDet[0].song_id,
+      "payment",
+      decision,
+      reason,
+    );
+
     await connection.commit();
-    
+
     return { success: true, affectedRows };
   } catch (error) {
     await connection.rollback();
