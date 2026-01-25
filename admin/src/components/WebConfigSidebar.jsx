@@ -88,6 +88,10 @@ const WebConfigSidebar = ({ children }) => {
           label: "Event Participants",
           route: "/event_participants",
         },
+        {
+          label: "Event Winning",
+          route: "/event-winning",
+        },
       ],
     },
     {

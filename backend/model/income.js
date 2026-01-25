@@ -51,7 +51,7 @@ const getTransactionHistory = async (ophid) => {
 
             SELECT 
                 'withdraw' as type,
-                ophID as oph_id,
+                OPH_ID as oph_id,
                 NULL as song_id,
                 NULL as song_name,
                 'withdrawal' as source,
@@ -60,7 +60,7 @@ const getTransactionHistory = async (ophid) => {
                 reason as description,
                 created_at
             FROM withdraw 
-            WHERE ophID = ?
+            WHERE OPH_ID = ?
 
             ORDER BY created_at DESC`,
             [ophid, ophid]
@@ -71,7 +71,7 @@ const getTransactionHistory = async (ophid) => {
         const [rows] = await db.execute(
             `SELECT 
                 'withdraw' as type,
-                ophID as oph_id,
+                OPH_ID as oph_id,
                 NULL as song_id,
                 NULL as song_name,
                 'withdrawal' as source,
@@ -80,7 +80,7 @@ const getTransactionHistory = async (ophid) => {
                 reason as description,
                 created_at
             FROM withdraw 
-            WHERE ophID = ?
+            WHERE OPH_ID = ?
             ORDER BY created_at DESC`,
             [ophid]
         );

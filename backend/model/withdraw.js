@@ -15,9 +15,9 @@ async function createWithdrawRequest(OPH_ID, withdraw_amount, withdrawal_id) {
 }
 
 
-const getWithdraw = async (OPH_ID) => {
+const getWithdraw = async (ophID) => {
   const [rows] = await db.execute("SELECT * FROM withdraw WHERE OPH_ID = ?", [
-    OPH_ID,
+    ophID,
   ]);
   return rows;
 };
