@@ -115,6 +115,7 @@ const EventAdminForm = () => {
   const CustomDateInput = React.forwardRef(
     ({ value, onClick, placeholder }, ref) => (
       <button
+        type="button"
         onClick={onClick}
         ref={ref}
         className="w-full text-left px-4 py-2 border rounded-xl bg-white text-[#0d3c44] pr-10"
