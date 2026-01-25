@@ -39,6 +39,12 @@ const getWithdraw = async (req, res) => {
     }
 
     const withdraw = await withdrawModel.getWithdraw(ophID);
+    
+    // Handle case where no withdrawals exist - return empty array gracefully
+    if (!withdraw || withdraw.length === 0) {
+      return res.status(200).json({ success: true, data: [], message: "No withdrawal history found" });
+    }
+    
     res.status(200).json({ success: true, data: withdraw });
   } catch (error) {
     console.error("Error fetching withdraw:", error.message);
