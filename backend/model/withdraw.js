@@ -1,13 +1,13 @@
 const db = require("../DB/connect"); // Your mysql2/promise connection
 
 // Insert a new withdraw request
-async function createWithdrawRequest(ophID, withdraw_amount, withdrawal_id) {
+async function createWithdrawRequest(OPH_ID, withdraw_amount, withdrawal_id) {
   const query = `
-    INSERT INTO withdraw (ophID, withdraw_amount, withdrawal_id)
+    INSERT INTO withdraw (OPH_ID, withdraw_amount, withdrawal_id)
     VALUES (?, ?, ?)
   `;
   const [result] = await db.execute(query, [
-    ophID,
+    OPH_ID,
     withdraw_amount,
     withdrawal_id,
   ]);
@@ -15,9 +15,9 @@ async function createWithdrawRequest(ophID, withdraw_amount, withdrawal_id) {
 }
 
 
-const getWithdraw = async (ophID) => {
-  const [rows] = await db.execute("SELECT * FROM withdraw WHERE ophID = ?", [
-    ophID,
+const getWithdraw = async (OPH_ID) => {
+  const [rows] = await db.execute("SELECT * FROM withdraw WHERE OPH_ID = ?", [
+    OPH_ID,
   ]);
   return rows;
 };
