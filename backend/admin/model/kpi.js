@@ -37,7 +37,7 @@ GROUP BY
   return rows;
 };
 
-const KpiScore = async ({
+const KpiScore = async (
   OPH_ID,
   user_traffic,
   song_count,
@@ -45,10 +45,10 @@ const KpiScore = async ({
   avg_view_duration,
   total_accepted_events,
   score,
-}) => {
+) => {
   const query = `
     INSERT INTO KPI_score (
-      OPH_ID, user_traffic, song_count, total_views,
+      oph_id, user_traffic, song_count, total_views,
       avg_view_duration, total_accepted_events, score
     )
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -77,34 +77,35 @@ const getTopSearchedArtists = async (searchQuery) => {
 
   const [rows] = await db.execute(
     "SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id WHERE ud.stage_name LIKE ? OR ud.stage_name LIKE ?",
-    [key, key]
+    [key, key],
   );
 
   return rows;
 };
 
 const getTopArtists = async () => {
-  const [rows] = await db.execute(`SELECT kpi.OPH_ID, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id  LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID `);
+  const [rows] = await db.execute(
+    `SELECT kpi.OPH_ID, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id  LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID `,
+  );
   return rows;
 };
 
-
 const getSpecialArtist = async () => {
-
-  const [rows] = await db.execute("SELECT * FROM application_status WHERE overall_status = 'completed'")
-  return rows
-
-}
+  const [rows] = await db.execute(
+    "SELECT * FROM application_status WHERE overall_status = 'completed'",
+  );
+  return rows;
+};
 
 const getArtistProfile = async (ophid) => {
   const [rows] = await db.execute(
     "WITH CTEArtistProfile AS ( SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, sa.artist_name,ud.location, kpi.total_views, pd.Bio,sr.song_id ,sr.Song_name,ssm.youtube_views,ad.audio_url , sr.`status` song_registeration_status, ad.`status` audio_details_status , vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID LEFT JOIN songs_register sr ON ud.oph_id = sr.OPH_ID JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID WHERE ud.oph_id = ?) SELECT * FROM CTEArtistProfile WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",
-    [ophid]
+    [ophid],
   );
 
   const [song_count] = await db.execute(
     "WITH CTEArtistSongCount AS (SELECT sr.OPH_ID, sr.`status` song_registration_status , ad.`status` audio_details_status, vd.`status` video_details_status FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE sr.OPH_ID = ?) SELECT OPH_ID, COUNT(OPH_ID) song_count FROM CTEArtistSongCount WHERE song_registration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' GROUP BY OPH_ID",
-    [ophid]
+    [ophid],
   );
 
   let totalSongs = 0;
@@ -132,7 +133,7 @@ const getArtistProfile = async (ophid) => {
     }
 
     const existingSong = songMap[ophid].songs.find(
-      (song) => song.name === row.Song_name
+      (song) => song.name === row.Song_name,
     );
 
     if (existingSong) {
@@ -184,8 +185,7 @@ const getAllKpiScores = async () => {
     SELECT *
     FROM CTEKPI`);
 
-    console.log("wqas");
-    
+  console.log("wqas");
 
   const songMap = {};
 
@@ -204,7 +204,7 @@ const getAllKpiScores = async () => {
     }
 
     const existingSong = songMap[ophid].songs.find(
-      (song) => song.songId === row.song_id
+      (song) => song.songId === row.song_id,
     );
 
     if (existingSong) {

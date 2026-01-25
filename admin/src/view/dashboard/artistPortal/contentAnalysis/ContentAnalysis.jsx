@@ -36,7 +36,7 @@ const ContentAnalysis = () => {
 
         setOriginalMetrics({
           song_id: data.song_id || "",
-          OPH_ID: data.OPH_ID || "",
+          OPH_ID: data.oph_id || "",
           song_name: data.song_name || "",
           youtube_views: parseInt(data.youtube_views) || 0,
           youtube_engagement: parseInt(data.youtube_engagement) || 0,
