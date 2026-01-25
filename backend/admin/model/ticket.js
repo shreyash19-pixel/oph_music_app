@@ -58,11 +58,19 @@ const getTicket = async (ticketNumber) => {
   return rows;
 };
 
+const getResolveSummaries = async () => {
+  const [rows] = await db.execute(
+    `SELECT ophID, name, email, subject, description, category, imageURL, ticketNumber FROM tickets WHERE status = 'Resolved'  `
+  );
+  return rows;
+};
+
 
 module.exports = {
   createTicket,
   getAllTickets,
   getTicketSummaries,
   updateResolvedSummary,
-  getTicket
+  getTicket,
+  getResolveSummaries,
 };

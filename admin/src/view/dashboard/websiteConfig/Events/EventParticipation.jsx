@@ -171,7 +171,7 @@ const EventParticipation = () => {
             <div className="bg-white p-4 rounded-lg shadow border">
               <div className="text-sm text-gray-600">Events</div>
               <div className="text-2xl font-bold text-blue-600">{events.length}</div>
-            </div>
+            </div>  
           </div>
         </div>
 

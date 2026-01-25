@@ -113,13 +113,22 @@ const artistLinks = [
   },
   {
     label: "Tickets",
-    route: "/tickets",
     roles: [
       ROLES.SUPER_ADMIN,
       ROLES.ADMINISTRATIVE_HEAD,
       ROLES.ADMINISTRATIVE_MEMBER,
       ROLES.ACCOUNTS_HEAD,
       ROLES.ACCOUNTS_MEMBER,
+    ],
+    children: [
+      {
+        label: "Submitted",
+        route: "/tickets",
+      },
+      {
+        label: "Resolved",
+        route: "/ResolveTickets",
+      },
     ],
   },
   { label: "Settings", route: "/settings", roles: [ROLES.SUPER_ADMIN] },

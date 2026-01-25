@@ -9,7 +9,7 @@
  
      useEffect(() => {
        const fetchData = async () => {
-         const res = await axiosApi.get("/getTicketSummaries");
+         const res = await axiosApi.get("/getResolveSummaries");
          setTableData(res.data.data);
          console.log(res.data.data);
        };
@@ -20,12 +20,12 @@
        <div>
          <ArtistSidebar>
            <SearchableDynamicTable
-             title="Tickets"
+             title=" Resolved Tickets"
              data={tableData}
              showStatusIndicator={false}
              pageSize={10}
              excludeColumns={"imageURL"}
-             detailsUrl="/Tickets"
+             detailsUrl="/ResolvedTickets"
            />
          </ArtistSidebar>
        </div>
