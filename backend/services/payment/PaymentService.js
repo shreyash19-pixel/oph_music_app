@@ -4,6 +4,8 @@ const ApplicationStatusService = require('../application/ApplicationStatusServic
 const SongApplicationStatusService = require('../song/SongApplicationStatusService');
 const songRegModel = require('../../model/songs_register');
 const userModel = require('../../model/user');
+// Lazy load EventBookingService to avoid potential circular dependencies
+// const EventBookingService = require('../../admin/services/EventBookingService');
 
 class PaymentService {
   /**
@@ -26,8 +28,17 @@ class PaymentService {
         release_date,
         old_release_date,
         amount,
-        step
+        step,
+        booking_details = {}
       } = paymentData;
+
+      console.log('[PaymentService] Processing payment:', {
+        oph_id,
+        from_source,
+        event_id,
+        song_id,
+        transaction_id
+      });
 
       // Validate: only one of song_id or event_id should be present
       if (song_id && event_id) {
@@ -49,10 +60,128 @@ class PaymentService {
         );
       }
 
+      // Determine if this is an internal or external user
+      // Internal users have OPH_ID starting with "OPH-" (e.g., "OPH-CAN-IA-021")
+      // External users have booking references starting with "EB-" or names
+      const isInternalUser = oph_id && oph_id.match(/^OPH-/);
+      const isBookingReference = oph_id && oph_id.startsWith('EB-');
+      const isExternalEventBooking = (from_source === "Event Registration" && event_id) && !isInternalUser;
+      
+      // For external event bookings, handle booking creation/update
+      // Note: We do NOT create user records for external users - details are stored in event_bookings only
+      if (isExternalEventBooking) {
+        // Handle event registration for external users - use event_bookings table
+        try {
+          // Lazy load to avoid circular dependencies
+          const EventBookingService = require('../../admin/services/EventBookingService');
+          
+          if (isBookingReference) {
+            // If OPH_ID is a booking reference, update existing booking
+            await EventBookingService.updateBookingWithPayment(oph_id, transaction_id);
+          } else {
+            // If OPH_ID is a name (not a booking reference), try to find existing booking
+            // This handles cases where payment is submitted with name instead of booking_reference
+            const EventBookingModel = require('../../admin/model/eventBookings');
+            
+            // Try to find existing booking by name (oph_id) and event_id
+            // Split name to match first_name and last_name
+            const nameParts = oph_id.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            const existingBookings = await EventBookingModel.getAllBookings({
+              event_id: parseInt(event_id, 10)
+            });
+            
+            // Try multiple matching strategies
+            const existingBooking = existingBookings.find(b => {
+              // Exact match: "First Last" = "First Last"
+              if (`${b.first_name} ${b.last_name}`.trim().toLowerCase() === oph_id.trim().toLowerCase()) {
+                return true;
+              }
+              // Match by first name only (if last name is empty)
+              if (lastName === '' && b.first_name.toLowerCase() === firstName.toLowerCase()) {
+                return true;
+              }
+              // Match by first and last name separately
+              if (b.first_name.toLowerCase() === firstName.toLowerCase() && 
+                  b.last_name.toLowerCase() === lastName.toLowerCase()) {
+                return true;
+              }
+              return false;
+            });
+            
+            if (existingBooking) {
+              // Update existing booking with payment (preserves email, instagram, profession)
+              await EventBookingModel.updateBookingPayment(
+                existingBooking.booking_reference, 
+                transaction_id
+              );
+              console.log(`[PaymentService] Updated existing booking ${existingBooking.booking_reference} with payment`);
+            } else {
+              // No existing booking found - create booking with available details
+              console.warn(`[PaymentService] No existing booking found for "${oph_id}" on event ${event_id}. Creating booking.`);
+              
+              // Generate booking reference
+              const { generateBookingReference } = require('../../utils/bookingReference');
+              const booking_reference = await generateBookingReference();
+              
+              // Use booking_details if provided, otherwise use minimal data
+              await EventBookingModel.createBooking({
+                event_id: parseInt(event_id, 10),
+                first_name: booking_details.first_name || firstName,
+                last_name: booking_details.last_name || lastName,
+                email: booking_details.email || '',
+                phone: booking_details.phone || '',
+                instagram_handle: booking_details.instagram_handle || null,
+                profession_id: booking_details.profession_id ? parseInt(booking_details.profession_id, 10) : null,
+                booking_reference,
+                status: 'pending'
+              });
+              
+              // Update with payment transaction ID
+              await EventBookingModel.updateBookingPayment(booking_reference, transaction_id);
+              
+              const hasDetails = booking_details.email || booking_details.phone || booking_details.instagram_handle;
+              console.log(`[PaymentService] Created booking ${booking_reference} for external payment${hasDetails ? ' (with details)' : ' (minimal - missing email/instagram/profession)'}`);
+            }
+          }
+        } catch (error) {
+          // If booking creation/update fails, log but continue with payment processing
+          console.warn(`[PaymentService] Error handling booking for ${oph_id}:`, error.message);
+        }
+      }
+      
+      // Handle internal users separately - use event_participants table
+      if (from_source === "Event Registration" && event_id && isInternalUser) {
+        // Internal users: use event_participants table
+        const EventParticipantModel = require('../../admin/model/eventParticipant');
+        await EventParticipantModel.registerParticipant({
+          OPH_ID: oph_id,
+          event_id: parseInt(event_id, 10),
+          status: 'under review'
+        });
+        console.log(`[PaymentService] Created/updated event_participants for internal user: ${oph_id}`);
+      }
+      
+      // For external event bookings, store the participant name in oph_id
+      // Actual user details (name, email, etc.) are stored in event_bookings table
+      // The name in oph_id is for reference only (foreign key constraint will be removed)
+      let paymentOphId = oph_id;
+      if (isExternalEventBooking) {
+        // Store the participant name in oph_id for external events
+        // This allows us to see the name in the payments table for reference
+        // All detailed user info is stored in event_bookings table
+        paymentOphId = oph_id; // Keep the name as-is
+        console.log(`[PaymentService] Storing participant name "${oph_id}" in oph_id for external event booking. Full details in event_bookings.`);
+      }
+
       // Insert payment (convert undefined to null)
+      // For external bookings, use system placeholder for foreign key, but we'll track the actual name in event_bookings
+      console.log('[PaymentService] Inserting payment record...');
       await paymentModel.insertPayment(
         connection,
-        oph_id,
+        paymentOphId, // Use system placeholder for external bookings to satisfy foreign key
         transaction_id,
         review ?? null,
         status,
@@ -62,9 +191,10 @@ class PaymentService {
         release_date ?? null,
         amount ?? null
       );
+      console.log('[PaymentService] Payment record inserted successfully');
 
-      // If this is a registration payment, update application status
-      if (from_source === "Registration") {
+      // If this is a registration payment (and not external event booking), update application status
+      if (from_source === "Registration" && !isExternalEventBooking) {
         // Update payment status in application_status
         await ApplicationStatusService.updateStepStatus(
           connection,
@@ -115,11 +245,24 @@ class PaymentService {
       }
 
       // Determine navigation path
-      const user = await userModel.findUserByOphId(connection, oph_id);
-      const applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, oph_id);
-      console.log(user[0] + "assasa");
+      // For external event bookings (booking_reference or name as OPH_ID), skip user lookup
+      let user = null;
+      let applicationStatus = null;
+      let navTo = step || '/auth/payment';
       
-      const navTo = this.determineNavigationPath(user[0], applicationStatus, step);
+      if (!isExternalEventBooking) {
+        // Only lookup user for registered users
+        user = await userModel.findUserByOphId(connection, oph_id);
+        applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, oph_id);
+        
+        if (user && user.length > 0) {
+          console.log(user[0] + "assasa");
+          navTo = this.determineNavigationPath(user[0], applicationStatus, step);
+        }
+      } else {
+        // For external bookings, use a simple success path
+        navTo = '/success';
+      }
 
       await connection.commit();
 
@@ -153,6 +296,13 @@ class PaymentService {
 
     } catch (error) {
       await connection.rollback();
+      console.error('[PaymentService] Error in insertPayment:', {
+        message: error.message,
+        stack: error.stack,
+        oph_id: paymentData.oph_id,
+        from_source: paymentData.from_source,
+        event_id: paymentData.event_id
+      });
       throw error;
     } finally {
       connection.release();

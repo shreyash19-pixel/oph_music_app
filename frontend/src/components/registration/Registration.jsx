@@ -27,8 +27,18 @@ const RegistrationModal = ({ setIsModalOpen,id}) => {
     e.preventDefault();
 
     try {
-      const response = await axiosApi.post(`/events/bookings/${id}`, formData);
-      if (response.status === 201) {
+      const payload = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone,
+        instagram_handle: formData.instagram_handle,
+        profession_id: formData.profession_id,
+      };
+
+      const response = await axiosApi.post(`/events/bookings/${id}`, payload);
+      if (response.status === 201 || response.status === 200) {
+        const bookingData = response.data.data || response.data;
         toast.success("Registration Successful", {
           position: "top-right",
           autoClose: 2000,
@@ -40,7 +50,8 @@ const RegistrationModal = ({ setIsModalOpen,id}) => {
         },3000)
       }
     } catch (error) {
-      toast.error("Something went wrong", {
+      const errorMessage = error.response?.data?.message || error.message || "Something went wrong";
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 5000,
         theme: "dark",
