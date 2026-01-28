@@ -20,7 +20,7 @@ const getKPI = async (req, res) => {
 
        if (records.length > 0) {
          // filter by OPH_ID before enriching
-         const filtered = records.filter((r) => r.OPH_ID === OPH_ID);
+         const filtered = records.filter((r) => r.oph_id === OPH_ID);
 
          if (filtered.length > 0) {
            const enriched = filtered.map((r) => ({
