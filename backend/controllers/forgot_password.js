@@ -19,11 +19,15 @@ const forgotPassword = async (req, res) => {
       });
     }
 
+    const artistData = artist[0];
+
+    console.log("Artist data:", artistData);
+
     // Generate reset token (valid for 5 mins as per your mail)
     const resetToken = jwt.sign(
       {
-        id: artist.ophid,
-        email: artist.email,
+        id: artistData.oph_id,
+        email: artistData.email,
         type: "password_reset",
       },
       process.env.SECRET_KEY,
@@ -31,26 +35,30 @@ const forgotPassword = async (req, res) => {
     );
 
     // Generate reset link
-    const resetLink = `http://localhost:5000//auth/reset-password?token=${resetToken}`;
+    const resetLink = `http://localhost:5173/auth/reset-password?token=${resetToken}`;
     const htmlContent = `
-      <p>Hi ${artist.name || artist.full_name || "Artist"},</p>
+      <p>Hi ${artistData.name || artistData.full_name || "Artist"},</p>
       <p>Forgot your password? No worries—it happens to the best of us! Just click the button below to set a new one and get back into your account:</p>
       <p><a href="${resetLink}" style="background:#8458B3; color:white; padding:10px 20px; border-radius:8px; text-decoration:none;">Reset Password</a></p>
-      <p>If you didn’t request this, feel free to ignore this email—your account is safe.</p>
-      <p>This link will expire in 5 minutes, so be sure to reset it soon. Need help? We’re happy to assist—just reach out!</p>
+      <p>If you didn't request this, feel free to ignore this email—your account is safe.</p>
+      <p>This link will expire in 5 minutes, so be sure to reset it soon. Need help? We're happy to assist—just reach out!</p>
       <br/>
       <p>Best regards,<br/>
       OPH Community Team<br/>
       <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947 | <a href="https://ophcommunity.com/contact/">ophcommunity.com/contact</a></p>`
     ;
 
+    console.log("Sending email to:", artistData.email);
+
     // Send email using Resend
-    await resend.emails.send({
+    const emailResult = await resend.emails.send({
       from: 'OPH Community <creators@ophcommunity.org>',
-      to: artist.email,
-      subject: 'Reset Your Password – Let’s Get You Back In!',
+      to: artistData.email,
+      subject: 'Reset Your Password – Lets Get You Back In!',
       html: htmlContent,
     });
+
+    console.log("Email sent successfully:", emailResult);
 
     res.json({
       success: true,
