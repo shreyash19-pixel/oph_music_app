@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
@@ -8,6 +9,14 @@ const app = express();
 const port = process.env.PORT;
 
 const server = http.createServer(app);
+
+// Optimize server timeouts
+// Regular requests: 30 seconds (fast response)
+// Large file uploads handled separately via route-specific timeouts
+server.timeout = 30000; // 30 seconds for regular requests
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // 66 seconds (must be > keepAliveTimeout)
+
 // Connect DB (assumed it runs inside connectDB file)
 const connectDB = require("./DB/connect");
 
@@ -26,6 +35,7 @@ const membership = require("./routes/membership");
 const secondaryArtist = require("./routes/secondary_artist");
 const videoDetail = require("./routes/video_details");
 const eventParticipant = require("./admin/routes/eventParticipant");
+const eventBookings = require("./admin/routes/eventBookings");
 const artistSpotlight = require("./routes/artist-spotlight");
 const homeRoute = require("./routes/home");
 const withdraw = require("./routes/withdraw");
@@ -100,9 +110,31 @@ app.use(cors(corsOptions));
 // ✅ HANDLE PREFLIGHT EXPLICITLY WITH SAME OPTIONS
 app.options("*", cors(corsOptions));
 
+// Enable response compression for faster page loads (gzip)
+// Note: Install compression package: npm install compression
+try {
+  const compression = require('compression');
+  app.use(compression({
+    level: 6, // Compression level (1-9, 6 is good balance)
+    filter: (req, res) => {
+      // Don't compress if client doesn't support it or if it's a file upload
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      // Use compression for all other responses
+      return compression.filter(req, res);
+    }
+  }));
+  console.log('✅ Response compression enabled');
+} catch (error) {
+  console.warn('⚠️ Compression middleware not available. Install with: npm install compression');
+}
 
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ limit: "100mb", extended: true }));
+// Optimized body parser limits
+// Regular requests: 10MB (fast parsing)
+// File upload routes will override this with higher limits
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use("/uploads", express.static("uploads"));
 
 const io = new Server(server, {
@@ -160,6 +192,7 @@ app.use("/", membership);
 app.use("/", secondaryArtist);
 app.use("/", videoDetail);
 app.use("/", eventParticipant);
+app.use("/", eventBookings);
 app.use("/artist-spotlight", artistSpotlight);
 app.use("/", homeRoute);
 app.use("/", paymentRoute);
