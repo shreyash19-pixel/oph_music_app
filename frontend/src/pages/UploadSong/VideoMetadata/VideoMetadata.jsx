@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Camera, Plus, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axiosApi from "../../../conf/axios";
@@ -6,6 +6,7 @@ import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
 import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
+import { socket } from "../../../../hook/socket";
 
 export default function VideoMetadataForm() {
   const navigate = useNavigate();
@@ -17,19 +18,19 @@ export default function VideoMetadataForm() {
   console.log(location);
   
   
-  // Get song_id from location state instead of URL params
+  // Get song_id from location state (e.g. from upload flow or when returning from payment cancel)
   const contentId = location.state?.song_id;
 
   const [nextPage, setNextPage] = useState("");
-  const release_date = location.state?.release_date 
-    ? new Date(location.state.release_date).toLocaleDateString()
+  const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
+  const release_date = releaseDateRaw
+    ? new Date(releaseDateRaw).toLocaleDateString()
     : "";
 
-  const year = release_date.split("/")[2];
-  const month = release_date.split("/")[0];
-  const day = release_date.split("/")[1];
-
-  const formattedDate = `${year}-${month}-${day}`;
+  const year = release_date ? release_date.split("/")[2] : "";
+  const month = release_date ? release_date.split("/")[0] : "";
+  const day = release_date ? release_date.split("/")[1] : "";
+  const formattedDate = year && month && day ? `${year}-${month}-${day}` : "";
 
   const [songName, setSongName] = useState(location.state?.songName || "");
   const projectType = localStorage.getItem("projectType") || "";
@@ -47,9 +48,20 @@ export default function VideoMetadataForm() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPaidForLyricalVideo, setHasPaidForLyricalVideo] = useState(false); // Add state for lyrical video payment
+  
+  // Upload progress state
+  const [uploadProgress, setUploadProgress] = useState({
+    percentage: 0,
+    loadedMB: 0,
+    totalMB: 0,
+    speed: 0,
+    time: 0,
+    isUploading: false,
+  });
 
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
+  const progressCleanupRef = useRef(null);
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
@@ -167,18 +179,104 @@ export default function VideoMetadataForm() {
       formDataToSend.append("ophid", ophid);
       formDataToSend.append("credits", formData.credits);
 
+      // Send existing thumbnails as JSON (URLs that are already on S3)
+      if (formData.existing_thumbnails && formData.existing_thumbnails.length > 0) {
+        formDataToSend.append("existing_thumbnails", JSON.stringify(formData.existing_thumbnails));
+      }
+
       if (formData.video_file) {
         formDataToSend.append("video_file", formData.video_file);
       }
 
-      formData.thumbnails.forEach((thumbnail) => {
+      // Only send NEW thumbnails (File objects), not existing ones that were converted from URLs
+      // Filter out thumbnails that are actually existing ones (check if they have a name that matches existing URLs)
+      const newThumbnails = formData.thumbnails.filter(thumbnail => {
+        // If thumbnail is a File object (has .name and .size), it's a new upload
+        // If it was converted from URL, it might not have proper File properties
+        // Check if it's actually a new file by seeing if it exists in existing_thumbnails
+        if (thumbnail instanceof File) {
+          const isExisting = formData.existing_thumbnails?.some(existingUrl => {
+            const existingFileName = existingUrl.split("/").pop();
+            return thumbnail.name === existingFileName;
+          });
+          return !isExisting; // Only include if it's NOT an existing thumbnail
+        }
+        return true; // Include if it's not a File (shouldn't happen, but be safe)
+      });
+
+      newThumbnails.forEach((thumbnail) => {
         formDataToSend.append("thumbnails", thumbnail);
       });
+      
+      console.log(`[Frontend] Sending ${newThumbnails.length} new thumbnail(s) and ${formData.existing_thumbnails?.length || 0} existing thumbnail URL(s)`);
+
+      // Calculate total file size for progress tracking
+      let totalSize = 0;
+      if (formData.video_file) {
+        totalSize += formData.video_file.size;
+      }
+      newThumbnails.forEach((thumb) => {
+        if (thumb instanceof File) {
+          totalSize += thumb.size;
+        }
+      });
+
+      const startTime = Date.now();
+      const totalMBInitial = formData.video_file
+        ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
+        : totalSize ? (totalSize / (1024 * 1024)).toFixed(2) : "0";
+      setUploadProgress({
+        percentage: 0,
+        loadedMB: 0,
+        totalMB: parseFloat(totalMBInitial),
+        speed: 0,
+        time: 0,
+        isUploading: true,
+      });
+
+      // Real S3 progress from backend via socket (matches backend logs)
+      if (formData.video_file && socket) {
+        const handler = (data) => {
+          setUploadProgress((prev) => ({
+            ...prev,
+            percentage: data.percent ?? prev.percentage,
+            loadedMB: data.loadedMB ?? prev.loadedMB,
+            totalMB: data.totalMB ?? prev.totalMB,
+            speed: data.speed ?? prev.speed,
+            time: data.time ?? prev.time,
+            isUploading: true,
+          }));
+        };
+        socket.on("video-upload-progress", handler);
+        progressCleanupRef.current = () => socket.off("video-upload-progress", handler);
+      }
 
       const response = await axiosApi.post(`/video-details`, formDataToSend, {
         headers: {
           ...headers,
           "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent) => {
+          // For video uploads progress comes from socket; only use this for thumbnails-only
+          if (formData.video_file) return;
+          if (progressEvent.total) {
+            const loaded = progressEvent.loaded;
+            const total = progressEvent.total;
+            const percentage = Math.round((loaded / total) * 100);
+            const loadedMB = (loaded / (1024 * 1024)).toFixed(2);
+            const totalMB = (total / (1024 * 1024)).toFixed(2);
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            const speed = elapsed > 0 ? (loaded / (1024 * 1024) / parseFloat(elapsed)).toFixed(2) : 0;
+            setUploadProgress((prev) => ({
+              ...prev,
+              percentage,
+              loadedMB: parseFloat(loadedMB),
+              totalMB: parseFloat(totalMB),
+              speed: parseFloat(speed),
+              time: parseFloat(elapsed),
+              isUploading: true,
+            }));
+          }
         },
       });
 
@@ -339,8 +437,20 @@ export default function VideoMetadataForm() {
       console.error("Error uploading video metadata:", error);
       toast.error("Failed to upload video metadata. Please try again.");
     } finally {
+      if (progressCleanupRef.current) {
+        progressCleanupRef.current();
+        progressCleanupRef.current = null;
+      }
       setIsSubmitting(false);
       setIsLoading(false);
+      setUploadProgress({
+        percentage: 0,
+        loadedMB: 0,
+        totalMB: 0,
+        speed: 0,
+        time: 0,
+        isUploading: false,
+      });
     }
   };
 
@@ -412,35 +522,24 @@ export default function VideoMetadataForm() {
         const { video_metadata } = response?.data?.data;
         const data = video_metadata?.[0];
 
-        if (!data) return;
+        // If no data, still set loading to false and return
+        if (!data) {
+          setIsLoading(false);
+          return;
+        }
 
         // Parse existing image URLs
         const imageUrls = data.image_url ? JSON.parse(data.image_url) : [];
 
-        // Convert image URLs to File[]
-        const imageFiles = await Promise.all(
-          imageUrls.map(async (url, index) => {
-            const fileName = url.split("/").pop() || `image_${index}.jpg`;
-            return await urlToFile(url, fileName, "image/jpeg");
-          })
-        );
-        
-        // Filter out null values (failed conversions)
-        const validImageFiles = imageFiles.filter(file => file !== null);
+        // Don't convert existing thumbnails or video to File objects - keep as URLs only.
+        // Converting video URL to File would download the entire video (can be 100s of MB) and makes the page load very slow.
+        // Preview uses existing_video_url directly in CustomVideoPlayer; no download needed.
 
-        // Convert video URL to File (if exists)
-        let videoFile = null;
-        if (data.video_url) {
-          const fileName = data.video_url.split("/").pop() || "video.mp4";
-          videoFile = await urlToFile(data.video_url, fileName, "video/mp4");
-        }
-
-        // ✅ Replace thumbnails and video_file (not append)
         setFormData({
           credits: data.credits || "",
           existing_thumbnails: imageUrls,
-          thumbnails: validImageFiles,
-          video_file: videoFile,
+          thumbnails: [],
+          video_file: null, // No File for existing video - preview uses existing_video_url
           existing_video_url: data.video_url || null,
           reject_reason: data.reject_reason || null,
         });
@@ -464,10 +563,9 @@ export default function VideoMetadataForm() {
     fetchVideoMetadata();
     checkPaymentStaus();
 
-    // No cleanup function needed - status is managed centrally through song_application_status
-    // Status only changes when user submits metadata or admin approves/rejects
-    // No need to set to "draft" on page leave
-  }, [contentId, headers, ophid]);
+    // Re-run when contentId, headers, ophid, or location (e.g. returning from payment cancel) changes
+    // location.key changes on every navigate, so we re-fetch when user comes back to this page
+  }, [contentId, headers, ophid, location.key]);
 
   if (error) {
     return <div className="text-red-500 p-4">{error}</div>;
@@ -505,7 +603,10 @@ export default function VideoMetadataForm() {
           </div>
         )}
 
-        {(isLoading || isRemoving || isUploading) && <Loading />}
+        {/* Full-screen loader: show progress inside loader when uploading */}
+        {(isLoading || isRemoving || isUploading || uploadProgress.isUploading) && (
+          <Loading progress={uploadProgress.isUploading ? uploadProgress : undefined} />
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Song Name Display */}
@@ -544,7 +645,25 @@ export default function VideoMetadataForm() {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              {/* Existing thumbnails */}
+              {/* Display existing thumbnails (URLs from server) */}
+              {formData.existing_thumbnails?.map((url, index) => (
+                <div key={`existing-${index}`} className="relative aspect-square">
+                  <img
+                    src={url}
+                    alt={`Existing thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingPhoto(index)}
+                    className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Display new thumbnails (File objects from user upload) */}
               {formData.thumbnails.map((photo, index) => (
                 <div key={`new-${index}`} className="relative aspect-square">
                   <img
@@ -561,24 +680,6 @@ export default function VideoMetadataForm() {
                   </button>
                 </div>
               ))}
-
-              {/* Existing thumbnails from server */}
-              {/* {formData.existing_thumbnails?.map((url, index) => (
-                <div key={`existing-${index}`} className="relative aspect-square">
-                  <img
-                    src={url}
-                    alt={`Existing thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeExistingPhoto(index)}
-                    className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))} */}
 
               {/* Upload Button */}
               {formData.thumbnails.length +

@@ -495,7 +495,8 @@ const PaymentScreen = () => {
     navigate(backPath, {
       state: {
         from: location.state.from,
-        booking_date: location.state.release_date,
+        booking_date: location.state.release_date ?? location.state.booking_date,
+        release_date: location.state.release_date ?? location.state.booking_date,
         song_id: location.state.song_id,
         songName: location.state.songName,
         project_type: location.state.project_type,
