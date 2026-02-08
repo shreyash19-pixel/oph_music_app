@@ -13,6 +13,9 @@ router.post('/event_part', eventParticipantController.registerParticipant);
 // // Get a specific participant by OPH_ID and event_id
 // GET /participants/:ophid/:event_id
 router.get('/event_part/:ophid', eventParticipantController.getParticipantByOphAndEvent);
+// Usage:
+// - `/event_part/:ophid` -> all events for the user
+// - `/event_part/:ophid?event_id=123` -> specific event for the user
 router.get("/getParticipant", eventParticipantController.getParticipant);
 
 // // Update status of a participant

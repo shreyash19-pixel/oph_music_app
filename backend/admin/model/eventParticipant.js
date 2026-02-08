@@ -1,11 +1,23 @@
 const db = require('../../DB/connect'); // adjust path as needed
 
-const getParticipantByOphAndEvent = async (ophid) => {
+// NOTE:
+// A single user (oph_id) can register for multiple events.
+// The correct uniqueness is (oph_id, event_id), not just oph_id.
+const getParticipantByOphAndEvent = async (ophid, event_id) => {
   const [rows] = await db.execute(
-    "SELECT * FROM event_participants WHERE oph_id = ?",
-    [ophid]
+    "SELECT * FROM event_participants WHERE oph_id = ? AND event_id = ?",
+    [ophid, event_id]
   );
-  return rows; // assuming one record per oph_id + event
+  return rows;
+};
+
+// Backward compatible helper: fetch all participant rows for a user across events
+const getParticipantsByOphId = async (ophid) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM event_participants WHERE oph_id = ? ORDER BY created_at DESC",
+    [ophid],
+  );
+  return rows;
 };
 
 const getParticipant = async () => {
@@ -47,6 +59,7 @@ const updateParticipantStatus = async (id, status) => {
 
 module.exports = {
   getParticipantByOphAndEvent,
+  getParticipantsByOphId,
   getParticipantsByEventId,
   registerParticipant,
   updateParticipantStatus,
