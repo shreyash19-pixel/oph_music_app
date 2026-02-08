@@ -82,12 +82,13 @@ const determineNextStepAfterProfessional = (applicationStatus) => {
         videoFinalURL = VideoURL;
       }
 
-      // Photos logic
+      // Photos logic - upload in parallel for better performance
       if (photoFiles.length > 0) {
-        for (const file of photoFiles) {
-          const url = await uploadToS3(file, `allUsers/${OPH_ID}/images`);
-          allPhotoURLs.push(url);
-        }
+        const photoUploads = photoFiles.map(file => 
+          uploadToS3(file, `allUsers/${OPH_ID}/images`)
+        );
+        const uploadedUrls = await Promise.all(photoUploads);
+        allPhotoURLs.push(...uploadedUrls.filter(url => url));
       }
 
       if (photoURLs && Array.isArray(photoURLs)) {

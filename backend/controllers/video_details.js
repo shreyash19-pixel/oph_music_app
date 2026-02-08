@@ -20,14 +20,13 @@ exports.createVideoDetails = async (req, res) => {
     let photoURLSArr = []
     let videoURL = ''
 
-    if (image_url) {
-
-      for (const img of image_url) {
-        const url = await uploadToS3(img, `video-meta/${ophid}/image-url`)
-        if (url) {
-          photoURLSArr.push(url)
-        }
-      }
+    // Upload thumbnails in parallel for better performance
+    if (image_url && image_url.length > 0) {
+      const thumbnailUploads = image_url.map(img => 
+        uploadToS3(img, `video-meta/${ophid}/image-url`)
+      );
+      const thumbnailUrls = await Promise.all(thumbnailUploads);
+      photoURLSArr = thumbnailUrls.filter(url => url); // Filter out any null/undefined URLs
     }
 
     if (video_url) {

@@ -151,6 +151,16 @@ const updateEventPaymentSp = async (
     // Use provided connection if available (for transactions), otherwise use default db
     const dbConnection = connection || db;
 
+    // For external events, oph_id contains the participant name (not a valid OPH_ID)
+    // Use transaction_id and event_id as primary matching fields (most reliable)
+    // Also include oph_id in the match if provided (for additional specificity)
+    const whereClause = ophId 
+      ? `transaction_id = ? AND event_id = ? AND (oph_id = ? OR oph_id IS NULL)`
+      : `transaction_id = ? AND event_id = ? AND oph_id IS NULL`;
+    const whereParams = ophId 
+      ? [transactionId, parseInt(eventId), ophId]
+      : [transactionId, parseInt(eventId)];
+
     // If payment is rejected, move event_id to reject_for and set event_id to NULL
     if (isRejected) {
       const [result] = await dbConnection.query(
@@ -160,16 +170,12 @@ const updateEventPaymentSp = async (
              reject_for = ?,
              event_id = NULL,
              updated_at = NOW()
-         WHERE oph_id = ? 
-           AND transaction_id = ? 
-           AND event_id = ?`,
+         WHERE ${whereClause}`,
         [
           status,
           reject_reason || null,
           eventId,
-          ophId,
-          transactionId,
-          parseInt(eventId),
+          ...whereParams,
         ],
       );
 
@@ -182,15 +188,11 @@ const updateEventPaymentSp = async (
          SET status = ?, 
              reject_reason = ?,
              updated_at = NOW()
-         WHERE oph_id = ? 
-           AND transaction_id = ? 
-           AND event_id = ?`,
+         WHERE ${whereClause}`,
         [
           status,
           reject_reason || null,
-          ophId,
-          transactionId,
-          parseInt(eventId),
+          ...whereParams,
         ],
       );
 

@@ -15,12 +15,25 @@ const payment = async (req, res) => {
     const old_release_date = req.body.old_release_date;
     const amount = req.body.amount;
 
+    // For external event registrations, oph_id contains the participant name
+    // For internal users, oph_id is a valid OPH_ID
+    // oph_id is always required (either OPH_ID or participant name)
     if (!oph_id || !transaction_id || !status) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: oph_id, transaction_id, status",
+        message: "Missing required fields: oph_id (or participant name), transaction_id, status",
       });
     }
+
+    // Extract optional booking details for external event registrations
+    const booking_details = {
+      email: req.body.email || req.body.booking_email,
+      phone: req.body.phone || req.body.booking_phone,
+      instagram_handle: req.body.instagram_handle || req.body.booking_instagram_handle,
+      profession_id: req.body.profession_id || req.body.booking_profession_id,
+      first_name: req.body.first_name || req.body.booking_first_name,
+      last_name: req.body.last_name || req.body.booking_last_name,
+    };
 
     const result = await PaymentService.insertPayment({
       oph_id,
@@ -33,12 +46,21 @@ const payment = async (req, res) => {
       release_date,
       old_release_date,
       amount,
-      step
+      step,
+      booking_details // Pass booking details if available
     });
 
     return res.status(200).json(result);
   } catch (error) {
     console.error("Payment error:", error);
+    console.error("Payment error stack:", error.stack);
+    console.error("Payment error details:", {
+      oph_id: req.body.OPH_ID || req.body.oph_id,
+      from_source: req.body.from || req.body.from_source,
+      event_id: req.body.event_id,
+      error_message: error.message,
+      error_name: error.name
+    });
     
     if (error.message === 'Only one of song_id or event_id should be provided.') {
       return res.status(400).json({
@@ -50,6 +72,7 @@ const payment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Payment - server Error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
