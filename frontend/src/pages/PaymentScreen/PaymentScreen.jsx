@@ -31,10 +31,13 @@ const PaymentScreen = () => {
 
   const {
     amount = 0,
-    backPath = "/",
+    backPath,
+    returnPath,
     heading = "Payment Required",
     lyrical_services = false,
   } = location.state || {};
+
+  const backPathOrReturn = backPath ?? returnPath ?? "/dashboard";
 
   // Debug log for lyricalVid flag
   console.log("PaymentScreen - lyricalVid flag:", lyrical_services);
@@ -492,15 +495,16 @@ const PaymentScreen = () => {
   };
 
   const handleCancel = () => {
-    navigate(backPath, {
+    navigate(backPathOrReturn, {
+      replace: true,
       state: {
-        from: location.state.from,
-        booking_date: location.state.release_date ?? location.state.booking_date,
-        release_date: location.state.release_date ?? location.state.booking_date,
-        song_id: location.state.song_id,
-        songName: location.state.songName,
-        project_type: location.state.project_type,
-        lyrical_services: location.state.lyrical_services,
+        from: location.state?.from,
+        booking_date: location.state?.release_date ?? location.state?.booking_date,
+        release_date: location.state?.release_date ?? location.state?.booking_date,
+        song_id: location.state?.song_id,
+        songName: location.state?.songName,
+        project_type: location.state?.project_type,
+        lyrical_services: location.state?.lyrical_services,
       },
     });
   };

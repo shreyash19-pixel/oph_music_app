@@ -24,7 +24,45 @@ const getParticipant = async () => {
   const [rows] = await db.execute(
     "SELECT * FROM event_participants",
   );
-  return rows; 
+  return rows;
+};
+
+/**
+ * Returns unified list: internal (event_participants) + external (event_bookings).
+ * Each row has participant_display: oph_id for internal, full name for external.
+ */
+const getParticipantUnified = async () => {
+  const [internalRows] = await db.execute(
+    `SELECT id, oph_id, event_id, status, created_at, updated_at,
+            oph_id AS participant_display,
+            'internal' AS source
+     FROM event_participants
+     ORDER BY created_at DESC`
+  );
+  const [externalRows] = await db.execute(
+    `SELECT id, event_id, status, created_at, updated_at,
+            TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS participant_display,
+            'external' AS source,
+            booking_reference
+     FROM event_bookings
+     ORDER BY created_at DESC`
+  );
+  const internal = (internalRows || []).map((r) => ({
+    ...r,
+    participant_display: r.oph_id,
+    source: 'internal',
+  }));
+  const external = (externalRows || []).map((r) => ({
+    id: `eb-${r.id}`,
+    event_id: r.event_id,
+    status: r.status,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    participant_display: r.participant_display || '',
+    source: 'external',
+    booking_reference: r.booking_reference,
+  }));
+  return [...internal, ...external];
 };
 
 const getParticipantsByEventId = async (event_id) => {
@@ -64,4 +102,5 @@ module.exports = {
   registerParticipant,
   updateParticipantStatus,
   getParticipant,
+  getParticipantUnified,
 };

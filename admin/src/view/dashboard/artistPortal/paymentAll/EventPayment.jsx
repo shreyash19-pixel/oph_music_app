@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
+import { formatDateTimeIST } from "../../../../utils/date";
 
 const EventPayment = () => {
-  const { ophid } = useParams();
+  const { ophid, eventId: eventIdFromUrl, transactionId: transactionIdFromUrl } = useParams();
   const [artist, setArtist] = useState(null);
   const [paymentList, setPaymentList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,11 +17,36 @@ const EventPayment = () => {
   const [confirmTargetPaymentId, setConfirmTargetPaymentId] = useState(null);
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
 
+  const isInternalUser = (id) => id && String(id).trim().match(/^OPH-/);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axiosApi.get(`/user-details/${ophid}`);
-        setArtist(res.data.userDetails);
+        let userDetails = null;
+        if (isInternalUser(ophid)) {
+          try {
+            const res = await axiosApi.get(`/user-details/${ophid}`);
+            userDetails = res.data?.userDetails ?? null;
+          } catch {
+            userDetails = null;
+          }
+        }
+        if (userDetails) {
+          setArtist(userDetails);
+        } else if (!isInternalUser(ophid)) {
+          const displayName = decodeURIComponent(ophid || "").trim() || "External Participant";
+          setArtist({
+            full_name: displayName,
+            stage_name: "—",
+            email: "—",
+            contact_num: "—",
+            artist_type: "External Participant",
+            location: "—",
+            personal_photo: null,
+          });
+        } else {
+          setArtist(null);
+        }
 
         const paymentRes = await axiosApi.get(`/payment-for-events-by-ophid/${ophid}`);
         console.log(paymentRes.data);
@@ -35,7 +61,7 @@ const EventPayment = () => {
             status = 'under review'; // Default to 'under review' if status is missing
           }
 
-          // For older rejected event payments, event_id might be NULL and moved to reject_for.
+          // For rejected event payments, event_id may be NULL and the value moved to reject_for.
           // Prefer event_id, fallback to reject_for so we always know which event this payment belongs to.
           const eventId = payment.event_id ?? payment.reject_for ?? null;
           
@@ -52,12 +78,33 @@ const EventPayment = () => {
         });
         
         mappedPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        console.log("Mapped payments:", mappedPayments);
-        console.log("First payment status:", mappedPayments[0]?.status);
-        console.log("Raw payment data:", paymentArray[0]);
-        
-        setPaymentList(mappedPayments);
-        setSelectedPaymentId(mappedPayments[0]?.paymentId || null);
+
+        const eventIdStr = eventIdFromUrl != null ? String(eventIdFromUrl).trim() : null;
+        const paymentBelongsToEvent = (p) => {
+          if (!eventIdStr) return true;
+          const pid = p.eventId == null ? "" : String(p.eventId).trim();
+          if (pid && (pid === eventIdStr || (Number(pid) === Number(eventIdStr) && !Number.isNaN(Number(eventIdStr))))) return true;
+          if (p.amount && typeof p.amount === "string" && p.amount.includes("Event ID:")) {
+            const numFromAmount = p.amount.replace(/.*Event ID:\s*(\d+).*/i, "$1").trim();
+            if (numFromAmount === eventIdStr || Number(numFromAmount) === Number(eventIdStr)) return true;
+          }
+          return false;
+        };
+
+        // When URL has eventId (e.g. /EventPayment/OPH-CAN-IA-01/19), show only payments for that event
+        const listToShow = eventIdStr
+          ? mappedPayments.filter(paymentBelongsToEvent)
+          : mappedPayments;
+        setPaymentList(listToShow);
+
+        // Prefer transaction_id from URL (so external/same-event rows open the exact payment clicked)
+        const transactionIdStr = transactionIdFromUrl != null ? String(transactionIdFromUrl).trim() : null;
+        const matchByTransactionId = transactionIdStr && listToShow.find((p) => String(p.paymentId) === transactionIdStr);
+        const matchByEventId = eventIdStr && listToShow.find(paymentBelongsToEvent);
+        const preselected = matchByTransactionId
+          ? matchByTransactionId.paymentId
+          : (matchByEventId ? matchByEventId.paymentId : (listToShow[0]?.paymentId || null));
+        setSelectedPaymentId(preselected);
         setConfirmAction(null);
         setConfirmTargetPaymentId(null);
       } catch (error) {
@@ -68,7 +115,7 @@ const EventPayment = () => {
     };
 
     fetchData();
-  }, [ophid]);
+  }, [ophid, eventIdFromUrl, transactionIdFromUrl]);
 
   const handleFinalAction = async (type) => {
     const targetPayment =
@@ -222,14 +269,7 @@ const EventPayment = () => {
     }, 2000);
   };
 
-  const formatDateTime = (dateStr) => {
-    const date = new Date(dateStr);
-    return `${date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })} — ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-  };
+  const formatDateTime = (dateStr) => formatDateTimeIST(dateStr);
 
   const formatAmount = (amount) => {
     // For event payments, amount is actually the event ID
@@ -244,7 +284,14 @@ const EventPayment = () => {
     return <div className="min-h-screen flex items-center justify-center text-lg">Artist not found.</div>;
   }
 
-  const displayedPayments = showAllPayments ? paymentList : paymentList.slice(0, 1);
+  // Put the selected (acting on) payment first so it shows at top
+  const listWithSelectedFirst = selectedPaymentId
+    ? [
+        ...paymentList.filter((p) => p.paymentId === selectedPaymentId),
+        ...paymentList.filter((p) => p.paymentId !== selectedPaymentId),
+      ]
+    : paymentList;
+  const displayedPayments = showAllPayments ? listWithSelectedFirst : listWithSelectedFirst.slice(0, 1);
 
   // Helper function to check if payment can be acted upon
   const canTakeAction = (payment) => {

@@ -117,7 +117,7 @@ const EventWinnerAssign = () => {
               <div>
                 <div className="text-sm text-gray-500">Date</div>
                 <div className="font-medium">
-                  {event?.dateTime ? new Date(event.dateTime).toLocaleDateString() : 'N/A'}
+                  {event?.dateTime ? new Date(event.dateTime).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }) : 'N/A'}
                 </div>
               </div>
               <div>

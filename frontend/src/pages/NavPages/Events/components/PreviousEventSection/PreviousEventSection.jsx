@@ -12,14 +12,14 @@ function PreviousEventSection() {
   const dateFormat = (date) => {
     const eventDate = new Date(date);
     if (isNaN(eventDate)) return "";
-    return eventDate.toLocaleString("en-US", {
+    return eventDate.toLocaleString("en-GB", {
       day: "2-digit",
       month: "long",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-      timeZone: "UTC",
+      timeZone: "Asia/Kolkata",
     });
   };
 

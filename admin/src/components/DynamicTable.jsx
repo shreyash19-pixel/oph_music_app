@@ -177,6 +177,7 @@ const DynamicTable = ({
         month: "short",
         day: "numeric",
         year: "numeric",
+        timeZone: "Asia/Kolkata",
       });
     }
 
@@ -184,6 +185,7 @@ const DynamicTable = ({
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
+      timeZone: "Asia/Kolkata",
     });
 
     return (
@@ -242,6 +244,7 @@ const DynamicTable = ({
             month: "short",
             day: "numeric",
             year: "numeric",
+            timeZone: "Asia/Kolkata",
           })}
         </span>
       );
@@ -463,6 +466,13 @@ const DynamicTable = ({
                   const tvValue = row.song_id || row.songId; // if TV is tied to song_id
                   const field = row.field;
                   const eventIdValue = row.event_id || row.eventId || row.id; // Also check for 'id' field
+                  const transactionIdValue = row.transaction_id || row.transactionId;
+                  // EventPayment: pass ophid + event_id (+ optional transaction_id for external users / exact row)
+                  if (detailsUrl.includes('EventPayment') && ophidValue && eventIdValue) {
+                    const base = `${detailsUrl}/${ophidValue}/${eventIdValue}`;
+                    navigate(transactionIdValue ? `${base}/${transactionIdValue}` : base);
+                    return;
+                  }
                   
                   // Handle detailsPrefer for event_id first
                   if (detailsPrefer === "event_id" && eventIdValue) {

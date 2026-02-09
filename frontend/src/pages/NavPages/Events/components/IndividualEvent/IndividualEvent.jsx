@@ -169,7 +169,7 @@ const IndividualEvent = () => {
   const dateFormat = (date) => {
     if (!date) return "-";
     const eventDate = new Date(date);
-    return eventDate.toLocaleString("en-US", {
+    return eventDate.toLocaleString("en-GB", {
       day: "2-digit",
       month: "long",
       year: "numeric",

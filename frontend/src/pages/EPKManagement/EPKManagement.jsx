@@ -457,7 +457,7 @@ hover:bg-[#5A3F85] "
               {status.map((stat, index) => (
                 <tr key={index}>
                   <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.date).toLocaleDateString()}
+                    {new Date(stat.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.field} update

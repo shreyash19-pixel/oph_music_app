@@ -53,7 +53,7 @@ const getParticipantByOphAndEvent = async (req, res) => {
 
 const getParticipant = async (req, res) => {
   try {
-    const participant = await EventParticipant.getParticipant();
+    const participant = await EventParticipant.getParticipantUnified();
     res.status(200).json({ success: true, data: participant });
   } catch (error) {
     console.error("Error fetching participant:", error.message);

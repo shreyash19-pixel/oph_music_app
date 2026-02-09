@@ -33,6 +33,7 @@ const downloadApplicationStatus = async (req, res) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
+        timeZone: "Asia/Kolkata",
       }).format(new Date(date));
     };
 
@@ -110,6 +111,7 @@ const downloadEventParticipants = async (req, res) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
+        timeZone: "Asia/Kolkata",
       }).format(new Date(date));
     };
 
@@ -180,6 +182,7 @@ const downloadContactUs = async (req, res) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
+        timeZone: "Asia/Kolkata",
       }).format(new Date(date));
     };
 
@@ -400,6 +403,7 @@ const downloadUserDetails = async (req, res) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
+        timeZone: "Asia/Kolkata",
       }).format(new Date(date));
     };
 
@@ -474,7 +478,7 @@ const downloadProfessionalDetails = async (req, res) => {
           SongsPlanningCount: row.SongsPlanningCount,
           SongsPlanningType: row.SongsPlanningType,
           CreatedAt: row.CreatedAt
-            ? new Date(row.CreatedAt).toLocaleString()
+            ? new Date(row.CreatedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
             : "",
         });
       });
@@ -532,6 +536,7 @@ const getDocumentationDetails = async (req, res) => {
           year: "numeric",
           hour: "2-digit",
           minute: "2-digit",
+          timeZone: "Asia/Kolkata",
         }),
       });
     });
@@ -597,6 +602,7 @@ const getSignUpPayments = async (req, res) => {
               day: "2-digit",
               month: "short",
               year: "numeric",
+              timeZone: "Asia/Kolkata",
             })
           : null,
       });
@@ -797,7 +803,8 @@ const getTvPublishing = async (req, res) => {
               month: "short",
               year: "numeric",
               hour: "2-digit",
-              hour12: true, // shows AM/PM
+              hour12: true,
+              timeZone: "Asia/Kolkata",
             })
           : null,
         updated_at: row.updated_at
@@ -807,6 +814,7 @@ const getTvPublishing = async (req, res) => {
               year: "numeric",
               hour: "2-digit",
               hour12: true,
+              timeZone: "Asia/Kolkata",
             })
           : null,
       });
@@ -860,7 +868,8 @@ const getWithdrawals = async (req, res) => {
               month: "short",
               year: "numeric",
               hour: "2-digit",
-              hour12: true, // readable time with AM/PM
+              hour12: true,
+              timeZone: "Asia/Kolkata",
             })
           : null,
       });
@@ -924,6 +933,7 @@ const getTickets = async (req, res) => {
               year: "numeric",
               hour: "2-digit",
               hour12: true,
+              timeZone: "Asia/Kolkata",
             })
           : null,
       });

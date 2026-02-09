@@ -24,7 +24,7 @@ export default function VideoMetadataForm() {
   const [nextPage, setNextPage] = useState("");
   const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
   const release_date = releaseDateRaw
-    ? new Date(releaseDateRaw).toLocaleDateString()
+    ? new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
     : "";
 
   const year = release_date ? release_date.split("/")[2] : "";

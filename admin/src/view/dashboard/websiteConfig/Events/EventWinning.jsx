@@ -120,7 +120,7 @@ const EventWinning = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {event.dateTime ? new Date(event.dateTime).toLocaleDateString() : 'N/A'}
+                        {event.dateTime ? new Date(event.dateTime).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }) : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {event.location || 'N/A'}

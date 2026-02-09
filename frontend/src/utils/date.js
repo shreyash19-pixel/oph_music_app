@@ -1,39 +1,86 @@
+/** All date/time display in the app uses IST (Indian Standard Time). */
+export const IST = "Asia/Kolkata";
+
+const istOptions = (opts = {}) => ({ timeZone: IST, ...opts });
+
 function formatDateAndAdjustMonth(isoDate) {
-    const dateObj = new Date(isoDate);
+  if (!isoDate) return "";
+  const dateObj = new Date(isoDate);
+  if (isNaN(dateObj)) return "";
+  return dateObj.toLocaleDateString("en-US", istOptions({ day: "2-digit", month: "short", year: "numeric" }));
+}
 
-    // Subtract one month
-    dateObj.setMonth(dateObj.getMonth() - 1);
+export function formatDateTime(isoDate) {
+  const dateObj = new Date(isoDate);
+  const formattedDate = dateObj.toLocaleDateString("en-US", istOptions({ day: "2-digit", month: "long", year: "numeric" }));
+  const formattedTime = dateObj.toLocaleTimeString("en-US", istOptions({ hour: "2-digit", minute: "2-digit", hour12: true }));
+  return `${formattedDate} - ${formattedTime}`;
+}
 
-    // Format the date as DD MMM, YYYY
-    const options = { day: "2-digit", month: "short", year: "numeric" };
-    return dateObj.toLocaleDateString("en-US", options);
-  }
-  export function formatDateTime(isoDate) {
-    const dateObj = new Date(isoDate);
+export function formatDateOnly(isoDate) {
+  const dateObj = new Date(isoDate);
+  return dateObj.toLocaleDateString("en-US", istOptions({ day: "2-digit", month: "short", year: "numeric" }));
+}
 
-    // Format date as DD Month, YYYY
-    const dateOptions = { day: "2-digit", month: "long", year: "numeric" };
-    const formattedDate = dateObj.toLocaleDateString("en-US", dateOptions);
+export function formatDateIST(isoDate, options = { day: "2-digit", month: "2-digit", year: "numeric" }) {
+  if (!isoDate) return "";
+  const dateObj = new Date(isoDate);
+  if (isNaN(dateObj)) return "";
+  return dateObj.toLocaleDateString("en-GB", istOptions(options));
+}
 
-    // Format time as HH:MM AM/PM
-    const timeOptions = { hour: "2-digit", minute: "2-digit", hour12: true };
-    const formattedTime = dateObj.toLocaleTimeString("en-US", timeOptions);
+export function formatDateTimeIST(isoDate) {
+  if (!isoDate) return "";
+  const dateObj = new Date(isoDate);
+  if (isNaN(dateObj)) return "";
+  return dateObj.toLocaleString("en-GB", istOptions({
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }));
+}
 
-    // Combine date and time
-    return `${formattedDate} - ${formattedTime}`;
-  }
-
-  // utils.js or wherever your helper is
 export const formatDDMMYYYY = (dateStr) => {
   if (!dateStr) return "";
-
   const [day, month, year] = dateStr.split("/").map(Number);
   const date = new Date(year, month - 1, day);
-
-  // Ensure 2-digit day/month
   const pad = (n) => n.toString().padStart(2, "0");
-
   return `${pad(day)}/${pad(month)}/${year}`;
 };
 
-  export default formatDateAndAdjustMonth
+/** Today's date in IST (YYYY-MM-DD) for registration window checks */
+export function getTodayIST() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: IST });
+}
+
+/** Date-only string in IST from any date value (YYYY-MM-DD) */
+export function toDateStringIST(dateValue) {
+  if (!dateValue) return null;
+  const d = new Date(dateValue);
+  if (isNaN(d)) return null;
+  return d.toLocaleDateString("en-CA", { timeZone: IST });
+}
+
+/** Registration opens at midnight IST on start day, closes at end of end day IST */
+export function isRegistrationOpen(event) {
+  if (!event) return false;
+  const todayIST = getTodayIST();
+  const startDayIST = toDateStringIST(event.registrationStart);
+  const endDayIST = toDateStringIST(event.registrationEnd);
+  if (startDayIST && todayIST < startDayIST) return false;
+  if (endDayIST && todayIST > endDayIST) return false;
+  return true;
+}
+
+/** True if registration start date (in IST) is still in the future */
+export function isRegistrationNotStartedYet(event) {
+  if (!event) return false;
+  const startDayIST = toDateStringIST(event.registrationStart);
+  if (!startDayIST) return false;
+  return getTodayIST() < startDayIST;
+}
+
+export default formatDateAndAdjustMonth;

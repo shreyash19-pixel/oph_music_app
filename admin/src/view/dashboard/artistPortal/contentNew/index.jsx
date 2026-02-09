@@ -50,6 +50,7 @@ const ContentNew = () => {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
+                timeZone: "Asia/Kolkata",
               })
             : "",
           projects_type : song.register_projects_type || "",

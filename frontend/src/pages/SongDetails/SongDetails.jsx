@@ -6,7 +6,7 @@ import {
   FaSpinner,
   FaTimesCircle,
 } from "react-icons/fa";
-import { format, isTomorrow, differenceInDays } from "date-fns";
+import { isTomorrow, differenceInDays } from "date-fns";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { useArtist } from "../auth/API/ArtistContext";
@@ -78,7 +78,8 @@ const SongDetails = () => {
 
   const formatDate = (dateString) => {
     try {
-      return format(new Date(dateString), "dd MMM yyyy"); // Format as date only
+      const d = new Date(dateString);
+      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
     } catch {
       return "TBD";
     }
