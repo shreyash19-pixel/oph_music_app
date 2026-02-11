@@ -55,6 +55,9 @@ const setArtistDetailsController = async (req, res) => {
   try {
     const { ophid, section, type, reason, content } = req.body;
 
+    console.log("hello");
+    
+
     if (!ophid || !section || !type || !content) {
       return res.status(400).json({
         success: false,

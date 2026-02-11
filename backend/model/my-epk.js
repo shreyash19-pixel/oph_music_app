@@ -7,7 +7,7 @@ const getSpecialArtistDetails = async (ophid) => {
   );
 
   const [song_count] = await db.execute(
-    "SELECT oph_id, COUNT(oph_id) FROM special_artist_songs WHERE oph_id = ? AND `status` = 'approved' GROUP BY oph_id",
+    "SELECT oph_id, COUNT(oph_id) total_content FROM special_artist_songs WHERE oph_id = ? AND `status` = 'approved' GROUP BY oph_id",
     [ophid]
   );
 
@@ -26,7 +26,7 @@ const getSpecialArtistDetails = async (ophid) => {
         location: row.location,
         total_content: song_count.length > 0 ? song_count[0].total_content : 0,
         // total_views: row.total_views,
-        bio: row.Bio,
+        bio: row.bio,
         facebook_url: row.facebook_link,
         instagram_url: row.instagram_link,
         apple_url: row.apple_music_link,

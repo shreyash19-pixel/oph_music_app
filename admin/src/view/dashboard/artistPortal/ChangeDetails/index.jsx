@@ -168,7 +168,7 @@ const SectionBlock = ({
             <p className="w-full p-2 border rounded-md text-black bg-gray-100">
               {content}
             </p>
-          ) : fields === "Video Bio" || fields === "Artist Story Video" ? (
+          ) : fields === "Video Bio" || fields === "Artist Story Vid" ? (
             <video controls className="w-full max-w-xs rounded border mb-2">
               <source src={content} type="video/mp4" />
               Your browser does not support the video element.
