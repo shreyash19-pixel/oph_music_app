@@ -99,8 +99,12 @@ const ArtistDetail = () => {
           headers: headers,
         }
       );
+
+      console.log(response.data.data.filter((data) => data.oph_id !== id).slice(0, 8));
+      
+
       setRelatedArtists(
-        response.data.data.filter((data) => data.ophid !== id).slice(0, 8)
+        response.data.data.filter((data) => data.oph_id !== id).slice(0, 8)
       );
     } catch (error) {
       console.error("Failed to fetch related artists", error);
@@ -165,7 +169,7 @@ const ArtistDetail = () => {
       if (current) {
         current.pause();
       }
-      const newAudio = new Audio(song.audio_file_url);
+      const newAudio = new Audio(song.duration_in_minutes);
       audioRef.current = newAudio;
       newAudio.play();
       setPlayingSongId(song.song_id);
@@ -484,7 +488,7 @@ const ArtistDetail = () => {
                           className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#6F4FA0]"
                           onClick={() => handlePlayPause(song)}
                         >
-                          {playingSongId === song.id && !audioRef?.paused ? (
+                          {playingSongId === song.song_id && !audioRef?.paused ? (
                             <FaPause className="text-white" size={13} />
                           ) : (
                             <FaPlay className="text-white ml-1" size={13} />
@@ -581,7 +585,7 @@ const RelatedArtists = ({ rankedArtists }) => {
           rankedArtists.map((artist, index) => (
             <Link
               key={index}
-              to={`/dashboard/artist-detail?id=${artist.ophid}`}
+              to={`/dashboard/artist-detail?id=${artist.oph_id}`}
             >
               <div className="flex flex-col items-center">
                 <div className="flex justify-center mb-2">

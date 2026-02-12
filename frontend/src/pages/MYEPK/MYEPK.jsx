@@ -78,7 +78,7 @@ const MYEPK = () => {
         `/get-special-artist-detail?ophid=${ophid}`,
         {
           headers: headers,
-        }
+        },
       );
       setArtist(response.data.data);
     } catch (err) {
@@ -104,9 +104,9 @@ const MYEPK = () => {
       }
     };
 
-    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    window.addEventListener("pauseAllAudio", handlePauseAllAudio);
     return () => {
-      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
+      window.removeEventListener("pauseAllAudio", handlePauseAllAudio);
     };
   }, [audio]);
 
@@ -423,27 +423,30 @@ const MYEPK = () => {
                 </thead>
 
                 <tbody>
-                  {artist?.songs.map(
-                    (song, index) =>
-                      song.song_status === "approved" && song.payment_status === "approved" && (
+                  {artist?.songs.map((song, index) => {
+                    const isFreeSong = index < 2;
+                    const isApproved = song.song_status === "approved";
+                    const isPaidApproved = song.payment_status === "approved";
+
+                    if (
+                      (isFreeSong && isApproved) ||
+                      (!isFreeSong && isApproved && isPaidApproved)
+                    ) {
+                      return (
                         <tr
-                          key={index}
+                          key={song.id || index}
                           className="border-b border-gray-800 hover:bg-gray-800/50 text-white"
                         >
                           {/* # */}
-                          <td className="py-3 px-1 text-center">
-                            <div className="flex justify-center items-center h-full w-full">
-                              {index + 1}
-                            </div>
-                          </td>
+                          <td className="py-3 px-1 text-center">{index + 1}</td>
 
                           {/* Song name + artist */}
                           <td className="py-3 px-1 text-center">
-                            <div className="flex flex-col items-center justify-center h-full w-full">
-                              <span className="font-medium break-words">
+                            <div className="flex flex-col items-center">
+                              <span className="font-medium">
                                 {song.song_name}
                               </span>
-                              <span className="text-gray-400 text-[11px] sm:text-xs">
+                              <span className="text-gray-400 text-xs">
                                 {song.primary_artist}
                               </span>
                             </div>
@@ -451,52 +454,35 @@ const MYEPK = () => {
 
                           {/* Plays */}
                           <td className="py-3 px-1 text-center">
-                            <div className="flex justify-center items-center h-full w-full">
-                              {song.total_song_views > 0
-                                ? song.total_song_views
-                                : "—"}
-                            </div>
+                            {song.total_song_views > 0
+                              ? song.total_song_views
+                              : "—"}
                           </td>
 
                           {/* Time */}
                           <td className="py-3 px-1 text-center">
-                            <div className="flex justify-center items-center h-full w-full">
-                              <SongDuration url={song.audio_url} />
-                            </div>
+                            <SongDuration url={song.audio_url} />
                           </td>
 
-                          {/* Play button */}
+                          {/* Play */}
                           <td className="py-3 px-1 text-center">
-                            <div className="flex justify-center items-center h-full w-full">
-                              <button
-                                className="p-2 bg-[#6F4FA0] rounded-full hover:bg-[#6F4FA0] transition-colors"
-                                onClick={() => handlePlayPause(song)}
-                              >
-                                {playingSongId === song.id && !audio?.paused ? (
-                                  <Pause className="w-4 h-4" />
-                                ) : (
-                                  <Play className="w-4 h-4" />
-                                )}
-                              </button>
-                            </div>
+                            <button
+                              className="p-2 bg-[#6F4FA0] rounded-full"
+                              onClick={() => handlePlayPause(song)}
+                            >
+                              {playingSongId === song.id && !audio?.paused ? (
+                                <Pause className="w-4 h-4" />
+                              ) : (
+                                <Play className="w-4 h-4" />
+                              )}
+                            </button>
                           </td>
-
-                          {/* Download button */}
-                          {/* <td className="py-3 px-1 text-center">
-                            <div className="flex justify-center items-center h-full w-full">
-                              <button
-                                className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#5DC9DE]"
-                                onClick={() =>
-                                  handleSongDownload(song, song.name)
-                                }
-                              >
-                                <IoIosArrowRoundDown className="text-black" />
-                              </button>
-                            </div>
-                          </td> */}
                         </tr>
-                      )
-                  )}
+                      );
+                    }
+
+                    return null;
+                  })}
                 </tbody>
               </table>
             ) : (

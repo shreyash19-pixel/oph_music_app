@@ -2,7 +2,7 @@ const db = require("../DB/connect");
 
 const getSpecialArtistStatus = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT * FROM special_artist_details WHERE ophid = ? ORDER BY date DESC",
+    "SELECT * FROM (SELECT sad.*, ROW_NUMBER() OVER (PARTITION BY field ORDER BY date DESC) AS rn FROM special_artist_details sad WHERE ophid = 'OPH-CAN-SA-01') t WHERE rn = 1 ORDER BY date DESC;",
     [ophid]
   );
 

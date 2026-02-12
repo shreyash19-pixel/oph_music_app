@@ -101,6 +101,9 @@ function Leaderboard({ leaderboardData, artistId }) {
 export const SongDuration = ({ url }) => {
   const [duration, setDuration] = useState(null);
 
+  console.log(url);
+  
+
   useEffect(() => {
     if (!url) return;
 

@@ -113,7 +113,7 @@ const editSpecialArtistDetailsController = async (req, res) => {
       if (url) {
         updates.push({
           ophid: ophid,
-          field: "Artist Story Video",
+          field: "Artist Story Vid",
           content: url,
         });
       }
