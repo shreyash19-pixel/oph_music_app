@@ -90,9 +90,7 @@ const CustomVideoPlayer = forwardRef(
 
     // Handle play/pause
     const togglePlayPause = () => {
-
       console.log("sdsd");
-      
 
       const video = videoRef.current;
       if (!video) return;
@@ -275,8 +273,7 @@ const CustomVideoPlayer = forwardRef(
     const handleVideoClick = (e) => {
       console.log(e.target);
       console.log(videoRef.current);
-      
-      
+
       // Don't handle click if it's on the overlay or controls
       if (
         e.target.closest(".absolute.inset-0.flex") ||
@@ -284,9 +281,8 @@ const CustomVideoPlayer = forwardRef(
       ) {
         return;
       }
-      if (e.target === videoRef.current) {
-        togglePlayPause();
-      }
+
+      togglePlayPause();
     };
 
     const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -347,31 +343,26 @@ const CustomVideoPlayer = forwardRef(
 
         {/* Play Button Overlay (when video is paused) */}
         {showPlayButtonOverlay && !isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none">
-            <button
-              onClick={
-                //   (e) => {
-                //   e.stopPropagation();
-                //   e.preventDefault();
-                //   const video = videoRef.current;
-                //   if (video && video.paused) {
-                //     togglePlayPause();
-                //     onPlayButtonClick?.();
-                //   }
-                // }
-
-                handleVideoClick
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const video = videoRef.current;
+              if (video && video.paused) {
+                togglePlayPause();
               }
-              className="z-30 pointer-events-auto hover:opacity-80 transition-opacity"
-            >
-              <img
-                src="/assets/images/play_button.png"
-                className="w-[100px] sm:w-[150px]"
-                alt="Play Button"
-              />
-            </button>
-          </div>
-        )}
+            }}
+            className="z-30 pointer-events-auto hover:opacity-80 transition-opacity"
+          >
+            <img
+              src="/assets/images/play_button.png"
+              className="w-[100px] sm:w-[150px]"
+              alt="Play Button"
+            />
+          </button>
+        </div>
+      )}
 
         {/* Custom Controls */}
         <div
