@@ -26,15 +26,28 @@ const ProfessionalDetailsForm = () => {
   const [loading, setLoading] = useState(false);
   const [videoBio, setVideoBio] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
+  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
   const [video, setVideo] = useState(null);
+  const [thumbnail, setThumbnail] = useState(null);
   const [rejectReason, setRejectReason] = useState(null);
   const [searchParams] = useSearchParams();
   const [professions, setProfessions] = useState([]);
   const [professionsLoading, setProfessionsLoading] = useState(true);
 
   const shouldHideSongsPlanned = ophid?.includes("SA");
+
+  const fetchPageMedia = async () => {
+    try {
+      const response = await axiosApi.get("/page-media?page_name=professional_details");
+      if (response.data.success && response.data.data) {
+        setVideo(response.data.data.video_url);
+        setThumbnail(response.data.data.thumbnail_url);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   // Fetch professions from API
   const fetchProfessions = async () => {
@@ -113,7 +126,8 @@ const ProfessionalDetailsForm = () => {
   // console.log(formData,"formdata");
 
   useEffect(() => {
-    fetchProfessions(); // Fetch professions when component mounts
+    fetchProfessions();
+    fetchPageMedia();
   }, []);
 
   useEffect(() => {
@@ -427,18 +441,32 @@ const ProfessionalDetailsForm = () => {
       <div className="min-h-screen z-10  bg-opacity-70 text-white p-6">
         <ProfileFormHeader title="PROFESSIONAL DETAILS" />
         <div className=" mt-20 min-h-[calc(100vh-70px)] text-white p-6 flex flex-col items-center  mx-auto">
-          <div className="relative flex justify-center">
+          <div className="relative flex justify-center mb-6">
+            {!isPlaying && thumbnail && (
+              <img
+                src={thumbnail}
+                alt="Professional Details"
+                className="w-[800px] h-[50vh] object-cover rounded-lg"
+              />
+            )}
             {video && (
-              <CustomVideoPlayer
+              <video
                 ref={videoRef}
-                src={video.value}
-                className="w-[800px] h-[50vh] object-cover"
-                showPlayButtonOverlay={!isPlaying}
-                pauseOtherVideos={true}
+                src={video}
                 onPlay={handlePlay}
                 onPause={handlePause}
-                onPlayButtonClick={togglePlayPause}
+                onClick={togglePlayPause}
+                className={`w-[800px] h-[50vh] object-cover rounded-lg ${!isPlaying ? 'hidden' : ''}`}
+                controls={false}
               />
+            )}
+            {!isPlaying && video && (
+              <button
+                onClick={togglePlayPause}
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
+              >
+                <img src={PlayBtn} alt="Play" className="w-32 h-32" />
+              </button>
             )}
           </div>
           <h2 className="text-cyan-400 uppercase text-2xl mt-4 font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">

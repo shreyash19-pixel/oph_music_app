@@ -41,36 +41,37 @@ const DocumentationDetailsForm = () => {
       toast.error("Failed to load banks list");
     }
   }, []);
-  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
+  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
   const [video, setVideo] = useState(null);
+  const [thumbnail, setThumbnail] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showMembershipForm, setShowMembershipForm] = useState(false);
-  const [rejectReason, setRejectReason] = useState(""); // State to store reject reason
-  // const fetchVideo = async () => {
-  //   try {
-  //     const response = await axiosApi.get(
-  //       "artist-website-configs?param=signup_video"
-  //     );
-  //     setVideo(response.data.data[0]);
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
+  const [rejectReason, setRejectReason] = useState("");
+
+  const fetchPageMedia = async () => {
+    try {
+      const response = await axiosApi.get("/page-media?page_name=documentation_details");
+      if (response.data.success && response.data.data) {
+        setVideo(response.data.data.video_url);
+        setThumbnail(response.data.data.thumbnail_url);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const handlePlay = () => setIsPlaying(true);
   const handlePause = () => setIsPlaying(false);
-  // const togglePlayPause = () => {
-  //   if (videoRef.current) {
-  //     if (isPlaying) {
-  //       videoRef.current.pause();
-  //     } else {
-  //       videoRef.current.play();
-  //     }
-  //   }
-  // };
-  // useEffect(() => {
-  //   fetchVideo();
-  // }, []);
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
   const [formData, setFormData] = useState({
     aadharFront: null,
     aadharBack: null,
@@ -198,6 +199,7 @@ const DocumentationDetailsForm = () => {
   // Fetch banks when component mounts
   useEffect(() => {
     fetchBanks();
+    fetchPageMedia();
   }, [fetchBanks]);
 
   // Fix canvas coordinate offset by ensuring canvas dimensions match displayed size
@@ -510,27 +512,34 @@ const DocumentationDetailsForm = () => {
       <div className="min-h-screen z-10  bg-opacity-70 text-white p-6">
         <ProfileFormHeader title="DOCUMENTATION DETAILS" />
         <div className="min-h-[calc(100vh-70px)] mt-20  text-white p-6 flex flex-col items-center mx-auto">
-          {/* <div className="relative flex justify-center">
+          <div className="relative flex justify-center mb-6">
+            {!isPlaying && thumbnail && (
+              <img
+                src={thumbnail}
+                alt="Documentation Details"
+                className="w-[800px] h-[50vh] object-cover rounded-lg"
+              />
+            )}
             {video && (
               <video
                 ref={videoRef}
-                src={video.value}
+                src={video}
                 onPlay={handlePlay}
                 onPause={handlePause}
                 onClick={togglePlayPause}
-                className="w-[800px] h-[50vh]  object-cover "
-                controls={false} // Disable default controls
+                className={`w-[800px] h-[50vh] object-cover rounded-lg ${!isPlaying ? 'hidden' : ''}`}
+                controls={false}
               />
             )}
-            {!isPlaying && (
+            {!isPlaying && video && (
               <button
                 onClick={togglePlayPause}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none"
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
               >
                 <img src={PlayBtn} alt="Play" className="w-32 h-32" />
               </button>
             )}
-          </div> */}
+          </div>
 
           <h2 className="text-cyan-400 uppercase text-2xl mt-4 font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
             Documentation Details

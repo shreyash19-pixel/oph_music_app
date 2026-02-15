@@ -73,6 +73,7 @@ const costing = require("./admin/routes/costing");
 const songRelease = require("./admin/routes/song_release");
 const supportingNumbers = require("./admin/routes/supporting_numbers");
 const eventWinner = require("./admin/routes/eventWinner");
+const pageMedia = require("./admin/routes/page_media");
 
 const allowedOrigins = [
   "https://ophcommunity.com",
@@ -207,6 +208,7 @@ app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
 app.use("/", eventWinner);
+app.use("/", pageMedia);
 // ✅ Start server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}...`);

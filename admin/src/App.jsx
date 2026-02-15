@@ -18,6 +18,7 @@ import WebsiteConfig from "./view/dashboard/websiteConfig";
 import Contact from "./view/dashboard/websiteConfig/contact";
 import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
+import PageMediaUpload from "./view/dashboard/websiteConfig/PageMediaUpload";
 import Collab from "./view/dashboard/websiteConfig/collab";
 import EventAdminForm from "./view/dashboard/websiteConfig/Events";
 import Events from "./view/dashboard/websiteConfig/Events/Events";
@@ -442,6 +443,22 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/PageMediaUpload"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <PageMediaUpload />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/Collab"
             element={

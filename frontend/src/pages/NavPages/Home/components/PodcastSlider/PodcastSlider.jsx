@@ -138,7 +138,7 @@ function PodcastSlider({ searchText, title }) {
     slidesToShow: filteredPodcasts.length >= 3 ? 1 : filteredPodcasts.length,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 1000,
+    autoplaySpeed: 3000,
     dots: false,
     arrows: false,
     centerMode: filteredPodcasts.length >= 3,

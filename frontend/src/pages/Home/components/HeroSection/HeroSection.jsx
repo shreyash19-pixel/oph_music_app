@@ -18,20 +18,22 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const dispatch = useDispatch();
   const location = useLocation();
 
-  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
+  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
-  const [video, setVideo] = useState(Video);
+  const [video, setVideo] = useState(null);
+  const [thumbnail, setThumbnail] = useState(null);
 
-  // const fetchVideo = async () => {
-  //   try {
-  //     const response = await axiosApi.get(
-  //       "artist-website-configs?param=signup_video"
-  //     );
-  //     setVideo(response.data.data[0]);
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
+  const fetchPageMedia = async () => {
+    try {
+      const response = await axiosApi.get("/page-media?page_name=home");
+      if (response.data.success && response.data.data) {
+        setVideo(response.data.data.video_url);
+        setThumbnail(response.data.data.thumbnail_url);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
   const handlePlay = () => setIsPlaying(true);
   const handlePause = () => setIsPlaying(false);
   const togglePlayPause = () => {
@@ -43,9 +45,9 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
       }
     }
   };
-  // useEffect(() => {
-  //   fetchVideo();
-  // }, []);
+  useEffect(() => {
+    fetchPageMedia();
+  }, []);
 
   const handleClick = async (e) => {
     console.log(e);
@@ -93,22 +95,26 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
     <div className="space-y-6 px-8 p-4">
       {/* Video Preview */}
       <div className="relative h-[30vh] lg:h-[50vh] w-full rounded-lg overflow-hidden">
-        <img
-          src="https://images.pexels.com/photos/30799437/pexels-photo-30799437/free-photo-of-women-surfing-adventure-on-bali-beach.jpeg?auto=compress&cs=tinysrgb&w=600"
-          alt="Video thumbnail"
-          className="w-full h-full object-cover opacity-90"
-        />
-
-        <button
-          onClick={() => setVideoModal(true)}
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
-        >
+        {thumbnail && (
           <img
-            src="/assets/images/play_button.png"
-            className="w-[150px]"
-            alt="Play"
+            src={thumbnail}
+            alt="Video thumbnail"
+            className="w-full h-full object-cover opacity-90"
           />
-        </button>
+        )}
+
+        {video && (
+          <button
+            onClick={() => setVideoModal(true)}
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+          >
+            <img
+              src="/assets/images/play_button.png"
+              className="w-[150px]"
+              alt="Play"
+            />
+          </button>
+        )}
       </div>
 
       {/* <SongDetails/> */}

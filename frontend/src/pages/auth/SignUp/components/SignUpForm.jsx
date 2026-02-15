@@ -16,30 +16,32 @@ const SignUpForm = () => {
   const videoRef = useRef(null); // Reference to the video element
 
   const [video, setVideo] = useState(null);
+  const [thumbnail, setThumbnail] = useState(null);
 
-  // const fetchVideo = async () => {
-  //   try {
-  //     const response = await axiosApi.get(
-  //       "artist-website-configs?param=signup_video"
-  //     );
-  //     setVideo(response.data.data[0]);
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
+  const fetchPageMedia = async () => {
+    try {
+      const response = await axiosApi.get("/page-media?page_name=signup");
+      if (response.data.success && response.data.data) {
+        setVideo(response.data.data.video_url);
+        setThumbnail(response.data.data.thumbnail_url);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
   const handlePlay = () => setIsPlaying(true);
   const handlePause = () => setIsPlaying(false);
 
   // Toggle Play/Pause when clicking the play button
-  // const togglePlayPause = () => {
-  //   if (videoRef.current) {
-  //     if (isPlaying) {
-  //       videoRef.current.pause();
-  //     } else {
-  //       videoRef.current.play();
-  //     }
-  //   }
-  // };
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
 
   const { login } = useArtist();
   const [formData, setFormData] = useState({
@@ -204,9 +206,9 @@ const SignUpForm = () => {
     }
   };
 
-  // useEffect(() => {
-  //   fetchVideo();
-  // }, []);
+  useEffect(() => {
+    fetchPageMedia();
+  }, []);
 
   return (
     <>
@@ -466,40 +468,33 @@ const SignUpForm = () => {
 
           {/* Image Section */}
           <div className="lg:w-1/2  mt-5 lg:mt-0 relative">
-            <div className="aspect-[3/4] lg:aspect-[5/6] overflow-hidden rounded-lg">
-              {/* <img
-                src="/assets/images/signup-image.png"
-                alt="Sign Up"
-                className="w-full h-full object-cover rounded-lg"
-              /> */}
-              {/* {video && (
+            <div className="aspect-[3/4] lg:aspect-[5/6] overflow-hidden rounded-lg relative">
+              {!isPlaying && thumbnail && (
+                <img
+                  src={thumbnail}
+                  alt="Sign Up"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              )}
+              {video && (
                 <video
                   ref={videoRef}
-                  src={video.value}
+                  src={video}
                   onPlay={handlePlay}
                   onPause={handlePause}
                   onClick={togglePlayPause}
-                  className="w-full h-full mt-10 object-cover rounded-lg"
-                  controls={false} // Disable default controls
+                  className={`w-full h-full object-cover rounded-lg ${!isPlaying ? 'hidden' : ''}`}
+                  controls={false}
                 />
               )}
-              {!isPlaying && (
+              {!isPlaying && video && (
                 <button
                   onClick={togglePlayPause}
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none"
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
                 >
                   <img src={PlayBtn} alt="Play" className="w-32 h-32" />
                 </button>
-              )} */}
-              {/* <button className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-purple-600 rounded-full p-4">
-                <img
-                  src="/assets/images/resources/play-icon.png"
-
-
-                  alt="Play"
-                  className="w-6 h-6"
-                />
-              </button> */}
+              )}
             </div>
           </div>
         </div>
