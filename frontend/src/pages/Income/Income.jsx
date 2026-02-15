@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useArtist } from "../auth/API/ArtistContext";
 import axiosApi from "../../conf/axios";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 export default function IncomeWithdrawal() {
   const { headers, ophid } = useArtist();
@@ -9,6 +10,9 @@ export default function IncomeWithdrawal() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [incomeStatus, setIncomeStatus] = useState("locked");
+
+  const navigate = useNavigate();
 
   const fetchIncome = useCallback(async () => {
     if (!ophid) return;
@@ -23,7 +27,7 @@ export default function IncomeWithdrawal() {
           income: parseFloat(incomeData.total_revenue || 0),
           total_song_count: incomeData.total_song_count || 0,
           total_youtube_revenue: parseFloat(
-            incomeData.total_youtube_revenue || 0
+            incomeData.total_youtube_revenue || 0,
           ),
           total_audio_revenue: parseFloat(incomeData.total_audio_revenue || 0),
         });
@@ -55,7 +59,7 @@ export default function IncomeWithdrawal() {
     try {
       const response = await axiosApi.get(
         `/auth/documentation-details?ophid=${ophid}`,
-        { headers }
+        { headers },
       );
 
       if (response.data?.success && response.data.data?.length > 0) {
@@ -74,45 +78,64 @@ export default function IncomeWithdrawal() {
     }
   }, [ophid, headers]);
 
-useEffect(() => {
-  const fetchData = async () => {
-    if (!ophid) return; // wait until ophID is available
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!ophid) return;
 
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      // Fetch income data
-      await fetchIncome();
+        // ✅ STEP 1: Check if ophid contains SA
+        if (ophid.includes("SA")) {
+          const statusResponse = await axiosApi.get(
+            `/get-special-artists-income-status?ophid=${ophid}`,
+            { headers },
+          );
 
-      // Fetch bank details
-      await fetchBankDetails();
+          if (
+            statusResponse.data?.success &&
+            statusResponse.data.data?.length > 0
+          ) {
+            const statusData = statusResponse.data.data[0];
+            setIncomeStatus(statusData);
 
-      // Fetch withdrawal history
-      const response = await axiosApi.get(`/getWithdraw?ophID=${ophid}`);
-      const withdrawals = response.data.data || [];
-      setHistory(withdrawals);
+            // ✅ STEP 2: If locked → STOP everything
+            if (statusData.status === "locked") {
+              setLoading(false);
+              return; // ⛔ Exit early
+            }
+          }
+        }
 
-      // Compute total withdrawals (pending + approved)
-     const blockedTotal = withdrawals
-       .filter((w) => w.status === "pending" || w.status === "approved")
-       .reduce((sum, w) => sum + parseFloat(w.withdraw_amount), 0);
+        // ✅ STEP 3: Fetch income
+        await fetchIncome();
 
-     setIncome((prev) => ({
-       ...prev,
-       availableAmount: (parseFloat(prev?.income) || 0) - blockedTotal,
-     }));
+        // ✅ STEP 4: Fetch bank details
+        await fetchBankDetails();
 
-    } catch (err) {
-      console.error("Failed to fetch data:", err);
-      toast.error(err.message || "Failed to fetch data");
-    } finally {
-      setLoading(false);
-    }
-  };
+        // ✅ STEP 5: Fetch withdrawal history
+        const response = await axiosApi.get(`/getWithdraw?ophID=${ophid}`);
+        const withdrawals = response.data.data || [];
+        setHistory(withdrawals);
 
-  fetchData();
-}, [ophid, fetchIncome, fetchBankDetails]);
+        const blockedTotal = withdrawals
+          .filter((w) => w.status === "pending" || w.status === "approved")
+          .reduce((sum, w) => sum + parseFloat(w.withdraw_amount), 0);
 
+        setIncome((prev) => ({
+          ...prev,
+          availableAmount: (parseFloat(prev?.income) || 0) - blockedTotal,
+        }));
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+        toast.error(err.message || "Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [ophid, fetchIncome, fetchBankDetails, headers]);
 
   const submitWithdraw = async (e) => {
     e.preventDefault();
@@ -129,8 +152,8 @@ useEffect(() => {
     if (withdrawAmountNum > availableIncome) {
       toast.error(
         `Withdrawal amount cannot exceed available income of ₹${availableIncome.toFixed(
-          2
-        )}`
+          2,
+        )}`,
       );
       return;
     }
@@ -195,10 +218,77 @@ useEffect(() => {
     }
   };
 
+  const handleIncomeRequest = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      const response = await axiosApi.post(
+        "/set-special-artists-income-status",
+        { ophid: ophid,
+          status: "requested"
+         },
+        {
+          headers: {
+            ...headers,
+          },
+        },
+      );
+
+      if (response.data.success) {
+        console.log(response.data.data);
+
+        navigate("/dashboard/pending", {
+          state: {
+            heading: "Your request is under review",
+            btnText: "Back to Home",
+            redirectTo: "/dashboard",
+          },
+        });
+      }
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-70px)] flex items-center justify-center">
         Loading...
+      </div>
+    );
+  }
+
+  if (
+    incomeStatus?.status === "locked" ||
+    incomeStatus?.status === "requested"
+  ) {
+    console.log("eerre");
+
+    return (
+      <div className="min-h-[calc(100vh-70px)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-white">
+          {incomeStatus?.status === "locked" ? (
+            <p className="text-lg font-semibold">
+              Income is locked. Request to unlock
+            </p>
+          ) : (
+            <p className="text-lg font-semibold">
+              your request is under review
+            </p>
+          )}
+
+          {incomeStatus?.status === "locked" && (
+            <button
+              onClick={handleIncomeRequest}
+              className="bg-white text-[#6F4FA0] px-6 py-2 rounded-lg font-medium hover:opacity-90 transition"
+            >
+              Request to Unlock
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -307,7 +397,7 @@ useEffect(() => {
                     <p className="absolute -bottom-6 left-0 text-red-400 text-sm">
                       Amount cannot exceed available income of ₹
                       {parseFloat(
-                        income.availableAmount ?? income.income
+                        income.availableAmount ?? income.income,
                       ).toFixed(2)}
                     </p>
                   )}
