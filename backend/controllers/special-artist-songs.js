@@ -26,7 +26,7 @@ const getSpeicalArtistSongStatusController = async (req, res) => {
         success: true,
         message: "Data fetched successfully",
         data: response,
-        songCnt: songCount.length === 0 ? 0 : songCount[0].cnt,
+        songCnt: songCount,
       });
     }
   } catch (err) {
