@@ -39,6 +39,9 @@ class AdminPaymentService {
 
       // Get song_id before potentially moving it (needed for song_application_status update)
       const songIdBeforeUpdate = paymentDetailsBefore[0]?.song_id || songId;
+      // Use exact DB values so UPDATE always finds the row (avoids frontend/DB mismatch)
+      const ophIdFromDb = paymentDetailsBefore[0]?.oph_id ?? ophId;
+      const transactionIdFromDb = paymentDetailsBefore[0]?.transaction_id ?? transactionId;
 
       // Handle song payment rejection: move song_id to reject_for and set song_id to NULL
       if (isSongPayment && isRejected && paymentDetailsBefore[0]?.song_id) {
@@ -47,7 +50,7 @@ class AdminPaymentService {
           `UPDATE payments 
            SET reject_for = ?, song_id = NULL, updated_at = NOW()
            WHERE oph_id = ? AND transaction_id = ? AND song_id = ?`,
-          [songIdValue, ophId, transactionId, songIdValue]
+          [songIdValue, ophIdFromDb, transactionIdFromDb, songIdValue]
         );
         console.log(`✅ Moved song_id (${songIdValue}) to reject_for and set song_id to NULL for rejected song payment`);
       }
@@ -77,12 +80,12 @@ class AdminPaymentService {
         );
       }
 
-      // Update payment status in payments table
+      // Update payment status in payments table (use DB identifiers so row is always found)
       const paymentDetailsModel = require('../model/payments');
       const result = await paymentDetailsModel.updateStatus(
         connection,
-        ophId,
-        transactionId,
+        ophIdFromDb,
+        transactionIdFromDb,
         status,
         reject_reason,
       );

@@ -14,6 +14,8 @@ class SongRegistrationService {
     try {
       // Get all songs for the user with song_application_status
       // Use song_application_status.overall_status as the single source of truth
+      // Payment: use subquery so we get reject_reason even when payment row has song_id moved to reject_for
+      // One row per song: use subqueries for reject_reason so duplicates in ad/vd don't create multiple rows
       const [rows] = await connection.execute(
         `SELECT 
           sr.song_id,
@@ -26,15 +28,18 @@ class SongRegistrationService {
           sas.status_video,
           sas.status_payment,
           sas.overall_status,
-          ad.reject_reason as audio_reject_reason,
-          vd.reject_reason as video_reject_reason,
-          p.reject_reason as payment_reject_reason
+          (SELECT ad2.reject_reason FROM audio_details ad2 
+           WHERE ad2.song_id = sr.song_id AND ad2.OPH_ID = sr.oph_id 
+           LIMIT 1) as audio_reject_reason,
+          (SELECT vd2.reject_reason FROM video_details vd2 
+           WHERE vd2.song_id = sr.song_id 
+           LIMIT 1) as video_reject_reason,
+          (SELECT p2.reject_reason FROM payments p2 
+           WHERE (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id) AND p2.oph_id = sr.oph_id 
+           AND (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
+           ORDER BY p2.created_at DESC LIMIT 1) as payment_reject_reason
         FROM songs_register sr
         LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
-        LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
-        LEFT JOIN video_details vd ON sr.song_id = vd.song_id
-        LEFT JOIN payments p ON sr.song_id = p.song_id 
-          AND (p.from_source = 'Song Registration' OR p.from_source = 'Song Repayment')
         WHERE sr.oph_id = ?
         ORDER BY sr.created_at DESC`,
         [ophId]
@@ -49,46 +54,64 @@ class SongRegistrationService {
         const songId = row.song_id;
 
         if (!songDetails[songId]) {
-          let firstRejectedStep = "";
+          const rejectedSections = [];
           let firstRejectedStepReason = "";
           let currentStep = "";
-          let status = "";
+          let status = row.overall_status || "pending";
 
-          // Use overall_status from song_application_status as the single source of truth
-          // Get rejection details from individual tables
-          status = row.overall_status || "pending";
-          
-          // Priority: Check rejections first (audio > video > payment) to get rejection message
-          if (row.status_audio === "rejected") {
-            firstRejectedStep = "Audio Details has been rejected";
-            firstRejectedStepReason = row.audio_reject_reason || "";
-            currentStep = "/dashboard/upload-song/audio-metadata/";
-          } else if (row.status_video === "rejected") {
-            firstRejectedStep = "Video Details has been rejected";
-            firstRejectedStepReason = row.video_reject_reason || "";
-            currentStep = "/dashboard/upload-song/video-metadata/";
-          } else if (row.status_payment === "rejected") {
-            firstRejectedStep = "Payment Details has been rejected";
-            firstRejectedStepReason = row.payment_reject_reason || "";
-            // Payment comes after video, so redirect to video-metadata where they can navigate to payment
-            currentStep = "/dashboard/upload-song/video-metadata/";
+          // Build list of ALL rejected sections (audio, video, payment) in fixed order so next_page = first
+          // Use status and/or reject_reason so we don't miss a section when status is out of sync
+          if (row.status_audio === "rejected" || (row.audio_reject_reason && String(row.audio_reject_reason).trim() !== "")) {
+            rejectedSections.push({
+              section: "audio",
+              label: "Audio Rejected",
+              reason: row.audio_reject_reason || ""
+            });
+          }
+          if (row.status_video === "rejected" || (row.video_reject_reason && String(row.video_reject_reason).trim() !== "")) {
+            rejectedSections.push({
+              section: "video",
+              label: "Video Rejected",
+              reason: row.video_reject_reason || ""
+            });
+          }
+          if (row.status_payment === "rejected" || (row.payment_reject_reason && String(row.payment_reject_reason).trim() !== "")) {
+            rejectedSections.push({
+              section: "payment",
+              label: "Payment Rejected",
+              reason: row.payment_reject_reason || ""
+            });
+          }
+
+          // First rejected step (for backward compat / primary reason)
+          const firstRejected = rejectedSections[0];
+          const firstRejectedStep = firstRejected ? firstRejected.label : "";
+          if (firstRejected) firstRejectedStepReason = firstRejected.reason;
+
+          // next_page = first step: audio -> video -> payment. When only payment rejected, send to video-metadata (read-only + Pay now)
+          if (rejectedSections.length > 0) {
+            const hasAudio = rejectedSections.some((s) => s.section === "audio");
+            const hasVideo = rejectedSections.some((s) => s.section === "video");
+            const hasPayment = rejectedSections.some((s) => s.section === "payment");
+            if (hasAudio) {
+              currentStep = "/dashboard/upload-song/audio-metadata/";
+            } else if (hasVideo) {
+              currentStep = "/dashboard/upload-song/video-metadata/";
+            } else if (hasPayment) {
+              currentStep = "/dashboard/upload-song/video-metadata/"; // only payment → video page then Pay now
+            } else {
+              currentStep = "/dashboard/upload-song/audio-metadata/";
+            }
           } else {
-            // No rejection, determine current step based on what's missing
-            firstRejectedStepReason = "";
-            firstRejectedStep = "";
-            
-            if (status === "approved") {
-              currentStep = "";
-            } else if (status === "under review") {
+            if (status === "approved" || status === "under review") {
               currentStep = "";
             } else {
-              // Draft or pending - determine current step based on what's missing
               if (!row.status_audio) {
                 currentStep = "/dashboard/upload-song/audio-metadata/";
               } else if (!row.status_video) {
                 currentStep = "/dashboard/upload-song/video-metadata/";
               } else if (!row.status_payment) {
-                currentStep = "/dashboard/upload-song/video-metadata/"; // Payment comes after video
+                currentStep = "/auth/payment";
               } else {
                 currentStep = row.current_page || "/dashboard/upload-song/audio-metadata/";
               }
@@ -104,6 +127,7 @@ class SongRegistrationService {
             projectType: row.project_type,
             release_date: row.release_date,
             firstRejectedStep: firstRejectedStep,
+            rejectedSections,
             lyrical_services: row.Lyrics_services
           };
         }

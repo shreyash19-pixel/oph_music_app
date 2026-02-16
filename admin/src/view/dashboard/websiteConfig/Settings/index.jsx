@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import WebConfigSidebar from '../../../../components/WebConfigSidebar';
 import axiosApi from '../../../../conf/axios';
 import toast from 'react-hot-toast';
+import { formatDateTimeIST } from '../../../../utils/date';
 
 const WebsiteSettings = () => {
   // State for costing data
@@ -517,20 +518,10 @@ const WebsiteSettings = () => {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {item.created_at ? new Date(item.created_at).toLocaleDateString('en-GB', {
-                                      day: '2-digit',
-                                      month: 'long',
-                                      year: 'numeric',
-                                      timeZone: 'Asia/Kolkata'
-                                    }) : 'N/A'}
+                                    {item.created_at ? formatDateTimeIST(item.created_at) : 'N/A'}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {item.updated_at ? new Date(item.updated_at).toLocaleDateString('en-GB', {
-                                      day: '2-digit',
-                                      month: 'long',
-                                      year: 'numeric',
-                                      timeZone: 'Asia/Kolkata'
-                                    }) : 'N/A'}
+                                    {item.updated_at ? formatDateTimeIST(item.updated_at) : 'N/A'}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div className="flex gap-2">

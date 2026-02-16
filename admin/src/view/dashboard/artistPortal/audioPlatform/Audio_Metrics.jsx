@@ -2,24 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../conf/axios"; // your axios instance
 import toast from "react-hot-toast";
+import { formatDateTimeIST } from "../../../../utils/date";
 
 export default function Audio_Metrics() {
   const { songId } = useParams();
   const navigate = useNavigate();
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    return d.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "Asia/Kolkata",
-    });
-  };
+  const formatDate = (dateStr) => formatDateTimeIST(dateStr) || "-";
 
   const ReadOnlyField = ({ label, value }) => (
     <div>

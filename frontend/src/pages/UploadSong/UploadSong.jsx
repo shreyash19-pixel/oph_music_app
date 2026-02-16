@@ -37,20 +37,40 @@ export default function UploadSongs() {
     }
   }, [ophid, headers]);
 
+  // Resolve first step: audio -> video -> payment. When only payment is rejected, still go to
+  // video-metadata first (read-only + Pay now), then user clicks Pay now to go to payment.
+  const getFirstRejectedPage = (rejectedSections) => {
+    if (!rejectedSections?.length) return '/dashboard/upload-song/audio-metadata/';
+    const hasAudio = rejectedSections.some((s) => s.section === 'audio');
+    const hasVideo = rejectedSections.some((s) => s.section === 'video');
+    const hasPayment = rejectedSections.some((s) => s.section === 'payment');
+    if (hasAudio) return '/dashboard/upload-song/audio-metadata/';
+    if (hasVideo) return '/dashboard/upload-song/video-metadata/';
+    if (hasPayment) return '/dashboard/upload-song/video-metadata/'; // only payment rejected → video page (read-only + Pay now)
+    return '/dashboard/upload-song/audio-metadata/';
+  };
+
   // Get the most recently updated pending content
   // pendingContent is an object with song_id as keys, convert to array
   const submittedSongs = pendingContent && typeof pendingContent === 'object' && Object.keys(pendingContent).length > 0 
-    ? Object.values(pendingContent).map(song => ({
-        name: song.Song_name,
-        status: song.status || 'draft',
-        id: song.song_id,
-        reject_reason: song.reject_reason,
-        next_page: song.next_page || '/dashboard/upload-song/audio-metadata/',
-        projectType: song.projectType,
-        release_date: song.release_date,
-        lyrical_services: song.lyrical_services,
-        firstRejectedStep: song.firstRejectedStep
-      })) 
+    ? Object.values(pendingContent).map(song => {
+        const rejectedSections = song.rejectedSections || [];
+        const next_page = rejectedSections.length > 0
+          ? getFirstRejectedPage(rejectedSections)
+          : (song.next_page || '/dashboard/upload-song/audio-metadata/');
+        return {
+          name: song.Song_name,
+          status: song.status || 'draft',
+          id: song.song_id,
+          reject_reason: song.reject_reason,
+          next_page,
+          projectType: song.projectType,
+          release_date: song.release_date,
+          lyrical_services: song.lyrical_services,
+          firstRejectedStep: song.firstRejectedStep,
+          rejectedSections,
+        };
+      }) 
     : [];
 
   
@@ -130,7 +150,7 @@ export default function UploadSongs() {
             
             onClick={(e) => {
               if (['pending', 'rejected'].includes(song.status)) {
-                // Just navigate - status will be updated to "under review" only when user submits metadata
+                // Single flow: go to first step (audio/video/payment); backend redirects through remaining steps until done
                 navigate(song.next_page, {
                   state: {
                     song_id: song.id,
@@ -138,7 +158,8 @@ export default function UploadSongs() {
                     release_date: song.release_date,
                     project_type: song.projectType,
                     lyrical_services: song.lyrical_services,
-                    isFixingRejected: song.status === 'rejected' // Pass flag to indicate we're fixing rejected item
+                    isFixingRejected: song.status === 'rejected',
+                    rejectedSections: song.rejectedSections
                   }
                 });
                 localStorage.setItem("projectType", song.projectType);
@@ -160,8 +181,18 @@ export default function UploadSongs() {
               </div>
 
             </div>
-            {/* Show rejection message if status is Rejected */}
-            {song.status === "rejected" && (
+            {/* Show all rejected sections clearly: Audio Rejected, Video Rejected, Payment Rejected */}
+            {song.status === "rejected" && song.rejectedSections?.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {song.rejectedSections.map((s) => (
+                  <p key={s.section} className="text-red-400 text-sm">
+                    {s.label}
+                    {s.reason ? ` — ${s.reason}` : ""}
+                  </p>
+                ))}
+              </div>
+            )}
+            {song.status === "rejected" && (!song.rejectedSections || song.rejectedSections.length === 0) && song.firstRejectedStep && (
               <p className="text-red-400 mt-2">{song.firstRejectedStep}</p>
             )}
           </div>

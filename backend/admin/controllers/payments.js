@@ -45,8 +45,11 @@ const updateStatus = async (req, res) => {
       songId,
     });
 
-    const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionId);
-    const place = paymentDetails[0].From;
+    const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionIdValue);
+    if (!paymentDetails || paymentDetails.length === 0) {
+      return res.status(404).json({ message: "Payment not found after update" });
+    }
+    const place = paymentDetails[0].from_source || paymentDetails[0].From || "Payment";
 
     let link = null;
     if (status === "rejected") {
@@ -454,7 +457,7 @@ const updateSongPaymentSp = async (req, res) => {
 
 const getTransactionDetailsController = async (req, res) => {
   try {
-    const { release_date } = req.query;
+    const { release_date, oph_id, song_id } = req.query;
 
     if (!release_date) {
       return res.status(400).json({
@@ -463,7 +466,11 @@ const getTransactionDetailsController = async (req, res) => {
       });
     }
 
-    const response = await payment_details.getTransactionDetails(release_date);
+    const response = await payment_details.getTransactionDetails(
+      release_date,
+      oph_id || null,
+      song_id || null
+    );
 
     if (response) {
       return res.status(200).json({
