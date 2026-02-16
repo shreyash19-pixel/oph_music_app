@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import axiosApi from "../../../../conf/axios";
-import formatDateAndAdjustMonth from "../../../../utils/date";
+import formatDateAndAdjustMonth, { isRegistrationOpen, isRegistrationNotStartedYet, formatDateIST } from "../../../../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { changeSelectedEvent } from "../../../../slice/events";
@@ -161,11 +161,28 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
                 </div>
               </div>
 
-              {/* Register Button */}
+              {/* Register Button – same logic as Events page: active period only clickable */}
               <div>
                 {upcomingEvent.is_registered ? (
                   <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
                     Registered
+                  </button>
+                ) : isRegistrationNotStartedYet(upcomingEvent) ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
+                    title={`Registration opens at 12:00 AM IST on ${formatDateIST(upcomingEvent.registrationStart)}`}
+                  >
+                    Registration opens 12:00 AM IST, {formatDateIST(upcomingEvent.registrationStart)}
+                  </button>
+                ) : !isRegistrationOpen(upcomingEvent) ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
+                  >
+                    Closed
                   </button>
                 ) : (
                   <button

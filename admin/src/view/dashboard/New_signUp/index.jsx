@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../conf/axios";
 import { toast } from "react-hot-toast";
+import { formatDateTimeIST } from "../../../utils/date";
 
 const NewSignupDetails = () => {
   const { ophid } = useParams();
@@ -95,14 +96,7 @@ const NewSignupDetails = () => {
     }, 2000);
   };
 
-  const formatDateTime = (dateStr) => {
-    const date = new Date(dateStr);
-    return `${date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })} — ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-  };
+  const formatDateTime = (dateStr) => formatDateTimeIST(dateStr);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-lg">Loading...</div>;

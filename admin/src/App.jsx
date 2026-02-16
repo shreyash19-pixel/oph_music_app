@@ -199,6 +199,8 @@ function App() {
             element={<ResolveIndex />}
           />
           <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
+          <Route path="/EventPayment/:ophid/:eventId/:transactionId" element={<EventPayment />} />
+          <Route path="/EventPayment/:ophid/:eventId" element={<EventPayment />} />
           <Route path="/EventPayment/:ophid" element={<EventPayment />} />
           <Route
             path="/SongPayment/:ophid/:song_id"

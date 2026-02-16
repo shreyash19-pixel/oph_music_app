@@ -27,12 +27,16 @@ const s3 = new AWS.S3({
 });
 
 // Use multipart upload for large files (>10MB) for better performance
-const uploadToS3 = async (file, folder) => {
+// Supports cancellation if client disconnects
+// progressCallback(progress) is optional: called with { percent, loadedMB, totalMB, speed, time } (e.g. for Socket.IO)
+const uploadToS3 = async (file, folder, abortSignal = null, progressCallback = null) => {
   const fileSize = file.size || file.buffer?.length || 0;
   const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+  const isVideo = file.mimetype?.startsWith('video/');
+  const fileType = isVideo ? 'VIDEO' : file.mimetype?.startsWith('audio/') ? 'AUDIO' : 'FILE';
   
-  console.log("Uploading file to S3:", {
-    originalname: file.originalname,
+  console.log(`[S3 Upload] Starting ${fileType} upload:`, {
+    filename: file.originalname,
     mimetype: file.mimetype,
     size: `${fileSizeMB}MB`,
     folder: folder
@@ -45,6 +49,10 @@ const uploadToS3 = async (file, folder) => {
     ContentType: file.mimetype,
   };
 
+  let upload = null;
+  let s3Key = null;
+  let uploadCancelled = false;
+
   try {
     const startTime = Date.now();
     
@@ -55,24 +63,147 @@ const uploadToS3 = async (file, folder) => {
       queueSize: 4, // Upload 4 parts concurrently
     };
     
-    const upload = s3.upload(params, uploadOptions);
+    upload = s3.upload(params, uploadOptions);
+    s3Key = params.Key; // Store key for cleanup if needed
     
-    // Track upload progress for large files
-    if (fileSize > 10 * 1024 * 1024) {
+    // Track upload progress for large files (especially videos)
+    if (fileSize > 10 * 1024 * 1024 || isVideo) {
+      let lastLoggedPercent = 0;
       upload.on('httpUploadProgress', (progress) => {
-        const percent = ((progress.loaded / progress.total) * 100).toFixed(1);
-        console.log(`Upload progress: ${percent}% (${(progress.loaded / (1024 * 1024)).toFixed(2)}MB / ${(progress.total / (1024 * 1024)).toFixed(2)}MB)`);
+        // Check if cancelled during progress
+        if (abortSignal && abortSignal.aborted) {
+          if (!uploadCancelled) {
+            uploadCancelled = true;
+            const currentPercent = Math.round((progress.loaded / progress.total) * 100);
+            console.log(`[S3 Upload] ⚠️ ${fileType} upload cancelled during progress (${currentPercent}%) - aborting...`);
+            try {
+              upload.abort();
+            } catch (abortError) {
+              console.warn(`[S3 Upload] Error aborting upload:`, abortError.message);
+            }
+          }
+          return;
+        }
+        
+        const percent = Math.round((progress.loaded / progress.total) * 100);
+        const loadedMB = (progress.loaded / (1024 * 1024)).toFixed(2);
+        const totalMB = (progress.total / (1024 * 1024)).toFixed(2);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        const speed = (progress.loaded / (1024 * 1024) / (elapsed || 1)).toFixed(2);
+        
+        // Log every 10% progress to avoid spam, or every 5% for videos
+        const logInterval = isVideo ? 5 : 10;
+        if (percent >= lastLoggedPercent + logInterval || percent === 100) {
+          console.log(`[S3 Upload] ${fileType} Progress: ${percent}% | ${loadedMB}MB / ${totalMB}MB | Speed: ${speed}MB/s | Time: ${elapsed}s`);
+          lastLoggedPercent = percent;
+          if (progressCallback && typeof progressCallback === 'function') {
+            try {
+              progressCallback({
+                percent,
+                loadedMB: parseFloat(loadedMB),
+                totalMB: parseFloat(totalMB),
+                speed: parseFloat(speed),
+                time: parseFloat(elapsed),
+              });
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
       });
     }
     
-    const result = await upload.promise();
+    // Check for cancellation before starting upload
+    if (abortSignal && abortSignal.aborted) {
+      console.log(`[S3 Upload] ⚠️ ${fileType} upload cancelled before starting`);
+      throw new Error('Upload cancelled by client disconnect');
+    }
+    
+    // Start upload and check for cancellation
+    const uploadPromise = upload.promise();
+    
+    // Monitor for cancellation (check every 1 second for large files)
+    let cancellationMonitor = null;
+    if (abortSignal && (fileSize > 10 * 1024 * 1024 || isVideo)) {
+      cancellationMonitor = setInterval(() => {
+        if (abortSignal.aborted && !uploadCancelled) {
+          uploadCancelled = true;
+          clearInterval(cancellationMonitor);
+          console.log(`[S3 Upload] ⚠️ ${fileType} upload cancelled - aborting S3 upload`);
+          try {
+            upload.abort();
+          } catch (abortError) {
+            console.warn(`[S3 Upload] Error aborting upload:`, abortError.message);
+          }
+        }
+      }, 1000);
+      
+      // Clear monitor when upload completes
+      uploadPromise.finally(() => {
+        if (cancellationMonitor) {
+          clearInterval(cancellationMonitor);
+        }
+      });
+    }
+    
+    const result = await uploadPromise;
+    
+    // Check if cancelled after promise resolves
+    if (abortSignal && abortSignal.aborted) {
+      console.log(`[S3 Upload] ⚠️ ${fileType} upload was cancelled, cleaning up...`);
+      // Try to delete the uploaded file
+      try {
+        await s3.deleteObject({ Bucket: process.env.S3_BUCKET, Key: s3Key }).promise();
+        console.log(`[S3 Upload] ✅ Cleaned up cancelled upload: ${s3Key}`);
+      } catch (deleteError) {
+        console.warn(`[S3 Upload] Could not clean up cancelled upload:`, deleteError.message);
+      }
+      throw new Error('Upload cancelled by client disconnect');
+    }
+    
     const uploadTime = ((Date.now() - startTime) / 1000).toFixed(2);
     const speed = (fileSizeMB / uploadTime).toFixed(2);
     
-    console.log(`S3 upload successful in ${uploadTime}s (${speed}MB/s):`, result.Location);
+    console.log(`[S3 Upload] ✅ ${fileType} upload completed successfully in ${uploadTime}s (${speed}MB/s):`, result.Location);
     return result.Location;
   } catch (error) {
-    console.error('S3 upload error:', error);
+    // Check if error is due to cancellation
+    if (abortSignal && abortSignal.aborted) {
+      console.log(`[S3 Upload] ⚠️ ${fileType} upload cancelled: ${file.originalname}`);
+      // Try to clean up partial upload
+      if (s3Key) {
+        try {
+          await s3.deleteObject({ Bucket: process.env.S3_BUCKET, Key: s3Key }).promise();
+          console.log(`[S3 Upload] ✅ Cleaned up cancelled upload: ${s3Key}`);
+        } catch (deleteError) {
+          console.warn(`[S3 Upload] Could not clean up cancelled upload:`, deleteError.message);
+        }
+      }
+      throw new Error('Upload cancelled by client disconnect');
+    }
+    
+    // If upload was aborted, try to clean up
+    if (error.code === 'RequestAbortedError' || error.message?.includes('abort')) {
+      console.log(`[S3 Upload] ⚠️ ${fileType} upload aborted: ${file.originalname}`);
+      if (s3Key) {
+        try {
+          await s3.deleteObject({ Bucket: process.env.S3_BUCKET, Key: s3Key }).promise();
+          console.log(`[S3 Upload] ✅ Cleaned up aborted upload: ${s3Key}`);
+        } catch (deleteError) {
+          console.warn(`[S3 Upload] Could not clean up aborted upload:`, deleteError.message);
+        }
+      }
+      throw new Error('Upload cancelled');
+    }
+    
+    console.error(`[S3 Upload] ❌ ${fileType} upload failed:`, error.message);
+    console.error(`[S3 Upload] Error details:`, {
+      filename: file.originalname,
+      size: `${fileSizeMB}MB`,
+      folder: folder,
+      error: error.message,
+      stack: error.stack
+    });
     throw new Error(`Failed to upload file to S3: ${error.message}`);
   }
 };

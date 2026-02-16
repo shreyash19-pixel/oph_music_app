@@ -347,7 +347,7 @@ export default function RequestTicketForm() {
                     </p>
                     <p className="text-sm">{ticket.category}</p>
                     <p className="text-xs text-gray-400">
-                      {new Date(ticket.createdAt).toLocaleDateString()}
+                      {new Date(ticket.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
                     </p>
                   </div>
                   <span

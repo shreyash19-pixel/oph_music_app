@@ -48,13 +48,14 @@ const AllData = () => {
 
       // Add human-readable timestamp and date to filename
       const now = new Date();
-      const dateStr = now.toLocaleDateString('en-GB').replace(/\//g, '-'); // DD-MM-YYYY format
+      const dateStr = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' }).replace(/\//g, '-'); // DD-MM-YYYY format IST
       const timeStr = now.toLocaleTimeString('en-GB', { 
         hour12: false,
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
-      }).replace(/:/g, '-'); // HH-MM-SS format
+        second: '2-digit',
+        timeZone: 'Asia/Kolkata'
+      }).replace(/:/g, '-'); // HH-MM-SS format IST
       
       // Insert timestamp before the file extension
       const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');

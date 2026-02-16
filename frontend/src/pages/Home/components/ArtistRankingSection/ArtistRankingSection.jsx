@@ -29,8 +29,8 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
 
   function getCurrentMonth() {
     const date = new Date();
-    const options = { month: "long" }; // 'long' for full month name, e.g., "January"
-    const month = date.toLocaleString("en-US", options);
+    const options = { month: "long", timeZone: "Asia/Kolkata" };
+    const month = date.toLocaleString("en-GB", options);
     setCurrentMonth(month);
   }
   useEffect(() => {
