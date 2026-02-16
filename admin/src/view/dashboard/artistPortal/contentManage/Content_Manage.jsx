@@ -24,6 +24,7 @@ const Content_Manage = () => {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric',
+                  timeZone: 'Asia/Kolkata',
                 })
               : null,
           };

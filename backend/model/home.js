@@ -58,36 +58,55 @@ const getArtistDetail = async (ophid) => {
   const [rows] = await db.execute(
     `
   WITH CTEArtistDetail AS (
-    SELECT 
-      ud.oph_id,
-      ud.full_name AS name,
-      pd.photo_urls AS photos,
-      ud.personal_photo,
-      ud.stage_name,
-      pd.video_url AS video_bio,
-      pd.profession AS profession,
-      ud.location,
-      kpi.total_views,
-      pd.bio AS bio,
-      pd.facebook_link AS facebook_url,
-      pd.instagram_link AS instagram_url,
-      ad.song_name AS song_name,
-      ad.primary_artist AS primary_artist,
-      ssm.youtube_views AS total_song_views,
-      ad.audio_url AS audio_url,
-      sas.overall_status AS overall_status
-    FROM user_details ud
-    LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
-    LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
-    LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
-    LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
-    LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
-    LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
-    WHERE ud.oph_id = ?
-  )
-  SELECT * 
-  FROM CTEArtistDetail 
-  WHERE overall_status = 'approved'
+  SELECT
+    ud.oph_id,
+    ud.full_name AS name,
+    pd.photo_urls AS photos,
+    ud.personal_photo,
+    ud.stage_name,
+    pd.video_url AS video_bio,
+    pd.profession AS profession,
+    ud.location,
+    kpi.total_views,
+    pd.bio AS bio,
+    pd.facebook_link AS facebook_url,
+    pd.instagram_link AS instagram_url,
+    ad.song_name AS song_name,
+     ad.song_id,
+    ad.primary_artist AS primary_artist,
+    ad.audio_url AS audio_url,
+    sas.overall_status AS overall_status,
+    SUM(ssm.youtube_views) AS total_song_views
+  FROM user_details ud
+  LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
+  LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
+  LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
+  LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
+  LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
+  LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
+  WHERE ud.oph_id = ?
+  GROUP BY
+    ud.oph_id,
+    ud.full_name,
+    pd.photo_urls,
+    ud.personal_photo,
+    ud.stage_name,
+    pd.video_url,
+    pd.profession,
+    ud.location,
+    kpi.total_views,
+    pd.bio,
+    pd.facebook_link,
+    pd.instagram_link,
+    ad.song_name,
+    ad.primary_artist,
+    ad.audio_url,
+    sas.overall_status
+)
+SELECT *
+FROM CTEArtistDetail
+WHERE overall_status = 'approved';
+
   `,
     [ophid],
   );
@@ -124,19 +143,21 @@ const getArtistDetail = async (ophid) => {
         instagram_url: row.instagram_url,
         songs: [
           {
+            song_id: row.song_id,
             song_name: row.song_name,
             primaryArtist: row.primary_artist,
             total_song_views: row.total_song_views,
-            duration_in_minutes: row.duration_in_minutes,
+            duration_in_minutes: row.audio_url,
           },
         ],
       };
     } else {
       songMap[ophid].songs.push({
+        song_id: row.song_id,
         song_name: row.song_name,
         primaryArtist: row.primary_artist,
         total_song_views: row.total_song_views,
-        duration_in_minutes: row.duration_in_minutes,
+        duration_in_minutes: row.audio_url,
       });
     }
   });

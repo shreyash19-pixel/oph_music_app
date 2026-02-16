@@ -151,25 +151,38 @@ const updateEventPaymentSp = async (
     // Use provided connection if available (for transactions), otherwise use default db
     const dbConnection = connection || db;
 
-    // If payment is rejected, move event_id to reject_for and set event_id to NULL
+    // For external events, oph_id contains the participant name (not a valid OPH_ID)
+    // Primary match MUST be transaction_id + event identity.
+    // For backward compatibility with older rejected rows (where event_id was NULL and moved to reject_for),
+    // we also match `(event_id IS NULL AND reject_for = eventId)`.
+    const normalizedEventId = parseInt(eventId, 10);
+    const eventMatchClause = `(event_id = ? OR (event_id IS NULL AND reject_for = ?))`;
+
+    // Also include oph_id in the match if provided (for additional specificity).
+    const whereClause = ophId
+      ? `transaction_id = ? AND ${eventMatchClause} AND (oph_id = ? OR oph_id IS NULL)`
+      : `transaction_id = ? AND ${eventMatchClause} AND oph_id IS NULL`;
+
+    const whereParams = ophId
+      ? [transactionId, normalizedEventId, normalizedEventId, ophId]
+      : [transactionId, normalizedEventId, normalizedEventId];
+
+    // IMPORTANT:
+    // Do NOT NULL-out event_id on rejection.
+    // If event_id becomes NULL, a single user having multiple event payments becomes ambiguous in admin/payment flows
+    // and can cause the "action on one event affects the other" behavior.
+    // Keep event_id so updates and UI remain scoped to (transaction_id + event_id).
     if (isRejected) {
       const [result] = await dbConnection.query(
         `UPDATE payments 
          SET status = ?, 
              reject_reason = ?,
-             reject_for = ?,
-             event_id = NULL,
              updated_at = NOW()
-         WHERE oph_id = ? 
-           AND transaction_id = ? 
-           AND event_id = ?`,
+         WHERE ${whereClause}`,
         [
           status,
           reject_reason || null,
-          eventId,
-          ophId,
-          transactionId,
-          parseInt(eventId),
+          ...whereParams,
         ],
       );
 
@@ -182,15 +195,11 @@ const updateEventPaymentSp = async (
          SET status = ?, 
              reject_reason = ?,
              updated_at = NOW()
-         WHERE oph_id = ? 
-           AND transaction_id = ? 
-           AND event_id = ?`,
+         WHERE ${whereClause}`,
         [
           status,
           reject_reason || null,
-          ophId,
-          transactionId,
-          parseInt(eventId),
+          ...whereParams,
         ],
       );
 

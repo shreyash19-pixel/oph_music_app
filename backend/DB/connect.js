@@ -6,14 +6,19 @@ const db = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  connectionLimit: 100, // Increased to 100 for production (supports 100+ concurrent users)
+  queueLimit: 0, // Unlimited queue (requests wait if pool is full)
   timezone: '+05:30',
   // Add connection retry and error handling
   reconnect: true,
   // Handle connection errors gracefully
   enableKeepAlive: true,
-  keepAliveInitialDelay: 0
+  keepAliveInitialDelay: 0,
+  // Performance optimizations
+  acquireTimeout: 60000, // 60 seconds to acquire connection
+  idleTimeout: 300000, // 5 minutes before closing idle connections
+  // Connection reuse optimization
+  maxIdle: 10, // Keep 10 idle connections ready
 });
 
 // Test database connection on startup

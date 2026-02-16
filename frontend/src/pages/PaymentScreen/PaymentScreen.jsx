@@ -23,7 +23,6 @@ const PaymentScreen = () => {
   const song_id = location.state?.song_id;
 
   console.log(song_id);
-  
 
   const outside_user = location.state?.outside_user;
   const user_type = location.state.user_type;
@@ -31,10 +30,13 @@ const PaymentScreen = () => {
 
   const {
     amount = 0,
-    backPath = "/",
+    backPath,
+    returnPath,
     heading = "Payment Required",
     lyrical_services = false,
   } = location.state || {};
+
+  const backPathOrReturn = backPath ?? returnPath ?? "/dashboard";
 
   // Debug log for lyricalVid flag
   console.log("PaymentScreen - lyricalVid flag:", lyrical_services);
@@ -53,28 +55,29 @@ const PaymentScreen = () => {
           console.log(eventData);
 
           // Set output_user to "outside user"
-          
-          
+
           // Calculate amount based on output_user
           const registrationFee = eventData.registrationFee_normal;
           console.log(outside_user);
           console.log(registrationFee);
-          const finalAmount = (outside_user === true || outside_user === 1) 
-            ? registrationFee  // Full amount for outside users
-            : registrationFee / 2;  // Half amount for regular users
-          
+          const finalAmount =
+            outside_user === true || outside_user === 1
+              ? registrationFee // Full amount for outside users
+              : registrationFee / 2; // Half amount for regular users
+
           // Create a mock costing object for event data
           const eventCosting = {
             name: "Event Registration",
             cost: finalAmount,
-            qr_image_path: (outside_user === true || outside_user === 1)
-              ? eventData.payment_qr || "/qr.png"
-              : eventData.payment_qr_discount || "/qr.png"
+            qr_image_path:
+              outside_user === true || outside_user === 1
+                ? eventData.payment_qr || "/qr.png"
+                : eventData.payment_qr_discount || "/qr.png",
           };
 
           setMatchedCosting(eventCosting);
           console.log(
-            `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${outside_user})`
+            `Using event costing data for Event ID: ${event_id} (Original Amount: ${registrationFee}, Final Amount: ${finalAmount}, Outside User: ${outside_user})`,
           );
         }
       } else {
@@ -127,17 +130,17 @@ const PaymentScreen = () => {
               }
 
               console.log(searchName);
-              
+
               // "registration" stays as "registration"
               // "song registration" stays as "song registration"
             }
           }
 
           const matched = costingData.find(
-            (item) => item.name && item.name.toLowerCase() === searchName
+            (item) => item.name && item.name.toLowerCase() === searchName,
           );
           console.log(matched);
-          
+
           if (matched) {
             setMatchedCosting(matched);
             console.log(
@@ -145,14 +148,14 @@ const PaymentScreen = () => {
                 from || "default"
               } (lyricalVid: ${lyrical_services}) -> ${matched.name} (Amount: ${
                 matched.cost
-              })`
+              })`,
             );
           } else {
             // Fallback to default amounts if no match found
             console.warn(
               `No costing data found for: ${
                 from || "default"
-              } (lyricalVid: ${lyrical_services}) - using fallback amounts`
+              } (lyricalVid: ${lyrical_services}) - using fallback amounts`,
             );
           }
         }
@@ -172,7 +175,7 @@ const PaymentScreen = () => {
       return parseFloat(matchedCosting.cost);
     }
 
-    // Fallback to hardcoded amounts if no costing data match 
+    // Fallback to hardcoded amounts if no costing data match
     if (lyrical_services) {
       return 499; // Lyrical video amount
     } else if (!from || from === "Registration") {
@@ -188,7 +191,7 @@ const PaymentScreen = () => {
     } else if (from === "Release date change") {
       return 300;
     } else if (from === "Special artist song registration") {
-      return 800;
+      return 200;
     }
     return amount; // Default to the passed amount
   };
@@ -217,7 +220,7 @@ const PaymentScreen = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     // Debug logs for payment data
     console.log("=== PAYMENT DEBUG LOGS ===");
     console.log("Raw location.state:", location.state);
@@ -227,7 +230,7 @@ const PaymentScreen = () => {
     console.log("- song_id:", song_id, "(type:", typeof song_id, ")");
     console.log("- oph_id:", oph_id, "(type:", typeof oph_id, ")");
     console.log("- trans:", trans, "(type:", typeof trans, ")");
-    
+
     try {
       const formData = {
         OPH_ID: oph_id,
@@ -239,16 +242,22 @@ const PaymentScreen = () => {
         song_id: song_id,
         event_id: event_id,
         release_date:
-          location.state.date || location.state.booking_date || null || location.state.new_booking_date,
+          location.state.date ||
+          location.state.booking_date ||
+          null ||
+          location.state.new_booking_date,
         old_release_date: location.state.old_booking_date || null,
         lyricalVid: lyrical_services,
         amount: getDisplayAmount(),
       };
-      
+
       console.log("Final formData being sent:", formData);
-      console.log("API Path:", from === "Song Repayment" ? "/song-payment" : "/auth/payment");
+      console.log(
+        "API Path:",
+        from === "Song Repayment" ? "/song-payment" : "/auth/payment",
+      );
       console.log("=========================");
-      
+
       const apiPath =
         from === "Song Repayment" ? "/song-payment" : "/auth/payment";
 
@@ -264,7 +273,7 @@ const PaymentScreen = () => {
               song_name: null,
               project_type: null,
             },
-            { headers: headers }
+            { headers: headers },
           );
 
           if (CalenderRes.data.success) {
@@ -285,9 +294,9 @@ const PaymentScreen = () => {
               oph_id: oph_id,
               old_booking_date: location.state.old_booking_date,
               new_booking_date: location.state.new_booking_date,
-              reason : location.state.reason,
+              reason: location.state.reason,
             },
-            { headers: headers }
+            { headers: headers },
           );
 
           if (CalenderRes.data.success) {
@@ -317,13 +326,19 @@ const PaymentScreen = () => {
               project_type: location.state.project_type,
               song_id: location.state.song_id || song_id,
             },
-            { headers: headers }
+            { headers: headers },
           );
 
           if (CalenderRes.data.success) {
             // Check if there's a redirect path from backend (for rejected sections)
-            if (response.data.redirectPath && response.data.redirectPath !== '/dashboard/success') {
-              if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+            if (
+              response.data.redirectPath &&
+              response.data.redirectPath !== "/dashboard/success"
+            ) {
+              if (
+                response.data.redirectPath ===
+                "/dashboard/upload-song/audio-metadata/"
+              ) {
                 navigate("/dashboard/upload-song/audio-metadata/", {
                   state: {
                     song_id: location.state.song_id,
@@ -334,7 +349,10 @@ const PaymentScreen = () => {
                     isFixingRejected: true,
                   },
                 });
-              } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+              } else if (
+                response.data.redirectPath ===
+                "/dashboard/upload-song/video-metadata/"
+              ) {
                 navigate("/dashboard/upload-song/video-metadata/", {
                   state: {
                     song_id: location.state.song_id,
@@ -380,7 +398,7 @@ const PaymentScreen = () => {
               ...headers,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (response.data.success) {
@@ -395,15 +413,19 @@ const PaymentScreen = () => {
       } else if (response.data.success && from === "Song Repayment") {
         // Check if there's a redirect path from backend (for rejected sections)
         if (response.data.redirectPath) {
-          if (response.data.redirectPath === '/dashboard/success') {
+          if (response.data.redirectPath === "/dashboard/success") {
             navigate("/dashboard/success", {
               state: {
-                heading: "Your song registration has been completed successfully!",
+                heading:
+                  "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
                 redirectTo: "/dashboard/upload-song",
               },
             });
-          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+          } else if (
+            response.data.redirectPath ===
+            "/dashboard/upload-song/audio-metadata/"
+          ) {
             // Redirect to audio metadata
             navigate("/dashboard/upload-song/audio-metadata/", {
               state: {
@@ -415,7 +437,10 @@ const PaymentScreen = () => {
                 isFixingRejected: true,
               },
             });
-          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+          } else if (
+            response.data.redirectPath ===
+            "/dashboard/upload-song/video-metadata/"
+          ) {
             // Redirect to video metadata
             navigate("/dashboard/upload-song/video-metadata/", {
               state: {
@@ -443,8 +468,8 @@ const PaymentScreen = () => {
         }
       } else if (response.data.success && from === "Event Registration") {
         {
-          console.log(oph_id,"test oph_id");
-          
+          console.log(oph_id, "test oph_id");
+
           const eventResponse = await axiosApi.post(
             "/event_part",
             { OPH_ID: oph_id, event_id: location.state.event_id },
@@ -453,7 +478,7 @@ const PaymentScreen = () => {
                 "Content-Type": "application/json",
                 ...headers,
               },
-            }
+            },
           );
 
           if (eventResponse.status === 201) {
@@ -492,14 +517,16 @@ const PaymentScreen = () => {
   };
 
   const handleCancel = () => {
-    navigate(backPath, {
+    navigate(backPathOrReturn, {
+      replace: true,
       state: {
-        from: location.state.from,
-        booking_date: location.state.release_date,
-        song_id: location.state.song_id,
-        songName: location.state.songName,
-        project_type: location.state.project_type,
-        lyrical_services: location.state.lyrical_services,
+        from: location.state?.from,
+        booking_date: location.state?.release_date ?? location.state?.booking_date,
+        release_date: location.state?.release_date ?? location.state?.booking_date,
+        song_id: location.state?.song_id,
+        songName: location.state?.songName,
+        project_type: location.state?.project_type,
+        lyrical_services: location.state?.lyrical_services,
       },
     });
   };

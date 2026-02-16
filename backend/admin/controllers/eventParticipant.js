@@ -32,10 +32,20 @@ const getParticipantByOphAndEvent = async (req, res) => {
   try {
 
     const { ophid } = req.params;
-    console.log(ophid);
-    
-    const participant = await EventParticipant.getParticipantByOphAndEvent(ophid);
-    res.json(participant || {});
+    const { event_id } = req.query;
+
+    // If event_id is provided, fetch that specific (oph_id, event_id) row.
+    // Otherwise return all event_participants rows for this oph_id (user can be in multiple events).
+    if (event_id) {
+      const participant = await EventParticipant.getParticipantByOphAndEvent(
+        ophid,
+        parseInt(event_id, 10),
+      );
+      return res.json(participant || []);
+    }
+
+    const participants = await EventParticipant.getParticipantsByOphId(ophid);
+    return res.json(participants || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -43,7 +53,7 @@ const getParticipantByOphAndEvent = async (req, res) => {
 
 const getParticipant = async (req, res) => {
   try {
-    const participant = await EventParticipant.getParticipant();
+    const participant = await EventParticipant.getParticipantUnified();
     res.status(200).json({ success: true, data: participant });
   } catch (error) {
     console.error("Error fetching participant:", error.message);

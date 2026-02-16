@@ -116,7 +116,7 @@ const updateStatus = async (req, res) => {
       [ophid],
     );
 
-    if (appStatus[0]?.overall_status === "approved") {
+    if (appStatus[0]?.overall_status === "approved" || appStatus[0]?.overall_status === "completed") {
       console.log("Application approved, sending congratulations email...");
       const { Resend } = require("resend");
       const resend = new Resend("re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5");
@@ -142,6 +142,12 @@ const updateStatus = async (req, res) => {
         });
         console.log("Congratulations email sent successfully:", emailResult);
       }
+
+      if(ophid.includes("SA"))
+      {
+        await userDetailsModel.checkIncomeOfSpecialArtistMod(ophid);
+      }
+
     }
 
     // Check each table for rejection

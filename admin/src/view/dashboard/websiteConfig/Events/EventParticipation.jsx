@@ -29,10 +29,12 @@ const EventParticipation = () => {
         const participantsData = participantsRes.data.data || [];
         
         // Enrich participant data with event information
+        // participant_display = oph_id for internal, full name for external (from backend)
         const enriched = participantsData.map(participant => {
           const event = eventsData.find(e => e.event_id === participant.event_id);
           return {
             ...participant,
+            Participant: participant.participant_display ?? participant.oph_id ?? '—',
             eventName: event ? event.EventName : 'Unknown Event',
             eventLocation: event ? event.location : 'Unknown Location',
             eventDateTime: event ? event.dateTime : 'Unknown Date',
@@ -180,7 +182,7 @@ const EventParticipation = () => {
           data={filteredData}
           showStatusIndicator={false}
           pageSize={10}
-          includeColumns={["OPH_ID", "eventName", "eventLocation", "eventDateTime", "status", "registrationFee", "winnerReward", "createdAt"]}
+          includeColumns={["Participant", "eventName", "eventLocation", "eventDateTime", "status", "registrationFee", "winnerReward", "createdAt"]}
         />
       </div>
     </div>

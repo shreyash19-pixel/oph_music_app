@@ -179,7 +179,7 @@ useEffect(() => {
           insta_engagement: c.insta_engagement,
         });
         return {
-          name: c.date ? new Date(c.date).toLocaleDateString() : "Unknown Date",
+          name: c.date ? new Date(c.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }) : "Unknown Date",
           date: c.date,
           value: c.youtube_views,
           valueEngagement: c.youtube_engagement,
@@ -191,7 +191,7 @@ useEffect(() => {
     ? [
         {
           name: selectedContent.date
-            ? new Date(selectedContent.date).toLocaleDateString()
+            ? new Date(selectedContent.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
             : "Unknown Date",
           date: selectedContent.date,
           value: selectedContent.youtube_views,
@@ -209,7 +209,7 @@ useEffect(() => {
         name: c.audio_platform_name,
         date: c.audioDate,
         dateFormatted: c.audioDate
-          ? new Date(c.audioDate).toLocaleDateString()
+          ? new Date(c.audioDate).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
           : "Unknown Date",
         value: c.audio_platform_streams,
       }))
@@ -219,7 +219,7 @@ useEffect(() => {
           name: selectedContent.audio_platform_name,
           date: selectedContent.audioDate,
           dateFormatted: selectedContent.audioDate
-            ? new Date(selectedContent.audioDate).toLocaleDateString()
+            ? new Date(selectedContent.audioDate).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
             : "Unknown Date",
           value: selectedContent.audio_platform_streams,
         },

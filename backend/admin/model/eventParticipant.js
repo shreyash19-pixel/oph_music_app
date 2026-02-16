@@ -1,18 +1,68 @@
 const db = require('../../DB/connect'); // adjust path as needed
 
-const getParticipantByOphAndEvent = async (ophid) => {
+// NOTE:
+// A single user (oph_id) can register for multiple events.
+// The correct uniqueness is (oph_id, event_id), not just oph_id.
+const getParticipantByOphAndEvent = async (ophid, event_id) => {
   const [rows] = await db.execute(
-    "SELECT * FROM event_participants WHERE oph_id = ?",
-    [ophid]
+    "SELECT * FROM event_participants WHERE oph_id = ? AND event_id = ?",
+    [ophid, event_id]
   );
-  return rows; // assuming one record per oph_id + event
+  return rows;
+};
+
+// Backward compatible helper: fetch all participant rows for a user across events
+const getParticipantsByOphId = async (ophid) => {
+  const [rows] = await db.execute(
+    "SELECT * FROM event_participants WHERE oph_id = ? ORDER BY created_at DESC",
+    [ophid],
+  );
+  return rows;
 };
 
 const getParticipant = async () => {
   const [rows] = await db.execute(
     "SELECT * FROM event_participants",
   );
-  return rows; 
+  return rows;
+};
+
+/**
+ * Returns unified list: internal (event_participants) + external (event_bookings).
+ * Each row has participant_display: oph_id for internal, full name for external.
+ */
+const getParticipantUnified = async () => {
+  const [internalRows] = await db.execute(
+    `SELECT id, oph_id, event_id, status, created_at, updated_at,
+            oph_id AS participant_display,
+            'internal' AS source
+     FROM event_participants
+     ORDER BY created_at DESC`
+  );
+  const [externalRows] = await db.execute(
+    `SELECT id, event_id, status, created_at, updated_at,
+            TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS participant_display,
+            'external' AS source,
+            booking_reference
+     FROM event_bookings
+     ORDER BY created_at DESC`
+  );
+  const internal = (internalRows || []).map((r) => ({
+    ...r,
+    participant_display: r.oph_id,
+    source: 'internal',
+  }));
+  const external = (externalRows || []).map((r) => ({
+    id: `eb-${r.id}`,
+    event_id: r.event_id,
+    status: r.status,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    participant_display: r.participant_display || '',
+    source: 'external',
+    booking_reference: r.booking_reference,
+  }));
+  return [...internal, ...external];
 };
 
 const getParticipantsByEventId = async (event_id) => {
@@ -47,8 +97,10 @@ const updateParticipantStatus = async (id, status) => {
 
 module.exports = {
   getParticipantByOphAndEvent,
+  getParticipantsByOphId,
   getParticipantsByEventId,
   registerParticipant,
   updateParticipantStatus,
   getParticipant,
+  getParticipantUnified,
 };

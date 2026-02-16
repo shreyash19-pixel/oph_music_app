@@ -49,6 +49,13 @@ const getAllUserDetailsWithAnyStepUnderReview = async () => {
   return rows;
 };
 
+const checkIncomeOfSpecialArtistMod = async (ophid) => {
+  await db.execute(
+    "INSERT IGNORE INTO special_artist_income_status (oph_id,status) VALUES (?,?)",
+    [ophid,"locked"],
+  );
+};
+
 const getAllSales = async () => {
   const [rows] = await db.execute(
     `
@@ -60,7 +67,7 @@ const getAllSales = async () => {
       AND pd.step_status = 'rejected'
       AND dd.step_status = 'rejected'
     ORDER BY ud.created_at DESC;
-    `
+    `,
   );
   return rows;
 };
@@ -146,4 +153,5 @@ module.exports = {
   getUserDetailsStepStatus,
   getProfessionalDetailsStepStatus,
   getDocumentationDetailsStepStatus,
+  checkIncomeOfSpecialArtistMod,
 };

@@ -169,7 +169,7 @@ const IndividualEvent = () => {
   const dateFormat = (date) => {
     if (!date) return "-";
     const eventDate = new Date(date);
-    return eventDate.toLocaleString("en-US", {
+    return eventDate.toLocaleString("en-GB", {
       day: "2-digit",
       month: "long",
       year: "numeric",
@@ -267,13 +267,20 @@ const IndividualEvent = () => {
       setIsSubmitting(true);
       try {
         const payload = {
-          ...formData,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          phone: formData.phone,
+          instagram_handle: formData.instagram_handle,
           profession_id: formData.profession_id,
         };
 
         const response = await axiosApi.post(`/events/bookings/${id}`, payload);
 
         if (response?.status === 201 || response?.status === 200) {
+          const bookingData = response.data.data || response.data;
+          const bookingReference = bookingData.booking_reference;
+          
           toast.success("Registration Successful", {
             position: "top-right",
             autoClose: 4000,
@@ -284,14 +291,15 @@ const IndividualEvent = () => {
 
           navigate("/payment", {
             state: {
-              amount: singleEvent.fees,
+              amount: bookingData.amount || singleEvent.fees,
               returnPath: `/events/${singleEvent.id}`,
               heading: "Event Registration Fee",
               planIds: [singleEvent.payment_plan_id].filter(Boolean),
               event_id: id,
               from: "Event Registration",
-              bookingId:
-                response?.data?.id ?? response?.data?.bookingId ?? null,
+              OPH_ID: bookingReference, // Use booking_reference as OPH_ID for external users
+              booking_reference: bookingReference,
+              outside_user: true,
             },
           });
         } else {
@@ -302,7 +310,8 @@ const IndividualEvent = () => {
         }
       } catch (err) {
         console.error("Booking error:", err);
-        toast.error("Something went wrong", {
+        const errorMessage = err.response?.data?.message || err.message || "Something went wrong";
+        toast.error(errorMessage, {
           position: "top-right",
           theme: "dark",
         });

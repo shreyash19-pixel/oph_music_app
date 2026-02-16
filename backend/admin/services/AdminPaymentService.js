@@ -170,8 +170,9 @@ class AdminPaymentService {
 
       const { ophId, transactionId, status, reject_reason, eventId } = updateData;
 
-      if (!ophId || !transactionId || !status || !eventId) {
-        throw new Error('ophId, transactionId, status, and eventId are required');
+      // For external events, ophId might be NULL - we'll find booking by transaction_id
+      if (!transactionId || !status || !eventId) {
+        throw new Error('transactionId, status, and eventId are required');
       }
 
       // Get payment details before updating to verify it exists and get created_at
@@ -196,9 +197,10 @@ class AdminPaymentService {
       const isRejected = status === 'rejected' || status === 'Rejected';
       
       // If payment is rejected, move event_id to reject_for and set event_id to NULL
+      // For external events, ophId contains the participant name (not a valid OPH_ID)
       const result = await paymentDetailsModel.updateEventPaymentSp(
         connection,
-        ophId,
+        ophId, // Contains OPH_ID for internal users, or participant name for external users
         transactionId,
         status,
         reject_reason,
@@ -211,39 +213,124 @@ class AdminPaymentService {
       }
       
       if (isRejected) {
-        console.log(`✅ Moved event_id (${eventId}) to reject_for and set event_id to NULL for rejected payment`);
+        console.log(`✅ Updated event payment to rejected - event_id: ${eventId}, transaction_id: ${transactionId}`);
       }
 
-      // Application Logic: Update event_participants status based on payment status
-      // Map payment status to event_participants status format
-      let participantStatus = 'under review';
-      if (status === 'approved' || status === 'Approved') {
-        participantStatus = 'accepted';
-      } else if (status === 'rejected' || status === 'Rejected') {
-        participantStatus = 'rejected';
-      } else if (status === 'under review' || status === 'Under Review') {
-        participantStatus = 'under review';
-      }
+      // Determine if this is an internal or external user
+      // Internal users have OPH_ID starting with "OPH-" (e.g., "OPH-CAN-IA-021")
+      // External users have names (not starting with "OPH-") or booking references starting with "EB-"
+      const isInternalUser = ophId && ophId.match(/^OPH-/);
+      const isBookingReference = ophId && ophId.startsWith('EB-');
+      const isExternalEvent = ophId && !isInternalUser && !isBookingReference;
+      
+      if (isInternalUser) {
+        // Internal users: Update event_participants table
+        let participantStatus = 'under review';
+        if (status === 'approved' || status === 'Approved') {
+          participantStatus = 'accepted';
+        } else if (status === 'rejected' || status === 'Rejected') {
+          participantStatus = 'rejected';
+        } else if (status === 'under review' || status === 'Under Review') {
+          participantStatus = 'under review';
+        }
 
-      // Update or insert event_participants status
-      // Use INSERT ... ON DUPLICATE KEY UPDATE to handle both cases:
-      // 1. If record exists (same oph_id + event_id), update the status
-      // 2. If record doesn't exist, create it with the new status
-      // This handles the case where a user makes multiple payments for the same event
-      const [updateResult] = await connection.query(
-        `INSERT INTO event_participants (oph_id, event_id, status, updated_at)
-         VALUES (?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE
-           status = VALUES(status),
-           updated_at = NOW()`,
-        [ophId, parseInt(eventId), participantStatus]
-      );
+        // Update or insert event_participants status
+        const [updateResult] = await connection.query(
+          `INSERT INTO event_participants (oph_id, event_id, status, updated_at)
+           VALUES (?, ?, ?, NOW())
+           ON DUPLICATE KEY UPDATE
+             status = VALUES(status),
+             updated_at = NOW()`,
+          [ophId, parseInt(eventId), participantStatus]
+        );
 
-      if (updateResult.affectedRows > 0) {
-        const action = updateResult.affectedRows === 1 ? 'Created' : 'Updated';
-        console.log(`✅ ${action} event_participants record - oph_id: ${ophId}, event_id: ${eventId}, Status: ${participantStatus}`);
+        if (updateResult.affectedRows > 0) {
+          const action = updateResult.affectedRows === 1 ? 'Created' : 'Updated';
+          console.log(`✅ ${action} event_participants record - oph_id: ${ophId}, event_id: ${eventId}, Status: ${participantStatus}`);
+        } else {
+          console.warn(`⚠️ No event_participants record affected for oph_id: ${ophId}, event_id: ${eventId}`);
+        }
       } else {
-        console.warn(`⚠️ No event_participants record affected for oph_id: ${ophId}, event_id: ${eventId}`);
+        // External users: Update event_bookings table
+        const EventBookingService = require('./EventBookingService');
+        const EventBookingModel = require('../model/eventBookings');
+        let bookingStatus = 'pending';
+        if (status === 'approved' || status === 'Approved') {
+          bookingStatus = 'approved';
+        } else if (status === 'rejected' || status === 'Rejected') {
+          bookingStatus = 'rejected';
+        }
+        // If status is 'under review', keep it as 'pending'
+        
+        // For external events, find booking by transaction_id or by name
+        if (isExternalEvent) {
+          // First try to find by transaction_id (most reliable)
+          let [bookings] = await connection.execute(
+            'SELECT * FROM event_bookings WHERE payment_transaction_id = ? AND event_id = ?',
+            [transactionId, parseInt(eventId, 10)]
+          );
+          
+          // If not found by transaction_id, try to find by name (ophId contains the participant name)
+          if (!bookings || bookings.length === 0) {
+            const nameParts = ophId.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            const allBookings = await EventBookingModel.getAllBookings({
+              event_id: parseInt(eventId, 10)
+            });
+            
+            bookings = allBookings.filter(b => {
+              if (`${b.first_name} ${b.last_name}`.trim().toLowerCase() === ophId.trim().toLowerCase()) {
+                return true;
+              }
+              if (b.first_name.toLowerCase() === firstName.toLowerCase() && 
+                  b.last_name.toLowerCase() === lastName.toLowerCase()) {
+                return true;
+              }
+              return false;
+            });
+          }
+          
+          if (bookings && bookings.length > 0) {
+            const booking = bookings[0];
+            await EventBookingModel.updateBookingStatus(booking.booking_reference, bookingStatus);
+            console.log(`✅ Updated event_bookings record - booking_reference: ${booking.booking_reference}, Status: ${bookingStatus}`);
+          } else {
+            console.warn(`⚠️ No event_bookings record found for transaction: ${transactionId} or name: ${ophId}, event_id: ${eventId}`);
+          }
+        } else if (isBookingReference) {
+          // Update booking status by reference
+          await EventBookingService.updateBookingStatus(ophId, bookingStatus);
+          console.log(`✅ Updated event_bookings record - booking_reference: ${ophId}, Status: ${bookingStatus}`);
+        } else {
+          // Try to find booking by name and update (backward compatibility)
+          const nameParts = ophId.trim().split(/\s+/);
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          const existingBookings = await EventBookingModel.getAllBookings({
+            event_id: parseInt(eventId, 10)
+          });
+          
+          const existingBooking = existingBookings.find(b => {
+            if (`${b.first_name} ${b.last_name}`.trim().toLowerCase() === ophId.trim().toLowerCase()) {
+              return true;
+            }
+            if (b.first_name.toLowerCase() === firstName.toLowerCase() && 
+                b.last_name.toLowerCase() === lastName.toLowerCase()) {
+              return true;
+            }
+            return false;
+          });
+          
+          if (existingBooking) {
+            await EventBookingModel.updateBookingStatus(existingBooking.booking_reference, bookingStatus);
+            console.log(`✅ Updated event_bookings record - booking_reference: ${existingBooking.booking_reference}, Status: ${bookingStatus}`);
+          } else {
+            console.warn(`⚠️ No event_bookings record found for external user: ${ophId}, event_id: ${eventId}`);
+          }
+        }
       }
 
       await connection.commit();

@@ -3,6 +3,7 @@ import EventsNewReleases from "./components/EventsNewReleases/EventsNewReleases"
 import ArtistRankingSection from "./components/ArtistRankingSection/ArtistRankingSection";
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
+import { isRegistrationOpen } from "../../utils/date";
 import { useArtist } from "../auth/API/ArtistContext";
 import NavbarRight from "../../components/Navbar/NavbarRight";
 
@@ -49,8 +50,15 @@ function Home() {
         headers: headers,
       });
 
-      if (response.data.success) {
-        setUpcomingEvent(response.data.data[0]);
+      if (response.data.success && Array.isArray(response.data.data)) {
+        const events = response.data.data;
+        const sorted = [...events].sort((a, b) => {
+          const dateA = new Date(a.created_at || a.createdAt || 0);
+          const dateB = new Date(b.created_at || b.createdAt || 0);
+          return dateB - dateA; // newest first
+        });
+        const withActiveReg = sorted.find(isRegistrationOpen);
+        setUpcomingEvent(withActiveReg || sorted[0] || false);
       }
     } catch (err) {
       console.log(err);

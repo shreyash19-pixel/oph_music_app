@@ -41,13 +41,7 @@ const AddNewSong = () => {
       newErrors.views = "Views must be a number";
     if (!formData.credits.trim())
       newErrors.credits = "Credits field is required";
-
-    // simple mm:ss or hh:mm:ss validation for time
-    const timeRegex = /^(\d{1,2}:)?[0-5]?\d:[0-5]\d$/;
-    if (!formData.time.trim())
-      newErrors.time = "Time is required (mm:ss or hh:mm:ss)";
-    else if (!timeRegex.test(formData.time))
-      newErrors.time = "Invalid time format (use mm:ss or hh:mm:ss)";
+    if (!formData.time.trim()) newErrors.time = "Time field is required";
 
     // simple URL validatio
     if (!formData.audioFile) newErrors.audioFile = "Audio file is required";
@@ -75,6 +69,9 @@ const AddNewSong = () => {
         setStatus(response.data.data);
 
         setSongCount(response.data.songCnt);
+
+        console.log(response.data.songCnt);
+        
       }
     } catch (err) {
       console.error(err.message);
@@ -88,7 +85,6 @@ const AddNewSong = () => {
   // handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     if (validate()) {
       const sendFormData = new FormData();
@@ -102,6 +98,7 @@ const AddNewSong = () => {
       sendFormData.append("audioFile", formData.audioFile);
 
       try {
+        setLoading(true);
         const response = await axiosApi.post(
           "/insert-special-artist-song",
           sendFormData,
@@ -109,18 +106,16 @@ const AddNewSong = () => {
             headers: {
               ...headers,
             },
-          }
+          },
         );
 
         if (response.data.success) {
-          console.log(response);
-          
           const data = Object.values(response.data.data);
           // console.log(response.data.songCnt);
           console.log(data[0].song_id);
           setLoading(false);
 
-          if (songCount < 2) {
+          if (songCount == true) {
             navigate("/dashboard/pending", {
               state: {
                 heading: "Your request is under review",
@@ -133,6 +128,7 @@ const AddNewSong = () => {
               state: {
                 from: "Special artist song registration",
                 song_id: data[0].song_id,
+                backPath: "/dashboard/add-new-song",
               },
             });
           }
@@ -217,14 +213,24 @@ const AddNewSong = () => {
           <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
             Time :
           </p>
-          <input
+          {/* <input
             type="text"
             name="time"
             value={formData.time}
             onChange={handleChange}
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             placeholder="mm:ss or hh:mm:ss"
+          /> */}
+
+          <input
+            type="time"
+            name="time"
+            value={formData.time}
+            onChange={handleChange}
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
+            placeholder="mm:ss"
           />
+
           {errors.time && <p className="text-red-500 text-sm">{errors.time}</p>}
         </div>
 
@@ -240,7 +246,6 @@ const AddNewSong = () => {
             onChange={handleChange}
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             placeholder="Add your link here"
-            required
           />
         </div>
 
@@ -327,14 +332,32 @@ const AddNewSong = () => {
               {status.map((stat) => (
                 <tr>
                   <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.created_at).toLocaleDateString()}
+                    {new Date(stat.created_at).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.song_name}
                   </td>
-                  <td className="py-[12px] font-bold text-[16px]">
+                  <td
+                    className={`py-[12px] font-bold text-[16px] ${
+                      stat.status === "pending" && songCount === false
+                        ? "cursor-pointer text-blue-600 hover:underline"
+                        : ""
+                    }`}
+                    onClick={(e) => {
+                      if (stat.status === "pending" && songCount === false) {
+                        navigate("/auth/payment", {
+                          state: {
+                            from: "Special artist song registration",
+                            song_id: stat.song_id,
+                            backPath: "/dashboard/add-new-song",
+                          },
+                        });
+                      }
+                    }}
+                  >
                     {stat.status}
                   </td>
+
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.reject_reason ? stat.reject_reason : "-"}
                   </td>
