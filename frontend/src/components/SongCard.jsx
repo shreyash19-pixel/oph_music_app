@@ -60,7 +60,7 @@ const SongCard = ({releaseData}) => {
             <span className="text-sm text-gray-400">Release Date:</span>
             <span className="font-medium text-white">
               {/* {new Date(releaseDate).toLocaleDateString('en-GB')}    */}
-              {new Date(releaseData?.dateTime).toLocaleDateString('en-GB')}   
+              {new Date(releaseData?.dateTime).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })}   
             </span>
           </div>
         </div>

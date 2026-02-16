@@ -275,7 +275,7 @@ class AdminPaymentService {
 
       if (isRejected) {
         console.log(
-          `✅ Moved event_id (${eventId}) to reject_for and set event_id to NULL for rejected payment`,
+          `✅ Updated event payment to rejected - event_id: ${eventId}, transaction_id: ${transactionId}`,
         );
       }
 

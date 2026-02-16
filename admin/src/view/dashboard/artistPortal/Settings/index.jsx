@@ -385,7 +385,8 @@ const Settings = () => {
                                {platform.created_at ? new Date(platform.created_at).toLocaleDateString('en-GB', {
                                  day: '2-digit',
                                  month: 'long',
-                                 year: 'numeric'
+                                 year: 'numeric',
+                                 timeZone: 'Asia/Kolkata'
                                }) : 'N/A'}
                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -531,7 +532,8 @@ const Settings = () => {
                                    {profession.created_at ? new Date(profession.created_at).toLocaleDateString('en-GB', {
                                      day: '2-digit',
                                      month: 'long',
-                                     year: 'numeric'
+                                     year: 'numeric',
+                                     timeZone: 'Asia/Kolkata'
                                    }) : 'N/A'}
                                  </td>
                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -677,7 +679,8 @@ const Settings = () => {
                                 {bank.created_at ? new Date(bank.created_at).toLocaleDateString('en-GB', {
                                   day: '2-digit',
                                   month: 'long',
-                                  year: 'numeric'
+                                  year: 'numeric',
+                                  timeZone: 'Asia/Kolkata'
                                 }) : 'N/A'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

@@ -520,14 +520,16 @@ const WebsiteSettings = () => {
                                     {item.created_at ? new Date(item.created_at).toLocaleDateString('en-GB', {
                                       day: '2-digit',
                                       month: 'long',
-                                      year: 'numeric'
+                                      year: 'numeric',
+                                      timeZone: 'Asia/Kolkata'
                                     }) : 'N/A'}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {item.updated_at ? new Date(item.updated_at).toLocaleDateString('en-GB', {
                                       day: '2-digit',
                                       month: 'long',
-                                      year: 'numeric'
+                                      year: 'numeric',
+                                      timeZone: 'Asia/Kolkata'
                                     }) : 'N/A'}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

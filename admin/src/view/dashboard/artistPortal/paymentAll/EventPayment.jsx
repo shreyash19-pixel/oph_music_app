@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
+import { formatDateTimeIST } from "../../../../utils/date";
 
 const EventPayment = () => {
-  const { ophid } = useParams();
+  const { ophid, eventId: eventIdFromUrl, transactionId: transactionIdFromUrl } = useParams();
   const [artist, setArtist] = useState(null);
   const [paymentList, setPaymentList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,13 +14,39 @@ const EventPayment = () => {
   const [copiedPaymentId, setCopiedPaymentId] = useState(null);
 
   const [confirmAction, setConfirmAction] = useState(null); // "Approve" or "Reject"
-  const [actionLocked, setActionLocked] = useState(false);
+  const [confirmTargetPaymentId, setConfirmTargetPaymentId] = useState(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+
+  const isInternalUser = (id) => id && String(id).trim().match(/^OPH-/);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axiosApi.get(`/user-details/${ophid}`);
-        setArtist(res.data.userDetails);
+        let userDetails = null;
+        if (isInternalUser(ophid)) {
+          try {
+            const res = await axiosApi.get(`/user-details/${ophid}`);
+            userDetails = res.data?.userDetails ?? null;
+          } catch {
+            userDetails = null;
+          }
+        }
+        if (userDetails) {
+          setArtist(userDetails);
+        } else if (!isInternalUser(ophid)) {
+          const displayName = decodeURIComponent(ophid || "").trim() || "External Participant";
+          setArtist({
+            full_name: displayName,
+            stage_name: "—",
+            email: "—",
+            contact_num: "—",
+            artist_type: "External Participant",
+            location: "—",
+            personal_photo: null,
+          });
+        } else {
+          setArtist(null);
+        }
 
         const paymentRes = await axiosApi.get(`/payment-for-events-by-ophid/${ophid}`);
         console.log(paymentRes.data);
@@ -33,25 +60,53 @@ const EventPayment = () => {
           if (!status || status === 'null' || status === 'undefined') {
             status = 'under review'; // Default to 'under review' if status is missing
           }
+
+          // For rejected event payments, event_id may be NULL and the value moved to reject_for.
+          // Prefer event_id, fallback to reject_for so we always know which event this payment belongs to.
+          const eventId = payment.event_id ?? payment.reject_for ?? null;
           
           return {
             paymentId: payment.transaction_id || payment.Transaction_ID,
             status: status,
             createdAt: payment.created_at || payment.CreatedAt,
             paymentType: payment.from_source || payment.From || 'Event Registration',
-            amount: payment.event_id ? `Event ID: ${payment.event_id}` : 'N/A',
-            eventId: payment.event_id, // Store event_id directly for easier access
+            amount: eventId ? `Event ID: ${eventId}` : 'N/A',
+            eventId: eventId, // Store event_id directly for easier access
             description: `Event Registration Payment - ${payment.from_source || payment.From || 'Event Registration'}`,
             ophId: payment.oph_id || payment.OPH_ID
           };
         });
         
         mappedPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        console.log("Mapped payments:", mappedPayments);
-        console.log("First payment status:", mappedPayments[0]?.status);
-        console.log("Raw payment data:", paymentArray[0]);
-        
-        setPaymentList(mappedPayments);
+
+        const eventIdStr = eventIdFromUrl != null ? String(eventIdFromUrl).trim() : null;
+        const paymentBelongsToEvent = (p) => {
+          if (!eventIdStr) return true;
+          const pid = p.eventId == null ? "" : String(p.eventId).trim();
+          if (pid && (pid === eventIdStr || (Number(pid) === Number(eventIdStr) && !Number.isNaN(Number(eventIdStr))))) return true;
+          if (p.amount && typeof p.amount === "string" && p.amount.includes("Event ID:")) {
+            const numFromAmount = p.amount.replace(/.*Event ID:\s*(\d+).*/i, "$1").trim();
+            if (numFromAmount === eventIdStr || Number(numFromAmount) === Number(eventIdStr)) return true;
+          }
+          return false;
+        };
+
+        // When URL has eventId (e.g. /EventPayment/OPH-CAN-IA-01/19), show only payments for that event
+        const listToShow = eventIdStr
+          ? mappedPayments.filter(paymentBelongsToEvent)
+          : mappedPayments;
+        setPaymentList(listToShow);
+
+        // Prefer transaction_id from URL (so external/same-event rows open the exact payment clicked)
+        const transactionIdStr = transactionIdFromUrl != null ? String(transactionIdFromUrl).trim() : null;
+        const matchByTransactionId = transactionIdStr && listToShow.find((p) => String(p.paymentId) === transactionIdStr);
+        const matchByEventId = eventIdStr && listToShow.find(paymentBelongsToEvent);
+        const preselected = matchByTransactionId
+          ? matchByTransactionId.paymentId
+          : (matchByEventId ? matchByEventId.paymentId : (listToShow[0]?.paymentId || null));
+        setSelectedPaymentId(preselected);
+        setConfirmAction(null);
+        setConfirmTargetPaymentId(null);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -60,19 +115,24 @@ const EventPayment = () => {
     };
 
     fetchData();
-  }, [ophid]);
+  }, [ophid, eventIdFromUrl, transactionIdFromUrl]);
 
-  const handleFinalAction = async(type) => {
-    const recentPayment = paymentList.length > 0 ? paymentList[0] : null;
-    if (!recentPayment) {
+  const handleFinalAction = async (type) => {
+    const targetPayment =
+      (confirmTargetPaymentId
+        ? paymentList.find((p) => p.paymentId === confirmTargetPaymentId)
+        : paymentList.find((p) => p.paymentId === selectedPaymentId)) ||
+      (paymentList.length > 0 ? paymentList[0] : null);
+
+    if (!targetPayment) {
       toast.error("No payment found to process");
       return;
     }
 
     // Extract event_id - prefer direct eventId field, fallback to parsing from amount
-    let eventId = recentPayment.eventId;
-    if (!eventId && recentPayment.amount && recentPayment.amount.includes('Event ID: ')) {
-      eventId = recentPayment.amount.replace('Event ID: ', '').trim();
+    let eventId = targetPayment.eventId;
+    if (!eventId && targetPayment.amount && targetPayment.amount.includes('Event ID: ')) {
+      eventId = targetPayment.amount.replace('Event ID: ', '').trim();
     }
     
     // Validate eventId is present
@@ -85,7 +145,7 @@ const EventPayment = () => {
     if (type === "Reject") {
       const logData = {
         ophId: ophid,
-        transactionId: recentPayment.paymentId,
+        transactionId: targetPayment.paymentId,
         status: "rejected",
         reject_reason: reason || "No reason provided",
         eventId: eventId
@@ -116,14 +176,11 @@ const EventPayment = () => {
           // Update local state instead of reloading
           setPaymentList(prevPayments => 
             prevPayments.map(payment => 
-              payment.paymentId === recentPayment.paymentId 
+              payment.paymentId === targetPayment.paymentId 
                 ? { ...payment, status: 'rejected' }
                 : payment
             )
           );
-          
-          // Disable action buttons
-          setActionLocked(true);
         } else {
           console.log("Reject failed - Response details:", submit);
           const errorMsg = submit.data?.message || "Failed to reject payment - please try again";
@@ -138,9 +195,9 @@ const EventPayment = () => {
       setReason("");
     } else if (type === "Approve") {
       // Extract event_id - prefer direct eventId field, fallback to parsing from amount
-      let eventId = recentPayment.eventId;
-      if (!eventId && recentPayment.amount && recentPayment.amount.includes('Event ID: ')) {
-        eventId = recentPayment.amount.replace('Event ID: ', '').trim();
+      let eventId = targetPayment.eventId;
+      if (!eventId && targetPayment.amount && targetPayment.amount.includes('Event ID: ')) {
+        eventId = targetPayment.amount.replace('Event ID: ', '').trim();
       }
       
       // Validate eventId is present
@@ -152,7 +209,7 @@ const EventPayment = () => {
       
       const logData = {
         ophId: ophid,
-        transactionId: recentPayment.paymentId,
+        transactionId: targetPayment.paymentId,
         status: "approved",
         reject_reason: null,
         eventId: eventId
@@ -183,14 +240,11 @@ const EventPayment = () => {
           // Update local state instead of reloading
           setPaymentList(prevPayments => 
             prevPayments.map(payment => 
-              payment.paymentId === recentPayment.paymentId 
+              payment.paymentId === targetPayment.paymentId 
                 ? { ...payment, status: 'approved' }
                 : payment
             )
           );
-          
-          // Disable action buttons
-          setActionLocked(true);
         } else {
           console.log("Approve failed - Response details:", submit);
           const errorMsg = submit.data?.message || "Failed to approve payment - please try again";
@@ -204,6 +258,7 @@ const EventPayment = () => {
     }
 
     setConfirmAction(null);
+    setConfirmTargetPaymentId(null);
   };
 
   const copyToClipboard = (text) => {
@@ -214,14 +269,7 @@ const EventPayment = () => {
     }, 2000);
   };
 
-  const formatDateTime = (dateStr) => {
-    const date = new Date(dateStr);
-    return `${date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })} — ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-  };
+  const formatDateTime = (dateStr) => formatDateTimeIST(dateStr);
 
   const formatAmount = (amount) => {
     // For event payments, amount is actually the event ID
@@ -236,7 +284,14 @@ const EventPayment = () => {
     return <div className="min-h-screen flex items-center justify-center text-lg">Artist not found.</div>;
   }
 
-  const displayedPayments = showAllPayments ? paymentList : paymentList.slice(0, 1);
+  // Put the selected (acting on) payment first so it shows at top
+  const listWithSelectedFirst = selectedPaymentId
+    ? [
+        ...paymentList.filter((p) => p.paymentId === selectedPaymentId),
+        ...paymentList.filter((p) => p.paymentId !== selectedPaymentId),
+      ]
+    : paymentList;
+  const displayedPayments = showAllPayments ? listWithSelectedFirst : listWithSelectedFirst.slice(0, 1);
 
   // Helper function to check if payment can be acted upon
   const canTakeAction = (payment) => {
@@ -246,8 +301,10 @@ const EventPayment = () => {
     return !status || status === 'under review' || status === 'pending';
   };
 
-  const recentPayment = paymentList[0];
-  const isActionEnabled = canTakeAction(recentPayment) && !actionLocked;
+  const selectedPayment =
+    paymentList.find((p) => p.paymentId === selectedPaymentId) ||
+    (paymentList.length > 0 ? paymentList[0] : null);
+  const isActionEnabled = canTakeAction(selectedPayment);
 
   return (
     <div className="min-h-screen bg-blue-50 p-6">
@@ -287,7 +344,18 @@ const EventPayment = () => {
           {paymentList.length > 0 ? (
             <ul className="space-y-2">
               {displayedPayments.map((payment, index) => (
-                <li key={index} className="bg-white p-4 rounded-lg border border-gray-200">
+                <li
+                  key={payment.paymentId || index}
+                  onClick={() => {
+                    if (confirmAction) return;
+                    setSelectedPaymentId(payment.paymentId);
+                  }}
+                  className={`bg-white p-4 rounded-lg border cursor-pointer ${
+                    payment.paymentId === selectedPaymentId
+                      ? "border-cyan-500 ring-1 ring-cyan-300"
+                      : "border-gray-200"
+                  }`}
+                >
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="text-gray-800 font-medium break-words flex items-center gap-2">
                       Payment ID: {payment.paymentId}
@@ -303,6 +371,16 @@ const EventPayment = () => {
                         className="text-blue-600 text-sm border border-blue-500 px-2 py-0.5 rounded hover:bg-blue-50"
                       >
                         Copy
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirmAction) return;
+                          setSelectedPaymentId(payment.paymentId);
+                        }}
+                        className="text-cyan-700 text-sm border border-cyan-600 px-2 py-0.5 rounded hover:bg-cyan-50"
+                      >
+                        Select
                       </button>
                       {copiedPaymentId === payment.paymentId && (
                         <span className="text-green-600 text-sm font-medium">Copied!</span>
@@ -347,6 +425,12 @@ const EventPayment = () => {
 
         <div className="border-t pt-6 space-y-4">
           <h3 className="text-xl font-semibold text-gray-700">Payment Actions</h3>
+          {selectedPayment && (
+            <div className="text-sm text-gray-600">
+              Acting on: <span className="font-semibold">{selectedPayment.paymentId}</span>{" "}
+              (Event ID: <span className="font-semibold">{selectedPayment.eventId ?? "N/A"}</span>)
+            </div>
+          )}
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -356,7 +440,10 @@ const EventPayment = () => {
           />
           <div className="flex flex-wrap gap-4">
             <button
-              onClick={() => setConfirmAction("Reject")}
+              onClick={() => {
+                setConfirmAction("Reject");
+                setConfirmTargetPaymentId(selectedPayment?.paymentId || null);
+              }}
               disabled={!isActionEnabled || !reason.trim()}
               className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
                 !isActionEnabled || !reason.trim() ? "opacity-50 cursor-not-allowed" : ""
@@ -365,7 +452,10 @@ const EventPayment = () => {
               Reject Payment
             </button>
             <button
-              onClick={() => setConfirmAction("Approve")}
+              onClick={() => {
+                setConfirmAction("Approve");
+                setConfirmTargetPaymentId(selectedPayment?.paymentId || null);
+              }}
               disabled={!isActionEnabled}
               className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
                 !isActionEnabled ? "opacity-50 cursor-not-allowed" : ""
@@ -376,22 +466,22 @@ const EventPayment = () => {
           </div>
           
           {/* Show status message when payment is processed */}
-          {recentPayment && !canTakeAction(recentPayment) && (
+          {selectedPayment && !canTakeAction(selectedPayment) && (
             <div className={`mt-4 p-3 rounded-lg text-center font-medium ${
-              recentPayment.status === 'approved' 
+              selectedPayment.status === 'approved' 
                 ? 'bg-green-100 text-green-800 border border-green-200' 
-                : recentPayment.status === 'rejected'
+                : selectedPayment.status === 'rejected'
                 ? 'bg-red-100 text-red-800 border border-red-200'
                 : 'bg-gray-100 text-gray-800 border border-gray-200'
             }`}>
-              Payment has been {recentPayment.status || 'processed'}. No further actions can be taken.
+              Payment has been {selectedPayment.status || 'processed'}. No further actions can be taken.
             </div>
           )}
           
           {/* Show message when payment can be acted upon */}
-          {recentPayment && canTakeAction(recentPayment) && (
+          {selectedPayment && canTakeAction(selectedPayment) && (
             <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
-              Payment is {recentPayment.status || 'pending review'}. You can approve or reject this payment.
+              Payment is {selectedPayment.status || 'pending review'}. You can approve or reject this payment.
             </div>
           )}
         </div>
@@ -401,7 +491,10 @@ const EventPayment = () => {
             type={confirmAction}
             reason={reason}
             onConfirm={() => handleFinalAction(confirmAction)}
-            onCancel={() => setConfirmAction(null)}
+            onCancel={() => {
+              setConfirmAction(null);
+              setConfirmTargetPaymentId(null);
+            }}
           />
         )}
       </div>

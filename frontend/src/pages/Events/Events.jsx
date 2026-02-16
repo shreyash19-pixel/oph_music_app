@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import RegistrationModal from "../../components/registration/Registration";
+import { isRegistrationOpen, isRegistrationNotStartedYet, IST } from "../../utils/date";
 
 export default function Events() {
   const { headers, ophid } = useArtist();
@@ -34,15 +35,25 @@ export default function Events() {
   console.log(JSON.stringify(musicEvents));
 
 
-  const upcomingEvents = musicEvents.filter((event) => {
-    const eventDate = new Date(event.dateTime);
-    return eventDate > new Date();
-  });
+  const sortByCreatedAtDesc = (a, b) => {
+    const dateA = new Date(a.created_at || a.createdAt || 0);
+    const dateB = new Date(b.created_at || b.createdAt || 0);
+    return dateB - dateA; // newest first
+  };
 
-  const previousEvents = musicEvents.filter((event) => {
-    const eventDate = new Date(event.dateTime);
-    return eventDate <= new Date();
-  });
+  const upcomingEvents = musicEvents
+    .filter((event) => {
+      const eventDate = new Date(event.dateTime);
+      return eventDate > new Date();
+    })
+    .sort(sortByCreatedAtDesc);
+
+  const previousEvents = musicEvents
+    .filter((event) => {
+      const eventDate = new Date(event.dateTime);
+      return eventDate <= new Date();
+    })
+    .sort(sortByCreatedAtDesc);
 
 
   useEffect(() => {
@@ -103,17 +114,6 @@ export default function Events() {
   //   return new Date(year, month - 1, day);
   // };
 
-  // const checkRegValid = (reg_date) => {
-  //   const today = new Date();
-  //   const reg = parseDDMMYYYY(reg_date);
-  //   return today <= reg;
-  // };
-
-  const checkRegValid = (regDateISO) => {
-    return new Date() <= new Date(regDateISO);
-  };
-
-
   // const formatDateInline = (dateStr) => {
   //   if (!dateStr) return "";
   //   const [day, month, year] = dateStr.split("/");
@@ -121,11 +121,14 @@ export default function Events() {
   // };
 
   const formatDateInline = (isoDate) => {
+    if (!isoDate) return "";
     const date = new Date(isoDate);
+    if (isNaN(date)) return "";
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
+      timeZone: IST,
     });
   };
 
@@ -186,6 +189,7 @@ export default function Events() {
                     hour: "2-digit",
                     minute: "2-digit",
                     hour12: true,
+                    timeZone: "Asia/Kolkata",
                   })} - {event.location}
 
                 </div>
@@ -233,7 +237,11 @@ export default function Events() {
                     >
                       Registered
                     </button>
-                  ) : checkRegValid(event.registrationEnd) ? (
+                  ) : isRegistrationNotStartedYet(event) ? (
+                    <button className="px-6 py-2 bg-gray-600 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed" disabled title={`Registration opens at 12:00 AM IST on ${formatDateInline(event.registrationStart)}`}>
+                      Registration opens 12:00 AM IST, {formatDateInline(event.registrationStart)}
+                    </button>
+                  ) : isRegistrationOpen(event) ? (
                     <button
                       onClick={(e) => {
                         e.preventDefault();

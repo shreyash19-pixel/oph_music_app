@@ -143,7 +143,7 @@ export default function HeroSection({ professions = [] }) {
   const dateFormat = (dateIso) => {
     const dt = new Date(dateIso);
     if (isNaN(dt)) return "";
-    return dt.toLocaleString("en-US", {
+    return dt.toLocaleString("en-GB", {
       day: "2-digit",
       month: "long",
       year: "numeric",

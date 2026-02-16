@@ -3,6 +3,52 @@ const { uploadToS3 } = require("../utils");
 const SongApplicationStatusService = require("../services/song/SongApplicationStatusService");
 
 exports.createVideoDetails = async (req, res) => {
+  // Create abort signal to detect client disconnection
+  // Only trigger on actual disconnection, not on normal request lifecycle events
+  const abortSignal = {
+    aborted: false,
+    on: function(event, callback) {
+      if (event === 'abort') {
+        this._abortCallback = callback;
+      }
+    },
+    _abortCallback: null
+  };
+
+  // REMOVED socket.destroyed check - it's unreliable because server timeout
+  // can mark socket as destroyed even when client is still connected
+  // We ONLY rely on the 'aborted' event which is truly reliable
+  
+  // Only listen for 'aborted' event - this is the ONLY reliable indicator
+  // 'aborted' only fires when client actually aborts the request
+  // Socket.destroyed can be false positive due to server timeout
+  req.once('aborted', () => {
+    if (!abortSignal.aborted) {
+      abortSignal.aborted = true;
+      console.log(`[Video Upload] ⚠️ Request aborted by client, cancelling uploads...`);
+      if (abortSignal._abortCallback) {
+        abortSignal._abortCallback();
+      }
+    }
+  });
+
+  // Listen to socket 'error' - only fires on actual connection errors
+  if (req.socket) {
+    req.socket.once('error', (error) => {
+      if (!abortSignal.aborted) {
+        abortSignal.aborted = true;
+        console.log(`[Video Upload] ⚠️ Socket error detected: ${error.message}, cancelling uploads...`);
+        if (abortSignal._abortCallback) {
+          abortSignal._abortCallback();
+        }
+      }
+    });
+  }
+
+  // We don't check socket.destroyed anymore - it's unreliable
+  // Only the 'aborted' event and socket 'error' event will trigger cancellation
+  // We check abortSignal.aborted directly where needed
+
   try {
     const { ophid, song_id, credits } = req.body;
 
@@ -13,29 +59,106 @@ exports.createVideoDetails = async (req, res) => {
       })
     }
 
+    // Don't check connection at start - only check during/after upload
+    // Initial check can give false positives
 
     const video_url = req.files.video_file?.[0];
     const image_url = req.files?.thumbnails || [];
+    
+    // Get existing thumbnails from request body (if any)
+    // Frontend should send existing_thumbnails as JSON array to preserve existing images
+    let existingThumbnails = [];
+    try {
+      if (req.body.existing_thumbnails) {
+        existingThumbnails = typeof req.body.existing_thumbnails === 'string' 
+          ? JSON.parse(req.body.existing_thumbnails) 
+          : req.body.existing_thumbnails;
+      }
+    } catch (e) {
+      console.warn('[Video Upload] Failed to parse existing_thumbnails:', e.message);
+    }
 
     let photoURLSArr = []
     let videoURL = ''
 
-    // Upload thumbnails in parallel for better performance
+    // Upload only NEW thumbnails (not existing ones that are already on S3)
     if (image_url && image_url.length > 0) {
-      const thumbnailUploads = image_url.map(img => 
-        uploadToS3(img, `video-meta/${ophid}/image-url`)
-      );
-      const thumbnailUrls = await Promise.all(thumbnailUploads);
-      photoURLSArr = thumbnailUrls.filter(url => url); // Filter out any null/undefined URLs
+      console.log(`[Video Upload] Uploading ${image_url.length} new thumbnail(s)...`);
+      const thumbnailUploads = image_url.map((img, index) => {
+        console.log(`[Video Upload] Uploading thumbnail ${index + 1}/${image_url.length}: ${img.originalname}`);
+        return uploadToS3(img, `video-meta/${ophid}/image-url`, abortSignal);
+      });
+      
+      try {
+        const thumbnailUrls = await Promise.all(thumbnailUploads);
+        // Check if upload was cancelled (only if abortSignal was set by actual abort/error event)
+        if (abortSignal.aborted) {
+          console.log(`[Video Upload] ⚠️ Thumbnail upload was cancelled, aborting...`);
+          return;
+        }
+        const newThumbnailUrls = thumbnailUrls.filter(url => url); // Filter out any null/undefined URLs
+        photoURLSArr = [...existingThumbnails, ...newThumbnailUrls]; // Merge existing + new
+        console.log(`[Video Upload] Total thumbnails: ${existingThumbnails.length} existing + ${newThumbnailUrls.length} new = ${photoURLSArr.length} total`);
+      } catch (error) {
+        if (error.message?.includes('cancelled') || error.message?.includes('disconnect')) {
+          console.log(`[Video Upload] ⚠️ Thumbnail upload cancelled due to client disconnect`);
+          return; // Client disconnected, stop processing
+        }
+        throw error;
+      }
+    } else if (existingThumbnails.length > 0) {
+      // No new thumbnails, but keep existing ones
+      photoURLSArr = existingThumbnails;
+      console.log(`[Video Upload] No new thumbnails to upload, keeping ${existingThumbnails.length} existing thumbnail(s)`);
     }
 
     if (video_url) {
-      const url = await uploadToS3(video_url, `video-meta/${ophid}/video-url`)
+      const fileSizeMB = (video_url.size / (1024 * 1024)).toFixed(2);
+      console.log(`[Video Upload] Starting video upload: ${video_url.originalname} (${fileSizeMB}MB)`);
+      console.log(`[Video Upload] File received from client, uploading to S3...`);
+      
+      const io = req.app.get('io');
+      const onlineUsers = req.app.get('onlineUsers');
+      const socketId = ophid && onlineUsers ? onlineUsers.get(String(ophid).trim()) : null;
+      const progressCallback = socketId && io
+        ? (progress) => {
+            try {
+              io.to(socketId).emit('video-upload-progress', progress);
+            } catch (e) {
+              // ignore
+            }
+          }
+        : null;
 
-      if (url) {
-        videoURL = url
+      try {
+        const url = await uploadToS3(video_url, `video-meta/${ophid}/video-url`, abortSignal, progressCallback);
+
+        // Check if upload was cancelled (only if abortSignal was set by actual abort/error event)
+        if (abortSignal.aborted) {
+          console.log(`[Video Upload] ⚠️ Video upload was cancelled, not saving to database`);
+          return;
+        }
+
+        if (url) {
+          videoURL = url
+          console.log(`[Video Upload] ✅ Video upload completed successfully: ${url}`);
+        } else {
+          console.error(`[Video Upload] ❌ Video upload failed - no URL returned`);
+        }
+      } catch (error) {
+        if (error.message?.includes('cancelled') || error.message?.includes('disconnect')) {
+          console.log(`[Video Upload] ⚠️ Video upload cancelled due to client disconnect`);
+          return; // Client disconnected, stop processing
+        }
+        throw error;
       }
+    }
 
+    // Check if request was aborted before database operations
+    // Only abortSignal.aborted is reliable (set by actual abort/error events)
+    if (abortSignal.aborted) {
+      console.log(`[Video Upload] ⚠️ Request was aborted, not saving to database`);
+      return;
     }
 
     // 3️⃣  Insert into the child table
@@ -45,6 +168,12 @@ exports.createVideoDetails = async (req, res) => {
       JSON.stringify(photoURLSArr),
       videoURL
     );
+
+    // Final check before sending response
+    if (abortSignal.aborted) {
+      console.log(`[Video Upload] ⚠️ Request was aborted after database insert, not sending response`);
+      return;
+    }
 
     if (response) {
       await videoDetails.setJourneyStatus(ophid,song_id);
@@ -115,6 +244,18 @@ exports.createVideoDetails = async (req, res) => {
         connection.release();
       }
       
+      // Final check before sending response
+      if (abortSignal.aborted) {
+        console.log(`[Video Upload] ⚠️ Request was aborted, not sending response`);
+        return; // Don't send response if request was aborted
+      }
+
+      // Check if response was already sent or connection is closed
+      if (res.headersSent || res.destroyed || !res.writable) {
+        console.log(`[Video Upload] ⚠️ Cannot send response - connection closed`);
+        return;
+      }
+
       res.status(201).json({ 
         success: true, 
         message: "Video details saved",
@@ -129,10 +270,23 @@ exports.createVideoDetails = async (req, res) => {
     }
 
   } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: err.message });
+    // Check if error is due to client disconnect
+    if (err.message?.includes('cancelled') || err.message?.includes('disconnect') || 
+        err.code === 'ECONNRESET' || err.code === 'EPIPE') {
+      console.log(`[Video Upload] ⚠️ Request cancelled or client disconnected:`, err.message);
+      return; // Don't send error response if client disconnected
+    }
+
+    console.error('[Video Upload] Error:', err);
+    
+    // Only send error response if client is still connected
+    if (!res.headersSent && !res.destroyed && res.writable) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Server error", 
+        error: err.message 
+      });
+    }
   }
 };
 
