@@ -242,6 +242,8 @@ app.use("/", specialArtistSong);
 app.use("/", songRelease);
 app.use("/", supportingNumbers);
 app.use("/", eventWinner);
+app.use("/", incomeStatus );
+app.use("/", pageMedia);
 // ✅ Start server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is listening on port ${port}...`);

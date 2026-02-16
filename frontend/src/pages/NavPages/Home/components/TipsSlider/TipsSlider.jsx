@@ -42,16 +42,19 @@ const TipsSlider = () => {
 
   const settings = {
     dots: false,
-    infinite: true,
-    speed: 1000,
+    infinite: reelsData.length >= 3,
+    speed: 500,
     slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length,
     slidesToScroll: 1,
     arrows: false,
-    autoplay: !isDragging,
-    autoplaySpeed: 1000,
+    autoplay: reelsData.length >= 3,
+    autoplaySpeed: 3000,
     pauseOnHover: true,
-    pauseOnFocus: true,
-    pauseOnDotsHover: true,
+    swipeToSlide: true,
+    touchThreshold: 10,
+    cssEase: "linear",
+    beforeChange: () => setIsDragging(true),
+    afterChange: () => setIsDragging(false),
     responsive: [
       {
         breakpoint: 1024,
@@ -78,6 +81,11 @@ const TipsSlider = () => {
     setSelectedVideo(videoUrl);
     setIsModalOpen(true);
     setIsPlaying(true);
+    setTimeout(() => {
+      if (modalVideoRef.current && modalVideoRef.current.play) {
+        modalVideoRef.current.play().catch(err => console.error("Play error:", err));
+      }
+    }, 100);
   };
 
   const closeModal = () => {
@@ -130,9 +138,7 @@ const TipsSlider = () => {
               <div key={tip.id} className="px-2">
                 <div
                   className="relative rounded-lg overflow-hidden aspect-[3/4.5] cursor-pointer"
-                  onMouseDown={() => setIsDragging(false)}
-                  onMouseMove={() => setIsDragging(true)}
-                  onMouseUp={() => !isDragging && openModal(tip.video_url)}
+                  onClick={() => !isDragging && openModal(tip.video_url)}
                 >
                   <Image
                     src={
@@ -160,22 +166,24 @@ const TipsSlider = () => {
           onClick={closeModal}
         >
           <div
-            className="relative bg-black rounded-lg shadow-lg max-w-3xl w-full px-4 p-1"
+            className="relative bg-black rounded-lg shadow-lg max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-0 right-0 text-white w-16 h-16 rounded-full flex items-center justify-center text-3xl z-50 font-bold shadow-lg"
+              className="absolute top-2 right-2 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl z-50 font-bold bg-black/50"
               onClick={closeModal}
             >
               &times;
             </button>
 
-            <div className="relative">
+            <div className="relative aspect-[9/16]">
               <CustomVideoPlayer
                 ref={modalVideoRef}
                 src={selectedVideo}
-                className="w-full h-auto rounded-lg"
+                className="w-full h-full rounded-lg object-cover"
                 autoPlay
+                playsInline
+                muted={false}
                 pauseOtherVideos={true}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}

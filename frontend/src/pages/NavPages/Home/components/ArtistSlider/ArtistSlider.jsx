@@ -16,7 +16,7 @@ const ArtistSlider = ({ rows = 1 }) => {
   const [artists, setArtists] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [autoplay, setAutoplay] = useState(true);
+  const [autoplay, setAutoplay] = useState(false);
   const perPage = 6;
 
   const [currArtist, setCurrentArtist] = useState(null);
@@ -39,6 +39,22 @@ const ArtistSlider = ({ rows = 1 }) => {
       fetchArtists(currentPage);
     }
   }, [currentPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleSliderNav = (direction) => {
+    if (sliderRef.current) {
+      if (direction === 'next') {
+        sliderRef.current.slickNext();
+      } else {
+        sliderRef.current.slickPrev();
+      }
+    }
+  };
 
   const handleArtistClick = (id, index) => {
     setCurrentArtist(id);
@@ -87,29 +103,31 @@ const ArtistSlider = ({ rows = 1 }) => {
               stories are just the beginning.
             </p>
           </div>
-          <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16">
+          <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16 relative z-50">
             <button
-              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-              className="z-10 bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-colors mr-2"
-              disabled={currentPage === 1}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSliderNav('prev');
+              }}
+              className="bg-gray-800 p-3 rounded-full hover:bg-gray-700 transition-colors mr-2 cursor-pointer"
             >
               <img
                 src={arrowLeftIc}
                 alt="Previous"
-                className="w-[20px] h-[20px]"
+                className="w-[20px] h-[20px] pointer-events-none"
               />
             </button>
             <button
-              onClick={() =>
-                setCurrentPage(Math.min(currentPage + 1, totalPages))
-              }
-              className="z-10 bg-[#6F4FA0] mt-3 lg:mt-0 p-2 rounded-full hover:bg-[#6F4FA0] transition-colors"
-              disabled={currentPage === totalPages}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSliderNav('next');
+              }}
+              className="bg-[#6F4FA0] p-3 rounded-full hover:bg-[#5a3f80] transition-colors cursor-pointer"
             >
               <img
                 src={arrowRightIc}
                 alt="Next"
-                className="w-[20px] h-[20px]"
+                className="w-[20px] h-[20px] pointer-events-none"
               />
             </button>
           </div>
@@ -121,13 +139,17 @@ const ArtistSlider = ({ rows = 1 }) => {
             ref={sliderRef}
             {...{
               dots: false,
-              speed: 500,
-              autoplay: autoplay,
+              speed: 300,
+              autoplay: true,
+              autoplaySpeed: 3000,
+              pauseOnHover: true,
               infinite: true,
               slidesToShow: 5.6,
               slidesToScroll: 1,
               arrows: false,
               rows: rows,
+              swipeToSlide: true,
+              touchThreshold: 10,
               responsive: [
                 {
                   breakpoint: 1024,
