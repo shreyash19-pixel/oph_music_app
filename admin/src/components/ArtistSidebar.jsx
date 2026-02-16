@@ -99,6 +99,11 @@ const artistLinks = [
         label: "New Songs",
         route: "/special-artist-songs",
       },
+
+      {
+        label: "Income",
+        route: "/special-artist-income-status",
+      },
     ],
   },
   { label: "All Data", route: "/data" },

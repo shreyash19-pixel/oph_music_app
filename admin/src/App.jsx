@@ -79,6 +79,8 @@ import CreateLearning from "./view/dashboard/websiteConfig/resource/CreateLearni
 import WebsiteSettings from "./view/dashboard/websiteConfig/Settings";
 import ContentRelease from "./view/dashboard/artistPortal/contentRelease/ContentRelease";
 import ContentReleaseInd from "./view/dashboard/artistPortal/contentRelease/index";
+import SpIncomeStat from "./view/dashboard/artistPortal/SpIncomeStat/SpIncomeStat";
+import SpIncomeStatIndividual from "./view/dashboard/artistPortal/SpIncomeStat";
 
 function App() {
   return (
@@ -100,6 +102,12 @@ function App() {
             path="/special-artist-songs/:ophid/:songId"
             element={<NewSongsIndividual />}
           />
+
+          <Route
+            path="/special-artist-income-status/:ophid"
+            element={<SpIncomeStatIndividual />}
+          />
+          
           <Route
             path="/change-details/:ophid/:field"
             element={<ChangeDetailsIndividual />}
@@ -785,6 +793,23 @@ function App() {
                 ]}
               >
                 <NewSongs />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/special-artist-income-status"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_MEMBER,
+                  ROLES.SALES_HEAD,
+                ]}
+              >
+                <SpIncomeStat />
               </ProtectedRoute>
             }
           />

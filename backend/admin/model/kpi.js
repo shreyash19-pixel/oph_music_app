@@ -194,7 +194,7 @@ const getAllKpiScores = async () => {
 
     if (!songMap[ophid]) {
       songMap[ophid] = {
-        ophid: row.oph_id,
+        oph_id: row.oph_id,
         fullName: row.full_name,
         stageName: row.stage_name,
         personalPhoto: row.personal_photo,

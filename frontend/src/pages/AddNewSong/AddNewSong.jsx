@@ -69,6 +69,9 @@ const AddNewSong = () => {
         setStatus(response.data.data);
 
         setSongCount(response.data.songCnt);
+
+        console.log(response.data.songCnt);
+        
       }
     } catch (err) {
       console.error(err.message);
@@ -112,7 +115,7 @@ const AddNewSong = () => {
           console.log(data[0].song_id);
           setLoading(false);
 
-          if (songCount < 2) {
+          if (songCount == true) {
             navigate("/dashboard/pending", {
               state: {
                 heading: "Your request is under review",
@@ -336,12 +339,12 @@ const AddNewSong = () => {
                   </td>
                   <td
                     className={`py-[12px] font-bold text-[16px] ${
-                      stat.status === "pending" && songCount > 2
+                      stat.status === "pending" && songCount === false
                         ? "cursor-pointer text-blue-600 hover:underline"
                         : ""
                     }`}
                     onClick={(e) => {
-                      if (stat.status === "pending" && songCount > 2) {
+                      if (stat.status === "pending" && songCount === false) {
                         navigate("/auth/payment", {
                           state: {
                             from: "Special artist song registration",

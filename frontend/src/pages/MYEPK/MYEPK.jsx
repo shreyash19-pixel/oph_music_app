@@ -80,6 +80,9 @@ const MYEPK = () => {
           headers: headers,
         },
       );
+
+      console.log(response.data.data);
+      
       setArtist(response.data.data);
     } catch (err) {
       console.log(err);
