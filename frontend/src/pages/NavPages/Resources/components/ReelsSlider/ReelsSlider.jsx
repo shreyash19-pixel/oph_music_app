@@ -39,9 +39,17 @@ function ReelsSlider({ searchText, title }) {
 
   const filteredReels = useMemo(() => {
     if (searchText) {
-      return allReels.filter((reel) =>
-        reel.title.toLowerCase().includes(searchText.toLowerCase()),
-      );
+      return allReels.filter((reel) => {
+        const searchLower = searchText.toLowerCase();
+        return (
+          reel.title.toLowerCase().includes(searchLower) ||
+          reel.artist_name?.toLowerCase().includes(searchLower) ||
+          reel.credit_name?.toLowerCase().includes(searchLower) ||
+          (reel.keywords && reel.keywords.toLowerCase().split(',').some(keyword => 
+            keyword.trim().includes(searchLower)
+          ))
+        );
+      });
     }
     return allReels;
   }, [searchText, allReels]);
@@ -149,7 +157,7 @@ function ReelsSlider({ searchText, title }) {
   }
 
   return (
-    <div className="bg-black text-white py-12">
+    <div id="reels-section" className="bg-black text-white py-12">
       <div className="container mx-auto mb-16 px-4 lg:px-16">
         {title ? (
           <h2 className="text-[#5DC9DE] text-3xl md:text-4xl font-bold uppercase drop-shadow-[0_0_20px_white] text-center">
