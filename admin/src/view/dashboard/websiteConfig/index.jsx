@@ -54,6 +54,15 @@ const WebsiteConfig = () => {
       ],
     },
     {
+       label: "Page Media Upload",
+       route: "/PageMediaUpload",
+       roles: [
+       ROLES.SUPER_ADMIN,
+       ROLES.ADMINISTRATIVE_HEAD,
+       ROLES.ADMINISTRATIVE_MEMBER,
+      ],
+    },
+    {
       label: "Collab",
       route: "/Collab",
       roles: [
