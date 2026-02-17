@@ -61,7 +61,22 @@ export default function VideoMetadataForm() {
 
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
+  const [videoMetadataLoaded, setVideoMetadataLoaded] = useState(false);
+  const [showPayNowAfterSubmit, setShowPayNowAfterSubmit] = useState(false);
   const progressCleanupRef = useRef(null);
+
+  // Video is in rejected list (from status page) = user must submit video changes first
+  const isVideoRejected = location.state?.rejectedSections?.some(
+    (s) => s.section === "video"
+  );
+  // Only payment rejected = payment needs repayment, video NOT rejected, and no video in rejectedSections
+  const onlyPaymentRejected =
+    videoMetadataLoaded &&
+    nextPage === "repayment" &&
+    formData.reject_reason === null &&
+    !isVideoRejected;
+  // Show read-only + Pay now: either only payment rejected, or user just submitted video and payment is next
+  const showReadOnlyAndPayNow = onlyPaymentRejected || showPayNowAfterSubmit;
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
@@ -327,8 +342,7 @@ export default function VideoMetadataForm() {
       } else if (
         projectType === "paid in advance" &&
         location.state.lyrical_services === true
-      );
-      {
+      ) {
         navigate("/auth/payment", {
           state: {
             from: "Song Registration",
@@ -340,6 +354,7 @@ export default function VideoMetadataForm() {
             backPath: `/dashboard/upload-song/video-metadata`,
           },
         });
+        return;
       }
 
       if (response.data.success) {
@@ -380,18 +395,8 @@ export default function VideoMetadataForm() {
               },
             });
           } else if (response.data.redirectPath === '/auth/payment') {
-            // Redirect to payment
-            navigate("/auth/payment", {
-              state: {
-                from: "Song Repayment",
-                booking_date: response.data.releaseDate || location.state.release_date,
-                song_id: response.data.songId || contentId,
-                songName: response.data.songName || location.state.songName,
-                project_type: response.data.projectType || projectType,
-                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state.lyrical_services,
-                backPath: `/dashboard/upload-song/video-metadata`,
-              },
-            });
+            // Stay on same page: form becomes read-only, show Pay now (user clicks to go to payment)
+            setShowPayNowAfterSubmit(true);
           } else {
             // Fallback to default navigation
             navigate(response.data.redirectPath);
@@ -549,6 +554,7 @@ export default function VideoMetadataForm() {
       setError("Failed to load video metadata");
     } finally {
       setIsLoading(false);
+      setVideoMetadataLoaded(true);
     }
   };
 
@@ -603,187 +609,228 @@ export default function VideoMetadataForm() {
           </div>
         )}
 
-        {/* Full-screen loader: show progress inside loader when uploading */}
-        {(isLoading || isRemoving || isUploading || uploadProgress.isUploading) && (
-          <Loading progress={uploadProgress.isUploading ? uploadProgress : undefined} />
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Song Name Display */}
-          <div className="space-y-2">
-            <label className="block text-gray-400">Song Name:</label>
-            <input
-              disabled
-              value={songName}
-              className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700"
-              type="text"
-            />
-          </div>
-
-          {/* Credits */}
-          <div className="space-y-2">
-            <label className="block">
-              Credits <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={formData.credits}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, credits: e.target.value }))
-              }
-              placeholder="Enter credits..."
-              rows={4}
-              className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-3 focus:outline-none focus:border-cyan-400"
-              required
-            />
-          </div>
-
-          {/* Photo Upload */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Camera className="w-5 h-5 text-gray-400" />
-              <span>Upload Maximum 3 Pictures</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              {/* Display existing thumbnails (URLs from server) */}
-              {formData.existing_thumbnails?.map((url, index) => (
-                <div key={`existing-${index}`} className="relative aspect-square">
-                  <img
-                    src={url}
-                    alt={`Existing thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeExistingPhoto(index)}
-                    className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-
-              {/* Display new thumbnails (File objects from user upload) */}
-              {formData.thumbnails.map((photo, index) => (
-                <div key={`new-${index}`} className="relative aspect-square">
-                  <img
-                    src={URL.createObjectURL(photo)}
-                    alt={`Upload ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(index)}
-                    className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-
-              {/* Upload Button */}
-              {formData.thumbnails.length +
-                formData.existing_thumbnails.length <
-                3 && (
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                    multiple
-                  />
-                  <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
-                    <Plus className="w-8 h-8 text-gray-500" />
-                  </div>
-                </label>
-              )}
-            </div>
-          </div>
-
-          {/* Video Upload */}
-          {!hasPaidForLyricalVideo && (
+        {/* Read-only + Pay now: when only payment rejected, or after user just submitted video (payment next) */}
+        {showReadOnlyAndPayNow ? (
+          <div className="space-y-6">
+            <p className="text-gray-400">
+              {showPayNowAfterSubmit
+                ? "Video submitted successfully. Please complete payment to continue."
+                : "Your video details are already approved. Please complete payment to continue."}
+            </p>
+            {/* Read-only preview */}
             <div className="space-y-2">
-              <label className="block">
-                Upload Video File <span className="text-red-500">*</span>
-              </label>
-              {formData.existing_video_url && !formData.video_file && (
-                <div className="mb-2">
-                  <p className="text-sm text-gray-400">Existing video file:</p>
-                  <CustomVideoPlayer
-                    src={formData.existing_video_url}
-                    className="w-full mt-2 rounded-lg"
-                    pauseOtherVideos={true}
-                  />
-                </div>
-              )}
-              <label className="cursor-pointer block">
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                />
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-cyan-400 transition-colors">
-                  {formData.video_file ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-cyan-400">
-                        {formData.video_file.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({ ...prev, video_file: null }))
-                        }
-                        className="p-1 hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <Plus className="w-8 h-8 text-gray-500" />
-                      <span className="text-gray-500">
-                        {formData.existing_video_url
-                          ? "Upload New Video File"
-                          : "Upload Video File"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </label>
+              <label className="block text-gray-400">Song Name:</label>
+              <input disabled value={songName} className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700 opacity-80" type="text" readOnly />
             </div>
-          )}
-
-          {/* Submit Button */}
-          {formData.reject_reason === null && nextPage === "repayment" ? (
-            <div
+            {formData.credits && (
+              <div className="space-y-2">
+                <label className="block text-gray-400">Credits:</label>
+                <div className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700 opacity-80 text-gray-300 whitespace-pre-wrap">
+                  {formData.credits}
+                </div>
+              </div>
+            )}
+            {formData.existing_thumbnails?.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-gray-400">Thumbnails:</label>
+                <div className="grid grid-cols-3 gap-4">
+                  {formData.existing_thumbnails.map((url, i) => (
+                    <img key={i} src={url} alt="" className="w-full aspect-square object-cover rounded-lg opacity-90" />
+                  ))}
+                </div>
+              </div>
+            )}
+            {formData.existing_video_url && (
+              <div className="space-y-2">
+                <label className="block text-gray-400">Video:</label>
+                <CustomVideoPlayer src={formData.existing_video_url} className="w-full rounded-lg" pauseOtherVideos={true} />
+              </div>
+            )}
+            <button
+              type="button"
               onClick={() =>
                 navigate("/auth/payment", {
                   state: {
                     from: "Song Repayment",
-                    booking_date: formattedDate,
+                    booking_date: formattedDate || location.state?.release_date,
                     song_id: contentId,
-                    songName: location.state.songName,
+                    songName: location.state?.songName || songName,
                     project_type: projectType,
-                    lyrical_services: location.state.lyrical_services,
+                    lyrical_services: location.state?.lyrical_services,
+                    backPath: "/dashboard/upload-song/video-metadata",
                   },
                 })
               }
-              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400 text-center"
+              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
             >
               Pay now
-            </div>
-          ) : (
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
-            >
-              {isLoading ? "Loading..." : "Submit"}
             </button>
-          )}
-        </form>
+          </div>
+        ) : (
+          <>
+            {/* Full-screen loader: show progress inside loader when uploading */}
+            {(isLoading || isRemoving || isUploading || uploadProgress.isUploading) && (
+              <Loading progress={uploadProgress.isUploading ? uploadProgress : undefined} />
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Song Name Display */}
+              <div className="space-y-2">
+                <label className="block text-gray-400">Song Name:</label>
+                <input
+                  disabled
+                  value={songName}
+                  className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700"
+                  type="text"
+                />
+              </div>
+
+              {/* Credits */}
+              <div className="space-y-2">
+                <label className="block">
+                  Credits <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={formData.credits}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, credits: e.target.value }))
+                  }
+                  placeholder="Enter credits..."
+                  rows={4}
+                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-3 focus:outline-none focus:border-cyan-400"
+                  required
+                />
+              </div>
+
+              {/* Photo Upload */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Camera className="w-5 h-5 text-gray-400" />
+                  <span>Upload Maximum 3 Pictures</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {formData.existing_thumbnails?.map((url, index) => (
+                    <div key={`existing-${index}`} className="relative aspect-square">
+                      <img
+                        src={url}
+                        alt={`Existing thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingPhoto(index)}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {formData.thumbnails.map((photo, index) => (
+                    <div key={`new-${index}`} className="relative aspect-square">
+                      <img
+                        src={URL.createObjectURL(photo)}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {formData.thumbnails.length + (formData.existing_thumbnails?.length || 0) < 3 && (
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        multiple
+                      />
+                      <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
+                        <Plus className="w-8 h-8 text-gray-500" />
+                      </div>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Video Upload */}
+              {!hasPaidForLyricalVideo && (
+                <div className="space-y-2">
+                  <label className="block">
+                    Upload Video File <span className="text-red-500">*</span>
+                  </label>
+                  {formData.existing_video_url && !formData.video_file && (
+                    <div className="mb-2">
+                      <p className="text-sm text-gray-400">Existing video file:</p>
+                      <CustomVideoPlayer
+                        src={formData.existing_video_url}
+                        className="w-full mt-2 rounded-lg"
+                        pauseOtherVideos={true}
+                      />
+                    </div>
+                  )}
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                    />
+                    <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-cyan-400 transition-colors">
+                      {formData.video_file ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-cyan-400">
+                            {formData.video_file.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({ ...prev, video_file: null }))
+                            }
+                            className="p-1 hover:text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <Plus className="w-8 h-8 text-gray-500" />
+                          <span className="text-gray-500">
+                            {formData.existing_video_url
+                              ? "Upload New Video File"
+                              : "Upload Video File"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              {/* Submit Button - submit video first; after submit, backend redirects to payment if payment is also rejected */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
+              >
+                {isLoading ? "Loading..." : "Submit"}
+              </button>
+              {nextPage === "repayment" && formData.reject_reason && (
+                <p className="text-gray-400 text-sm text-center mt-2">
+                  After submitting, you will be redirected to complete payment if needed.
+                </p>
+              )}
+            </form>
+          </>
+        )}
       </div>
       <ToastContainer />
     </div>

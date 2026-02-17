@@ -266,8 +266,48 @@ const updateStatusPayment = async (ophId, songId, status) => {
   }
 };
 
-const getTransactionDetails = async (release_date) => {
+const getTransactionDetails = async (release_date, oph_id, song_id) => {
   try {
+    // When oph_id and song_id are provided (from time calendar click), return the latest
+    // under-review Song Registration payment for that artist/song so we show the same
+    // payment as the Song Payment page (not an older payment for a different date).
+    if (oph_id && song_id) {
+      const [rowsByArtistSong] = await db.execute(
+        `SELECT 
+          sp.oph_id AS OPH_ID, 
+          sp.transaction_id AS Transaction_ID, 
+          sp.from_source AS \`From\`, 
+          sp.song_id, 
+          sp.status AS Status,
+          COALESCE(c.current_booking_date, sp.release_date) AS current_booking_date,
+          c.id,
+          c.oph_id,
+          c.song_id AS calendar_song_id,
+          c.previous_booking_date,
+          c.original_booking_date,
+          c.song_name,
+          c.project_type,
+          c.reason,
+          c.reason_history,
+          c.created_at,
+          c.updated_at
+        FROM payments sp 
+        LEFT JOIN calender c ON sp.release_date = c.current_booking_date 
+          AND sp.oph_id = c.oph_id
+          AND (c.song_id = sp.song_id OR c.song_id = sp.reject_for)
+        WHERE sp.oph_id = ?
+          AND (sp.song_id = ? OR sp.reject_for = ?)
+          AND (sp.from_source = 'Song Registration' OR sp.from_source = 'Song Repayment')
+          AND sp.status = 'under review'
+        ORDER BY sp.created_at DESC
+        LIMIT 1`,
+        [oph_id, song_id, song_id],
+      );
+      if (rowsByArtistSong && rowsByArtistSong.length > 0) {
+        return rowsByArtistSong;
+      }
+    }
+
     const [rows] = await db.execute(
       `SELECT 
         sp.oph_id AS OPH_ID, 
@@ -581,33 +621,77 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
         );
         affectedRows += updateResult.affectedRows;
       }
-    } else if (from === "Song Registration") {
+    } else if (from === "Song Registration" || from === "Song Repayment") {
       if (decision === "rejected" || decision === "approved") {
-        // Get song_id from payment record before updating
-        const [paymentRecords] = await connection.execute(
-          `SELECT song_id, oph_id FROM payments 
-           WHERE release_date = ? 
-           AND from_source = 'Song Registration'
-           LIMIT 1`,
-          [release_date],
-        );
+        // When oph_id and song_id are provided (from verify page that showed payment by artist/song),
+        // update the payment we actually displayed — the latest under-review for that artist/song —
+        // not by release_date (which may be the calendar cell date, not the payment's date).
+        const useOphIdSongId = oph_id && song_id;
+        let paymentRecords = [];
+        let updateResult = { affectedRows: 0 };
 
-        const [updateResult] = await connection.execute(
-          `UPDATE payments 
-           SET status = ?, 
-               reject_reason = ?,
-               updated_at = NOW()
-           WHERE release_date = ? 
-           AND from_source = 'Song Registration'`,
-          [decision, isReasonEmpty, release_date],
-        );
-        affectedRows += updateResult.affectedRows;
+        if (useOphIdSongId) {
+          const [byArtistSong] = await connection.execute(
+            `SELECT song_id, oph_id, id FROM payments 
+             WHERE oph_id = ? 
+             AND (song_id = ? OR reject_for = ?)
+             AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
+             AND status = 'under review'
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [oph_id, song_id, song_id],
+          );
+          paymentRecords = byArtistSong;
+          if (paymentRecords.length > 0) {
+            const paymentId = paymentRecords[0].id;
+            const songIdValue = paymentRecords[0].song_id;
+            const isRejected = decision === "rejected" || decision === "Rejected";
+            if (isRejected && songIdValue) {
+              await connection.execute(
+                `UPDATE payments 
+                 SET reject_for = ?, song_id = NULL, status = ?, reject_reason = ?, updated_at = NOW()
+                 WHERE id = ?`,
+                [songIdValue, decision, isReasonEmpty, paymentId],
+              );
+            } else {
+              const [res] = await connection.execute(
+                `UPDATE payments 
+                 SET status = ?, 
+                     reject_reason = ?,
+                     updated_at = NOW()
+                 WHERE id = ?`,
+                [decision, isReasonEmpty, paymentId],
+              );
+              updateResult = res;
+            }
+            affectedRows += 1;
+          }
+        }
 
-        // Update song_application_status if song_id exists
-        if (paymentRecords.length > 0 && paymentRecords[0].song_id) {
-          const songId = paymentRecords[0].song_id;
+        if (!useOphIdSongId || paymentRecords.length === 0) {
+          const [byDate] = await connection.execute(
+            `SELECT song_id, oph_id FROM payments 
+             WHERE release_date = ? 
+             AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
+             LIMIT 1`,
+            [release_date],
+          );
+          paymentRecords = byDate;
+          const [res] = await connection.execute(
+            `UPDATE payments 
+             SET status = ?, 
+                 reject_reason = ?,
+                 updated_at = NOW()
+             WHERE release_date = ? 
+             AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')`,
+            [decision, isReasonEmpty, release_date],
+          );
+          updateResult = res;
+          affectedRows += res.affectedRows;
+        }
 
-          // Normalize decision to match song_application_status format
+        const songIdForStatus = paymentRecords[0]?.song_id;
+        if (songIdForStatus) {
           let paymentStatus = "pending";
           if (decision === "rejected" || decision === "Rejected") {
             paymentStatus = "rejected";
@@ -619,12 +703,10 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
           ) {
             paymentStatus = "under review";
           }
-
-          // Update song_application_status table
           const SongApplicationStatusService = require("../../services/song/SongApplicationStatusService");
           await SongApplicationStatusService.updateStepStatus(
             connection,
-            songId,
+            songIdForStatus,
             "payment",
             paymentStatus,
             isReasonEmpty,
@@ -634,14 +716,16 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
     }
 
     const transactionDet = await getTransactionDetails(release_date);
-
-    await SongApplicationStatusService.updateStepStatus(
-      connection,
-      transactionDet[0].song_id,
-      "payment",
-      decision,
-      reason,
-    );
+    const songIdForSync = transactionDet?.[0]?.song_id ?? transactionDet?.[0]?.calendar_song_id;
+    if (songIdForSync) {
+      await SongApplicationStatusService.updateStepStatus(
+        connection,
+        songIdForSync,
+        "payment",
+        decision,
+        reason,
+      );
+    }
 
     await connection.commit();
 

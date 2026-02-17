@@ -83,6 +83,9 @@ class AdminPaymentService {
 
       // Get song_id before potentially moving it (needed for song_application_status update)
       const songIdBeforeUpdate = paymentDetailsBefore[0]?.song_id || songId;
+      // Use exact DB values so UPDATE always finds the row (avoids frontend/DB mismatch)
+      const ophIdFromDb = paymentDetailsBefore[0]?.oph_id ?? ophId;
+      const transactionIdFromDb = paymentDetailsBefore[0]?.transaction_id ?? transactionId;
 
       // Handle song payment rejection: move song_id to reject_for and set song_id to NULL
       if (isSongPayment && isRejected && paymentDetailsBefore[0]?.song_id) {
@@ -133,8 +136,8 @@ class AdminPaymentService {
       const paymentDetailsModel = require("../model/payments");
       const result = await paymentDetailsModel.updateStatus(
         connection,
-        ophId,
-        transactionId,
+        ophIdFromDb,
+        transactionIdFromDb,
         status,
         reject_reason,
       );

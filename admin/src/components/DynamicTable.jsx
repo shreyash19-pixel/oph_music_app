@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDateTimeIST } from "../utils/date";
 
 const DynamicTable = ({
   data,
@@ -133,67 +134,9 @@ const DynamicTable = ({
   };
 
   const formatDateTime = (value) => {
-    if (value === null || value === undefined || value === "") return "";
-
-    // Accept Date object, numeric timestamp, or ISO-like string
-    let dateObj;
-    if (value instanceof Date) {
-      dateObj = value;
-    } else if (typeof value === "number") {
-      dateObj = new Date(value);
-    } else {
-      // handle numeric strings that look like timestamps
-      const asNumber = Number(value);
-      if (
-        !Number.isNaN(asNumber) &&
-        String(value).trim().length >= 10 &&
-        String(value).trim().length <= 13
-      ) {
-        dateObj = new Date(asNumber);
-      } else {
-        dateObj = new Date(String(value));
-      }
-    }
-
-    if (isNaN(dateObj.getTime())) {
-      return String(value); // fallback to original if invalid
-    }
-
-    // Enhanced formatting for better readability
-    const now = new Date();
-    const isToday = dateObj.toDateString() === now.toDateString();
-    const isTomorrow =
-      new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString() ===
-      dateObj.toDateString();
-
-    let dateStr = "";
-    if (isToday) {
-      dateStr = "Today";
-    } else if (isTomorrow) {
-      dateStr = "Tomorrow";
-    } else {
-      dateStr = dateObj.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-      });
-    }
-
-    const timeStr = dateObj.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "Asia/Kolkata",
-    });
-
-    return (
-      <div className="text-sm">
-        <div className="font-medium text-gray-900">{dateStr}</div>
-        <div className="text-gray-600">{timeStr}</div>
-      </div>
-    );
+    const formatted = formatDateTimeIST(value);
+    if (!formatted) return "";
+    return <span className="text-sm text-gray-900">{formatted}</span>;
   };
 
   const formatDateOnly = (value) => {

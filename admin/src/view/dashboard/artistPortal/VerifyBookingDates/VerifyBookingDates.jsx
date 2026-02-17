@@ -17,8 +17,13 @@ const VerifyBookingDates = () => {
   const fetchBookingDetails = async () => {
     setLoading(true);
     try {
+      const params = { release_date };
+      if (location.state?.oph_id && location.state?.song_id) {
+        params.oph_id = location.state.oph_id;
+        params.song_id = location.state.song_id;
+      }
       const response = await axiosApi.get("/get-transaction-details", {
-        params: { release_date },
+        params,
       });
 
       if (
@@ -43,7 +48,7 @@ const VerifyBookingDates = () => {
       fetchBookingDetails();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [release_date]);
+  }, [release_date, location.state?.oph_id, location.state?.song_id]);
 
   const handleDecision = async (dec) => {
     console.log(dec);
@@ -65,8 +70,8 @@ const VerifyBookingDates = () => {
       reason: reason || null,
       release_date: release_date,
       from: fromSource,
-      song_id: transactions?.calendar_song_id,
-      oph_id : transactions?.OPH_ID
+      song_id: transactions?.calendar_song_id ?? transactions?.song_id,
+      oph_id: transactions?.OPH_ID,
     };
 
     console.log("Sending payment verification request:", requestData);

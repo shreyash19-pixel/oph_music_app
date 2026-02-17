@@ -277,7 +277,11 @@ export default function TimeCalendar() {
 
     if (dateInfo) {
       navigate("/verify-booking-dates", {
-        state: { selectedDate: dateStr },
+        state: {
+          selectedDate: dateStr,
+          oph_id: dateInfo.content,
+          song_id: dateInfo.songId,
+        },
       });
     } else {
       return;
