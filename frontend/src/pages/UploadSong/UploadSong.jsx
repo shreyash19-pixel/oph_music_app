@@ -98,6 +98,17 @@ export default function UploadSongs() {
     return colorMap[status] || 'text-gray-400 border-gray-400/30';
   };
 
+  // Display label for status (capitalised for UI)
+  const getStatusLabel = (status) => {
+    const labelMap = {
+      'pending': 'Draft',
+      'under review': 'Under Review',
+      'approved': 'Approved',
+      'rejected': 'Rejected'
+    };
+    return labelMap[status] ?? status;
+  };
+
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
       <div className="max-w-2xl space-y-8">
@@ -176,7 +187,7 @@ export default function UploadSongs() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-4 py-1 rounded-full text-sm border ${getStatusColor(song.status)}`}>
-                  {song.status}
+                  {getStatusLabel(song.status)}
                 </span>
               </div>
 

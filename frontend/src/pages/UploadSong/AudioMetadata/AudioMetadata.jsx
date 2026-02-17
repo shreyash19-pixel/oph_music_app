@@ -507,9 +507,16 @@ export default function AudioMetadataForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setIsLoading(true);
     if (isSubmitting) return;
 
+    // Validate required audio before starting any submit/loading
+    const manualFile = fileInputRef.current?.files?.[0];
+    if (!manualFile && !selectedFile) {
+      toast.error("Audio file is required");
+      return;
+    }
+
+    setIsLoading(true);
     try {
       setIsSubmitting(true);
 
@@ -566,16 +573,7 @@ export default function AudioMetadataForm() {
       // addArtistsWithImages(composerArtists, "composer");
       // addArtistsWithImages(producerArtists, "producer");
 
-      // Add audio file if exists
-      const manualFile = fileInputRef.current.files[0];
-
-      if (manualFile || selectedFile) {
-        formData.append("audio_file", manualFile || selectedFile);
-      } else {
-        toast.error("Audio file is required");
-        setIsSubmitting(false);
-        return;
-      }
+      formData.append("audio_file", manualFile || selectedFile);
 
       const response = await axiosApi.post(`/audio-details`, formData, {
         headers: {
@@ -664,7 +662,9 @@ export default function AudioMetadataForm() {
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
+      toast.error(error?.response?.data?.message || "Failed to submit audio. Please try again.");
     } finally {
+      setIsLoading(false);
       setIsSubmitting(false);
     }
   };
