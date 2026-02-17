@@ -1,7 +1,7 @@
 const {
   insertSpecialArtistSongs,
   getSpeicalArtistSongStatus,
-  getSongCount,
+  getIsSongFree,
 } = require("../model/special-artist-song");
 const { uploadToS3 } = require("../utils.js");
 
@@ -19,14 +19,14 @@ const getSpeicalArtistSongStatusController = async (req, res) => {
     }
 
     const response = await getSpeicalArtistSongStatus(ophid);
-    const songCount = await getSongCount(ophid);
+    const isSongFree = await getIsSongFree(ophid);
 
     if (response) {
       return res.status(200).json({
         success: true,
         message: "Data fetched successfully",
         data: response,
-        songCnt: songCount,
+        isSongFree: isSongFree,
       });
     }
   } catch (err) {
@@ -39,7 +39,7 @@ const getSpeicalArtistSongStatusController = async (req, res) => {
 
 const insertSpecialArtistSongsController = async (req, res) => {
   try {
-    const { ophid, songName, views, credits, time, proof, songCount } = req.body;
+    const { ophid, songName, views, credits, time, proof, songType } = req.body;
 
     // Validate required fields
     if (!ophid || !songName || views == null || !credits || !time || !proof) {
@@ -69,7 +69,7 @@ const insertSpecialArtistSongsController = async (req, res) => {
       credits,
       time,
       proof,
-      songCount,
+      songType,
       audioURL
     );
 

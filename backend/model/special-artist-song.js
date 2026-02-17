@@ -6,6 +6,7 @@ const getSpeicalArtistSongStatus = async (ophid) => {
         sas.song_id,
         sas.oph_id,
         sas.song_name,
+        sas.song_type,
         sas.created_at,
         sas.status AS song_status,
         sas.reject_reason,
@@ -14,7 +15,7 @@ const getSpeicalArtistSongStatus = async (ophid) => {
      LEFT JOIN payments p 
        ON sas.song_id = p.song_id 
       AND p.from_source = 'Special Artist Song Registration'
-     WHERE sas.oph_id = ?`,
+     WHERE sas.oph_id = ?  `,
     [ophid],
   );
 
@@ -34,8 +35,10 @@ const getSpeicalArtistSongStatus = async (ophid) => {
       song_id: row.song_id,
       oph_id: row.oph_id,
       song_name: row.song_name,
+      song_type: row.song_type,
       created_at: row.created_at,
       status: finalStatus,
+      payment_status:row.payment_status,
       reject_reason: row.reject_reason || "-",
     };
   });
@@ -48,14 +51,14 @@ const insertSpecialArtistSongs = async (
   credits,
   duration,
   proof,
-  songCount,
+  songType,
   audio_url,
 ) => {
   let rejectedCount = 0;
 
   const [rows] = await db.execute(
-    "INSERT INTO special_artist_songs (oph_id, song_name, views,credits,duration,proof, audio_url) VALUES (?,?,?,?,?,?,?)",
-    [ophid, song_name, views, credits, duration, proof, audio_url],
+    "INSERT INTO special_artist_songs (oph_id, song_name, views,credits,duration,proof, audio_url, song_type) VALUES (?,?,?,?,?,?,?,?)",
+    [ophid, song_name, views, credits, duration, proof, audio_url, songType],
   );
   // console.log(rows);
 
@@ -104,7 +107,7 @@ const insertSpecialArtistSongs = async (
   return songId;
 };
 
-const getSongCount = async (ophid) => {
+const getIsSongFree = async (ophid) => {
   let isFree = true;
 
   const [rows] = await db.execute(
@@ -136,5 +139,5 @@ const getSongCount = async (ophid) => {
 module.exports = {
   insertSpecialArtistSongs,
   getSpeicalArtistSongStatus,
-  getSongCount,
+  getIsSongFree,
 };
