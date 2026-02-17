@@ -138,7 +138,7 @@ function PodcastSlider({ searchText, title }) {
     slidesToShow: filteredPodcasts.length >= 3 ? 1 : filteredPodcasts.length,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 1000,
+    autoplaySpeed: 3000,
     dots: false,
     arrows: false,
     centerMode: filteredPodcasts.length >= 3,
@@ -286,15 +286,15 @@ function PodcastSlider({ searchText, title }) {
                     <span>{formatListeners(podcast.views)}</span>
                     <br />
                     <span>{podcast.credit_name || ""}</span>
-                    <span>
+                    <div className="flex flex-wrap gap-2 justify-center mt-2">
                       {podcast.keywords
                         ? podcast.keywords
                             .split(",")
                             .map((keyword, index) => (
-                              <span key={index}>{keyword.trim()}</span>
+                              <span key={index} className="px-2 py-1 bg-gray-700 rounded text-xs">{keyword.trim()}</span>
                             ))
                         : null}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -378,15 +378,15 @@ function PodcastSlider({ searchText, title }) {
                     <span>{formatListeners(podcast.views)}</span>
                     <br />
                     <span>{podcast.credit_name || ""}</span>
-                    <span>
+                    <div className="flex flex-wrap gap-2 justify-center mt-2">
                       {podcast.keywords
                         ? podcast.keywords
                             .split(",")
                             .map((keyword, index) => (
-                              <span key={index}>{keyword.trim()}</span>
+                              <span key={index} className="px-2 py-1 bg-gray-700 rounded text-xs">{keyword.trim()}</span>
                             ))
                         : null}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>

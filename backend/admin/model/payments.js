@@ -117,6 +117,8 @@ const updateSongPaymentSp = async (ophid, transactionId, FormData, status) => {
   const values = [ophid, transactionId, FormData, status];
 
   console.log("Values:", values);
+  console.log("in sp updates");
+  
   console.log(
     "Value types:",
     values.map((v) => typeof v),
