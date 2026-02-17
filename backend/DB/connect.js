@@ -8,7 +8,9 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 100, // Increased to 100 for production (supports 100+ concurrent users)
   queueLimit: 0, // Unlimited queue (requests wait if pool is full)
-  timezone: '+05:30',
+  // Use UTC so DATETIME columns (created_at, updated_at) are read as UTC and
+  // JSON serialization sends correct instant (e.g. 08:27 UTC → 1:57 PM IST in admin).
+  timezone: '+00:00',
   // Add connection retry and error handling
   reconnect: true,
   // Handle connection errors gracefully

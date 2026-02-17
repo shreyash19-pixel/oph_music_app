@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosApi from '../../../../conf/axios';
 import ArtistSidebar from '../../../../components/ArtistSidebar';
+import { formatDateTimeIST } from '../../../../utils/date';
 
 const Settings = () => {
   const [audioPlatforms, setAudioPlatforms] = useState([]);
@@ -382,12 +383,7 @@ const Settings = () => {
                                 </div>
                               </td>
                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                               {platform.created_at ? new Date(platform.created_at).toLocaleDateString('en-GB', {
-                                 day: '2-digit',
-                                 month: 'long',
-                                 year: 'numeric',
-                                 timeZone: 'Asia/Kolkata'
-                               }) : 'N/A'}
+                               {platform.created_at ? formatDateTimeIST(platform.created_at) : 'N/A'}
                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button
@@ -529,12 +525,7 @@ const Settings = () => {
                                    </div>
                                  </td>
                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                   {profession.created_at ? new Date(profession.created_at).toLocaleDateString('en-GB', {
-                                     day: '2-digit',
-                                     month: 'long',
-                                     year: 'numeric',
-                                     timeZone: 'Asia/Kolkata'
-                                   }) : 'N/A'}
+                                   {profession.created_at ? formatDateTimeIST(profession.created_at) : 'N/A'}
                                  </td>
                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                    <button
@@ -676,12 +667,7 @@ const Settings = () => {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {bank.created_at ? new Date(bank.created_at).toLocaleDateString('en-GB', {
-                                  day: '2-digit',
-                                  month: 'long',
-                                  year: 'numeric',
-                                  timeZone: 'Asia/Kolkata'
-                                }) : 'N/A'}
+                                {bank.created_at ? formatDateTimeIST(bank.created_at) : 'N/A'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button
