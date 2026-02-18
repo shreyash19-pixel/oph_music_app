@@ -31,9 +31,48 @@ const HeroSection = ({ onSearch }) => {
     }
 
     try {
-      const response = await axiosApi.get(`/podcast/search?q=${value}`);
-      setSearchResults(response.data.data);
-      console.log(response.data);
+      const [podcastsRes, reelsRes, storiesRes] = await Promise.all([
+        axiosApi.get(`/allPodcasts`),
+        axiosApi.get(`/allReels`),
+        axiosApi.get(`/allStories`)
+      ]);
+
+      const allPodcasts = podcastsRes.data.data || [];
+      const allReels = reelsRes.data.data || [];
+      const allStories = storiesRes.data.data || [];
+      
+      const searchLower = value.toLowerCase().trim();
+      
+      const filterItems = (items, type) => items.filter(item => {
+        // Title match
+        const titleMatch = item.title?.toLowerCase().includes(searchLower);
+        
+        // Artist name match
+        const artistMatch = item.artist_name?.toLowerCase().includes(searchLower);
+        
+        // Credit name match (check if credit_name exists and is not empty)
+        const creditMatch = item.credit_name && 
+          item.credit_name.toLowerCase().includes(searchLower);
+        
+        // Keywords match - split by comma and check each keyword
+        const keywordsMatch = item.keywords && 
+          item.keywords.toLowerCase().split(',').some(keyword => {
+            const trimmedKeyword = keyword.trim();
+            // Match if search term is contained in keyword OR keyword is contained in search term
+            return trimmedKeyword.includes(searchLower) || searchLower.includes(trimmedKeyword);
+          });
+        
+        return titleMatch || artistMatch || creditMatch || keywordsMatch;
+      }).map(item => ({ ...item, type }));
+      
+      const filteredPodcasts = filterItems(allPodcasts, 'podcast');
+      const filteredReels = filterItems(allReels, 'reel');
+      const filteredStories = filterItems(allStories, 'story');
+      
+      const combinedResults = [...filteredPodcasts, ...filteredReels, ...filteredStories];
+      
+      setSearchResults(combinedResults);
+      console.log('Filtered results:', combinedResults);
       setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
@@ -108,9 +147,18 @@ const HeroSection = ({ onSearch }) => {
                 <div className="absolute top-full mt-2 w-[100%] lg:w-[600px] max-h-[400px] overflow-y-auto bg-gray-900/95 backdrop-blur-sm rounded-xl shadow-lg">
                   {searchResults.map((result) => (
                     <div
-                      key={result.id}
+                      key={`${result.type}-${result.id}`}
                       onClick={() => {
-                        navigate(`/content/${result.id}`);
+                        if (result.type === 'podcast') {
+                          navigate(`/content/${result.id}`);
+                        } else {
+                          // Scroll to the section on the same page
+                          const sectionId = result.type === 'reel' ? 'reels-section' : 'stories-section';
+                          const element = document.getElementById(sectionId);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }
                         setShowDropdown(false);
                       }}
                       className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer transition-colors"
@@ -128,6 +176,9 @@ const HeroSection = ({ onSearch }) => {
                           {result.title}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-xs capitalize">
+                            {result.type}
+                          </span>
                           <span>{result.artist_name}</span>
                           <span>{formatViews(result.views)}</span>
                         </div>

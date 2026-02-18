@@ -18,6 +18,7 @@ const StruggleEndsSection = () => {
       try {
         const response = await axiosApi.get("/allReels");
         setHighlightedStory(response.data.data);
+        console.log("response for st",response.data.data);
       } catch (err) {
         setError(err.message);
         // console.log(err.message);
@@ -57,14 +58,19 @@ const StruggleEndsSection = () => {
     highlightedStory && (
       <div className="bg-black relative text-white">
         <img src={Music2} className="absolute z-20 right-0 w-[300px]" alt="" />
-        <img src={Elipse} className="absolute z-10 right-0 -top-[300px] w-[400px]" alt="" />
+        <img
+          src={Elipse}
+          className="absolute z-10 right-0 -top-[300px] w-[400px]"
+          alt=""
+        />
         <div className="container pt-16 px-4 md:px-16 lg:px-16">
           <div className="mb-3">
             <h2 className="text-3xl lg:text-5xl font-bold mb-2">
               YOUR <span className="text-[#5DC9DE]">STRUGGLE ENDS HERE!</span>
             </h2>
             <p className="text-gray-400 max-w-2xl">
-              Just trust yourself and this Artist-first music platform, focus on your music creativity, and leave the rest to us.
+              Just trust yourself and this Artist-first music platform, focus on
+              your music creativity, and leave the rest to us.
             </p>
           </div>
 
@@ -75,8 +81,11 @@ const StruggleEndsSection = () => {
               <div className="relative group">
                 <CustomVideoPlayer
                   ref={videoRef}
-                  src={highlightedStory.video_file_url}
-                  poster={highlightedStory.photos?.[0] || "/assets/images/struggleSectionThumbnail.png"}
+                  src={highlightedStory.video_url}
+                  poster={
+                    highlightedStory.thumbnail_url?.[0] ||
+                    "/assets/images/struggleSectionThumbnail.png"
+                  }
                   className="w-full h-[300px] sm:h-[400px] rounded-xl aspect-[4/3]"
                   showPlayButtonOverlay={!isPlaying}
                   pauseOtherVideos={true}
@@ -92,18 +101,25 @@ const StruggleEndsSection = () => {
                     {highlightedStory.name}
                   </h1>
                 </Link>
-                <h3 className="text-3xl font-bold">{highlightedStory.artist_name}</h3>
+                <h3 className="text-3xl font-bold">
+                  {highlightedStory.artist_name}
+                </h3>
                 <div className="space-y-1">
                   <p className="text-gray-400">
-                    Stage Name: <span className="text-[#5DC9DE]">{highlightedStory.stage_name}</span>
+                    Stage Name:{" "}
+                    <span className="text-[#5DC9DE]">
+                      {highlightedStory.stage_name}
+                    </span>
                   </p>
                   <p className="font-bold" style={{ color: "#6F4FA0" }}>
-                    {highlightedStory.total_songs} Songs — {formatListeners(highlightedStory.total_reach)}
+                    {highlightedStory.total_songs} Songs —{" "}
+                    {formatListeners(highlightedStory.total_reach)}
                   </p>
                 </div>
                 <div className="space-y-3">
                   <p className="text-gray-400">
-                    {highlightedStory.highlighted_desc || "No description available"}
+                    {highlightedStory.highlighted_desc ||
+                      "No description available"}
                   </p>
                 </div>
               </div>

@@ -19,7 +19,7 @@ const AddNewSong = () => {
   const navigate = useNavigate();
   const { headers, ophid } = useArtist();
   const [loading, setLoading] = useState(false);
-  const [songCount, setSongCount] = useState(0);
+  const [isFree, setIsFree] = useState(0);
 
   // handle input change
   const handleChange = (e) => {
@@ -68,10 +68,9 @@ const AddNewSong = () => {
       if (response.data.success) {
         setStatus(response.data.data);
 
-        setSongCount(response.data.songCnt);
+        setIsFree(response.data.isSongFree);
 
-        console.log(response.data.songCnt);
-        
+        console.log(response.data.isSongFree);
       }
     } catch (err) {
       console.error(err.message);
@@ -86,6 +85,14 @@ const AddNewSong = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    let songType = "";
+
+    if (isFree === true) {
+      songType = "free";
+    } else {
+      songType = "paid";
+    }
+
     if (validate()) {
       const sendFormData = new FormData();
       sendFormData.append("ophid", ophid);
@@ -94,7 +101,7 @@ const AddNewSong = () => {
       sendFormData.append("credits", formData.credits);
       sendFormData.append("time", formData.time);
       sendFormData.append("proof", formData.proof);
-      sendFormData.append("songCount", songCount);
+      sendFormData.append("songType", songType);
       sendFormData.append("audioFile", formData.audioFile);
 
       try {
@@ -115,7 +122,7 @@ const AddNewSong = () => {
           console.log(data[0].song_id);
           setLoading(false);
 
-          if (songCount == true) {
+          if (isFree == true) {
             navigate("/dashboard/pending", {
               state: {
                 heading: "Your request is under review",
@@ -332,19 +339,21 @@ const AddNewSong = () => {
               {status.map((stat) => (
                 <tr>
                   <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.created_at).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
+                    {new Date(stat.created_at).toLocaleDateString("en-GB", {
+                      timeZone: "Asia/Kolkata",
+                    })}
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.song_name}
                   </td>
                   <td
                     className={`py-[12px] font-bold text-[16px] ${
-                      stat.status === "pending" && songCount === false
+                      stat.status === "pending" && stat.song_type === "paid"  && stat.payment_status === null
                         ? "cursor-pointer text-blue-600 hover:underline"
                         : ""
                     }`}
                     onClick={(e) => {
-                      if (stat.status === "pending" && songCount === false) {
+                      if (stat.status === "pending" && stat.song_type === "paid" && stat.payment_status === null) {
                         navigate("/auth/payment", {
                           state: {
                             from: "Special artist song registration",
