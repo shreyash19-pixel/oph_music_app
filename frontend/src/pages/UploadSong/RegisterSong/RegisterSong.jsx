@@ -36,17 +36,17 @@ export default function RegisterSongForm() {
 
   const projectType = localStorage.getItem("projectType");
   localStorage.setItem("projectType", projectType);
+  const isUpdateReleaseDateOnly = location.state?.dateNoLongerAvailable === true && location.state?.song_id;
   const [formData, setFormData] = useState({
     oph_id: ophid,
-    name: location.state.songName || "",
-    release_date: "",
+    name: location.state?.songName || "",
+    release_date: location.state?.release_date ? (typeof location.state.release_date === "string" && location.state.release_date.includes("-") ? location.state.release_date : "") : "",
     p_line: "",
     cp_line: "",
     song_reg: songReg,
-    lyrical_services: lyrical_services,
-    // agreement: false,
-    available_on_music_platforms: false, // Add new field for toggle button
-    project_type: projectType,
+    lyrical_services: location.state?.lyrical_services ?? lyrical_services,
+    available_on_music_platforms: false,
+    project_type: location.state?.project_type || projectType,
   });
 
   useEffect(() => {
@@ -57,6 +57,22 @@ export default function RegisterSongForm() {
       }));
     }
   }, [ophid]);
+
+  useEffect(() => {
+    if (location.state?.dateNoLongerAvailable && location.state?.song_id) {
+      setFormData((prev) => ({
+        ...prev,
+        name: location.state.songName || prev.name,
+        release_date: location.state.release_date
+          ? (String(location.state.release_date).includes("/")
+            ? location.state.release_date.split("/").reverse().join("-")
+            : String(location.state.release_date).slice(0, 10))
+          : prev.release_date,
+        lyrical_services: location.state.lyrical_services ?? prev.lyrical_services,
+        project_type: location.state.project_type || prev.project_type,
+      }));
+    }
+  }, [location.state?.dateNoLongerAvailable, location.state?.song_id, location.state?.songName, location.state?.release_date, location.state?.lyrical_services, location.state?.project_type]);
 
   const handleProjectTypeChange = (e) => {
     const { id, checked } = e.target;
@@ -413,6 +429,43 @@ export default function RegisterSongForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isUpdateReleaseDateOnly) {
+      const newReleaseDate = formData.release_date;
+      if (!newReleaseDate || String(newReleaseDate).trim() === "") {
+        toast.error("Please select a new release date.");
+        return;
+      }
+      const dateStr = String(newReleaseDate).includes("/")
+        ? newReleaseDate.split("/").reverse().join("-")
+        : String(newReleaseDate).slice(0, 10);
+      try {
+        const res = await axiosApi.post(
+          "/update-song-release-date",
+          { song_id: location.state.song_id, oph_id: ophid, release_date: dateStr },
+          { headers }
+        );
+        if (res.data.success) {
+          toast.success("Release date updated. You can continue with your song.");
+          const returnToPage = location.state?.returnToPage || "/dashboard/upload-song/audio-metadata";
+          const nextState = {
+            song_id: location.state.song_id,
+            songName: location.state.songName || formData.name,
+            release_date: dateStr,
+            project_type: location.state?.project_type || projectType,
+            lyrical_services: location.state?.lyrical_services ?? formData.lyrical_services,
+          };
+          if (location.state?.rejectedSections) nextState.rejectedSections = location.state.rejectedSections;
+          if (location.state?.isFixingRejected != null) nextState.isFixingRejected = location.state.isFixingRejected;
+          navigate(returnToPage, { state: nextState });
+        } else {
+          toast.error(res.data.message || "Failed to update release date.");
+        }
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to update release date.");
+      }
+      return;
+    }
+
     if (!agreement) {
       toast.error("Please agree to the terms and conditions.");
       return;
@@ -679,8 +732,14 @@ export default function RegisterSongForm() {
       ) : (
         <div className="max-w-xl">
           <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-            REGISTER YOUR SONG
+            {isUpdateReleaseDateOnly ? "UPDATE RELEASE DATE" : "REGISTER YOUR SONG"}
           </h1>
+          {isUpdateReleaseDateOnly && (
+            <div className="mb-6 p-4 rounded-lg bg-amber-900/30 border border-amber-500/50 text-amber-200">
+              <p className="font-medium">The release date you selected is no longer available.</p>
+              <p className="text-sm mt-1">Please select a new release date for this song to continue.</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Song Name */}
@@ -696,7 +755,7 @@ export default function RegisterSongForm() {
                 onChange={handleChange}
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
                 required
-                disabled={location.state.songName}
+                disabled={!!location.state?.songName || isUpdateReleaseDateOnly}
               />
             </div>
 
@@ -956,7 +1015,7 @@ export default function RegisterSongForm() {
               type="submit"
               className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
             >
-              Continue
+              {isUpdateReleaseDateOnly ? "Update release date & continue" : "Continue"}
             </button>
           </form>
         </div>
