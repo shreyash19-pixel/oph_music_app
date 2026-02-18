@@ -608,7 +608,7 @@ export default function AudioMetadataForm() {
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
-            // Redirect to video metadata
+            // Redirect to video metadata (when both audio and payment rejected: show read-only + Pay now)
             navigate("/dashboard/upload-song/video-metadata/", {
               state: {
                 song_id: response.data.song_id || contentId,
@@ -617,6 +617,7 @@ export default function AudioMetadataForm() {
                 project_type: location.state?.project_type,
                 lyrical_services: location.state?.lyrical_services,
                 isFixingRejected: true,
+                showPayNowOnVideo: response.data.showPayNowOnVideo === true,
               },
             });
           } else if (response.data.redirectPath === '/auth/payment') {
@@ -625,6 +626,7 @@ export default function AudioMetadataForm() {
               state: {
                 from: "Song Repayment",
                 booking_date: response.data.releaseDate || location.state?.release_date,
+                release_date: response.data.releaseDate || location.state?.release_date,
                 song_id: response.data.song_id || contentId,
                 songName: response.data.songName || location.state?.songName || songName,
                 project_type: response.data.projectType || location.state?.project_type,
@@ -828,6 +830,33 @@ export default function AudioMetadataForm() {
       console.log("🔧 User is fixing a rejected item - will not set to draft");
     }
     
+    // Draft: check if release date is still free on calendar (source of truth); if taken, redirect to register-song
+    const releaseDateRaw = location.state?.release_date;
+    if (contentId && releaseDateRaw && headers?.Authorization) {
+      const releaseDateForApi = typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
+        ? releaseDateRaw.split("/").reverse().join("-") // DD/MM/YYYY -> YYYY-MM-DD
+        : releaseDateRaw;
+      axiosApi.get("/check-release-date-available", {
+        headers,
+        params: { release_date: releaseDateForApi, song_id: contentId, ophid }
+      }).then((res) => {
+        if (res.data.success && res.data.available === false) {
+          navigate("/dashboard/upload-song/register-song", {
+            replace: true,
+            state: {
+              song_id: contentId,
+              songName: location.state?.songName || songName,
+              release_date: releaseDateRaw,
+              project_type: location.state?.project_type,
+              lyrical_services: location.state?.lyrical_services,
+              dateNoLongerAvailable: true,
+              returnToPage: "/dashboard/upload-song/audio-metadata"
+            }
+          });
+        }
+      }).catch(() => {});
+    }
+    
     checkAlreadyBookedDate();
     fetchAudioMetadata();
     checkVideoStaus();
@@ -868,13 +897,16 @@ export default function AudioMetadataForm() {
   };
 
   if (navigateToSongReg) {
-    navigate("/dashboard/error", {
+    navigate("/dashboard/upload-song/register-song", {
+      replace: true,
       state: {
-        heading:
-          "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
-        btnText: "Song registration",
-        redirectTo: "/dashboard/upload-song/register-song",
-        songName: songName,
+        song_id: contentId,
+        songName,
+        release_date: location.state?.release_date,
+        project_type: location.state?.project_type,
+        lyrical_services: location.state?.lyrical_services,
+        dateNoLongerAvailable: true,
+        returnToPage: "/dashboard/upload-song/audio-metadata",
       },
     });
   }

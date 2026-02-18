@@ -8,7 +8,7 @@ import { useState } from "react";
 const VerifyBookingDates = () => {
   const location = useLocation();
   const release_date = location.state.selectedDate;
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState(null);
   const [confirmReject, setConfirmReject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reason, setReason] = useState(null);
@@ -35,7 +35,7 @@ const VerifyBookingDates = () => {
         console.log("Transaction data received:", transactionData);
         setTransactions(transactionData);
       } else {
-        console.error("No transaction data found for date:", release_date);
+        setTransactions(null);
       }
     } catch (err) {
       console.error(err.message);
@@ -71,7 +71,7 @@ const VerifyBookingDates = () => {
       release_date: release_date,
       from: fromSource,
       song_id: transactions?.calendar_song_id ?? transactions?.song_id,
-      oph_id: transactions?.OPH_ID,
+      oph_id: transactions?.OPH_ID ?? transactions?.oph_id,
     };
 
     console.log("Sending payment verification request:", requestData);
@@ -106,18 +106,20 @@ const VerifyBookingDates = () => {
     <div>
       <ArtistSidebar>
         <div className="w-full max-w-[450px] flex flex-col gap-[14px] border border-gray-300 shadow-sm rounded-lg p-4">
-          <p>
-            <strong>OPHID # : </strong>
-            {transactions.OPH_ID}
-          </p>
-          <p>
-            <strong>Transaction ID : </strong>
-            {transactions.Transaction_ID}
-          </p>
-          <p>
-            <strong>For : </strong>
-            {transactions.From}
-          </p>
+          {transactions && typeof transactions === "object" && !Array.isArray(transactions) ? (
+            <>
+              <p>
+                <strong>OPHID # : </strong>
+                {transactions.OPH_ID ?? transactions.oph_id ?? "—"}
+              </p>
+              <p>
+                <strong>Transaction ID : </strong>
+                {transactions.Transaction_ID ?? transactions.transaction_id ?? "—"}
+              </p>
+              <p>
+                <strong>For : </strong>
+                {transactions.From ?? transactions.from_source ?? transactions.from ?? "—"}
+              </p>
 
           {(() => {
             const fromSource = transactions?.From || transactions?.from_source || transactions?.from || "";
@@ -265,6 +267,19 @@ const VerifyBookingDates = () => {
               >
                 Approve
               </button>
+            </div>
+          )}
+            </>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-gray-600">No payment data found for this slot.</p>
+              {location.state?.oph_id && (
+                <p><strong>OPHID # : </strong>{location.state.oph_id}</p>
+              )}
+              {location.state?.song_id != null && (
+                <p><strong>Song ID : </strong>{location.state.song_id}</p>
+              )}
+              <p><strong>Date : </strong>{release_date}</p>
             </div>
           )}
         </div>

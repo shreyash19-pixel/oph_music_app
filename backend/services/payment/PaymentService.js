@@ -176,22 +176,105 @@ class PaymentService {
         console.log(`[PaymentService] Storing participant name "${oph_id}" in oph_id for external event booking. Full details in event_bookings.`);
       }
 
+      // Normalize: treat missing or invalid release_date as null so DB fallback runs
+      const isInvalidDate = (v) => {
+        if (v == null || v === '') return true;
+        if (typeof v === 'string') {
+          const s = v.trim().toLowerCase();
+          if (s === '' || s === 'null' || s === 'undefined') return true;
+          if (s === '0000-00-00' || s.startsWith('0000-00-00')) return true;
+        }
+        return false;
+      };
+
+      let finalReleaseDate = release_date;
+      if (isInvalidDate(finalReleaseDate)) finalReleaseDate = null;
+
+      // For Song Registration / Song Repayment, resolve release_date from DB when missing
+      const isSongReg = from_source && String(from_source).toLowerCase().replace(/\s+/g, ' ') === 'song registration';
+      const isSongRepay = from_source && String(from_source).toLowerCase().replace(/\s+/g, ' ') === 'song repayment';
+      if ((isSongReg || isSongRepay) && song_id && !finalReleaseDate) {
+        console.log('[PaymentService] Release_date fallback: song_id=%s, oph_id=%s', song_id, oph_id);
+        try {
+          // Query by song_id only; match oph_id from row (column may be oph_id or OPH_ID)
+          const [srRows] = await connection.execute(
+            'SELECT * FROM songs_register WHERE song_id = ? LIMIT 1',
+            [song_id]
+          );
+          const row = srRows?.[0];
+          const rowOphId = row?.oph_id ?? row?.OPH_ID;
+          const ophMatch = rowOphId == null && oph_id == null ||
+            (rowOphId != null && oph_id != null && String(rowOphId).trim() === String(oph_id).trim());
+          if (row && ophMatch) {
+            const srDate = row.release_date ?? row.Release_date;
+            if (srDate) {
+              finalReleaseDate = srDate instanceof Date ? srDate.toISOString().slice(0, 10) : String(srDate).slice(0, 10);
+              console.log('[PaymentService] Using release_date from songs_register:', finalReleaseDate);
+            }
+          }
+          if (!finalReleaseDate) {
+            const [calRows] = await connection.execute(
+              'SELECT * FROM calender WHERE song_id = ? LIMIT 5',
+              [song_id]
+            );
+            const calRow = Array.isArray(calRows) && calRows.length > 0
+              ? calRows.find((r) => (r.oph_id ?? r.OPH_ID) == null ? oph_id == null : String(r.oph_id || r.OPH_ID).trim() === String(oph_id).trim()) || calRows[0]
+              : null;
+            const calDate = calRow?.current_booking_date ?? calRow?.Current_booking_date ?? calRow?.current_booking_date;
+            if (calDate) {
+              finalReleaseDate = calDate instanceof Date ? calDate.toISOString().slice(0, 10) : String(calDate).slice(0, 10);
+              console.log('[PaymentService] Using release_date from calender:', finalReleaseDate);
+            }
+          }
+        } catch (e) {
+          console.warn('[PaymentService] Could not resolve release_date from DB:', e.message);
+        }
+        if (!finalReleaseDate) {
+          console.warn('[PaymentService] No release_date for Song Registration/Repayment; song_id=%s, oph_id=%s', song_id, oph_id);
+        }
+      }
+
       // Insert payment (convert undefined to null)
-      // For external bookings, use system placeholder for foreign key, but we'll track the actual name in event_bookings
       console.log('[PaymentService] Inserting payment record...');
       await paymentModel.insertPayment(
         connection,
-        paymentOphId, // Use system placeholder for external bookings to satisfy foreign key
+        paymentOphId,
         transaction_id,
         review ?? null,
         status,
         from_source,
         song_id ?? null,
         event_id ?? null,
-        release_date ?? null,
+        finalReleaseDate ?? null,
         amount ?? null
       );
       console.log('[PaymentService] Payment record inserted successfully');
+
+      // When user submits transaction ID for Song Registration/Repayment: add date to calendar (source of truth)
+      if ((isSongReg || isSongRepay) && song_id && finalReleaseDate && String(finalReleaseDate).slice(0, 10) !== '0000-00-00') {
+        try {
+          const [srRows] = await connection.execute(
+            `SELECT Song_name, project_type FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+            [song_id, paymentOphId, paymentOphId],
+          );
+          const row = srRows?.[0];
+          const songName = row?.Song_name ?? null;
+          const projectType = row?.project_type ?? null;
+          const dateStr = finalReleaseDate instanceof Date ? finalReleaseDate.toISOString().slice(0, 10) : String(finalReleaseDate).slice(0, 10);
+          if (songName != null || projectType != null) {
+            await connection.execute(
+              `INSERT INTO calender (oph_id, current_booking_date, original_booking_date, song_id, song_name, project_type, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+              [paymentOphId, dateStr, dateStr, song_id, songName, projectType],
+            );
+            console.log('[PaymentService] Calendar entry created for song_id=%s, date=%s', song_id, dateStr);
+          }
+        } catch (e) {
+          if (e.code !== 'ER_DUP_ENTRY' && e.errno !== 1062) {
+            console.warn('[PaymentService] Calendar insert on payment submit:', e.message);
+          }
+        }
+      }
 
       // If this is a registration payment (and not external event booking), update application status
       if (from_source === "Registration" && !isExternalEventBooking) {
@@ -433,7 +516,53 @@ class PaymentService {
         [song_id, null, song_id, oph_id]
       );
 
-      // Insert new payment record (convert undefined to null)
+      const isInvalidDateRepay = (v) => {
+        if (v == null || v === '') return true;
+        if (typeof v === 'string') {
+          const s = v.trim().toLowerCase();
+          if (s === '' || s === 'null' || s === 'undefined' || s === '0000-00-00' || s.startsWith('0000-00-00')) return true;
+        }
+        return false;
+      };
+
+      let finalReleaseDate = release_date;
+      if (isInvalidDateRepay(finalReleaseDate)) finalReleaseDate = null;
+
+      if (song_id && !finalReleaseDate) {
+        console.log('[PaymentService] songRepayment release_date fallback: song_id=%s, oph_id=%s', song_id, oph_id);
+        try {
+          const [srRows] = await connection.execute(
+            'SELECT * FROM songs_register WHERE song_id = ? LIMIT 1',
+            [song_id]
+          );
+          const row = srRows?.[0];
+          const rowOphId = row?.oph_id ?? row?.OPH_ID;
+          const ophMatch = rowOphId == null && oph_id == null ||
+            (rowOphId != null && oph_id != null && String(rowOphId).trim() === String(oph_id).trim());
+          if (row && ophMatch) {
+            const srDate = row.release_date ?? row.Release_date;
+            if (srDate) {
+              finalReleaseDate = srDate instanceof Date ? srDate.toISOString().slice(0, 10) : String(srDate).slice(0, 10);
+            }
+          }
+          if (!finalReleaseDate) {
+            const [calRows] = await connection.execute(
+              'SELECT * FROM calender WHERE song_id = ? LIMIT 5',
+              [song_id]
+            );
+            const calRow = Array.isArray(calRows) && calRows.length > 0
+              ? calRows.find((r) => (r.oph_id ?? r.OPH_ID) == null ? oph_id == null : String(r.oph_id || r.OPH_ID).trim() === String(oph_id).trim()) || calRows[0]
+              : null;
+            const calDate = calRow?.current_booking_date ?? calRow?.Current_booking_date;
+            if (calDate) {
+              finalReleaseDate = calDate instanceof Date ? calDate.toISOString().slice(0, 10) : String(calDate).slice(0, 10);
+            }
+          }
+        } catch (e) {
+          console.warn('[PaymentService] songRepayment: could not resolve release_date:', e.message);
+        }
+      }
+
       await paymentModel.insertPayment(
         connection,
         oph_id,
@@ -443,9 +572,35 @@ class PaymentService {
         "Song Registration",
         song_id ?? null,
         event_id ?? null,
-        release_date ?? null,
+        finalReleaseDate ?? null,
         amount ?? null
       );
+
+      // Add date to calendar when user submits transaction ID (source of truth)
+      if (song_id && finalReleaseDate && String(finalReleaseDate).slice(0, 10) !== '0000-00-00') {
+        try {
+          const [srRows] = await connection.execute(
+            `SELECT Song_name, project_type FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+            [song_id, oph_id, oph_id],
+          );
+          const row = srRows?.[0];
+          const songName = row?.Song_name ?? null;
+          const projectType = row?.project_type ?? null;
+          const dateStr = finalReleaseDate instanceof Date ? finalReleaseDate.toISOString().slice(0, 10) : String(finalReleaseDate).slice(0, 10);
+          if (songName != null || projectType != null) {
+            await connection.execute(
+              `INSERT INTO calender (oph_id, current_booking_date, original_booking_date, song_id, song_name, project_type, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+              [oph_id, dateStr, dateStr, song_id, songName, projectType],
+            );
+            console.log('[PaymentService] songRepayment: calendar entry created for song_id=%s', song_id);
+          }
+        } catch (e) {
+          if (e.code !== 'ER_DUP_ENTRY' && e.errno !== 1062) {
+            console.warn('[PaymentService] songRepayment calendar insert:', e.message);
+          }
+        }
+      }
 
       // If song_id is provided, update song status and payment status
       if (song_id) {

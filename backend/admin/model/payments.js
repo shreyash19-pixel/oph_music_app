@@ -299,12 +299,83 @@ const getTransactionDetails = async (release_date, oph_id, song_id) => {
           AND (sp.song_id = ? OR sp.reject_for = ?)
           AND (sp.from_source = 'Song Registration' OR sp.from_source = 'Song Repayment')
           AND sp.status = 'under review'
+          AND (sp.release_date = ? OR c.current_booking_date = ?)
+        ORDER BY sp.created_at DESC
+        LIMIT 1`,
+        [oph_id, song_id, song_id, release_date, release_date],
+      );
+      if (rowsByArtistSong && rowsByArtistSong.length > 0) {
+        return rowsByArtistSong;
+      }
+      // No under-review payment: still return this slot's payment by release_date + oph_id + song_id (any status)
+      // so the verify page shows OPHID, Transaction ID, etc. instead of empty or wrong artist.
+      const [rowsByDateArtistSong] = await db.execute(
+        `SELECT 
+          sp.oph_id AS OPH_ID, 
+          sp.transaction_id AS Transaction_ID, 
+          sp.from_source AS \`From\`, 
+          sp.song_id, 
+          sp.status AS Status,
+          sp.release_date,
+          COALESCE(c.current_booking_date, sp.release_date) AS current_booking_date,
+          c.id,
+          c.oph_id,
+          c.song_id AS calendar_song_id,
+          c.previous_booking_date,
+          c.original_booking_date,
+          c.song_name,
+          c.project_type,
+          c.reason,
+          c.reason_history,
+          c.created_at,
+          c.updated_at
+        FROM payments sp 
+        LEFT JOIN calender c ON sp.release_date = c.current_booking_date 
+          AND sp.oph_id = c.oph_id
+          AND (c.song_id = sp.song_id OR c.song_id = sp.reject_for)
+        WHERE sp.oph_id = ?
+          AND (sp.song_id = ? OR sp.reject_for = ?)
+          AND (sp.from_source = 'Song Registration' OR sp.from_source = 'Song Repayment')
+          AND (sp.release_date = ? OR c.current_booking_date = ?)
+        ORDER BY sp.created_at DESC
+        LIMIT 1`,
+        [oph_id, song_id, song_id, release_date, release_date],
+      );
+      if (rowsByDateArtistSong && rowsByDateArtistSong.length > 0) {
+        return rowsByDateArtistSong;
+      }
+      // Slot date may differ from payment's release_date (e.g. calendar shows slot date, payment has different date).
+      // Return latest Song Registration/Repayment for this artist+song so the sidebar shows payment info.
+      const [rowsByArtistSongOnly] = await db.execute(
+        `SELECT 
+          sp.oph_id AS OPH_ID, 
+          sp.transaction_id AS Transaction_ID, 
+          sp.from_source AS \`From\`, 
+          sp.song_id, 
+          sp.status AS Status,
+          sp.release_date,
+          sp.release_date AS current_booking_date,
+          NULL AS id,
+          sp.oph_id,
+          sp.song_id AS calendar_song_id,
+          NULL AS previous_booking_date,
+          NULL AS original_booking_date,
+          NULL AS song_name,
+          NULL AS project_type,
+          NULL AS reason,
+          NULL AS reason_history,
+          NULL AS created_at,
+          NULL AS updated_at
+        FROM payments sp
+        WHERE sp.oph_id = ?
+          AND (sp.song_id = ? OR sp.reject_for = ?)
+          AND (sp.from_source = 'Song Registration' OR sp.from_source = 'Song Repayment')
         ORDER BY sp.created_at DESC
         LIMIT 1`,
         [oph_id, song_id, song_id],
       );
-      if (rowsByArtistSong && rowsByArtistSong.length > 0) {
-        return rowsByArtistSong;
+      if (rowsByArtistSongOnly && rowsByArtistSongOnly.length > 0) {
+        return rowsByArtistSongOnly;
       }
     }
 
@@ -632,7 +703,7 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
 
         if (useOphIdSongId) {
           const [byArtistSong] = await connection.execute(
-            `SELECT song_id, oph_id, id FROM payments 
+            `SELECT song_id, oph_id, id, release_date FROM payments 
              WHERE oph_id = ? 
              AND (song_id = ? OR reject_for = ?)
              AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
@@ -670,13 +741,16 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
 
         if (!useOphIdSongId || paymentRecords.length === 0) {
           const [byDate] = await connection.execute(
-            `SELECT song_id, oph_id FROM payments 
+            `SELECT song_id, oph_id, release_date FROM payments 
              WHERE release_date = ? 
              AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
              LIMIT 1`,
             [release_date],
           );
           paymentRecords = byDate;
+          if (paymentRecords.length > 0 && paymentRecords[0].release_date == null) {
+            paymentRecords[0].release_date = release_date;
+          }
           const [res] = await connection.execute(
             `UPDATE payments 
              SET status = ?, 
@@ -712,6 +786,7 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
             isReasonEmpty,
           );
         }
+
       }
     }
 

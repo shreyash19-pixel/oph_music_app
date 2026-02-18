@@ -159,20 +159,40 @@ export default function UploadSongs() {
             key={song.id} // Add key prop here
             className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
             
-            onClick={(e) => {
+            onClick={async (e) => {
               if (['pending', 'rejected'].includes(song.status)) {
-                // Single flow: go to first step (audio/video/payment); backend redirects through remaining steps until done
-                navigate(song.next_page, {
-                  state: {
-                    song_id: song.id,
-                    songName: song.name,
-                    release_date: song.release_date,
-                    project_type: song.projectType,
-                    lyrical_services: song.lyrical_services,
-                    isFixingRejected: song.status === 'rejected',
-                    rejectedSections: song.rejectedSections
+                const state = {
+                  song_id: song.id,
+                  songName: song.name,
+                  release_date: song.release_date,
+                  project_type: song.projectType,
+                  lyrical_services: song.lyrical_services,
+                  isFixingRejected: song.status === 'rejected',
+                  rejectedSections: song.rejectedSections
+                };
+                // For draft (pending): check if release date is still free on calendar
+                if (song.status === 'pending' && song.release_date) {
+                  try {
+                    const res = await axiosApi.get('/check-release-date-available', {
+                      headers,
+                      params: { release_date: song.release_date, song_id: song.id, ophid }
+                    });
+                    if (res.data.success && res.data.available === false) {
+                      navigate('/dashboard/upload-song/register-song', {
+                        state: {
+                          ...state,
+                          dateNoLongerAvailable: true,
+                          returnToPage: song.next_page
+                        }
+                      });
+                      localStorage.setItem("projectType", song.projectType);
+                      return;
+                    }
+                  } catch (err) {
+                    console.error('Check release date:', err);
                   }
-                });
+                }
+                navigate(song.next_page, { state });
                 localStorage.setItem("projectType", song.projectType);
               } else {
                 e.preventDefault();

@@ -242,10 +242,11 @@ const PaymentScreen = () => {
         song_id: song_id,
         event_id: event_id,
         release_date:
-          location.state.date ||
+          location.state.release_date ||
           location.state.booking_date ||
-          null ||
-          location.state.new_booking_date,
+          location.state.date ||
+          location.state.new_booking_date ||
+          null,
         old_release_date: location.state.old_booking_date || null,
         lyricalVid: lyrical_services,
         amount: getDisplayAmount(),

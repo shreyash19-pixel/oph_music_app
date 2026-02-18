@@ -280,7 +280,12 @@ class SongRegistrationService {
       // Check payment (if not just submitted)
       else if (justSubmitted !== 'payment' && row.status_payment === 'rejected' && row.payment_reject_reason) {
         nextRejectedSection = 'payment';
-        redirectPath = '/auth/payment';
+        // When coming from audio resubmit: send user to video metadata (read-only + Pay now) instead of payment page
+        if (justSubmitted === 'audio') {
+          redirectPath = '/dashboard/upload-song/video-metadata/';
+        } else {
+          redirectPath = '/auth/payment';
+        }
       }
 
       // If no more rejected sections, redirect to success
@@ -288,9 +293,12 @@ class SongRegistrationService {
         redirectPath = '/dashboard/success';
       }
 
+      const showPayNowOnVideo = nextRejectedSection === 'payment' && redirectPath === '/dashboard/upload-song/video-metadata/';
+
       return {
         nextRejectedSection,
         redirectPath,
+        showPayNowOnVideo: !!showPayNowOnVideo,
         songName,
         songId: row.song_id,
         releaseDate: row.release_date,

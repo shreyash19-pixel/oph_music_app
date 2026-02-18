@@ -45,22 +45,8 @@ exports.insertNewSongRegDetails = async (req, res) => {
     if (RegSongRes) {
       // Use insertId from the insert result (auto-increment)
       const song_id = songRegModel.getSongIdFromInsert(RegSongRes);
-      
-      // Create calendar entry with song_id (single source of truth for dates)
-      await connection.query(
-        `INSERT INTO calender (
-           oph_id, 
-           current_booking_date, 
-           original_booking_date, 
-           song_id,
-           song_name, 
-           project_type,
-           created_at,
-           updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [oph_id, release_date, release_date, song_id, name, normalizedProjectType]
-      );
-      
+      // Calendar entry is created only after payment is approved (calendar = source of truth for committed dates)
+      // Release date stays in songs_register only until then, so draft songs don't block the date
       // Initialize song_application_status entry with all statuses as 'pending'
       await SongApplicationStatusService.initializeSongApplicationStatus(
         connection,
@@ -132,22 +118,7 @@ exports.insertHybridSongRegDetails = async (req, res) => {
     if (RegSongRes) {
       // Use insertId from the insert result (auto-increment)
       const song_id = songRegModel.getSongIdFromInsert(RegSongRes);
-
-      // Create calendar entry with song_id (single source of truth for dates)
-      await connection.query(
-        `INSERT INTO calender (
-           oph_id, 
-           current_booking_date, 
-           original_booking_date, 
-           song_id,
-           song_name, 
-           project_type,
-           created_at,
-           updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [oph_id, release_date, release_date, song_id, name, normalizedProjectType]
-      );
-
+      // Calendar entry is created only after payment is approved (calendar = source of truth for committed dates)
       // Initialize song_application_status entry with all statuses as 'pending'
       await SongApplicationStatusService.initializeSongApplicationStatus(
         connection,
@@ -271,5 +242,69 @@ exports.updateSongNavigation = async (req, res) => {
       success: false,
       message: "Server error"
     });
+  }
+};
+
+/**
+ * Check if a release date is still available (not already in calendar).
+ * Used when opening a draft song: if the date was taken by someone else, user must pick a new date.
+ */
+exports.checkReleaseDateAvailable = async (req, res) => {
+  try {
+    const release_date = req.query.release_date || req.body.release_date;
+    if (!release_date) {
+      return res.status(400).json({ success: false, message: "Missing release_date", available: false });
+    }
+    let dateStr = String(release_date).trim();
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/");
+      if (parts.length === 3) dateStr = parts.reverse().join("-").slice(0, 10);
+      else dateStr = dateStr.slice(0, 10);
+    } else {
+      dateStr = dateStr.slice(0, 10);
+    }
+    if (dateStr === "0000-00-00" || !dateStr) {
+      return res.status(200).json({ success: true, available: true });
+    }
+    const [rows] = await db.execute(
+      "SELECT 1 FROM calender WHERE current_booking_date = ? LIMIT 1",
+      [dateStr]
+    );
+    const available = rows.length === 0;
+    return res.status(200).json({ success: true, available });
+  } catch (err) {
+    console.error("Error in checkReleaseDateAvailable:", err);
+    return res.status(500).json({ success: false, available: false });
+  }
+};
+
+/**
+ * Update release_date for an existing song (e.g. when previous date was taken and user selects new one).
+ */
+exports.updateSongReleaseDate = async (req, res) => {
+  try {
+    const { song_id, oph_id, release_date } = req.body;
+    if (!song_id || !oph_id || !release_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: song_id, oph_id, release_date"
+      });
+    }
+    const dateStr = String(release_date).trim().slice(0, 10);
+    if (dateStr === "0000-00-00") {
+      return res.status(400).json({ success: false, message: "Invalid release_date" });
+    }
+    const result = await songRegModel.updateReleaseDate(song_id, oph_id, dateStr);
+    if (result.affectedRows > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Release date updated",
+        release_date: dateStr
+      });
+    }
+    return res.status(404).json({ success: false, message: "Song not found" });
+  } catch (err) {
+    console.error("Error in updateSongReleaseDate:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 }
