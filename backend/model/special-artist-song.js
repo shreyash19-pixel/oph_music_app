@@ -30,6 +30,10 @@ const getSpeicalArtistSongStatus = async (ophid) => {
     ) {
       finalStatus = "approved";
     }
+    else if(row.song_status === "approved" && row.payment_status === null && row.song_type === "free")
+    {
+      finalStatus = "approved"
+    }
 
     return {
       song_id: row.song_id,
