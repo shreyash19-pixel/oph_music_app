@@ -196,6 +196,11 @@ class PaymentService {
       // If this is a registration payment (and not external event booking), update application status
       if (from_source === "Registration" && !isExternalEventBooking) {
         // Update payment status in application_status
+        console.log(step + "step");
+        console.log(status + "status");
+
+
+        
         await ApplicationStatusService.updateStepStatus(
           connection,
           oph_id,
@@ -205,7 +210,9 @@ class PaymentService {
 
         // Update user step_status if step provided
         if (step) {
-          await userModel.updateStepStatus(connection, oph_id, step);
+          console.log("inm step");
+          
+          await userModel.updateStepStatus(connection, oph_id, status,  step);
         }
       }
 
@@ -274,7 +281,7 @@ class PaymentService {
       
       if ((from_source === "Song Registration" || from_source === "Song Repayment") && song_id) {
         const SongRegistrationService = require('../song/SongRegistrationService');
-        const songDetails = await SongRegistrationService.getNextRejectedSection(song_id, oph_id, 'payment');
+        const songDetails = SongRegistrationService.getNextRejectedSection(song_id, oph_id, 'payment');
         songId = songDetails.songId;
         releaseDate = songDetails.releaseDate;
         projectType = songDetails.projectType;
@@ -313,11 +320,15 @@ class PaymentService {
    * Determine navigation path after payment
    */
   determineNavigationPath(user, applicationStatus, defaultStep) {
+    
     if (!applicationStatus) {
       return defaultStep || '/auth/payment';
     }
 
     const { user_status, professional_status, documentation_status, payment_status, overall_status } = applicationStatus;
+
+    console.log(user_status, professional_status, documentation_status, payment_status, overall_status);
+    
 
     // All steps under review - show status page
 
@@ -354,6 +365,8 @@ class PaymentService {
       documentation_status === "under review" ||
       payment_status === "under review"
     ) {
+      
+      console.log(user?.current_step);
       
       return user?.current_step || defaultStep || '/auth/payment';
     }
