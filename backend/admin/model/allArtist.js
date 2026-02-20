@@ -2,7 +2,7 @@ const db = require('../../DB/connect');
 
 const getUserDetailsByOphId = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT * FROM user_details WHERE oph_id = ? AND step_status = 'completed'",
+    "SELECT * FROM user_details WHERE oph_id = ? AND step_status = 'approved'",
     [ophid]
   );
   return rows[0]; // Only one row since oph_id is PK
@@ -10,7 +10,7 @@ const getUserDetailsByOphId = async (ophid) => {
 
 const getProfessionalDetailsByOphId = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT * FROM professional_details WHERE oph_id = ? AND step_status = 'completed'",
+    "SELECT * FROM professional_details WHERE oph_id = ? AND step_status = 'approved'",
     [ophid]
   );
   return rows[0];
@@ -18,7 +18,7 @@ const getProfessionalDetailsByOphId = async (ophid) => {
 
 const getDocumentationDetailsByOphId = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT * FROM documentation_details WHERE oph_id = ? AND step_status = 'completed'",
+    "SELECT * FROM documentation_details WHERE oph_id = ? AND step_status = 'approved'",
     [ophid]
   );
   return rows[0];

@@ -99,6 +99,9 @@ const PaymentScreen = () => {
           // If no 'from' is provided, default to "Registration"
           // Handle "Registration" and "Song Registration" as separate cases
           let searchName;
+          console.log(from);
+          console.log(user_type);
+          
           if (lyrical_services) {
             // Check if form (project_type) is "paid in advance" for lyrics service
             if (location.state.project_type === "paid in advance") {

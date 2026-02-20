@@ -66,34 +66,34 @@ const ArtistAll = () => {
           personal_photo: userDetails.personal_photo || "",
         };
 
-        const totalMonths = professionalDetails.ExperienceMonthly || 0;
+        const totalMonths = professionalDetails.experience_monthly || 0;
         const professionalData = {
           profession: professionalDetails.Profession || professionalDetails.profession || "",
           bio: professionalDetails.Bio || "",
           video: professionalDetails.VideoURL || "",
           photos: JSON.parse(professionalDetails.photo_urls || "[]"),
-          spotify: professionalDetails.SpotifyLink || "",
-          instagram: professionalDetails.InstagramLink || "",
-          facebook: professionalDetails.FacebookLink || "",
-          apple_music: professionalDetails.AppleMusicLink || "",
+          spotify: professionalDetails.spotify_link || "",
+          instagram: professionalDetails.instagram_link || "",
+          facebook: professionalDetails.facebook_link || "",
+          apple_music: professionalDetails.apple_music_link || "",
           experience_monthly: totalMonths % 12,
           experience_yearly: Math.floor(totalMonths / 12),
-          songs_planning_count: professionalDetails.SongsPlanningCount || "",
-          songs_planning_type: professionalDetails.SongsPlanningType || "",
+          songs_planning_count: professionalDetails.songs_planning_count || "",
+          songs_planning_type: professionalDetails.songs_planning_type || "",
         };
         
         // Store totalMonths separately for calculations without showing in UI
         professionalData._totalMonths = totalMonths;
 
         const documentData = {
-          aadhar_front: documentationDetails.AadharFrontURL || "",
-          aadhar_back: documentationDetails.AadharBackURL || "",
-          pan_front: documentationDetails.PanFrontURL || "",
-          signature: documentationDetails.SignatureImageURL || "",
-          bank_name: documentationDetails.BankName || "",
-          account_holder: documentationDetails.AccountHolderName || "",
-          account_number: documentationDetails.AccountNumber || "",
-          ifsc_code: documentationDetails.IFSCCode || "",
+          aadhar_front: documentationDetails.aadhar_front_url || "",
+          aadhar_back: documentationDetails.aadhar_back_url || "",
+          pan_front: documentationDetails.pan_front_url || "",
+          signature: documentationDetails.signature_image_url || "",
+          bank_name: documentationDetails.bank_name || "",
+          account_holder: documentationDetails.account_holder_name || "",
+          account_number: documentationDetails.account_number || "",
+          ifsc_code: documentationDetails.ifsc_code || "",
         };
 
         // Initialize locks
@@ -495,6 +495,11 @@ const ArtistAll = () => {
       const pdfFileName = `${personal.full_name.replace(/\s+/g, '_')}.pdf`;
       const s3Bucket = import.meta.env.VITE_S3_BUCKET || "";
       const s3Region = import.meta.env.VITE_S3_REGION || "";
+
+      console.log(s3Bucket);
+      console.log(s3Region);
+      
+
       const pdfUrl = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/pdfs/${pdfFileName}`;
 
       console.log('PDF URL:', pdfUrl);
