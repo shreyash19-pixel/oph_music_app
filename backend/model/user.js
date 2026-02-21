@@ -46,11 +46,16 @@ const findUserByOphId = async (connection, ophId) => {
   return rows;
 };
 
-const updateStepStatus = async (connection, ophId, stepStatus) => {
+const updateStepStatus = async (connection, ophId, stepStatus, currentStep) => {
+  console.log(ophId, stepStatus);
+  
   const [rows] = await connection.execute(
-    'UPDATE user_details SET step_status = ?, updated_at = NOW() WHERE oph_id = ?',
-    [stepStatus, ophId]
+    'UPDATE user_details SET current_step = ?, step_status = ?, updated_at = NOW() WHERE oph_id = ?',
+    [currentStep,stepStatus, ophId]
   );
+
+  console.log(rows);
+  
   return rows;
 };
 

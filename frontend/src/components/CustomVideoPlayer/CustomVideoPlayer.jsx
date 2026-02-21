@@ -89,9 +89,9 @@ const CustomVideoPlayer = forwardRef(
     }, []);
 
     // Handle play/pause
-    const togglePlayPause = () => {
+    const togglePlayPause = (e) => {
       console.log("sdsd");
-
+      e.preventDefault();
       const video = videoRef.current;
       if (!video) return;
 
