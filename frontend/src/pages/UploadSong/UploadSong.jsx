@@ -12,6 +12,8 @@ export default function UploadSongs() {
   const { ophid, headers } = useArtist();
 
   useEffect(() => {
+    setError(null);
+
     const fetchPendingContent = async () => {
       try {
         const response = await axiosApi.get('/pending-song-registeration', {
@@ -20,20 +22,26 @@ export default function UploadSongs() {
         });
 
         if (response.data.success) {
-          console.log('Fetched pending songs:', response.data.data);
           setPendingContent(response.data.data || {});
+        } else {
+          setPendingContent({});
         }
       } catch (err) {
         console.error('Error fetching pending content:', err);
-        setError('Failed to load pending content');
+        const message = err.response?.status === 401
+          ? 'Please log in again.'
+          : err.response?.data?.message || 'Failed to load pending content';
+        setError(message);
+        setPendingContent({});
       } finally {
         setIsLoading(false);
       }
     };
 
-    // only fetch if both values are available
-    if (ophid && headers && headers.Authorization) {
+    if (ophid && headers?.Authorization) {
       fetchPendingContent();
+    } else {
+      setIsLoading(false);
     }
   }, [ophid, headers]);
 
@@ -128,8 +136,30 @@ export default function UploadSongs() {
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-4">
+          <div className="text-center py-4 space-y-2">
             <p className="text-red-400">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                if (ophid && headers?.Authorization) {
+                  axiosApi.get('/pending-song-registeration', { headers, params: { ophid } })
+                    .then((res) => {
+                      if (res.data.success) setPendingContent(res.data.data || {});
+                      else setPendingContent({});
+                    })
+                    .catch((err) => {
+                      console.error('Retry failed:', err);
+                      setError(err.response?.data?.message || 'Failed to load pending content');
+                      setPendingContent({});
+                    })
+                    .finally(() => setIsLoading(false));
+                } else setIsLoading(false);
+              }}
+              className="px-4 py-2 rounded-full border border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 text-sm"
+            >
+              Retry
+            </button>
           </div>
         )}
 

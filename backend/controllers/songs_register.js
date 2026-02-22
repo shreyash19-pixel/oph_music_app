@@ -179,13 +179,11 @@ exports.getPendingSongsList = async (req, res) => {
     // Use service to get songs with application logic
     const response = await SongRegistrationService.getPendingSongsList(ophid);
 
-    if (response) {
-      return res.status(200).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: response
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: response || {}
+    });
   } catch (err) {
     console.error('Error in getPendingSongsList:', err);
     return res.status(500).json({

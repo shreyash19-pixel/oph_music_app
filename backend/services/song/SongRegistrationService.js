@@ -14,15 +14,15 @@ class SongRegistrationService {
     const connection = await db.getConnection();
     
     try {
-      const costs = await costingModel.getCostsForPaymentLogic();
-      const songRegCost = costs.songRegistration;
-      const lyricsServiceCost = costs.lyricsService;
+      const costs = await costingModel.getCostsForPaymentLogic() || {};
+      const songRegCost = costs.songRegistration ?? 799;
+      const lyricsServiceCost = costs.lyricsService ?? 399;
 
       // Get all songs for the user with song_application_status
       // Use song_application_status.overall_status as the single source of truth
       // Payment: use subquery so we get reject_reason even when payment row has song_id moved to reject_for
       // One row per song: use subqueries for reject_reason so duplicates in ad/vd don't create multiple rows
-      const [rows] = await connection.execute(
+      const [rows] = await connection.query(
         `SELECT 
           sr.song_id,
           sr.Song_name,
@@ -68,7 +68,7 @@ class SongRegistrationService {
       );
 
       // Get rejected payments for paid-in-advance + lyrical pricing (lyrical = amount < songReg)
-      const [rejectedPaymentsRows] = await connection.execute(
+      const [rejectedPaymentsRows] = await connection.query(
         `SELECT song_id, reject_for, release_date, from_source, amount
          FROM payments
          WHERE oph_id = ? AND status = 'rejected'
@@ -81,11 +81,9 @@ class SongRegistrationService {
       );
 
       const songDetails = {};
+      const rowsSafe = rows || [];
 
-      console.log();
-      
-
-      rows.forEach((row) => {
+      rowsSafe.forEach((row) => {
         const songId = row.song_id;
 
         if (!songDetails[songId]) {
@@ -121,17 +119,21 @@ class SongRegistrationService {
             (row.Lyrics_services === true || row.Lyrics_services === 1 || row.Lyrics_services === "true");
           let rejectedPayments = [];
           let paymentRepayAmount = 0;
-          if (row.status_payment === "rejected" && isPaidInAdvanceLyrical && rejectedPaymentsRows?.length) {
-            const dateStr = row.release_date
-              ? (typeof row.release_date === "string" ? row.release_date.slice(0, 10) : row.release_date instanceof Date ? row.release_date.toISOString().slice(0, 10) : null)
-              : null;
+          if (row.status_payment === "rejected" && isPaidInAdvanceLyrical && (rejectedPaymentsRows?.length || 0) > 0) {
+            const toDateStr = (v) => {
+              if (v == null || v === '') return null;
+              if (typeof v === "string") return v.slice(0, 10);
+              if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString().slice(0, 10);
+              return null;
+            };
+            const dateStr = toDateStr(row.release_date);
             const seen = { date_booking: false, lyrical: false };
-            for (const rp of rejectedPaymentsRows) {
+            for (const rp of rejectedPaymentsRows || []) {
               const isDateBooking = rp.from_source === "Date booking" || rp.from_source === "Date Booking";
               const isLyrical = (rp.from_source === "Song Registration" || rp.from_source === "Song Repayment") && Number(rp.amount) < songRegCost;
               let matches = false;
               if (isDateBooking && !seen.date_booking) {
-                const rDate = rp.release_date ? (typeof rp.release_date === "string" ? rp.release_date.slice(0, 10) : rp.release_date instanceof Date ? rp.release_date.toISOString().slice(0, 10) : null) : null;
+                const rDate = toDateStr(rp.release_date);
                 // reject_for may hold song_id (new) or release_date (legacy)
                 matches = rp.song_id === songId || rp.reject_for === songId || rp.reject_for === dateStr || rDate === dateStr;
                 if (matches) {
