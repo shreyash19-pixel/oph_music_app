@@ -75,6 +75,13 @@ const payment = async (req, res) => {
       });
     }
 
+    if (error.message === 'Registration has not started yet' || error.message === 'Registration has closed' || error.message === 'Event not found') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Payment - server Error",

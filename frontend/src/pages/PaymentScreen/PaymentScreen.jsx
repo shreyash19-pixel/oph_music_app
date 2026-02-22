@@ -274,6 +274,17 @@ const PaymentScreen = () => {
         amount: getDisplayAmount(),
       };
 
+      // Include booking_details for event registration (creates event_bookings only on payment submit)
+      if (from === "Event Registration" && location.state?.booking_details) {
+        const bd = location.state.booking_details;
+        formData.first_name = bd.first_name;
+        formData.last_name = bd.last_name;
+        formData.email = bd.email;
+        formData.phone = bd.phone;
+        formData.instagram_handle = bd.instagram_handle;
+        formData.profession_id = bd.profession_id;
+      }
+
       console.log("Final formData being sent:", formData);
       console.log(
         "API Path:",
@@ -493,9 +504,21 @@ const PaymentScreen = () => {
           });
         }
       } else if (response.data.success && from === "Event Registration") {
-        {
-          console.log(oph_id, "test oph_id");
+        // External users: booking created by PaymentService, navigate to success
+        // Internal users: event_participants updated by PaymentService, /event_part is legacy
+        const isExternal = location.state?.outside_user === true;
+        const redirectTo = location.state?.returnPath || "/events/online-music-events";
 
+        if (isExternal) {
+          navigate("/success", {
+            state: {
+              heading: "Your Event Spot has been booked Successfully!",
+              btnText: "Check Out More Events",
+              redirectTo,
+            },
+            replace: true,
+          });
+        } else {
           const eventResponse = await axiosApi.post(
             "/event_part",
             { OPH_ID: oph_id, event_id: location.state.event_id },

@@ -120,31 +120,59 @@ class PaymentService {
               );
               console.log(`[PaymentService] Updated existing booking ${existingBooking.booking_reference} with payment`);
             } else {
-              // No existing booking found - create booking with available details
-              console.warn(`[PaymentService] No existing booking found for "${oph_id}" on event ${event_id}. Creating booking.`);
-              
-              // Generate booking reference
-              const { generateBookingReference } = require('../../utils/bookingReference');
-              const booking_reference = await generateBookingReference();
-              
-              // Use booking_details if provided, otherwise use minimal data
-              await EventBookingModel.createBooking({
-                event_id: parseInt(event_id, 10),
-                first_name: booking_details.first_name || firstName,
-                last_name: booking_details.last_name || lastName,
-                email: booking_details.email || '',
-                phone: booking_details.phone || '',
-                instagram_handle: booking_details.instagram_handle || null,
-                profession_id: booking_details.profession_id ? parseInt(booking_details.profession_id, 10) : null,
-                booking_reference,
-                status: 'pending'
-              });
-              
-              // Update with payment transaction ID
-              await EventBookingModel.updateBookingPayment(booking_reference, transaction_id);
-              
-              const hasDetails = booking_details.email || booking_details.phone || booking_details.instagram_handle;
-              console.log(`[PaymentService] Created booking ${booking_reference} for external payment${hasDetails ? ' (with details)' : ' (minimal - missing email/instagram/profession)'}`);
+              // No existing booking found by name - check for duplicate by email+phone before creating
+              const bookingEmail = booking_details.email || '';
+              const bookingPhone = booking_details.phone || '';
+              const existingByDetails = bookingEmail && bookingPhone
+                ? await EventBookingModel.checkExistingBooking(parseInt(event_id, 10), bookingEmail, bookingPhone)
+                : null;
+
+              if (existingByDetails) {
+                // Update existing booking with payment (user may have started registration earlier)
+                await EventBookingModel.updateBookingPayment(
+                  existingByDetails.booking_reference,
+                  transaction_id
+                );
+                console.log(`[PaymentService] Updated existing booking ${existingByDetails.booking_reference} with payment (matched by email+phone)`);
+              } else {
+                // Validate registration window before creating
+                const EventModel = require('../../admin/model/events');
+                const event = await EventModel.getEventById(parseInt(event_id, 10));
+                if (!event) {
+                  throw new Error('Event not found');
+                }
+                const { getEndOfDayIST } = require('../../utils/registrationWindow');
+                const now = new Date();
+                const regStart = event.registrationStart ? new Date(event.registrationStart) : null;
+                const regEnd = event.registrationEnd ? getEndOfDayIST(event.registrationEnd) : null;
+                if (regStart && now < regStart) {
+                  throw new Error('Registration has not started yet');
+                }
+                if (regEnd && now > regEnd) {
+                  throw new Error('Registration has closed');
+                }
+
+                // Generate booking reference and create - only when payment is submitted
+                const { generateBookingReference } = require('../../utils/bookingReference');
+                const booking_reference = await generateBookingReference();
+
+                await EventBookingModel.createBooking({
+                  event_id: parseInt(event_id, 10),
+                  first_name: booking_details.first_name || firstName,
+                  last_name: booking_details.last_name || lastName,
+                  email: booking_details.email || '',
+                  phone: booking_details.phone || '',
+                  instagram_handle: booking_details.instagram_handle || null,
+                  profession_id: booking_details.profession_id ? parseInt(booking_details.profession_id, 10) : null,
+                  booking_reference,
+                  status: 'pending'
+                });
+
+                await EventBookingModel.updateBookingPayment(booking_reference, transaction_id);
+
+                const hasDetails = booking_details.email || booking_details.phone || booking_details.instagram_handle;
+                console.log(`[PaymentService] Created booking ${booking_reference} on payment submit${hasDetails ? ' (with details)' : ' (minimal - missing email/instagram/profession)'}`);
+              }
             }
           }
         } catch (error) {
@@ -155,6 +183,23 @@ class PaymentService {
       
       // Handle internal users separately - use event_participants table
       if (from_source === "Event Registration" && event_id && isInternalUser) {
+        // Validate registration window (same as EventBookingService for external users)
+        const { getEndOfDayIST } = require('../../utils/registrationWindow');
+        const EventModel = require('../../admin/model/events');
+        const event = await EventModel.getEventById(parseInt(event_id, 10));
+        if (!event) {
+          throw new Error('Event not found');
+        }
+        const now = new Date();
+        const regStart = event.registrationStart ? new Date(event.registrationStart) : null;
+        const regEnd = event.registrationEnd ? getEndOfDayIST(event.registrationEnd) : null;
+        if (regStart && now < regStart) {
+          throw new Error('Registration has not started yet');
+        }
+        if (regEnd && now > regEnd) {
+          throw new Error('Registration has closed');
+        }
+
         // Internal users: use event_participants table
         const EventParticipantModel = require('../../admin/model/eventParticipant');
         await EventParticipantModel.registerParticipant({
