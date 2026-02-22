@@ -37,6 +37,7 @@ export default function TimeCalendar() {
               content: item.oph_id,
               artist: item.full_name,
               songId: item.song_id,
+              fromSource: item.from_source,
             };
           });
 
@@ -311,7 +312,9 @@ export default function TimeCalendar() {
       (d) => d.current_booking_date === dateStr,
     );
 
-    console.log(getCurrentGridStatus);
+    const isDateBooking =
+      getCurrentGridStatus?.from_source === "Date booking" ||
+      getCurrentGridStatus?.from_source === "Date Booking";
 
     return (
       <div
@@ -328,13 +331,15 @@ export default function TimeCalendar() {
           }
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
-          isBlocked &&
-          isCurrentMonth &&
-          getCurrentGridStatus.payment_status === "under review"
+          isBlocked && isCurrentMonth && isDateBooking
+            ? "bg-[#0EA5E9]/30 border-[#0EA5E9] shadow-[#0EA5E9]/20 shadow-inner"
+            : isBlocked &&
+              isCurrentMonth &&
+              getCurrentGridStatus?.payment_status === "under review"
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
             : isBlocked &&
                 isCurrentMonth &&
-                getCurrentGridStatus.payment_status === "approved"
+                getCurrentGridStatus?.payment_status === "approved"
               ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
               : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
@@ -412,7 +417,11 @@ export default function TimeCalendar() {
                     TIME CALENDAR
                   </h2>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#0EA5E9]"></div>
+                    <span className="text-[#0d3c44]">Date Booking</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
                     <span className="text-[#0d3c44]">Booked</span>

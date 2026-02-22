@@ -24,8 +24,8 @@ export default function RegisterSongForm() {
   const [payableAmount, setPayableAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [costingData, setCostingData] = useState([]);
-  const [songRegAmount, setSongRegAmount] = useState(799); // Default fallback
-  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(399); // Default fallback
+  const [songRegAmount, setSongRegAmount] = useState(0);
+  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(0);
   const { headers, artist, user, ophid } = useArtist();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false); // Add state for success message
   const [agreement, setAgreement] = useState(false);
@@ -130,24 +130,24 @@ export default function RegisterSongForm() {
 
         setCostingData(costingData);
 
-        // Find Song Registration amount
+        // Find Song Registration amount from costing table
         const songRegCost = costingData.find(
           (item) =>
             item.name && item.name.toLowerCase().includes("song registration")
         );
         if (songRegCost) {
-          setSongRegAmount(parseFloat(songRegCost.cost) || 799);
+          setSongRegAmount(parseFloat(songRegCost.cost) || 0);
           console.log("Song Registration amount:", songRegCost.cost);
         }
 
-        // Find Lyrical Video amount
+        // Find Lyrics Service amount from costing table (paid-in-advance lyrical add-on)
         const lyricalVideoCost = costingData.find(
           (item) =>
             item.name && item.name.toLowerCase().includes("lyrics service")
         );
         if (lyricalVideoCost) {
-          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 399);
-          console.log("Lyrical Video amount:", lyricalVideoCost.cost);
+          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 0);
+          console.log("Lyrics Service amount:", lyricalVideoCost.cost);
         }
 
         console.log("All costing data:", costingData);

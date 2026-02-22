@@ -1,17 +1,23 @@
 const db = require('../../DB/connect');
 const SongApplicationStatusService = require('./SongApplicationStatusService');
 const songRegModel = require('../../model/songs_register');
+const costingModel = require('../../admin/model/costing');
 
 class SongRegistrationService {
   /**
    * Get pending songs list with status determined from song_application_status
    * Gets reject reasons from individual tables (audio_details, video_details, payments)
    * Determines proper redirect path based on rejected step
+   * Uses costing table for payment amounts (Song Registration, Lyrics Service)
    */
   async getPendingSongsList(ophId) {
     const connection = await db.getConnection();
     
     try {
+      const costs = await costingModel.getCostsForPaymentLogic();
+      const songRegCost = costs.songRegistration;
+      const lyricsServiceCost = costs.lyricsService;
+
       // Get all songs for the user with song_application_status
       // Use song_application_status.overall_status as the single source of truth
       // Payment: use subquery so we get reject_reason even when payment row has song_id moved to reject_for
@@ -35,14 +41,43 @@ class SongRegistrationService {
            WHERE vd2.song_id = sr.song_id 
            LIMIT 1) as video_reject_reason,
           (SELECT p2.reject_reason FROM payments p2 
-           WHERE (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id) AND p2.oph_id = sr.oph_id 
-           AND (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
-           ORDER BY p2.created_at DESC LIMIT 1) as payment_reject_reason
+           WHERE p2.oph_id = sr.oph_id 
+           AND (
+             (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id)
+             OR (p2.from_source = 'Date booking' OR p2.from_source = 'Date Booking')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
+           )
+           AND p2.status = 'rejected'
+           ORDER BY p2.created_at DESC LIMIT 1) as payment_reject_reason,
+          (SELECT p2.from_source FROM payments p2 
+           WHERE p2.oph_id = sr.oph_id 
+           AND (
+             (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id)
+             OR (p2.from_source = 'Date booking' OR p2.from_source = 'Date Booking')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
+           )
+           AND p2.status = 'rejected'
+           ORDER BY p2.created_at DESC LIMIT 1) as payment_from_source
         FROM songs_register sr
         LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
         WHERE sr.oph_id = ?
         ORDER BY sr.created_at DESC`,
         [ophId]
+      );
+
+      // Get rejected payments for paid-in-advance + lyrical pricing (lyrical = amount < songReg)
+      const [rejectedPaymentsRows] = await connection.execute(
+        `SELECT song_id, reject_for, release_date, from_source, amount
+         FROM payments
+         WHERE oph_id = ? AND status = 'rejected'
+         AND (
+           (from_source IN ('Date booking','Date Booking'))
+           OR (from_source IN ('Song Registration','Song Repayment') AND amount < ?)
+         )
+         ORDER BY created_at DESC`,
+        [ophId, songRegCost]
       );
 
       const songDetails = {};
@@ -75,11 +110,56 @@ class SongRegistrationService {
               reason: row.video_reject_reason || ""
             });
           }
-          if (row.status_payment === "rejected" || (row.payment_reject_reason && String(row.payment_reject_reason).trim() !== "")) {
+          // Only add payment to rejectedSections when status_payment is "rejected".
+          // Do NOT use payment_reject_reason alone: a resubmitted payment can be "under review"
+          // while an old reject_reason still exists in the DB.
+          const isDateBookingPayment =
+            row.payment_from_source === "Date booking" ||
+            row.payment_from_source === "Date Booking";
+          const isPaidInAdvanceLyrical =
+            row.project_type && String(row.project_type).toLowerCase().includes("paid in advance") &&
+            (row.Lyrics_services === true || row.Lyrics_services === 1 || row.Lyrics_services === "true");
+          let rejectedPayments = [];
+          let paymentRepayAmount = 0;
+          if (row.status_payment === "rejected" && isPaidInAdvanceLyrical && rejectedPaymentsRows?.length) {
+            const dateStr = row.release_date
+              ? (typeof row.release_date === "string" ? row.release_date.slice(0, 10) : row.release_date instanceof Date ? row.release_date.toISOString().slice(0, 10) : null)
+              : null;
+            const seen = { date_booking: false, lyrical: false };
+            for (const rp of rejectedPaymentsRows) {
+              const isDateBooking = rp.from_source === "Date booking" || rp.from_source === "Date Booking";
+              const isLyrical = (rp.from_source === "Song Registration" || rp.from_source === "Song Repayment") && Number(rp.amount) < songRegCost;
+              let matches = false;
+              if (isDateBooking && !seen.date_booking) {
+                const rDate = rp.release_date ? (typeof rp.release_date === "string" ? rp.release_date.slice(0, 10) : rp.release_date instanceof Date ? rp.release_date.toISOString().slice(0, 10) : null) : null;
+                // reject_for may hold song_id (new) or release_date (legacy)
+                matches = rp.song_id === songId || rp.reject_for === songId || rp.reject_for === dateStr || rDate === dateStr;
+                if (matches) {
+                  seen.date_booking = true;
+                  const amt = Number(rp.amount) || songRegCost;
+                  rejectedPayments.push({ type: "date_booking", amount: amt });
+                  paymentRepayAmount += amt;
+                }
+              } else if (isLyrical && !seen.lyrical) {
+                matches = rp.song_id === songId || String(rp.reject_for) === String(songId);
+                if (matches) {
+                  seen.lyrical = true;
+                  const amt = Number(rp.amount) || lyricsServiceCost;
+                  rejectedPayments.push({ type: "lyrical", amount: amt });
+                  paymentRepayAmount += amt;
+                }
+              }
+            }
+          }
+          if (row.status_payment === "rejected") {
+            const repayAmount = paymentRepayAmount || (isDateBookingPayment ? songRegCost : lyricsServiceCost);
             rejectedSections.push({
               section: "payment",
               label: "Payment Rejected",
-              reason: row.payment_reject_reason || ""
+              reason: row.payment_reject_reason || "",
+              isDateBooking: !!isDateBookingPayment,
+              rejectedPayments: rejectedPayments.length ? rejectedPayments : undefined,
+              paymentRepayAmount: repayAmount,
             });
           }
 
@@ -88,17 +168,22 @@ class SongRegistrationService {
           const firstRejectedStep = firstRejected ? firstRejected.label : "";
           if (firstRejected) firstRejectedStepReason = firstRejected.reason;
 
-          // next_page = first step: audio -> video -> payment. When only payment rejected, send to video-metadata (read-only + Pay now)
+          // next_page = first step: audio -> video -> payment.
+          // Date Booking payment rejected → /auth/payment (repay for date). Song Reg payment rejected → video-metadata (Pay now).
           if (rejectedSections.length > 0) {
             const hasAudio = rejectedSections.some((s) => s.section === "audio");
             const hasVideo = rejectedSections.some((s) => s.section === "video");
-            const hasPayment = rejectedSections.some((s) => s.section === "payment");
+            const paymentSection = rejectedSections.find((s) => s.section === "payment");
+            const hasPayment = !!paymentSection;
+            const isDateBookingPaymentRejected = paymentSection?.isDateBooking === true;
             if (hasAudio) {
               currentStep = "/dashboard/upload-song/audio-metadata/";
             } else if (hasVideo) {
               currentStep = "/dashboard/upload-song/video-metadata/";
+            } else if (hasPayment && isDateBookingPaymentRejected) {
+              currentStep = "/auth/payment"; // Date Booking rejected → payment page (repay for date)
             } else if (hasPayment) {
-              currentStep = "/dashboard/upload-song/video-metadata/"; // only payment → video page then Pay now
+              currentStep = "/dashboard/upload-song/video-metadata/"; // Song Reg payment → video page (Pay now)
             } else {
               currentStep = "/dashboard/upload-song/audio-metadata/";
             }

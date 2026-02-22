@@ -37,16 +37,21 @@ export default function UploadSongs() {
     }
   }, [ophid, headers]);
 
-  // Resolve first step: audio -> video -> payment. When only payment is rejected, still go to
-  // video-metadata first (read-only + Pay now), then user clicks Pay now to go to payment.
+  // Resolve first step: audio -> video -> payment.
+  // Date Booking payment rejected → /auth/payment (repay for date). Song Reg payment → video (Pay now).
   const getFirstRejectedPage = (rejectedSections) => {
     if (!rejectedSections?.length) return '/dashboard/upload-song/audio-metadata/';
     const hasAudio = rejectedSections.some((s) => s.section === 'audio');
     const hasVideo = rejectedSections.some((s) => s.section === 'video');
-    const hasPayment = rejectedSections.some((s) => s.section === 'payment');
+    const paymentSection = rejectedSections.find((s) => s.section === 'payment');
+    const hasPayment = !!paymentSection;
+    const isDateBookingPayment = paymentSection?.isDateBooking === true;
+    const hasRejectedPaymentDetails = paymentSection?.rejectedPayments?.length > 0;
     if (hasAudio) return '/dashboard/upload-song/audio-metadata/';
     if (hasVideo) return '/dashboard/upload-song/video-metadata/';
-    if (hasPayment) return '/dashboard/upload-song/video-metadata/'; // only payment rejected → video page (read-only + Pay now)
+    // Date Booking or paid-in-advance+lyrical (one or both rejected) → payment page
+    if (hasPayment && (isDateBookingPayment || hasRejectedPaymentDetails)) return '/auth/payment';
+    if (hasPayment) return '/dashboard/upload-song/video-metadata/'; // Song Reg → video (Pay now)
     return '/dashboard/upload-song/audio-metadata/';
   };
 
@@ -161,6 +166,12 @@ export default function UploadSongs() {
             
             onClick={async (e) => {
               if (['pending', 'rejected'].includes(song.status)) {
+                const paymentSection = song.rejectedSections?.find((s) => s.section === 'payment');
+                const isDateBookingPaymentRejected = paymentSection?.isDateBooking === true;
+                const paymentRepayAmount = paymentSection?.paymentRepayAmount;
+                const rejectedPayments = paymentSection?.rejectedPayments;
+                const bothRejected = rejectedPayments?.length >= 2;
+                const isPaymentRepayment = paymentSection && song.status === 'rejected';
                 const state = {
                   song_id: song.id,
                   songName: song.name,
@@ -168,7 +179,28 @@ export default function UploadSongs() {
                   project_type: song.projectType,
                   lyrical_services: song.lyrical_services,
                   isFixingRejected: song.status === 'rejected',
-                  rejectedSections: song.rejectedSections
+                  rejectedSections: song.rejectedSections,
+                  ...(isPaymentRepayment && paymentRepayAmount != null && {
+                    amount: paymentRepayAmount,
+                    paymentRepayAmount,
+                    rejectedPayments,
+                  }),
+                  // Both Date Booking + lyrical rejected: use Date booking (triggers /booking), amount=1198
+                  ...(isPaymentRepayment && bothRejected && {
+                    from: 'Date booking',
+                    booking_date: song.release_date,
+                    date: song.release_date,
+                  }),
+                  // Date Booking only repayment
+                  ...(isPaymentRepayment && !bothRejected && isDateBookingPaymentRejected && {
+                    from: 'Date booking',
+                    booking_date: song.release_date,
+                    date: song.release_date,
+                  }),
+                  // Lyrical-only repayment (paid-in-advance + lyrical)
+                  ...(isPaymentRepayment && !bothRejected && !isDateBookingPaymentRejected && rejectedPayments?.length > 0 && {
+                    from: 'Song Repayment',
+                  }),
                 };
                 // For draft (pending): check if release date is still free on calendar
                 if (song.status === 'pending' && song.release_date) {

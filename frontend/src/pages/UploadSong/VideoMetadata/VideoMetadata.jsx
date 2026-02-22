@@ -69,17 +69,23 @@ export default function VideoMetadataForm() {
   const isVideoRejected = location.state?.rejectedSections?.some(
     (s) => s.section === "video"
   );
+  // Paid in advance without lyrical: never show Pay now (no payment needed)
+  const isPaidInAdvanceNoLyricalCheck =
+    projectType === "paid in advance" &&
+    (location.state?.lyrical_services !== true && location.state?.lyrical_services !== "true");
   // Only payment rejected = payment needed AND video was already submitted (so show read-only + Pay now)
   const onlyPaymentRejected =
+    !isPaidInAdvanceNoLyricalCheck &&
     videoMetadataLoaded &&
     (nextPage === "repayment" || nextPage === "payment") &&
     formData.reject_reason === null &&
     !isVideoRejected &&
     !!formData.existing_video_url; // must have submitted video before showing read-only
   // After audio resubmit when both audio and payment were rejected: land here with read-only + Pay now
-  const showPayNowOnVideoFromState = location.state?.showPayNowOnVideo === true;
+  const showPayNowOnVideoFromState = location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
   // Show read-only + Pay now when: (1) video already submitted and only payment left, (2) user just submitted on this page, or (3) came from audio resubmit (audio+payment rejected)
-  const showReadOnlyAndPayNow = onlyPaymentRejected || showPayNowAfterSubmit || showPayNowOnVideoFromState;
+  // Never show for paid in advance without lyrical
+  const showReadOnlyAndPayNow = !isPaidInAdvanceNoLyricalCheck && (onlyPaymentRejected || showPayNowAfterSubmit || showPayNowOnVideoFromState);
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
@@ -298,10 +304,11 @@ export default function VideoMetadataForm() {
         },
       });
 
-      if (
+      // Paid in advance + lyrical NOT selected: no payment, go directly to success
+      const isPaidInAdvanceNoLyrical =
         projectType === "paid in advance" &&
-        location.state.lyrical_services === false
-      ) {
+        (location.state?.lyrical_services === false || location.state?.lyrical_services === undefined || !location.state?.lyrical_services);
+      if (isPaidInAdvanceNoLyrical) {
         const response = await axiosApi.post(
           "/insert-calender-song-project",
           {
@@ -336,7 +343,7 @@ export default function VideoMetadataForm() {
               state: {
                 heading: "Your Song Registration has been done successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/events",
+                redirectTo: "/dashboard",
               },
             });
           }
@@ -383,12 +390,11 @@ export default function VideoMetadataForm() {
           }
         };
 
-        // Paid in advance: driven by "399 - Lyrical Video" checkbox from Register Song
-        // Checkbox checked = payment required → stay on page with read-only + Pay now
+        // Paid in advance: only require payment when lyrical services (399) is checked
         // Checkbox unchecked = no payment → already handled above (direct success)
         const isPaidInAdvanceWithLyrical =
           projectType === "paid in advance" &&
-          location.state?.lyrical_services === true;
+          (location.state?.lyrical_services === true || location.state?.lyrical_services === "true");
         if (isPaidInAdvanceWithLyrical) {
           await refetchForReadOnly();
           setShowPayNowAfterSubmit(true);
@@ -402,7 +408,7 @@ export default function VideoMetadataForm() {
               state: {
                 heading: "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/upload-song",
+                redirectTo: "/dashboard",
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {

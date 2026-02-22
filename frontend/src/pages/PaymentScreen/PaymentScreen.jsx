@@ -30,10 +30,12 @@ const PaymentScreen = () => {
 
   const {
     amount = 0,
+    paymentRepayAmount,
     backPath,
     returnPath,
     heading = "Payment Required",
     lyrical_services = false,
+    isFixingRejected = false,
   } = location.state || {};
 
   const backPathOrReturn = backPath ?? returnPath ?? "/dashboard";
@@ -99,9 +101,12 @@ const PaymentScreen = () => {
           // If no 'from' is provided, default to "Registration"
           // Handle "Registration" and "Song Registration" as separate cases
           let searchName;
-          if (lyrical_services) {
-            // Check if form (project_type) is "paid in advance" for lyrics service
-            if (location.state.project_type === "paid in advance") {
+          const isLyricalSelected = lyrical_services === true || lyrical_services === "true" || lyrical_services === 1;
+          const projectType = location.state?.project_type || location.state?.projectType || "";
+          const isPaidInAdvance = String(projectType).toLowerCase().trim() === "paid in advance";
+          if (isLyricalSelected) {
+            // Paid in advance + lyrical = "lyrics service" (399). Otherwise "lyrical video"
+            if (isPaidInAdvance) {
               searchName = "lyrics service";
             } else {
               searchName = "lyrical video";
@@ -166,42 +171,53 @@ const PaymentScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, lyrical_services, event_id]);
+  }, [from, lyrical_services, event_id, location.state?.project_type, location.state?.projectType]);
 
-  // Function to get the appropriate amount based on the matched costing data or fallback
+  // Get cost from costingData by name (case-insensitive contains)
+  const getCostByName = (search) => {
+    const arr = Array.isArray(costingData) ? costingData : [costingData];
+    const item = arr.find((c) => c?.name && String(c.name).toLowerCase().includes(search));
+    return item ? parseFloat(item.cost) : null;
+  };
+
+  // Function to get the appropriate amount based on the matched costing data or fallback from costing table
   const getDisplayAmount = () => {
+    // Repayment: use exact amount for rejected payment(s) only
+    const repay = paymentRepayAmount ?? (isFixingRejected && amount ? amount : null);
+    if (repay != null && repay > 0) return parseFloat(repay);
+
     if (matchedCosting) {
-      // Parse cost as number (handles string format like "799.00")
       return parseFloat(matchedCosting.cost);
     }
 
-    // Fallback to hardcoded amounts if no costing data match
+    // Fallback: derive from costing table by name
     if (lyrical_services) {
-      return 499; // Lyrical video amount
-    } else if (!from || from === "Registration") {
-      return 500; // Registration amount (default or explicit)
-    } else if (
-      from === "Song Repayment" ||
-      from === "Song Registration" ||
-      from === "Date booking"
-    ) {
-      return 799; // Song Registration amount (used by multiple services)
-    } else if (from === "Event Registration") {
-      return 1000;
-    } else if (from === "Release date change") {
-      return 300;
-    } else if (from === "Special artist song registration") {
-      return 200;
+      return getCostByName("lyrics service") ?? getCostByName("lyrical video") ?? amount;
     }
-    return amount; // Default to the passed amount
+    if (!from || from === "Registration") {
+      return getCostByName("registration") ?? amount;
+    }
+    if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") {
+      return getCostByName("song registration") ?? amount;
+    }
+    if (from === "Event Registration") return getCostByName("event") ?? amount;
+    if (from === "Release date change") return getCostByName("release date change") ?? amount;
+    if (from === "Special artist song registration") return getCostByName("special artist") ?? amount;
+    return amount;
   };
 
-  // Function to get the QR code image
+  // Function to get the QR code image (from costing table)
   const getQRCodeImage = () => {
-    if (matchedCosting && matchedCosting.qr_image_path) {
-      return matchedCosting.qr_image_path;
-    }
-    return "/qr.png"; // Fallback to default QR code
+    if (matchedCosting?.qr_image_path) return matchedCosting.qr_image_path;
+    const arr = Array.isArray(costingData) ? costingData : [costingData];
+    const findByName = (search) => arr.find((c) => c?.name && String(c.name).toLowerCase().includes(search));
+    let item = null;
+    if (lyrical_services) item = findByName("lyrics service") || findByName("lyrical video");
+    else if (!from || from === "Registration") item = findByName("registration");
+    else if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") item = findByName("song registration");
+    else if (from === "Release date change") item = findByName("release date change");
+    else if (from === "Special artist song registration") item = findByName("special artist");
+    return item?.qr_image_path || "/qr.png";
   };
 
   useEffect(() => {
@@ -266,13 +282,16 @@ const PaymentScreen = () => {
 
       if (response.data.success && from == "Date booking") {
         {
+          // For Date Booking repayment with linked song, pass song_id and song_name
+          const bookingDate = location.state.date || location.state.booking_date || location.state.release_date;
           const CalenderRes = await axiosApi.post(
             "/booking",
             {
               oph_id: oph_id,
-              booking_date: location.state.date,
-              song_name: null,
-              project_type: null,
+              booking_date: bookingDate,
+              song_name: location.state.songName || null,
+              project_type: location.state.project_type || null,
+              song_id: song_id || location.state.song_id || null,
             },
             { headers: headers },
           );
@@ -420,7 +439,7 @@ const PaymentScreen = () => {
                 heading:
                   "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/upload-song",
+                redirectTo: "/dashboard",
               },
             });
           } else if (
@@ -487,7 +506,7 @@ const PaymentScreen = () => {
               state: {
                 heading: "Your Event Spot has been booked Successfully.",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/events",
+                redirectTo: "/dashboard",
               },
             });
           }

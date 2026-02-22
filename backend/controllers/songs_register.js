@@ -54,6 +54,16 @@ exports.insertNewSongRegDetails = async (req, res) => {
         song_id,
         name
       );
+
+      // Paid in advance: sync status_payment from Date Booking if this date was pre-booked
+      if (normalizedProjectType === "Paid in Advance" && release_date) {
+        await SongApplicationStatusService.syncStatusPaymentFromDateBooking(
+          connection,
+          oph_id,
+          song_id,
+          release_date
+        );
+      }
       
       await connection.commit();
       
@@ -126,6 +136,16 @@ exports.insertHybridSongRegDetails = async (req, res) => {
         song_id,
         name
       );
+
+      // Paid in advance: sync status_payment from Date Booking if this date was pre-booked
+      if (normalizedProjectType === "Paid in Advance" && release_date) {
+        await SongApplicationStatusService.syncStatusPaymentFromDateBooking(
+          connection,
+          oph_id,
+          song_id,
+          release_date
+        );
+      }
       
       await connection.commit();
 
@@ -246,12 +266,14 @@ exports.updateSongNavigation = async (req, res) => {
 };
 
 /**
- * Check if a release date is still available (not already in calendar).
- * Used when opening a draft song: if the date was taken by someone else, user must pick a new date.
+ * Check if a release date is still available for this user (not taken by someone else).
+ * Used when opening a draft song: if the date was taken by another artist, user must pick a new date.
+ * For "paid in advance" songs: user's own pre-booked dates (same oph_id) are considered available.
  */
 exports.checkReleaseDateAvailable = async (req, res) => {
   try {
     const release_date = req.query.release_date || req.body.release_date;
+    const oph_id = req.query.ophid || req.query.oph_id || req.body.ophid || req.body.oph_id || req.user?.ophid || req.user?.oph_id;
     if (!release_date) {
       return res.status(400).json({ success: false, message: "Missing release_date", available: false });
     }
@@ -266,10 +288,17 @@ exports.checkReleaseDateAvailable = async (req, res) => {
     if (dateStr === "0000-00-00" || !dateStr) {
       return res.status(200).json({ success: true, available: true });
     }
-    const [rows] = await db.execute(
-      "SELECT 1 FROM calender WHERE current_booking_date = ? LIMIT 1",
-      [dateStr]
-    );
+    // Date is taken only when ANOTHER artist (different oph_id) has it.
+    // User's own pre-booked dates (paid in advance, same oph_id) are available for them.
+    const [rows] = oph_id
+      ? await db.execute(
+          "SELECT 1 FROM calender WHERE current_booking_date = ? AND (oph_id IS NULL OR oph_id != ?) LIMIT 1",
+          [dateStr, String(oph_id).trim()]
+        )
+      : await db.execute(
+          "SELECT 1 FROM calender WHERE current_booking_date = ? LIMIT 1",
+          [dateStr]
+        );
     const available = rows.length === 0;
     return res.status(200).json({ success: true, available });
   } catch (err) {

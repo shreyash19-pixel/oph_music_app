@@ -98,7 +98,7 @@ class AdminSongService {
       [songId, ophId]
     );
 
-    if (components.length > 0) {
+    if (Array.isArray(components) && components.length > 0) {
       const component = components[0];
       const finalRejectReason = component.audio_reject_reason || 
                                 component.video_reject_reason || 

@@ -592,7 +592,7 @@ export default function AudioMetadataForm() {
               state: {
                 heading: "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/upload-song",
+                redirectTo: "/dashboard",
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {

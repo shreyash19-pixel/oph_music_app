@@ -32,4 +32,27 @@ const getCostingById = async (id) => {
   return rows;
 };
 
-module.exports = { getCosting, insertCosting, updateCosting, getCostingById };
+/**
+ * Get costs by name for payment logic (Song Registration, Lyrics Service, etc.)
+ * Returns { songRegistration, lyricsService, lyricalVideo } from costing table.
+ */
+const getCostsForPaymentLogic = async () => {
+  const [rows] = await db.execute("SELECT name, cost FROM costing");
+  const map = {};
+  for (const r of rows || []) {
+    const key = String(r.name || '').toLowerCase().trim();
+    const cost = parseFloat(r.cost);
+    if (!isNaN(cost)) map[key] = cost;
+  }
+  const byContains = (sub) => {
+    const k = Object.keys(map).find(x => x.includes(sub));
+    return k ? map[k] : null;
+  };
+  return {
+    songRegistration: byContains('song registration') ?? 799,
+    lyricsService: byContains('lyrics service') ?? 399,
+    lyricalVideo: byContains('lyrical video') ?? 1198,
+  };
+};
+
+module.exports = { getCosting, insertCosting, updateCosting, getCostingById, getCostsForPaymentLogic };

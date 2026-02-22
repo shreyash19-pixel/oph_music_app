@@ -4,6 +4,7 @@ const ApplicationStatusService = require('../application/ApplicationStatusServic
 const SongApplicationStatusService = require('../song/SongApplicationStatusService');
 const songRegModel = require('../../model/songs_register');
 const userModel = require('../../model/user');
+const costingModel = require('../../admin/model/costing');
 // Lazy load EventBookingService to avoid potential circular dependencies
 // const EventBookingService = require('../../admin/services/EventBookingService');
 
@@ -226,6 +227,25 @@ class PaymentService {
               console.log('[PaymentService] Using release_date from calender:', finalReleaseDate);
             }
           }
+          // Paid-in-advance lyrical: calendar may have song_id=NULL; use unlinked Date Booking
+          if (!finalReleaseDate && paymentOphId) {
+            const [dbRows] = await connection.execute(
+              `SELECT release_date FROM payments
+               WHERE oph_id = ? AND (from_source = 'Date booking' OR from_source = 'Date Booking')
+               AND song_id IS NULL AND (status IS NULL OR status != 'rejected')
+               AND release_date IS NOT NULL AND release_date != '0000-00-00'
+               ORDER BY created_at DESC LIMIT 1`,
+              [paymentOphId]
+            );
+            const dbRow = dbRows?.[0];
+            if (dbRow?.release_date) {
+              const d = dbRow.release_date;
+              finalReleaseDate = typeof d === "string" ? d.trim().slice(0, 10) : d instanceof Date ? d.toISOString().slice(0, 10) : null;
+              if (finalReleaseDate && finalReleaseDate !== "0000-00-00") {
+                console.log('[PaymentService] Using release_date from unlinked Date Booking:', finalReleaseDate);
+              } else finalReleaseDate = null;
+            }
+          }
         } catch (e) {
           console.warn('[PaymentService] Could not resolve release_date from DB:', e.message);
         }
@@ -249,6 +269,57 @@ class PaymentService {
         amount ?? null
       );
       console.log('[PaymentService] Payment record inserted successfully');
+
+      // Paid-in-advance + lyrical: link Date Booking payment to song when lyrical (Lyrics Service) is submitted
+      if ((from_source === "Song Registration" || from_source === "Song Repayment") && song_id) {
+        const [srRows] = await connection.execute(
+          "SELECT release_date, project_type, Lyrics_services FROM songs_register WHERE song_id = ? AND oph_id = ? LIMIT 1",
+          [song_id, paymentOphId]
+        );
+        const sr = srRows?.[0];
+        const isPaidInAdvance = sr?.project_type && String(sr.project_type).toLowerCase().includes("paid in advance");
+        const hasLyrical = sr?.Lyrics_services === true || sr?.Lyrics_services === 1 || sr?.Lyrics_services === "true";
+        const costs = await costingModel.getCostsForPaymentLogic();
+        const isLyricalPayment = amount && parseFloat(amount) < costs.songRegistration;
+        if (isPaidInAdvance && hasLyrical && isLyricalPayment) {
+          let dateToLink = null;
+          if (sr?.release_date) {
+            const d = sr.release_date;
+            dateToLink = typeof d === "string" ? d.trim().slice(0, 10) : d instanceof Date ? d.toISOString().slice(0, 10) : null;
+            if (dateToLink === "0000-00-00") dateToLink = null;
+          }
+          if (!dateToLink) {
+            // Release date not in songs_register: find unlinked Date Booking for this oph_id
+            const [dbRows] = await connection.execute(
+              `SELECT release_date FROM payments
+               WHERE oph_id = ? AND (from_source = 'Date booking' OR from_source = 'Date Booking')
+               AND song_id IS NULL AND (status IS NULL OR status != 'rejected')
+               AND release_date IS NOT NULL AND release_date != '0000-00-00'
+               ORDER BY created_at DESC LIMIT 1`,
+              [paymentOphId]
+            );
+            const dbRow = dbRows?.[0];
+            if (dbRow?.release_date) {
+              dateToLink = typeof dbRow.release_date === "string" ? dbRow.release_date.trim().slice(0, 10) : dbRow.release_date instanceof Date ? dbRow.release_date.toISOString().slice(0, 10) : null;
+            }
+          }
+          if (dateToLink) {
+            await paymentModel.linkDateBookingPaymentToSong(
+              connection,
+              paymentOphId,
+              song_id,
+              dateToLink
+            );
+            // Sync release_date to songs_register if missing
+            await connection.execute(
+              `UPDATE songs_register SET release_date = ?, updated_at = NOW()
+               WHERE song_id = ? AND oph_id = ? AND (release_date IS NULL OR release_date = '0000-00-00')`,
+              [dateToLink, song_id, paymentOphId]
+            );
+            console.log('[PaymentService] Linked Date Booking payment to song_id=%s, release_date=%s (paid-in-advance + lyrical)', song_id, dateToLink);
+          }
+        }
+      }
 
       // When user submits transaction ID for Song Registration/Repayment: add date to calendar (source of truth)
       if ((isSongReg || isSongRepay) && song_id && finalReleaseDate && String(finalReleaseDate).slice(0, 10) !== '0000-00-00') {
@@ -311,13 +382,20 @@ class PaymentService {
           [paymentStatus, song_id, oph_id]
         );
         
-        // Update payment status in song_application_status (centralized status management)
-        await SongApplicationStatusService.updateStepStatus(
-          connection,
-          song_id,
-          'payment',
-          paymentStatus
+        // Update payment status in song_application_status
+        // For paid-in-advance + lyrical: recompute from BOTH Date Booking and lyrical payments
+        const [srCheck] = await connection.execute(
+          "SELECT project_type, Lyrics_services FROM songs_register WHERE song_id = ? AND oph_id = ? LIMIT 1",
+          [song_id, oph_id]
         );
+        const sr = srCheck?.[0];
+        const isPaidAdvanceLyrical = sr?.project_type && String(sr.project_type).toLowerCase().includes("paid in advance")
+          && (sr.Lyrics_services === true || sr.Lyrics_services === 1 || sr.Lyrics_services === "true");
+        if (isPaidAdvanceLyrical) {
+          await SongApplicationStatusService.recomputePaymentStatusFromPayments(connection, song_id, oph_id);
+        } else {
+          await SongApplicationStatusService.updateStepStatus(connection, song_id, 'payment', paymentStatus);
+        }
         
         // Check for next rejected section after resubmitting payment
         const SongRegistrationService = require('../song/SongRegistrationService');
@@ -450,32 +528,54 @@ class PaymentService {
   }
 
   /**
-   * Insert song ID into payment record
+   * Insert song ID into payment record (paid-in-advance flow).
+   * Links both Song Registration and Date Booking payments to the song.
    */
   async insertSongId(ophId, songId) {
     const connection = await db.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
-      // Update payment with song_id
+      // Update Song Registration payment with song_id (if any)
       await paymentModel.insertSongId(connection, ophId, songId);
+
+      // Get song's release_date to link Date Booking payment (paid-in-advance)
+      const [srRows] = await connection.execute(
+        "SELECT release_date FROM songs_register WHERE song_id = ? AND oph_id = ? LIMIT 1",
+        [songId, ophId]
+      );
+      const releaseDate = srRows?.[0]?.release_date;
+      if (releaseDate) {
+        await paymentModel.linkDateBookingPaymentToSong(
+          connection,
+          ophId,
+          songId,
+          releaseDate
+        );
+      }
 
       // Update song status to "under review"
       await songRegModel.updateSongStatusToUnderReview(connection, songId, ophId);
 
       // Get payment status to update song_application_status
+      // Include Date Booking (paid-in-advance payments)
       const [payments] = await connection.execute(
-        "SELECT status FROM payments WHERE song_id = ? AND oph_id = ? AND (from_source = 'Song Registration' OR from_source = 'Song Repayment') ORDER BY created_at DESC LIMIT 1",
+        `SELECT status FROM payments 
+         WHERE song_id = ? AND oph_id = ? 
+         AND (from_source = 'Song Registration' OR from_source = 'Song Repayment' 
+              OR from_source = 'Date booking' OR from_source = 'Date Booking')
+         ORDER BY created_at DESC LIMIT 1`,
         [songId, ophId]
       );
 
       if (payments.length > 0) {
-        const paymentStatus = payments[0].status === 'approved' ? 'approved' : 'under review';
+        const paymentStatus =
+          payments[0].status === "approved" ? "approved" : "under review";
         await SongApplicationStatusService.updateStepStatus(
           connection,
           songId,
-          'payment',
+          "payment",
           paymentStatus
         );
       }
@@ -531,31 +631,65 @@ class PaymentService {
       if (song_id && !finalReleaseDate) {
         console.log('[PaymentService] songRepayment release_date fallback: song_id=%s, oph_id=%s', song_id, oph_id);
         try {
-          const [srRows] = await connection.execute(
-            'SELECT * FROM songs_register WHERE song_id = ? LIMIT 1',
-            [song_id]
-          );
-          const row = srRows?.[0];
-          const rowOphId = row?.oph_id ?? row?.OPH_ID;
-          const ophMatch = rowOphId == null && oph_id == null ||
-            (rowOphId != null && oph_id != null && String(rowOphId).trim() === String(oph_id).trim());
-          if (row && ophMatch) {
-            const srDate = row.release_date ?? row.Release_date;
-            if (srDate) {
-              finalReleaseDate = srDate instanceof Date ? srDate.toISOString().slice(0, 10) : String(srDate).slice(0, 10);
+          // 1) Unlinked Date Booking (most reliable for paid-in-advance lyrical)
+          if (oph_id) {
+            const [dbRows] = await connection.execute(
+              `SELECT release_date FROM payments
+               WHERE oph_id = ? AND (from_source = 'Date booking' OR from_source = 'Date Booking')
+               AND song_id IS NULL AND (status IS NULL OR status != 'rejected')
+               AND release_date IS NOT NULL AND release_date != '0000-00-00'
+               ORDER BY created_at DESC LIMIT 1`,
+              [oph_id]
+            );
+            const dbRow = dbRows?.[0];
+            if (dbRow?.release_date) {
+              const d = dbRow.release_date;
+              const parsed = typeof d === "string" ? d.trim().slice(0, 10) : d instanceof Date ? d.toISOString().slice(0, 10) : null;
+              if (parsed && parsed !== "0000-00-00") {
+                finalReleaseDate = parsed;
+                console.log('[PaymentService] songRepayment: using release_date from unlinked Date Booking:', finalReleaseDate);
+              }
             }
           }
+          // 2) songs_register
           if (!finalReleaseDate) {
+            const [srRows] = await connection.execute(
+              'SELECT * FROM songs_register WHERE song_id = ? LIMIT 1',
+              [song_id]
+            );
+            const row = srRows?.[0];
+            const rowOphId = row?.oph_id ?? row?.OPH_ID;
+            const ophMatch = rowOphId == null && oph_id == null ||
+              (rowOphId != null && oph_id != null && String(rowOphId).trim() === String(oph_id).trim());
+            if (row && ophMatch) {
+              const srDate = row.release_date ?? row.Release_date;
+              if (srDate) {
+                const parsed = srDate instanceof Date ? srDate.toISOString().slice(0, 10) : String(srDate).slice(0, 10);
+                if (parsed && parsed !== "0000-00-00") finalReleaseDate = parsed;
+              }
+            }
+          }
+          // 3) Calendar by song_id or oph_id
+          if (!finalReleaseDate) {
+            let calRow = null;
             const [calRows] = await connection.execute(
               'SELECT * FROM calender WHERE song_id = ? LIMIT 5',
               [song_id]
             );
-            const calRow = Array.isArray(calRows) && calRows.length > 0
-              ? calRows.find((r) => (r.oph_id ?? r.OPH_ID) == null ? oph_id == null : String(r.oph_id || r.OPH_ID).trim() === String(oph_id).trim()) || calRows[0]
-              : null;
+            if (Array.isArray(calRows) && calRows.length > 0) {
+              calRow = calRows.find((r) => (r.oph_id ?? r.OPH_ID) == null ? oph_id == null : String(r.oph_id || r.OPH_ID).trim() === String(oph_id).trim()) || calRows[0];
+            }
+            if (!calRow && oph_id) {
+              const [ophCalRows] = await connection.execute(
+                'SELECT * FROM calender WHERE oph_id = ? AND song_id IS NULL AND current_booking_date >= CURDATE() ORDER BY current_booking_date ASC LIMIT 5',
+                [oph_id]
+              );
+              calRow = Array.isArray(ophCalRows) && ophCalRows.length > 0 ? ophCalRows[0] : null;
+            }
             const calDate = calRow?.current_booking_date ?? calRow?.Current_booking_date;
             if (calDate) {
-              finalReleaseDate = calDate instanceof Date ? calDate.toISOString().slice(0, 10) : String(calDate).slice(0, 10);
+              const parsed = calDate instanceof Date ? calDate.toISOString().slice(0, 10) : String(calDate).slice(0, 10);
+              if (parsed && parsed !== "0000-00-00") finalReleaseDate = parsed;
             }
           }
         } catch (e) {
@@ -575,6 +709,57 @@ class PaymentService {
         finalReleaseDate ?? null,
         amount ?? null
       );
+
+      // Paid-in-advance + lyrical: link Date Booking payment to song and sync release_date
+      if (song_id) {
+        const [srRows] = await connection.execute(
+          "SELECT release_date, project_type, Lyrics_services FROM songs_register WHERE song_id = ? AND oph_id = ? LIMIT 1",
+          [song_id, oph_id]
+        );
+        const sr = srRows?.[0];
+        const isPaidInAdvance = sr?.project_type && String(sr.project_type).toLowerCase().includes("paid in advance");
+        const hasLyrical = sr?.Lyrics_services === true || sr?.Lyrics_services === 1 || sr?.Lyrics_services === "true";
+        const costs = await costingModel.getCostsForPaymentLogic();
+        const isLyricalPayment = amount && parseFloat(amount) < costs.songRegistration;
+        if (isPaidInAdvance && hasLyrical && isLyricalPayment) {
+          let dateToLink = null;
+          if (sr?.release_date) {
+            const d = sr.release_date;
+            dateToLink = typeof d === "string" ? d.trim().slice(0, 10) : d instanceof Date ? d.toISOString().slice(0, 10) : null;
+            if (dateToLink === "0000-00-00") dateToLink = null;
+          }
+          if (!dateToLink) {
+            const [dbRows] = await connection.execute(
+              `SELECT release_date FROM payments
+               WHERE oph_id = ? AND (from_source = 'Date booking' OR from_source = 'Date Booking')
+               AND song_id IS NULL AND (status IS NULL OR status != 'rejected')
+               AND release_date IS NOT NULL AND release_date != '0000-00-00'
+               ORDER BY created_at DESC LIMIT 1`,
+              [oph_id]
+            );
+            const dbRow = dbRows?.[0];
+            if (dbRow?.release_date) {
+              dateToLink = typeof dbRow.release_date === "string" ? dbRow.release_date.trim().slice(0, 10) : dbRow.release_date instanceof Date ? dbRow.release_date.toISOString().slice(0, 10) : null;
+            }
+          }
+          if (dateToLink) {
+            await paymentModel.linkDateBookingPaymentToSong(connection, oph_id, song_id, dateToLink);
+            await connection.execute(
+              `UPDATE songs_register SET release_date = ?, updated_at = NOW()
+               WHERE song_id = ? AND oph_id = ? AND (release_date IS NULL OR release_date = '0000-00-00')`,
+              [dateToLink, song_id, oph_id]
+            );
+            // Update the lyrical payment row we just inserted (release_date was 0000-00-00)
+            await connection.execute(
+              `UPDATE payments SET release_date = ?, updated_at = NOW()
+               WHERE song_id = ? AND oph_id = ? AND from_source = 'Song Registration'
+               AND amount < ? ORDER BY created_at DESC LIMIT 1`,
+              [dateToLink, song_id, oph_id, costs.songRegistration]
+            );
+            console.log('[PaymentService] songRepayment: linked Date Booking to song_id=%s, release_date=%s', song_id, dateToLink);
+          }
+        }
+      }
 
       // Add date to calendar when user submits transaction ID (source of truth)
       if (song_id && finalReleaseDate && String(finalReleaseDate).slice(0, 10) !== '0000-00-00') {

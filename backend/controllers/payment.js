@@ -121,14 +121,7 @@ const songRepaymentController = async (req, res) => {
     const release_date = req.body.release_date;
     const amount = req.body.amount;
 
-    if (
-      !oph_id ||
-      !transaction_id ||
-      !status ||
-      !step ||
-      !song_id ||
-      !release_date
-    ) {
+    if (!oph_id || !transaction_id || !status || !step || !song_id) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",

@@ -11,7 +11,7 @@ const VerifyBookingDates = () => {
   const [transactions, setTransactions] = useState(null);
   const [confirmReject, setConfirmReject] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [reason, setReason] = useState(null);
+  const [reason, setReason] = useState("");
   const navigate = useNavigate();
 
   const fetchBookingDetails = async () => {
@@ -53,8 +53,8 @@ const VerifyBookingDates = () => {
   const handleDecision = async (dec) => {
     console.log(dec);
 
-    if (dec === "rejected" && reason === null) {
-      alert("Enter a rejection reason");
+    if (dec === "rejected" && !String(reason || "").trim()) {
+      toast.error("Please enter a rejection reason");
       return;
     }
 
@@ -95,6 +95,7 @@ const VerifyBookingDates = () => {
       }
     } catch (err) {
       console.error(err.message);
+      toast.error(err.response?.data?.message || err.message || "Something went wrong");
     }
   };
 
@@ -120,6 +121,12 @@ const VerifyBookingDates = () => {
                 <strong>For : </strong>
                 {transactions.From ?? transactions.from_source ?? transactions.from ?? "—"}
               </p>
+              {transactions.song_name && (
+                <p>
+                  <strong>Song : </strong>
+                  {transactions.song_name}
+                </p>
+              )}
 
           {(() => {
             const fromSource = transactions?.From || transactions?.from_source || transactions?.from || "";
@@ -231,23 +238,34 @@ const VerifyBookingDates = () => {
               <textarea
                 className="w-full min-h-20 border border-gray-300 rounded-lg p-[10px]"
                 placeholder="Enter reason for rejection"
+                value={reason}
                 onChange={(e) => setReason(e.target.value)}
-              ></textarea>
+              />
 
-              <div className="mt-[12px] w-full flex">
+              <div className="mt-[12px] w-full flex flex-col gap-2">
+                {!reason.trim() && (
+                  <p className="text-sm text-amber-600">
+                    Enter a reason above to enable Confirm Reject
+                  </p>
+                )}
+                <div className="w-full flex">
                 <button
-                  className="w-full bg-[#8B0000] px-[14px] py-[8px] text-white rounded-md shadow-sm"
+                  type="button"
+                  className="w-full bg-[#8B0000] px-[14px] py-[8px] text-white rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                  disabled={!reason.trim()}
                   onClick={() => handleDecision("rejected")}
                 >
                   Confirm Reject
                 </button>
 
                 <button
+                  type="button"
                   className="w-full bg-[#808080] px-[14px] py-[8px] text-white rounded-md shadow-sm ml-2"
                   onClick={() => setConfirmReject(false)}
                 >
                   Cancel
                 </button>
+                </div>
               </div>
             </div>
           )}
