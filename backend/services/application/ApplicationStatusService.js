@@ -30,6 +30,9 @@ class ApplicationStatusService {
   async updateStepStatus(connection, ophId, step, status, rejectReason = null) {
     let statusField = '';
 
+    console.log(ophId + " " +  step + " " + status);
+    
+
     switch (step) {
       case 'personal_details':
       case 'user':

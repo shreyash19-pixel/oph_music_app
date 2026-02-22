@@ -25,8 +25,11 @@ const PaymentScreen = () => {
   console.log(song_id);
 
   const outside_user = location.state?.outside_user;
-  const user_type = location.state.user_type;
+  const user_type = location.state?.user_type;
   const [oph_id, setoph_id] = useState("");
+
+  console.log(user_type);
+  
 
   const {
     amount = 0,
@@ -101,6 +104,9 @@ const PaymentScreen = () => {
           // If no 'from' is provided, default to "Registration"
           // Handle "Registration" and "Song Registration" as separate cases
           let searchName;
+          console.log(from);
+          console.log(user_type);
+          
           const isLyricalSelected = lyrical_services === true || lyrical_services === "true" || lyrical_services === 1;
           const projectType = location.state?.project_type || location.state?.projectType || "";
           const isPaidInAdvance = String(projectType).toLowerCase().trim() === "paid in advance";
@@ -252,7 +258,7 @@ const PaymentScreen = () => {
         OPH_ID: oph_id,
         Transaction_ID: trans,
         Review: 0,
-        Status: "under Review",
+        Status: "under review",
         step: "/auth/create-profile/personal-details",
         from: from,
         song_id: song_id,
@@ -526,6 +532,8 @@ const PaymentScreen = () => {
         }
       } else if (response.data.success) {
         const path = response.data.step;
+        console.log(path);
+        
         navigate(path);
       }
     } catch (err) {
