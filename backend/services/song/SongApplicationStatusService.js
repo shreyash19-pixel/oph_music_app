@@ -313,9 +313,7 @@ class SongApplicationStatusService {
     const handlers = [
       this.insertSongSocialMetrics.bind(this),
       this.updateSongRelease.bind(this),
-      // Add more handlers here in the future:
-      // this.insertSongAnalytics.bind(this),
-      // this.insertSongRevenue.bind(this),
+      this.insertTvPublishing.bind(this),
     ];
 
     // Execute all handlers sequentially (use Promise.all for parallel if needed)
@@ -379,6 +377,43 @@ class SongApplicationStatusService {
     );
 
     console.log(`Song release initialized for song_id: ${song_id}`);
+  }
+
+  /**
+   * Handler: Insert song into tvPublishing when song is fully approved
+   * Fetches audio_url and video_url from audio_details and video_details
+   */
+  async insertTvPublishing(connection, songData) {
+    const { oph_id, song_id } = songData;
+
+    const [existing] = await connection.query(
+      `SELECT 1 FROM tvPublishing WHERE song_id = ? LIMIT 1`,
+      [song_id],
+    );
+    if (Array.isArray(existing) && existing.length > 0) {
+      console.log(`tvPublishing already exists for song_id: ${song_id}`);
+      return;
+    }
+
+    const [audioRows] = await connection.query(
+      `SELECT audio_url FROM audio_details WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+      [song_id, oph_id, oph_id],
+    );
+    const [videoRows] = await connection.query(
+      `SELECT video_url FROM video_details WHERE song_id = ? LIMIT 1`,
+      [song_id],
+    );
+    const audio_url = audioRows?.[0]?.audio_url ?? '';
+    const video_url = videoRows?.[0]?.video_url ?? '';
+
+    await connection.query(
+      `INSERT INTO tvPublishing 
+        (audio_url, video_url, reason, status, song_id, OPH_ID, \`lock\`, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
+      [audio_url, video_url, '', 'pending', song_id, oph_id],
+    );
+
+    console.log(`tvPublishing initialized for song_id: ${song_id}`);
   }
 }
 
