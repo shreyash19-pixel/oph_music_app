@@ -102,12 +102,21 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date) => {
 
 const getAllBookings = async () => {
   const [rawRows] = await db.query(
-    `SELECT DISTINCT 
-      c.*, 
+    `SELECT 
+      c.id,
+      c.oph_id,
+      c.song_id,
+      c.current_booking_date,
+      c.previous_booking_date,
+      c.original_booking_date,
+      c.song_name,
+      c.project_type,
+      c.created_at,
+      c.updated_at,
       COALESCE(
         (SELECT p.status 
          FROM payments p 
-         WHERE p.release_date = c.current_booking_date 
+         WHERE (p.release_date = c.current_booking_date OR DATE(p.release_date) = DATE(c.current_booking_date))
          AND p.oph_id = c.oph_id
          AND (
            p.from_source = 'Date booking' 
@@ -123,7 +132,7 @@ const getAllBookings = async () => {
       ) as payment_status,
       (SELECT p.from_source 
        FROM payments p 
-       WHERE p.release_date = c.current_booking_date 
+       WHERE (p.release_date = c.current_booking_date OR DATE(p.release_date) = DATE(c.current_booking_date))
        AND p.oph_id = c.oph_id
        AND (
          p.from_source = 'Date booking' 
@@ -137,7 +146,7 @@ const getAllBookings = async () => {
       ) as from_source,
       COALESCE(ud.full_name, '') as full_name
     FROM calender c 
-    LEFT JOIN user_details ud ON c.oph_id = ud.oph_id
+    LEFT JOIN user_details ud ON (c.oph_id = ud.oph_id OR c.oph_id = ud.OPH_ID)
     ORDER BY c.current_booking_date ASC`
   );
   const rows = Array.isArray(rawRows) ? rawRows : [];

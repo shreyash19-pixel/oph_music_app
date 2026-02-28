@@ -254,6 +254,27 @@ const PaymentScreen = () => {
     console.log("- trans:", trans, "(type:", typeof trans, ")");
 
     try {
+      const rawDate =
+        location.state.release_date ||
+        location.state.booking_date ||
+        location.state.date ||
+        location.state.new_booking_date;
+      const toYYYYMMDD = (v) => {
+        if (v == null || v === "") return null;
+        const s = String(v).trim();
+        if (!s || s === "0000-00-00" || s.toLowerCase().startsWith("0000-00-00"))
+          return null;
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+        const parts = s.split(/[/-T]/);
+        if (parts.length >= 3) {
+          const [a, b, c] = parts;
+          if (a.length === 4) return `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}`;
+          if (c.length === 4) return `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`;
+        }
+        return null;
+      };
+      const release_date = toYYYYMMDD(rawDate);
+
       const formData = {
         OPH_ID: oph_id,
         Transaction_ID: trans,
@@ -263,12 +284,8 @@ const PaymentScreen = () => {
         from: from,
         song_id: song_id,
         event_id: event_id,
-        release_date:
-          location.state.release_date ||
-          location.state.booking_date ||
-          location.state.date ||
-          location.state.new_booking_date ||
-          null,
+        release_date,
+        booking_date: release_date,
         old_release_date: location.state.old_booking_date || null,
         lyricalVid: lyrical_services,
         amount: getDisplayAmount(),

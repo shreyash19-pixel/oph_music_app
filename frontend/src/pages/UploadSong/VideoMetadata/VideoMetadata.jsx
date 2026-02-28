@@ -23,14 +23,20 @@ export default function VideoMetadataForm() {
 
   const [nextPage, setNextPage] = useState("");
   const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
+  const formattedDate = (() => {
+    if (!releaseDateRaw) return "";
+    const s = String(releaseDateRaw).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const release_date = new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
+    if (!release_date || !release_date.includes("/")) return "";
+    const parts = release_date.split("/");
+    if (parts.length < 3) return "";
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  })();
   const release_date = releaseDateRaw
     ? new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
     : "";
-
-  const year = release_date ? release_date.split("/")[2] : "";
-  const month = release_date ? release_date.split("/")[0] : "";
-  const day = release_date ? release_date.split("/")[1] : "";
-  const formattedDate = year && month && day ? `${year}-${month}-${day}` : "";
 
   const [songName, setSongName] = useState(location.state?.songName || "");
   const projectType = localStorage.getItem("projectType") || "";
@@ -768,7 +774,9 @@ export default function VideoMetadataForm() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Camera className="w-5 h-5 text-gray-400" />
-                  <span>Upload Maximum 3 Pictures</span>
+                  <span>
+                    Upload Maximum 3 Pictures <span className="text-red-500">*</span>
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">

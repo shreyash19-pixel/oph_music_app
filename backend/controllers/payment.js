@@ -11,7 +11,7 @@ const payment = async (req, res) => {
     const step = req.body.step;
     const song_id = req.body.song_id;
     const event_id = req.body.event_id;
-    let release_date = req.body.release_date;
+    let release_date = req.body.release_date ?? req.body.booking_date ?? req.body.date;
     if (release_date != null && typeof release_date === 'string') {
       const s = release_date.trim().toLowerCase();
       if (s === '' || s === 'null' || s === 'undefined' || s === '0000-00-00' || s.startsWith('0000-00-00')) {

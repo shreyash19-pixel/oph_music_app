@@ -29,10 +29,16 @@ export default function TimeCalendar() {
           const dateMap = {};
           setData(response.data.data);
           response.data.data.forEach((item) => {
-            const d = new Date(item.current_booking_date);
-            const localDateStr = `${d.getFullYear()}-${String(
-              d.getMonth() + 1,
-            ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            const raw = item.current_booking_date;
+            const localDateStr =
+              typeof raw === "string" && /^\d{4}-\d{2}-\d{2}/.test(raw)
+                ? raw.slice(0, 10)
+                : (() => {
+                    const d = new Date(raw);
+                    if (isNaN(d.getTime())) return null;
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                  })();
+            if (!localDateStr) return;
             dateMap[localDateStr] = {
               content: item.oph_id,
               artist: item.full_name,
@@ -267,7 +273,7 @@ export default function TimeCalendar() {
     isCurrentMonth,
     getCurrentGridStatus,
   ) => {
-    if (!isCurrentMonth || getCurrentGridStatus.Status === "approved") return; // Don't handle clicks on non-current month days
+    if (!isCurrentMonth || getCurrentGridStatus?.payment_status === "approved") return; // Don't handle clicks on non-current month days
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
@@ -306,8 +312,6 @@ export default function TimeCalendar() {
     )}-${String(d.getDate()).padStart(2, "0")}`;
     const artist = blockedDatesInfo[dateStr];
 
-    console.log(artist);
-
     const getCurrentGridStatus = data.find(
       (d) => d.current_booking_date === dateStr,
     );
@@ -320,7 +324,7 @@ export default function TimeCalendar() {
       <div
         key={index}
         onClick={() => {
-          if (!isPast && isValidFutureDate) {
+          if (isBlocked && isCurrentMonth) {
             handleDateCellClick(
               currentYear,
               currentMonthIndex,
@@ -343,10 +347,10 @@ export default function TimeCalendar() {
               ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
               : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
-        ${isPast ? "opacity-50" : ""}
-        ${!isValidFutureDate ? " opacity-25" : ""}
+        ${isPast && !(isBlocked && isCurrentMonth) ? "opacity-50" : ""}
+        ${!isValidFutureDate && !(isBlocked && isCurrentMonth) ? " opacity-25" : ""}
         ${
-          !isPast && isValidFutureDate
+          isBlocked && isCurrentMonth
             ? "cursor-pointer hover:opacity-80"
             : "cursor-not-allowed"
         }`}
@@ -361,7 +365,7 @@ export default function TimeCalendar() {
           </span>
           {isBlocked &&
             isCurrentMonth &&
-            getCurrentGridStatus.Status === "under review" && (
+            getCurrentGridStatus?.payment_status === "under review" && (
               <svg
                 className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
                 viewBox="0 0 18 21"

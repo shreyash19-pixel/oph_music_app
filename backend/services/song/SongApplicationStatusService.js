@@ -187,10 +187,9 @@ class SongApplicationStatusService {
    * Recalculate overall status based on individual statuses
    */
   async recalculateOverallStatus(connection, songId) {
-    const rows = await this.getSongApplicationStatus(connection, songId);
-    const status = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+    const status = await this.getSongApplicationStatus(connection, songId);
 
-    if (!status) {
+    if (!status || typeof status !== 'object') {
       return;
     }
 
@@ -208,8 +207,8 @@ class SongApplicationStatusService {
     }
     // Priority 2: If any status is "under review", overall is "under review"
     else if (
-      status_audio === "under review" &&
-      status_video === "under review" &&
+      status_audio === "under review" ||
+      status_video === "under review" ||
       status_payment === "under review"
     ) {
       overallStatus = "under review";

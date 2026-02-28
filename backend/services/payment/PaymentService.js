@@ -233,7 +233,26 @@ class PaymentService {
         return false;
       };
 
-      let finalReleaseDate = release_date;
+      /** Normalize date string to YYYY-MM-DD for DB (handles YYYY-MM-DD, ISO, DD/MM/YYYY, etc.) */
+      const toYYYYMMDD = (v) => {
+        if (v == null || v === '') return null;
+        if (typeof v === 'string') {
+          const s = v.trim();
+          if (!s || s === '0000-00-00' || s.toLowerCase().startsWith('0000-00-00')) return null;
+          if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+          const parts = s.split(/[/-]/).map((p) => p.replace(/T.*/, '').padStart(2, '0'));
+          if (parts.length >= 3) {
+            const [a, b, c] = parts;
+            if (a.length === 4 || parseInt(a, 10) > 31) return `${a}-${b}-${c}`;
+            if (c.length === 4 || parseInt(c, 10) > 31) return `${c}-${b}-${a}`;
+            return `${c}-${b}-${a}`;
+          }
+        }
+        if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString().slice(0, 10);
+        return null;
+      };
+
+      let finalReleaseDate = toYYYYMMDD(release_date);
       if (isInvalidDate(finalReleaseDate)) finalReleaseDate = null;
 
       // For Song Registration / Song Repayment, resolve release_date from DB when missing
@@ -254,8 +273,11 @@ class PaymentService {
           if (row && ophMatch) {
             const srDate = row.release_date ?? row.Release_date;
             if (srDate) {
-              finalReleaseDate = srDate instanceof Date ? srDate.toISOString().slice(0, 10) : String(srDate).slice(0, 10);
-              console.log('[PaymentService] Using release_date from songs_register:', finalReleaseDate);
+              const d = toYYYYMMDD(srDate instanceof Date ? srDate.toISOString().slice(0, 10) : String(srDate));
+              if (d) {
+                finalReleaseDate = d;
+                console.log('[PaymentService] Using release_date from songs_register:', finalReleaseDate);
+              }
             }
           }
           if (!finalReleaseDate) {
@@ -268,8 +290,11 @@ class PaymentService {
               : null;
             const calDate = calRow?.current_booking_date ?? calRow?.Current_booking_date ?? calRow?.current_booking_date;
             if (calDate) {
-              finalReleaseDate = calDate instanceof Date ? calDate.toISOString().slice(0, 10) : String(calDate).slice(0, 10);
-              console.log('[PaymentService] Using release_date from calender:', finalReleaseDate);
+              const d = toYYYYMMDD(calDate instanceof Date ? calDate.toISOString().slice(0, 10) : String(calDate));
+              if (d) {
+                finalReleaseDate = d;
+                console.log('[PaymentService] Using release_date from calender:', finalReleaseDate);
+              }
             }
           }
           // Paid-in-advance lyrical: calendar may have song_id=NULL; use unlinked Date Booking
@@ -299,7 +324,10 @@ class PaymentService {
         }
       }
 
-      // Insert payment (convert undefined to null)
+      // Insert payment (convert undefined and invalid dates to null)
+      if (finalReleaseDate && (finalReleaseDate === '0000-00-00' || String(finalReleaseDate).startsWith('0000-00-00'))) {
+        finalReleaseDate = null;
+      }
       console.log('[PaymentService] Inserting payment record...');
       await paymentModel.insertPayment(
         connection,
@@ -314,6 +342,26 @@ class PaymentService {
         amount ?? null
       );
       console.log('[PaymentService] Payment record inserted successfully');
+
+      // As soon as a payment entry is created for a song, set song_application_status.status_payment to 'under review'
+      const fromSourceNorm = String(from_source || '').trim();
+      const isSongRegOrRepay = fromSourceNorm === 'Song Registration' || fromSourceNorm === 'Song Repayment' ||
+        fromSourceNorm.toLowerCase() === 'song registration' || fromSourceNorm.toLowerCase() === 'song repayment';
+      if (isSongRegOrRepay && song_id) {
+        const paymentStatus = status === 'approved' || status === 'Approved' ? 'approved' : 'under review';
+        const [srCheck] = await connection.query(
+          "SELECT project_type, Lyrics_services FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1",
+          [song_id, paymentOphId, paymentOphId]
+        );
+        const sr = srCheck?.[0];
+        const isPaidAdvanceLyrical = sr?.project_type && String(sr.project_type).toLowerCase().includes("paid in advance")
+          && (sr.Lyrics_services === true || sr.Lyrics_services === 1 || sr.Lyrics_services === "true");
+        if (isPaidAdvanceLyrical) {
+          await SongApplicationStatusService.recomputePaymentStatusFromPayments(connection, song_id, paymentOphId);
+        } else {
+          await SongApplicationStatusService.updateStepStatus(connection, song_id, 'payment', paymentStatus);
+        }
+      }
 
       // Paid-in-advance + lyrical: link Date Booking payment to song when lyrical (Lyrics Service) is submitted
       if ((from_source === "Song Registration" || from_source === "Song Repayment") && song_id) {
@@ -420,12 +468,10 @@ class PaymentService {
       let redirectPath = null;
       let songName = '';
       
-      if ((from_source === "Song Registration" || from_source === "Song Repayment") && song_id) {
-        // Normalize payment status
-        const paymentStatus = status === 'approved' ? 'approved' : 'under review';
-        
-        // Update payments table status to ensure it's 'under review' (normalize case and clear reject_reason)
-        await connection.execute(
+      if (isSongRegOrRepay && song_id) {
+        // Update payments table status (normalize case and clear reject_reason)
+        const paymentStatus = status === 'approved' || status === 'Approved' ? 'approved' : 'under review';
+        await connection.query(
           `UPDATE payments 
            SET status = ?, reject_reason = NULL, updated_at = NOW()
            WHERE song_id = ? AND oph_id = ? 
@@ -434,20 +480,7 @@ class PaymentService {
           [paymentStatus, song_id, oph_id]
         );
         
-        // Update payment status in song_application_status
-        // For paid-in-advance + lyrical: recompute from BOTH Date Booking and lyrical payments
-        const [srCheck] = await connection.execute(
-          "SELECT project_type, Lyrics_services FROM songs_register WHERE song_id = ? AND oph_id = ? LIMIT 1",
-          [song_id, oph_id]
-        );
-        const sr = srCheck?.[0];
-        const isPaidAdvanceLyrical = sr?.project_type && String(sr.project_type).toLowerCase().includes("paid in advance")
-          && (sr.Lyrics_services === true || sr.Lyrics_services === 1 || sr.Lyrics_services === "true");
-        if (isPaidAdvanceLyrical) {
-          await SongApplicationStatusService.recomputePaymentStatusFromPayments(connection, song_id, oph_id);
-        } else {
-          await SongApplicationStatusService.updateStepStatus(connection, song_id, 'payment', paymentStatus);
-        }
+        // song_application_status already updated immediately after payment insert above
         
         // Check for next rejected section after resubmitting payment
         const SongRegistrationService = require('../song/SongRegistrationService');
