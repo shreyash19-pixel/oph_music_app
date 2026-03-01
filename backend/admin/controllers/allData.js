@@ -630,6 +630,10 @@ const getSignUpPayments = async (req, res) => {
 const getbookingsDetails = async (req, res) => {
   try {
     const rows = await allDataCont.bookingsDetails();
+    
+
+    console.log(rows);
+    
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Calendar");
@@ -644,6 +648,8 @@ const getbookingsDetails = async (req, res) => {
       { header: "Project Type", key: "project_type", width: 20 },
     ];
 
+    console.log(rows);
+    
     // Add rows
     rows.forEach((row) => {
       const formatDate = (dateString) => {
@@ -666,7 +672,9 @@ const getbookingsDetails = async (req, res) => {
           // Handle format like "1/28/26" and convert to "28 Jan 2026"
           else if (dateString.includes('/')) {
             const parts = dateString.split('/');
-            if (parts.length === 3) {
+            console.log(parts + " parts");
+            
+            if (parts?.length === 3) {
               const [month, day, year] = parts;
               // Convert 2-digit year to 4-digit year
               const fullYear = parseInt(year) < 50 ? 2000 + parseInt(year) : 1900 + parseInt(year);

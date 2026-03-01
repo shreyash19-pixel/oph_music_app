@@ -4,7 +4,7 @@ const router = express.Router();
 const multer = require("multer");
 const authMiddleware = require("../middleware/authenticate");
 const {
-  insertSpecialArtistSongsController,getSpeicalArtistSongStatusController
+  insertSpecialArtistSongsController,getSpeicalArtistSongStatusController,getSpeicalArtistSongController
 } = require("../controllers/special-artist-songs");
 
 const upload = multer({
@@ -20,5 +20,6 @@ router.post(
 );
 
 router.get("/get-special-artist-song-status", authMiddleware, getSpeicalArtistSongStatusController)
+router.get("/get-special-artist-song", authMiddleware, getSpeicalArtistSongController)
 
 module.exports = router
