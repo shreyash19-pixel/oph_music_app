@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const AddNewSong = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const AddNewSong = () => {
     proof: "",
     audioFile: null,
     terms: false,
+    songType: "",
   });
   const [status, setStatus] = useState([]);
   const [errors, setErrors] = useState({});
@@ -20,6 +21,8 @@ const AddNewSong = () => {
   const { headers, ophid } = useArtist();
   const [loading, setLoading] = useState(false);
   const [isFree, setIsFree] = useState(0);
+  const location = useLocation();
+  const songId = location?.state?.song_id;
 
   // handle input change
   const handleChange = (e) => {
@@ -35,13 +38,19 @@ const AddNewSong = () => {
   // validation
   const validate = () => {
     let newErrors = {};
+    const durationRegex = /^[0-9]{1,2}:[0-5][0-9]$/;
 
     if (!formData.songName.trim()) newErrors.songName = "Song name is required";
     if (!formData.views || isNaN(formData.views))
       newErrors.views = "Views must be a number";
     if (!formData.credits.trim())
       newErrors.credits = "Credits field is required";
-    if (!formData.time.trim()) newErrors.time = "Time field is required";
+
+    if (!formData.time.trim()) {
+      newErrors.time = "Time field is required";
+    } else if (!durationRegex.test(formData.time.trim())) {
+      newErrors.time = "Invalid format. Use mm:ss (e.g., 3:45)";
+    }
 
     // simple URL validatio
     if (!formData.audioFile) newErrors.audioFile = "Audio file is required";
@@ -51,6 +60,40 @@ const AddNewSong = () => {
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
+  };
+
+  const getSpecialArtistSong = async () => {
+    if (!headers || !headers.Authorization) {
+      console.warn("Headers are not ready yet");
+      return;
+    }
+    console.log(songId);
+
+    try {
+      const response = await axiosApi.get("/get-special-artist-song", {
+        headers: headers,
+        params: { songId },
+      });
+
+      if (response.data.success) {
+        console.log(response.data.data[0]);
+
+        const res = response.data.data[0];
+
+        setFormData({
+          songName: res.song_name,
+          views: res.views,
+          credits: res.credits,
+          time: res.duration,
+          proof: res.proof,
+          audioFile: res.audio_url, // you missed "res." here
+          terms: true,
+          songType: res.song_type,
+        });
+      }
+    } catch (err) {
+      console.error(err.message);
+    }
   };
 
   const getSongStatus = async () => {
@@ -79,7 +122,8 @@ const AddNewSong = () => {
 
   useEffect(() => {
     getSongStatus();
-  }, [ophid, headers]);
+    getSpecialArtistSong();
+  }, [ophid, headers, songId]);
 
   // handle submit
   const handleSubmit = async (e) => {
@@ -87,15 +131,20 @@ const AddNewSong = () => {
 
     let songType = "";
 
-    if (isFree === true) {
-      songType = "free";
+    if (formData.songType != "") {
+      songType = formData.songType;
     } else {
-      songType = "paid";
+      if (isFree === true) {
+        songType = "free";
+      } else {
+        songType = "paid";
+      }
     }
 
     if (validate()) {
       const sendFormData = new FormData();
       sendFormData.append("ophid", ophid);
+      sendFormData.append("songID", songId || "");
       sendFormData.append("songName", formData.songName);
       sendFormData.append("views", formData.views);
       sendFormData.append("credits", formData.credits);
@@ -103,9 +152,13 @@ const AddNewSong = () => {
       sendFormData.append("proof", formData.proof);
       sendFormData.append("songType", songType);
       sendFormData.append("audioFile", formData.audioFile);
+      console.log(formData.songType);
+      const getSongStatus = status.find((stat) => stat.song_id === songId);
+      console.log(getSongStatus);
+      
 
       try {
-        setLoading(true);
+        // setLoading(true);
         const response = await axiosApi.post(
           "/insert-special-artist-song",
           sendFormData,
@@ -118,26 +171,60 @@ const AddNewSong = () => {
 
         if (response.data.success) {
           const data = Object.values(response.data.data);
-          // console.log(response.data.songCnt);
-          console.log(data[0].song_id);
           setLoading(false);
 
-          if (isFree == true) {
-            navigate("/dashboard/pending", {
-              state: {
-                heading: "Your request is under review",
-                btnText: "Back to Home",
-                redirectTo: "/dashboard",
-              },
-            });
+          const getSongStatus = status.find((stat) => stat.song_id === songId);
+
+          if (formData.songType != "") {
+            if (formData.songType === "free") {
+              navigate("/dashboard/pending", {
+                state: {
+                  heading: "Your request is under review",
+                  btnText: "Back to Home",
+                  redirectTo: "/dashboard",
+                },
+              });
+            } else if (
+              formData.songType === "paid" &&
+              getSongStatus.payment_status != "rejected"
+            ) {
+              navigate("/dashboard/pending", {
+                state: {
+                  heading: "Your request is under review",
+                  btnText: "Back to Home",
+                  redirectTo: "/dashboard",
+                },
+              });
+            } else if (
+              formData.songType === "paid" &&
+              getSongStatus.payment_status === "rejected"
+            ) {
+              navigate("/auth/payment", {
+                state: {
+                  from: "Special artist song registration",
+                  song_id: data[0].song_id,
+                  backPath: "/dashboard/add-new-song",
+                },
+              });
+            }
           } else {
-            navigate("/auth/payment", {
-              state: {
-                from: "Special artist song registration",
-                song_id: data[0].song_id,
-                backPath: "/dashboard/add-new-song",
-              },
-            });
+            if (isFree == true) {
+              navigate("/dashboard/pending", {
+                state: {
+                  heading: "Your request is under review",
+                  btnText: "Back to Home",
+                  redirectTo: "/dashboard",
+                },
+              });
+            } else {
+              navigate("/auth/payment", {
+                state: {
+                  from: "Special artist song registration",
+                  song_id: data[0].song_id,
+                  backPath: "/dashboard/add-new-song",
+                },
+              });
+            }
           }
         }
       } catch (err) {
@@ -230,7 +317,7 @@ const AddNewSong = () => {
           /> */}
 
           <input
-            type="time"
+            type="text"
             name="time"
             value={formData.time}
             onChange={handleChange}
@@ -271,23 +358,26 @@ const AddNewSong = () => {
             htmlFor="audioUpload"
             className="w-full min-h-[150px] p-6 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-400 transition-colors flex items-center justify-center"
           >
-            {formData.audioFile === null ? (
+            {!formData.audioFile ? (
               <div className="flex items-center flex-col gap-3">
                 <Plus className="w-8 h-8 text-gray-500" />
                 <p className="font-medium text-white text-[21px]">
-                  {formData.audioFile
-                    ? formData.audioFile.name
-                    : "Upload Audio File"}
+                  Upload Audio File
                 </p>
               </div>
             ) : (
               <div className="flex items-center gap-3">
                 <p className="font-medium text-white text-[21px]">
-                  {formData.audioFile
-                    ? formData.audioFile.name
-                    : "Upload Audio File"}
+                  {typeof formData.audioFile === "string"
+                    ? formData.audioFile.split("/").pop() // extract filename from URL
+                    : formData.audioFile.name}
                 </p>
-                <X className="w-4 h-4 hover:text-red-500" />
+                <X
+                  className="w-4 h-4 hover:text-red-500 cursor-pointer"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, audioFile: null }))
+                  }
+                />
               </div>
             )}
           </label>
@@ -331,8 +421,16 @@ const AddNewSong = () => {
                 <th className="pb-[14px] text-[15px] font-semibold">
                   SONG NAME
                 </th>
+                <th className="pb-[14px] text-[15px] font-semibold">
+                  SONG TYPE
+                </th>
                 <th className="pb-[14px] text-[15px] font-semibold">STATUS</th>
-                <th className="pb-[14px] text-[15px] font-semibold">REASON</th>
+                <th className="pb-[14px] text-[15px] font-semibold">
+                  SONG REJ REASON
+                </th>
+                <th className="pb-[14px] text-[15px] font-semibold">
+                  PAYMENT REJ REASON
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -346,14 +444,28 @@ const AddNewSong = () => {
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.song_name}
                   </td>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {stat.song_type}
+                  </td>
                   <td
                     className={`py-[12px] font-bold text-[16px] ${
-                      stat.status === "pending" && stat.song_type === "paid"  && stat.payment_status === null
-                        ? "cursor-pointer text-blue-600 hover:underline"
-                        : ""
+                      stat.status?.toLowerCase().includes("rejected")
+                        ? "text-red-600 cursor-pointer"
+                        : stat.status === "pending" &&
+                            stat.song_type === "paid" &&
+                            stat.payment_status === null
+                          ? "cursor-pointer text-blue-600 hover:underline"
+                          : ""
                     }`}
-                    onClick={(e) => {
-                      if (stat.status === "pending" && stat.song_type === "paid" && stat.payment_status === null) {
+                    onClick={() => {
+                      const status = stat.status?.toLowerCase();
+                      const isPaid = stat.song_type === "paid";
+
+                      if (
+                        status === "pending" &&
+                        isPaid &&
+                        stat.payment_status === null
+                      ) {
                         navigate("/auth/payment", {
                           state: {
                             from: "Special artist song registration",
@@ -362,13 +474,50 @@ const AddNewSong = () => {
                           },
                         });
                       }
+
+                      // 🔴 Both rejected (paid only)
+                      else if (isPaid && status === "song & payment rejected") {
+                        window.location.reload();
+                        navigate("/dashboard/add-new-song", {
+                          state: { song_id: stat.song_id },
+                        });
+                      }
+
+                      // 🔴 Song rejected
+                      else if (status === "song rejected") {
+                        window.location.reload();
+
+                        navigate("/dashboard/add-new-song", {
+                          state: { song_id: stat.song_id },
+                        });
+                      }
+
+                      // 🔴 Payment rejected
+                      else if (status === "payment rejected") {
+                        navigate("/auth/payment", {
+                          state: {
+                            from: "Special artist song registration",
+                            song_id: stat.song_id,
+                            backPath: "/dashboard/add-new-song",
+                          },
+                        });
+                      }
+
+                      // 🔵 Pending payment
                     }}
                   >
                     {stat.status}
                   </td>
 
                   <td className="py-[12px] font-bold text-[16px]">
-                    {stat.reject_reason ? stat.reject_reason : "-"}
+                    {stat.song_rejection_reason
+                      ? stat.song_rejection_reason
+                      : "-"}
+                  </td>
+                  <td className="py-[12px] font-bold text-[16px]">
+                    {stat.payment_rejection_reason
+                      ? stat.payment_rejection_reason
+                      : "-"}
                   </td>
                 </tr>
               ))}
