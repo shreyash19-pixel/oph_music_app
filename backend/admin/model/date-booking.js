@@ -114,7 +114,7 @@ const getAllBookings = async () => {
       c.created_at,
       c.updated_at,
       COALESCE(
-        (SELECT p.status 
+        (SELECT GROUP_CONCAT(p.status ORDER BY p.created_at ASC SEPARATOR ',')
          FROM payments p 
          WHERE (p.release_date = c.current_booking_date OR DATE(p.release_date) = DATE(c.current_booking_date))
          AND p.oph_id = c.oph_id
@@ -125,12 +125,10 @@ const getAllBookings = async () => {
            OR (p.from_source = 'Song Registration' AND (p.song_id = c.song_id OR c.song_id IS NOT NULL))
            OR (p.from_source = 'Song Repayment')
          )
-         ORDER BY p.created_at DESC 
-         LIMIT 1
         ),
         'pending'
       ) as payment_status,
-      (SELECT p.from_source 
+      (SELECT GROUP_CONCAT(p.from_source ORDER BY p.created_at ASC SEPARATOR ',')
        FROM payments p 
        WHERE (p.release_date = c.current_booking_date OR DATE(p.release_date) = DATE(c.current_booking_date))
        AND p.oph_id = c.oph_id
@@ -141,8 +139,6 @@ const getAllBookings = async () => {
          OR p.from_source = 'Song Registration'
          OR p.from_source = 'Song Repayment'
        )
-       ORDER BY p.created_at DESC 
-       LIMIT 1
       ) as from_source,
       COALESCE(ud.full_name, '') as full_name
     FROM calender c 

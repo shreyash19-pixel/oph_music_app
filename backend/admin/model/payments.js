@@ -268,74 +268,46 @@ const updateStatusPayment = async (ophId, songId, status) => {
 
 const getTransactionDetails = async (release_date, oph_id, song_id) => {
   try {
-    // First: for paid-in-advance and normal, prefer Date Booking for this slot.
+    // When release_date and oph_id: return BOTH Date Booking and Song Registration for this slot (2 entries).
     if (release_date && oph_id) {
-      const [rowsDateBooking] = await db.execute(
+      const [rows] = await db.execute(
         `SELECT 
+          sp.id,
           sp.oph_id AS OPH_ID, 
           sp.transaction_id AS Transaction_ID, 
           sp.from_source AS \`From\`, 
           sp.song_id, 
           sp.status AS Status,
+          sp.amount,
           sp.release_date,
-          COALESCE(c.current_booking_date, sp.release_date) AS current_booking_date,
-          c.id,
-          c.oph_id,
-          c.song_id AS calendar_song_id,
-          c.previous_booking_date,
-          c.original_booking_date,
-          c.song_name,
-          c.project_type,
-          c.reason,
-          c.reason_history,
-          c.created_at,
-          c.updated_at
+          COALESCE(MIN(c.current_booking_date), sp.release_date) AS current_booking_date,
+          MIN(c.id) AS calendar_id,
+          sp.oph_id,
+          MIN(c.song_id) AS calendar_song_id,
+          MIN(c.previous_booking_date) AS previous_booking_date,
+          MIN(c.original_booking_date) AS original_booking_date,
+          MAX(c.song_name) AS song_name,
+          MAX(c.project_type) AS project_type,
+          MAX(c.reason) AS reason,
+          MAX(c.reason_history) AS reason_history,
+          MIN(c.created_at) AS created_at,
+          MAX(c.updated_at) AS updated_at
         FROM payments sp 
         LEFT JOIN calender c ON (sp.release_date = c.current_booking_date OR DATE(sp.release_date) = DATE(c.current_booking_date))
           AND sp.oph_id = c.oph_id
         WHERE sp.oph_id = ?
           AND (sp.release_date = ? OR DATE(sp.release_date) = ?)
-          AND LOWER(TRIM(sp.from_source)) = 'date booking'
-        ORDER BY sp.created_at DESC
-        LIMIT 1`,
+          AND (
+            LOWER(TRIM(sp.from_source)) = 'date booking'
+            OR sp.from_source = 'Date Booking'
+            OR sp.from_source = 'Song Registration'
+          )
+        GROUP BY sp.id
+        ORDER BY CASE WHEN LOWER(TRIM(sp.from_source)) = 'date booking' THEN 0 ELSE 1 END, sp.created_at ASC`,
         [oph_id, release_date, release_date],
       );
-      if (rowsDateBooking && rowsDateBooking.length > 0) {
-        return rowsDateBooking;
-      }
-      // No Date Booking: fall back to any payment for this slot, but PREFER Date Booking
-      // when both exist (e.g. paid-in-advance lyrical has Date Booking + Song Registration).
-      const [rowsByDateAndOph] = await db.execute(
-        `SELECT 
-          sp.oph_id AS OPH_ID, 
-          sp.transaction_id AS Transaction_ID, 
-          sp.from_source AS \`From\`, 
-          sp.song_id, 
-          sp.status AS Status,
-          sp.release_date,
-          COALESCE(c.current_booking_date, sp.release_date) AS current_booking_date,
-          c.id,
-          c.oph_id,
-          c.song_id AS calendar_song_id,
-          c.previous_booking_date,
-          c.original_booking_date,
-          c.song_name,
-          c.project_type,
-          c.reason,
-          c.reason_history,
-          c.created_at,
-          c.updated_at
-        FROM payments sp 
-        LEFT JOIN calender c ON (sp.release_date = c.current_booking_date OR DATE(sp.release_date) = DATE(c.current_booking_date))
-          AND sp.oph_id = c.oph_id
-        WHERE sp.oph_id = ?
-          AND (sp.release_date = ? OR DATE(sp.release_date) = ?)
-        ORDER BY CASE WHEN LOWER(TRIM(sp.from_source)) = 'date booking' THEN 0 ELSE 1 END, sp.created_at DESC
-        LIMIT 1`,
-        [oph_id, release_date, release_date],
-      );
-      if (rowsByDateAndOph && rowsByDateAndOph.length > 0) {
-        return rowsByDateAndOph;
+      if (rows && rows.length > 0) {
+        return rows;
       }
     }
 

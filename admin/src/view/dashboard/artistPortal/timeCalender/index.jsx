@@ -273,7 +273,7 @@ export default function TimeCalendar() {
     isCurrentMonth,
     getCurrentGridStatus,
   ) => {
-    if (!isCurrentMonth || getCurrentGridStatus?.payment_status === "approved") return; // Don't handle clicks on non-current month days
+    if (!isCurrentMonth) return; // Don't handle clicks on non-current month days
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
@@ -316,9 +316,11 @@ export default function TimeCalendar() {
       (d) => d.current_booking_date === dateStr,
     );
 
+    const fromSource = getCurrentGridStatus?.from_source || "";
     const isDateBooking =
-      getCurrentGridStatus?.from_source === "Date booking" ||
-      getCurrentGridStatus?.from_source === "Date Booking";
+      fromSource.includes("Date booking") || fromSource.includes("Date Booking");
+    const hasUnderReview = (getCurrentGridStatus?.payment_status || "").includes("under review");
+    const hasApproved = (getCurrentGridStatus?.payment_status || "").includes("approved");
 
     return (
       <div
@@ -337,15 +339,11 @@ export default function TimeCalendar() {
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
           isBlocked && isCurrentMonth && isDateBooking
             ? "bg-[#0EA5E9]/30 border-[#0EA5E9] shadow-[#0EA5E9]/20 shadow-inner"
-            : isBlocked &&
-              isCurrentMonth &&
-              getCurrentGridStatus?.payment_status === "under review"
+            : isBlocked && isCurrentMonth && hasUnderReview
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
-            : isBlocked &&
-                isCurrentMonth &&
-                getCurrentGridStatus?.payment_status === "approved"
-              ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
-              : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && hasApproved
+            ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
+            : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
         ${isPast && !(isBlocked && isCurrentMonth) ? "opacity-50" : ""}
         ${!isValidFutureDate && !(isBlocked && isCurrentMonth) ? " opacity-25" : ""}
@@ -365,7 +363,7 @@ export default function TimeCalendar() {
           </span>
           {isBlocked &&
             isCurrentMonth &&
-            getCurrentGridStatus?.payment_status === "under review" && (
+            hasUnderReview && (
               <svg
                 className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
                 viewBox="0 0 18 21"
