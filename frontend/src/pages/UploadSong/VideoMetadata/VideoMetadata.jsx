@@ -39,7 +39,12 @@ export default function VideoMetadataForm() {
     : "";
 
   const [songName, setSongName] = useState(location.state?.songName || "");
-  const projectType = localStorage.getItem("projectType") || "";
+  // Prefer location.state (from navigation) so "Paid in Advance" from backend works; fallback to localStorage
+  const projectTypeRaw = location.state?.project_type || localStorage.getItem("projectType") || "";
+  const projectType = typeof projectTypeRaw === "string" ? projectTypeRaw.trim() : "";
+  const isPaidInAdvance = projectType.length > 0 && String(projectType).toLowerCase().includes("paid in advance");
+  const lyricalServices = location.state?.lyrical_services === true || location.state?.lyrical_services === "true"
+    || location.state?.lyrical_services === 1 || location.state?.lyrical_services === "1";
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
     credits: "",
@@ -76,9 +81,7 @@ export default function VideoMetadataForm() {
     (s) => s.section === "video"
   );
   // Paid in advance without lyrical: never show Pay now (no payment needed)
-  const isPaidInAdvanceNoLyricalCheck =
-    projectType === "paid in advance" &&
-    (location.state?.lyrical_services !== true && location.state?.lyrical_services !== "true");
+  const isPaidInAdvanceNoLyricalCheck = isPaidInAdvance && !lyricalServices;
   // Only payment rejected = payment needed AND video was already submitted (so show read-only + Pay now)
   const onlyPaymentRejected =
     !isPaidInAdvanceNoLyricalCheck &&
@@ -312,8 +315,8 @@ export default function VideoMetadataForm() {
 
       // Paid in advance + lyrical NOT selected: no payment, go directly to success
       const isPaidInAdvanceNoLyrical =
-        projectType === "paid in advance" &&
-        (location.state?.lyrical_services === false || location.state?.lyrical_services === undefined || !location.state?.lyrical_services);
+        isPaidInAdvance &&
+        !lyricalServices;
       if (isPaidInAdvanceNoLyrical) {
         const response = await axiosApi.post(
           "/insert-calender-song-project",
@@ -398,9 +401,7 @@ export default function VideoMetadataForm() {
 
         // Paid in advance: only require payment when lyrical services (399) is checked
         // Checkbox unchecked = no payment → already handled above (direct success)
-        const isPaidInAdvanceWithLyrical =
-          projectType === "paid in advance" &&
-          (location.state?.lyrical_services === true || location.state?.lyrical_services === "true");
+        const isPaidInAdvanceWithLyrical = isPaidInAdvance && lyricalServices;
         if (isPaidInAdvanceWithLyrical) {
           await refetchForReadOnly();
           setShowPayNowAfterSubmit(true);
@@ -451,6 +452,10 @@ export default function VideoMetadataForm() {
         } else {
           // Default: when next step is payment, stay on page with read-only form + Pay now
           if (nextPage === "repayment" || nextPage === "payment") {
+            await refetchForReadOnly();
+            setShowPayNowAfterSubmit(true);
+          } else if (isPaidInAdvance && lyricalServices) {
+            // Paid in advance + lyrical: no redirectPath from backend, show Pay now
             await refetchForReadOnly();
             setShowPayNowAfterSubmit(true);
           } else if (nextPage === "pending") {
