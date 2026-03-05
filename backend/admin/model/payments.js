@@ -241,9 +241,11 @@ const getPaymentDetailsForSongByOphId = async (ophid, songid) => {
         FROM payments
         WHERE (from_source = 'Song Registration' OR from_source = 'Song Repayment' OR from_source = 'Special artist song registration')
         AND oph_id = ?
-        AND song_id = ?
-        ORDER BY created_at DESC`,
-      [ophid, songid],
+        AND (song_id = ? OR reject_for = ?)     
+        ORDER BY updated_at DESC
+        LIMIT 1
+        `,
+      [ophid, songid,songid],
     );
     return rows;
   } catch (error) {

@@ -65,8 +65,18 @@ const paymentDetails = async () => {
 
 
 const bookingsDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM calender");
-  return rows;
+  try {
+    console.log("Function called");
+
+    const [rows] = await db.execute("SELECT * FROM calender");
+
+    console.log("Rows fetched:", rows);
+    return rows;
+
+  } catch (err) {
+    console.error("DB ERROR:", err);
+    throw err;
+  }
 };
 
 const songRegistrationDetails = async () => {
