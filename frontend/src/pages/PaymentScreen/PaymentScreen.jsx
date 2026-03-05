@@ -238,6 +238,23 @@ const PaymentScreen = () => {
     fetchCostingData();
   }, [fetchCostingData]);
 
+  // Sync song navigation when entering payment page for a song (e.g. after browser back from another tab).
+  // Backend sets status to draft when not fixing a rejected step.
+  useEffect(() => {
+    const isSongPayment = song_id && (from === "Song Registration" || from === "Song Repayment");
+    if (isSongPayment && ophid && headers?.Authorization && location.pathname) {
+      axiosApi.post(
+        "/update-song-navigation",
+        {
+          song_id,
+          oph_id: ophid,
+          next_page: location.pathname,
+        },
+        { headers }
+      ).catch(() => {});
+    }
+  }, [song_id, from, ophid, headers, location.pathname]);
+
   const handlePaymentSuccess = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -585,18 +602,50 @@ const PaymentScreen = () => {
   };
 
   const handleCancel = () => {
-    navigate(backPathOrReturn, {
-      replace: true,
-      state: {
-        from: location.state?.from,
-        booking_date: location.state?.release_date ?? location.state?.booking_date,
-        release_date: location.state?.release_date ?? location.state?.booking_date,
-        song_id: location.state?.song_id,
-        songName: location.state?.songName,
-        project_type: location.state?.project_type,
-        lyrical_services: location.state?.lyrical_services,
-      },
-    });
+    const isSongPayment = song_id && (from === "Song Registration" || from === "Song Repayment");
+    const pathToSet = backPathOrReturn && backPathOrReturn.trim() !== "" ? backPathOrReturn : "/dashboard/upload-song/video-metadata";
+
+    if (isSongPayment && ophid && headers?.Authorization && pathToSet) {
+      // Set song to draft immediately when leaving payment without paying (so list shows Draft, not Under Review)
+      axiosApi
+        .post(
+          "/update-song-navigation",
+          {
+            song_id,
+            oph_id: ophid,
+            next_page: pathToSet,
+          },
+          { headers }
+        )
+        .catch(() => {})
+        .finally(() => {
+          navigate(pathToSet, {
+            replace: true,
+            state: {
+              from: location.state?.from,
+              booking_date: location.state?.release_date ?? location.state?.booking_date,
+              release_date: location.state?.release_date ?? location.state?.booking_date,
+              song_id: location.state?.song_id,
+              songName: location.state?.songName,
+              project_type: location.state?.project_type,
+              lyrical_services: location.state?.lyrical_services,
+            },
+          });
+        });
+    } else {
+      navigate(backPathOrReturn, {
+        replace: true,
+        state: {
+          from: location.state?.from,
+          booking_date: location.state?.release_date ?? location.state?.booking_date,
+          release_date: location.state?.release_date ?? location.state?.booking_date,
+          song_id: location.state?.song_id,
+          songName: location.state?.songName,
+          project_type: location.state?.project_type,
+          lyrical_services: location.state?.lyrical_services,
+        },
+      });
+    }
   };
 
   return (

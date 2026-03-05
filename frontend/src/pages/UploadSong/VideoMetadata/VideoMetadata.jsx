@@ -601,6 +601,20 @@ export default function VideoMetadataForm() {
   }, [checkBookingDates]);
 
   useEffect(() => {
+    // Sync song navigation when entering this page (e.g. after browser back from payment).
+    // Backend sets status to draft when not fixing a rejected step, so song shows as Draft.
+    if (contentId && ophid && headers?.Authorization && location.pathname) {
+      axiosApi.post(
+        "/update-song-navigation",
+        {
+          song_id: contentId,
+          oph_id: ophid,
+          next_page: location.pathname,
+        },
+        { headers }
+      ).catch(() => {});
+    }
+
     // Draft: check if release date is still free on calendar; if taken, redirect to register-song
     const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
     if (contentId && releaseDateRaw && headers?.Authorization) {
@@ -633,7 +647,7 @@ export default function VideoMetadataForm() {
 
     // Re-run when contentId, headers, ophid, or location (e.g. returning from payment cancel) changes
     // location.key changes on every navigate, so we re-fetch when user comes back to this page
-  }, [contentId, headers, ophid, location.key]);
+  }, [contentId, headers, ophid, location.key, location.pathname]);
 
   if (error) {
     return <div className="text-red-500 p-4">{error}</div>;

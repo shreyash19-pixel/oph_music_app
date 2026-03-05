@@ -39,12 +39,15 @@ export default function TimeCalendar() {
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                   })();
             if (!localDateStr) return;
-            dateMap[localDateStr] = {
-              content: item.oph_id,
-              artist: item.full_name,
-              songId: item.song_id,
-              fromSource: item.from_source,
-            };
+            // Prefer existing entry (calendar) when same date has both calendar and Release date change payment
+            if (!dateMap[localDateStr]) {
+              dateMap[localDateStr] = {
+                content: item.oph_id,
+                artist: item.full_name,
+                songId: item.song_id,
+                fromSource: item.from_source,
+              };
+            }
           });
 
           setBlockedDatesInfo(dateMap);
@@ -319,6 +322,8 @@ export default function TimeCalendar() {
     const fromSource = getCurrentGridStatus?.from_source || "";
     const isDateBooking =
       fromSource.includes("Date booking") || fromSource.includes("Date Booking");
+    const isReleaseDateChange =
+      fromSource.toLowerCase().includes("release date change");
     const hasUnderReview = (getCurrentGridStatus?.payment_status || "").includes("under review");
     const hasApproved = (getCurrentGridStatus?.payment_status || "").includes("approved");
 
@@ -337,7 +342,11 @@ export default function TimeCalendar() {
           }
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
-          isBlocked && isCurrentMonth && isDateBooking
+          isBlocked && isCurrentMonth && (isDateBooking || isReleaseDateChange) && hasUnderReview
+            ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && (isDateBooking || isReleaseDateChange) && hasApproved
+            ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && isDateBooking && !hasUnderReview && !hasApproved
             ? "bg-[#0EA5E9]/30 border-[#0EA5E9] shadow-[#0EA5E9]/20 shadow-inner"
             : isBlocked && isCurrentMonth && hasUnderReview
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
@@ -426,7 +435,7 @@ export default function TimeCalendar() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
-                    <span className="text-[#0d3c44]">Booked</span>
+                    <span className="text-[#0d3c44]">Booked / Release Date Change (under review)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>

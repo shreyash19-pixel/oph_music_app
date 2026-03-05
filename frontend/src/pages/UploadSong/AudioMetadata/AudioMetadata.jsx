@@ -608,16 +608,16 @@ export default function AudioMetadataForm() {
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
-            // Redirect to video metadata (when both audio and payment rejected: show read-only + Pay now)
+            // Video: first-time flow (maintain flow after back) or resubmission (audio+payment rejected)
+            const isResubmission = response.data.wasRejected === true;
             navigate("/dashboard/upload-song/video-metadata/", {
               state: {
                 song_id: response.data.song_id || contentId,
                 songName: response.data.songName || location.state?.songName || songName,
-                release_date: location.state?.release_date,
-                project_type: location.state?.project_type,
-                lyrical_services: location.state?.lyrical_services,
-                isFixingRejected: true,
-                showPayNowOnVideo: response.data.showPayNowOnVideo === true,
+                release_date: response.data.releaseDate || location.state?.release_date,
+                project_type: response.data.projectType || location.state?.project_type,
+                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state?.lyrical_services,
+                ...(isResubmission && { isFixingRejected: true, showPayNowOnVideo: response.data.showPayNowOnVideo === true }),
               },
             });
           } else if (response.data.redirectPath === '/auth/payment') {
@@ -824,6 +824,20 @@ export default function AudioMetadataForm() {
       return;
     }
     
+    // Sync song navigation when entering this page (e.g. after browser back from video-metadata).
+    // Backend sets status to draft when not fixing a rejected step, so song shows as Draft.
+    if (contentId && ophid && headers?.Authorization && location.pathname) {
+      axiosApi.post(
+        "/update-song-navigation",
+        {
+          song_id: contentId,
+          oph_id: ophid,
+          next_page: location.pathname,
+        },
+        { headers }
+      ).catch(() => {});
+    }
+    
     // Check if we're fixing a rejected item from location state
     if (location.state?.isFixingRejected) {
       setIsFixingRejected(true);
@@ -865,7 +879,7 @@ export default function AudioMetadataForm() {
     // No cleanup function needed - status is managed centrally through song_application_status
     // Status only changes when user submits metadata or admin approves/rejects
     // No need to set to "draft" on page leave
-  }, [contentId, headers, location.state, ophid]);
+  }, [contentId, headers, location.state, location.pathname, ophid]);
 
 
   async function getAudioAsBlob(url) {

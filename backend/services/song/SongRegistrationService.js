@@ -30,6 +30,7 @@ class SongRegistrationService {
           sr.Lyrics_services,
           sr.release_date,
           sr.current_page,
+          sr.status AS register_status,
           sas.status_audio,
           sas.status_video,
           sas.status_payment,
@@ -90,7 +91,10 @@ class SongRegistrationService {
           const rejectedSections = [];
           let firstRejectedStepReason = "";
           let currentStep = "";
-          let status = row.overall_status || "pending";
+          // When user went back (register_status = 'draft'), show as draft; otherwise use overall_status
+          let status = (row.register_status === 'draft')
+            ? 'pending'
+            : (row.overall_status || "pending");
 
           // Build list of ALL rejected sections (audio, video, payment) in fixed order so next_page = first
           // Use status and/or reject_reason so we don't miss a section when status is out of sync
@@ -229,8 +233,9 @@ class SongRegistrationService {
   }
 
   /**
-   * Update song current_page and status when user navigates to fix rejected item
-   * Sets status to "under review" when user starts fixing a rejected step
+   * Update song current_page and status when user navigates.
+   * Sets status to "under review" only when user is navigating TO a step that was rejected (fixing it).
+   * Otherwise sets status to "draft" so that going back from video-metadata or payment does not mark the song as under review.
    */
   async updateSongNavigation(songId, ophId, nextPage) {
     const connection = await db.getConnection();
@@ -238,15 +243,7 @@ class SongRegistrationService {
     try {
       await connection.beginTransaction();
 
-      // Update current_page in songs_register
-      await connection.execute(
-        `UPDATE songs_register 
-         SET current_page = ?, status = 'under review', updated_at = NOW()
-         WHERE song_id = ? AND oph_id = ?`,
-        [nextPage, songId, ophId]
-      );
-
-      // Determine which step is being fixed based on nextPage
+      // Determine which step we're navigating TO based on nextPage
       let stepToUpdate = null;
       if (nextPage.includes('audio-metadata')) {
         stepToUpdate = 'audio';
@@ -256,26 +253,31 @@ class SongRegistrationService {
         stepToUpdate = 'payment';
       }
 
-      // If we're fixing a rejected step, update that step status back to "under review"
-      if (stepToUpdate) {
-        // Get current status to check if it was rejected
-        const songStatus = await SongApplicationStatusService.getSongApplicationStatus(connection, songId);
-        
-        if (songStatus) {
-          const statusField = `status_${stepToUpdate}`;
-          const currentStatus = songStatus[statusField];
-          
-          // If the step was rejected, update it back to "under review"
-          if (currentStatus === 'rejected') {
-            await SongApplicationStatusService.updateStepStatus(
-              connection,
-              songId,
-              stepToUpdate,
-              'under review'
-            );
-          }
+      let newStatus = 'draft';
+      const songStatus = await SongApplicationStatusService.getSongApplicationStatus(connection, songId);
+      
+      if (stepToUpdate && songStatus) {
+        const statusField = `status_${stepToUpdate}`;
+        const currentStatus = songStatus[statusField];
+        // Only set "under review" when user is fixing a rejected step
+        if (currentStatus === 'rejected') {
+          newStatus = 'under review';
+          await SongApplicationStatusService.updateStepStatus(
+            connection,
+            songId,
+            stepToUpdate,
+            'under review'
+          );
         }
       }
+
+      // Update current_page and status in songs_register (draft when just going back, under review when fixing rejected)
+      await connection.execute(
+        `UPDATE songs_register 
+         SET current_page = ?, status = ?, updated_at = NOW()
+         WHERE song_id = ? AND oph_id = ?`,
+        [nextPage, newStatus, songId, ophId]
+      );
 
       await connection.commit();
       
