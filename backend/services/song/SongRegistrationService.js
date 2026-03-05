@@ -91,10 +91,12 @@ class SongRegistrationService {
           const rejectedSections = [];
           let firstRejectedStepReason = "";
           let currentStep = "";
-          // When user went back (register_status = 'draft'), show as draft; otherwise use overall_status
+          // When user went back (register_status = 'draft'), show as draft; when payment not done, show as draft; else use overall_status
           let status = (row.register_status === 'draft')
             ? 'pending'
-            : (row.overall_status || "pending");
+            : (row.status_payment === 'pending' || !row.status_payment)
+              ? 'pending'   // payment not done = still in progress, show as Draft not "Under Review"
+              : (row.overall_status || "pending");
 
           // Build list of ALL rejected sections (audio, video, payment) in fixed order so next_page = first
           // Use status and/or reject_reason so we don't miss a section when status is out of sync

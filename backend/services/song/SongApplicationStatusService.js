@@ -185,6 +185,7 @@ class SongApplicationStatusService {
 
   /**
    * Recalculate overall status based on individual statuses
+   * "Under review" only when payment step is also submitted (not pending) — so if payment is not done, show as pending/draft.
    */
   async recalculateOverallStatus(connection, songId) {
     const status = await this.getSongApplicationStatus(connection, songId);
@@ -205,7 +206,14 @@ class SongApplicationStatusService {
     ) {
       overallStatus = "rejected";
     }
-    // Priority 2: If any status is "under review", overall is "under review"
+    // Priority 2: If payment is not done (pending/missing), overall is "pending" — don't show "under review" until payment is submitted
+    else if (
+      !status_payment ||
+      status_payment === "pending"
+    ) {
+      overallStatus = "pending";
+    }
+    // Priority 3: If any status is "under review", overall is "under review" (all steps submitted, waiting for admin)
     else if (
       status_audio === "under review" ||
       status_video === "under review" ||
@@ -213,7 +221,7 @@ class SongApplicationStatusService {
     ) {
       overallStatus = "under review";
     }
-    // Priority 3: If all statuses are "approved", overall is "approved"
+    // Priority 4: If all statuses are "approved", overall is "approved"
     else if (
       status_audio === "approved" &&
       status_video === "approved" &&
@@ -221,19 +229,7 @@ class SongApplicationStatusService {
     ) {
       overallStatus = "approved";
     }
-    // Priority 4: If any status is missing/null or "pending", overall is "draft" (for UI display)
-    // This means user hasn't completed all steps yet
-    else if (
-      !status_audio ||
-      !status_video ||
-      !status_payment ||
-      status_audio === "pending" ||
-      status_video === "pending" ||
-      status_payment === "pending"
-    ) {
-      overallStatus = "pending";
-    }
-    // Otherwise, it's "pending" (shouldn't normally happen)
+    // Priority 5: Any other case (e.g. mixed or missing) → pending
     else {
       overallStatus = "pending";
     }
