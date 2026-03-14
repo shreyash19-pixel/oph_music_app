@@ -4,6 +4,7 @@ import axiosApi from "../../../../conf/axios";
 import formatDateAndAdjustMonth, { isRegistrationOpen, isRegistrationNotStartedYet, formatDateIST } from "../../../../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { useArtist } from "../../../auth/API/ArtistContext";
 import { changeSelectedEvent } from "../../../../slice/events";
 import SongDetails from "../../../SongDetails/SongDetails";
 import SongCard from "../../../../components/SongCard";
@@ -17,6 +18,7 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
+  const { ophid } = useArtist();
 
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef(null);
@@ -50,17 +52,16 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
   }, []);
 
   const handleClick = async (e) => {
-    console.log(e);
     dispatch(changeSelectedEvent({ data: e }));
-    // Navigate to the payment page
-    console.log( e);
-    
-     navigate("/dashboard/payment", {
+    // Navigate to event-specific payment page
+    navigate("/dashboard/payment", {
       state: {
+        OPH_ID: ophid,
         amount: e.registrationFee_normal,
-        // planIds: [e.payment_plan_id],
+        event_id: e.event_id,
         returnPath: "/dashboard/events",
         heading: "Complete Event Registration",
+        from: "Event Registration",
       },
     });
   };

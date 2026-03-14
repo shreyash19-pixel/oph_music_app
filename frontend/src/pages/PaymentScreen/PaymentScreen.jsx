@@ -65,10 +65,11 @@ const PaymentScreen = () => {
           const registrationFee = eventData.registrationFee_normal;
           console.log(outside_user);
           console.log(registrationFee);
-          const finalAmount =
+          const rawFinalAmount =
             outside_user === true || outside_user === 1
               ? registrationFee // Full amount for outside users
               : registrationFee / 2; // Half amount for regular users
+          const finalAmount = Math.round(Number(rawFinalAmount));
 
           // Create a mock costing object for event data
           const eventCosting = {
@@ -568,8 +569,8 @@ const PaymentScreen = () => {
             navigate("/dashboard/success", {
               state: {
                 heading: "Your Event Spot has been booked Successfully.",
-                btnText: "Back to Home",
-                redirectTo: "/dashboard",
+                btnText: "View Events",
+                redirectTo: location.state?.returnPath || "/dashboard/events",
               },
             });
           }
@@ -654,7 +655,7 @@ const PaymentScreen = () => {
       <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center p-8">
         <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
           {heading}{" "}
-          <span className="text-cyan-400">₹{getDisplayAmount()}/-</span>
+          <span className="text-cyan-400">₹{Math.round(Number(getDisplayAmount()) || 0)}/-</span>
         </h1>
 
         <div className="flex flex-col items-center gap-6 max-w-md w-full">
