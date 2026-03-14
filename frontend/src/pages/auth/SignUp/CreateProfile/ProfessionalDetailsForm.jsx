@@ -250,7 +250,7 @@ const ProfessionalDetailsForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // setLoading(true);
+    setLoading(true);
     // Add validation checks
 
     if (formData.ExperienceYearly === 0 && formData.experienceMonths === 0) {
