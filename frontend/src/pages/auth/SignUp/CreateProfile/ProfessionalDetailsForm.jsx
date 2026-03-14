@@ -250,8 +250,20 @@ const ProfessionalDetailsForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    // setLoading(true);
     // Add validation checks
+
+    if (formData.ExperienceYearly === 0 && formData.experienceMonths === 0) {
+      toast.error("Please enter your experience");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.songsPlanned === 0) {
+      toast.error("Please enter number of songs");
+      setLoading(false);
+      return;
+    }
 
     if (formData.photos.length === 0) {
       toast.error("Please upload atleast one image");

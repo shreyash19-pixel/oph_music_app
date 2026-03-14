@@ -35,10 +35,10 @@ router.post(
   "/update-documentation-details",
   authMiddleware,
   upload.fields([
-    { name: "AadharFrontURL", maxCount: 1 },
-    { name: "AadharBackURL", maxCount: 1 },
-    { name: "PanFrontURL", maxCount: 1 },
-    { name: "SignatureImageURL", maxCount: 1 },
+    { name: "aadhar_front_url", maxCount: 1 },
+    { name: "aadhar_back_url", maxCount: 1 },
+    { name: "pan_front_url", maxCount: 1 },
+    { name: "signature_image_url", maxCount: 1 },
   ]),
   userDetails.updateDocumentationDetails
 );
