@@ -399,12 +399,26 @@ export default function VideoMetadataForm() {
           }
         };
 
-        // Paid in advance: only require payment when lyrical services (399) is checked
-        // Checkbox unchecked = no payment → already handled above (direct success)
+        // Paid in advance + lyrical: only show Pay now when PAYMENT is rejected, not when only video was rejected
         const isPaidInAdvanceWithLyrical = isPaidInAdvance && lyricalServices;
         if (isPaidInAdvanceWithLyrical) {
-          await refetchForReadOnly();
-          setShowPayNowAfterSubmit(true);
+          const isPaymentRejected =
+            nextPage === "repayment" ||
+            nextPage === "payment" ||
+            location.state?.rejectedSections?.some((s) => s.section === "payment");
+          if (isPaymentRejected) {
+            await refetchForReadOnly();
+            setShowPayNowAfterSubmit(true);
+          } else {
+            // Video resubmitted, payment already approved → go under review
+            navigate("/dashboard/pending", {
+              state: {
+                heading: "Your video details are under review",
+                btnText: "Upload a new song",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          }
           return;
         }
 
@@ -450,12 +464,8 @@ export default function VideoMetadataForm() {
             navigate(response.data.redirectPath);
           }
         } else {
-          // Default: when next step is payment, stay on page with read-only form + Pay now
+          // Default: only show Pay now when payment step is actually rejected (not when only video was rejected)
           if (nextPage === "repayment" || nextPage === "payment") {
-            await refetchForReadOnly();
-            setShowPayNowAfterSubmit(true);
-          } else if (isPaidInAdvance && lyricalServices) {
-            // Paid in advance + lyrical: no redirectPath from backend, show Pay now
             await refetchForReadOnly();
             setShowPayNowAfterSubmit(true);
           } else if (nextPage === "pending") {

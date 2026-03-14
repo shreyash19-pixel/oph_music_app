@@ -211,29 +211,34 @@ export default function RegisterSongForm() {
   useEffect(() => {
     const fetchBlockedDatesByOPHID = async () => {
       try {
-        if (!ophid) return;
+        if (!ophid || !headers?.Authorization) return;
 
         const response = await axiosApi.get("/bookings-by-id", {
           headers: headers,
           params: { ophid },
         });
 
-        if (response.data.success) {
+        if (response.data?.success && Array.isArray(response.data.data)) {
           setIsLoading(false);
 
-          // Extract just the dates where song_name is null
+          // Extract dates where song_name is null; dedupe by date string
           const individualDates = response.data.data
-            .filter((date) => date.song_name === null)
-            .map((item) => item.current_booking_date);
+            .filter((item) => item.song_name === null || item.song_name === "")
+            .map((item) => item.current_booking_date)
+            .filter(Boolean);
 
-          // Format each date to YYYY-MM-DD in IST
-          const formattedDates = individualDates.map((d) => {
-            const dateObj = new Date(d);
-            const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-            const day = String(dateObj.getDate()).padStart(2, "0");
-            return `${year}-${month}-${day}`;
-          });
+          // Format to YYYY-MM-DD and deduplicate
+          const seen = new Set();
+          const formattedDates = individualDates
+            .map((d) => {
+              const dateObj = new Date(d);
+              if (isNaN(dateObj.getTime())) return null;
+              const year = dateObj.getFullYear();
+              const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+              const day = String(dateObj.getDate()).padStart(2, "0");
+              return `${year}-${month}-${day}`;
+            })
+            .filter((d) => d && !seen.has(d) && seen.add(d));
 
           setArtistBlockedDates(formattedDates);
         }
@@ -242,7 +247,7 @@ export default function RegisterSongForm() {
       }
     };
     fetchBlockedDatesByOPHID();
-  }, [ophid]);
+  }, [ophid, headers]);
 
   // Modified useEffect to handle initial payment plan selection
   // useEffect(() => {
