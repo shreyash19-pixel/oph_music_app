@@ -11,7 +11,8 @@ function Home() {
   const artistsdata = {};
   const [isLoading, setIsLoading] = useState(true);
   const [upcomingSong, setUpcomingSong] = useState([]);
-  const [upcomingEvent, setUpcomingEvent] = useState(false);
+  const [upcomingEventHero, setUpcomingEventHero] = useState(false);
+  const [upcomingEventNewReleases, setUpcomingEventNewReleases] = useState(false);
   const [error, setError] = useState(null);
   const { headers, ophid } = useArtist();
 
@@ -55,10 +56,13 @@ function Home() {
         const sorted = [...events].sort((a, b) => {
           const dateA = new Date(a.created_at || a.createdAt || 0);
           const dateB = new Date(b.created_at || b.createdAt || 0);
-          return dateB - dateA; // newest first
+          return dateB - dateA; // newest first by created_at
         });
+        // HeroSection: prefer event with registration open, else first (previous logic)
         const withActiveReg = sorted.find(isRegistrationOpen);
-        setUpcomingEvent(withActiveReg || sorted[0] || false);
+        setUpcomingEventHero(withActiveReg || sorted[0] || false);
+        // EventsNewReleases: show second event (by created_at) when 2+; else first
+        setUpcomingEventNewReleases(sorted.length >= 2 ? sorted[1] : sorted[0] || false);
       }
     } catch (err) {
       console.log(err);
@@ -112,9 +116,9 @@ function Home() {
         <>
           <HeroSection
             upcomingSong={upcomingSong}
-            upcomingEvent={upcomingEvent}
+            upcomingEvent={upcomingEventHero}
           />
-          <EventsNewReleases upcomingEvent={upcomingEvent} />
+          <EventsNewReleases upcomingEvent={upcomingEventNewReleases} />
           <ArtistRankingSection data={artistsdata} selectedMonth={"January"} />
         </>
       )}

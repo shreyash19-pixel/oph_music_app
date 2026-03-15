@@ -3,6 +3,7 @@ import { formatDateTime } from "../../../../utils/date";
 import React, { useEffect, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import { useDispatch, useSelector } from "react-redux";
+import { useArtist } from "../../../auth/API/ArtistContext";
 import { changeSelectedEvent } from "../../../../slice/events";
 import { useLocation, useNavigate } from "react-router-dom";
 import getToken from "../../../../utils/getToken";
@@ -10,6 +11,7 @@ import axiosApi from "../../../../conf/axios";
 import ReleaseBlur from "../../../../../public/assets/images/release_blur.png";
 
 const EventsNewReleases = ({ upcomingEvent }) => {
+  const { ophid } = useArtist();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [audio, setAudio] = useState(null); // State for audio object
   const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
@@ -62,19 +64,18 @@ const EventsNewReleases = ({ upcomingEvent }) => {
   const navigate = useNavigate();
 
   const handleClick = async (data) => {
-    if (!data) return; // Ensure data is defined
-    console.log(data);
+    if (!data) return;
+    dispatch(changeSelectedEvent({ data }));
 
-    // Dispatch the selected event data
-    dispatch(changeSelectedEvent({ data: data }));
-
-    // Navigate to the payment page
+    // Navigate to event-specific payment page
     await navigate("/dashboard/payment", {
       state: {
-        amount: data.fees,
-        planIds: [data.payment_plan_id],
-        returnPath: "/dashboard",
+        OPH_ID: ophid,
+        amount: data.registrationFee_normal ?? data.fees,
+        event_id: data.event_id,
+        returnPath: "/dashboard/events",
         heading: "Complete Event Registration",
+        from: "Event Registration",
       },
     });
   };

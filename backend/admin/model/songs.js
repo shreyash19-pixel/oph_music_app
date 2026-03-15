@@ -1,7 +1,7 @@
 const db = require('../../DB/connect');
 
 getAllSongs = async () => {
-  const [rows] = await db.execute(` SELECT sr.*
+  const [rows] = await db.query(`SELECT sr.*
 FROM songs_register sr
 JOIN audio_details ad ON sr.song_id = ad.song_id
 JOIN video_details vd ON sr.song_id = vd.song_id
@@ -11,8 +11,8 @@ WHERE (
 )
 AND ad.status != 'rejected'
 AND vd.status != 'rejected'
-;`);
-  return rows;
+`);
+  return Array.isArray(rows) ? rows : [];
 };
 
 const getSongsByOphIdUnderReview = async (ophId,songId) => {

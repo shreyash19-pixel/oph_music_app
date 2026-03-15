@@ -160,13 +160,14 @@ class DateBookingService {
 
   /**
    * Update booking date (for date changes)
-   * Handles application logic for release date changes
-   * Updates calender first (master), then syncs songs_register
-   * 
+   * Handles application logic for release date changes.
+   * Updates calender only; songs_register.release_date is updated only when admin
+   * approves the "Release date change" payment (see admin/model/payments.js setPaymentVerification).
+   *
    * @param {string} ophId - User's OPH ID
    * @param {string} oldDate - Old booking date
    * @param {string} newDate - New booking date
-   * @param {string|null} reason - Reason for change (not stored, for logging only)
+   * @param {string|null} reason - Reason for change (stored in reason_history)
    */
   async updateBookingDate(ophId, oldDate, newDate, reason = null) {
     const connection = await db.getConnection();
@@ -233,18 +234,9 @@ class DateBookingService {
         throw new Error('Failed to update booking');
       }
 
-      // Sync songs_register.release_date from calender if song_id exists
-      if (songId) {
-        await connection.query(
-          `UPDATE songs_register sr
-           JOIN calender c ON c.song_id = sr.song_id
-           SET sr.release_date = c.current_booking_date,
-               sr.updated_at = NOW()
-           WHERE sr.song_id = ?
-           AND c.oph_id = ?`,
-          [songId, ophId]
-        );
-      }
+      // Do NOT update songs_register here. Release date in songs_register is updated
+      // only when admin approves the "Release date change" payment (setPaymentVerification
+      // in admin/model/payments.js). Until then, songs_register keeps the old date.
 
       await connection.commit();
 

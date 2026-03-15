@@ -38,6 +38,20 @@ const insertSongDetailsController = async (req, res) => {
       }
     }
 
+    // Check if audio was previously rejected BEFORE insertSongDetails (model clears reject_reason on save)
+    const db = require("../DB/connect");
+    let wasRejected = false;
+    try {
+      const [audioDetails] = await db.execute(
+        `SELECT reject_reason, status FROM audio_details WHERE song_id = ? AND OPH_ID = ?`,
+        [song_id, OPH_ID]
+      );
+      wasRejected = audioDetails.length > 0 &&
+                   (audioDetails[0].reject_reason !== null || audioDetails[0].status === 'rejected');
+    } catch (e) {
+      console.warn("Could not check audio rejected state:", e.message);
+    }
+
     const result = await insertSongDetails(
       OPH_ID,
       song_id,
@@ -54,8 +68,6 @@ const insertSongDetailsController = async (req, res) => {
     if (result) {
       await setNextPage(next_step, OPH_ID, song_id);
       
-      // Check if this was a resubmission of a rejected audio BEFORE we clear the reject_reason
-      const db = require("../DB/connect");
       const connection = await db.getConnection();
       let redirectPath = null;
       let nextRejectedSection = null;
@@ -63,18 +75,9 @@ const insertSongDetailsController = async (req, res) => {
       let releaseDate = null;
       let projectType = null;
       let lyricalServices = null;
-      let wasRejected = false;
+      let showPayNowOnVideo = false;
       
       try {
-        // Check if audio was previously rejected (before we update it)
-        const [audioDetails] = await connection.execute(
-          `SELECT reject_reason, status FROM audio_details WHERE song_id = ? AND OPH_ID = ?`,
-          [song_id, OPH_ID]
-        );
-        
-        wasRejected = audioDetails.length > 0 && 
-                     (audioDetails[0].reject_reason !== null || audioDetails[0].status === 'rejected');
-        
         // Update status_audio to 'under review' in both:
         // 1. audio_details table (already set in insertSongDetails model)
         // 2. song_application_status table (for centralized status management)
@@ -98,7 +101,8 @@ const insertSongDetailsController = async (req, res) => {
         
         await connection.commit();
         
-        // Only check for next rejected section if this was a resubmission
+        // For resubmission (wasRejected): check next rejected section and set redirectPath
+        // For first-time flow (!wasRejected): always continue to video so back+Save doesn't send to pending
         if (wasRejected) {
           const SongRegistrationService = require("../services/song/SongRegistrationService");
           const nextSection = await SongRegistrationService.getNextRejectedSection(song_id, OPH_ID, 'audio');
@@ -108,8 +112,23 @@ const insertSongDetailsController = async (req, res) => {
           releaseDate = nextSection.releaseDate;
           projectType = nextSection.projectType;
           lyricalServices = nextSection.lyricalServices;
+          showPayNowOnVideo = nextSection.showPayNowOnVideo === true;
+        } else {
+          // First-time (or re-save after back): maintain flow → go to video metadata
+          redirectPath = '/dashboard/upload-song/video-metadata/';
+          songName = Song_name;
+          // Get release_date etc from songs_register for response
+          const [srRows] = await connection.execute(
+            `SELECT release_date, project_type, Lyrics_services FROM songs_register WHERE song_id = ? AND oph_id = ? LIMIT 1`,
+            [song_id, OPH_ID]
+          );
+          if (srRows && srRows[0]) {
+            releaseDate = srRows[0].release_date;
+            projectType = srRows[0].project_type;
+            lyricalServices = srRows[0].Lyrics_services;
+          }
         }
-        // For new submissions, redirectPath will be null, so frontend uses default navigation
+        // When redirectPath is set, frontend will use it (video for first-time, or next rejected section for resubmission)
       } catch (error) {
         await connection.rollback();
         console.error("Error updating audio status:", error);
@@ -123,11 +142,13 @@ const insertSongDetailsController = async (req, res) => {
         result, 
         song_id: song_id,
         nextRejectedSection: nextRejectedSection,
-        redirectPath: redirectPath, // null for new submissions, will use default navigation
+        redirectPath: redirectPath, // video for first-time flow, or next rejected section for resubmission
+        wasRejected: wasRejected,    // so frontend can avoid isFixingRejected when maintaining first-time flow
         songName: songName,
         releaseDate: releaseDate,
         projectType: projectType,
-        lyricalServices: lyricalServices
+        lyricalServices: lyricalServices,
+        showPayNowOnVideo: showPayNowOnVideo
       });
     }
 

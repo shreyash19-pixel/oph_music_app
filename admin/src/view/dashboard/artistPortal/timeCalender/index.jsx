@@ -29,15 +29,25 @@ export default function TimeCalendar() {
           const dateMap = {};
           setData(response.data.data);
           response.data.data.forEach((item) => {
-            const d = new Date(item.current_booking_date);
-            const localDateStr = `${d.getFullYear()}-${String(
-              d.getMonth() + 1,
-            ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-            dateMap[localDateStr] = {
-              content: item.oph_id,
-              artist: item.full_name,
-              songId: item.song_id,
-            };
+            const raw = item.current_booking_date;
+            const localDateStr =
+              typeof raw === "string" && /^\d{4}-\d{2}-\d{2}/.test(raw)
+                ? raw.slice(0, 10)
+                : (() => {
+                    const d = new Date(raw);
+                    if (isNaN(d.getTime())) return null;
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                  })();
+            if (!localDateStr) return;
+            // Prefer existing entry (calendar) when same date has both calendar and Release date change payment
+            if (!dateMap[localDateStr]) {
+              dateMap[localDateStr] = {
+                content: item.oph_id,
+                artist: item.full_name,
+                songId: item.song_id,
+                fromSource: item.from_source,
+              };
+            }
           });
 
           setBlockedDatesInfo(dateMap);
@@ -266,7 +276,7 @@ export default function TimeCalendar() {
     isCurrentMonth,
     getCurrentGridStatus,
   ) => {
-    if (!isCurrentMonth || getCurrentGridStatus.Status === "approved") return; // Don't handle clicks on non-current month days
+    if (!isCurrentMonth) return; // Don't handle clicks on non-current month days
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
@@ -305,19 +315,23 @@ export default function TimeCalendar() {
     )}-${String(d.getDate()).padStart(2, "0")}`;
     const artist = blockedDatesInfo[dateStr];
 
-    console.log(artist);
-
     const getCurrentGridStatus = data.find(
       (d) => d.current_booking_date === dateStr,
     );
 
-    console.log(getCurrentGridStatus);
+    const fromSource = getCurrentGridStatus?.from_source || "";
+    const isDateBooking =
+      fromSource.includes("Date booking") || fromSource.includes("Date Booking");
+    const isReleaseDateChange =
+      fromSource.toLowerCase().includes("release date change");
+    const hasUnderReview = (getCurrentGridStatus?.payment_status || "").includes("under review");
+    const hasApproved = (getCurrentGridStatus?.payment_status || "").includes("approved");
 
     return (
       <div
         key={index}
         onClick={() => {
-          if (!isPast && isValidFutureDate) {
+          if (isBlocked && isCurrentMonth) {
             handleDateCellClick(
               currentYear,
               currentMonthIndex,
@@ -328,20 +342,22 @@ export default function TimeCalendar() {
           }
         }}
         className={`sm:min-h-[90px] min-h-[70px]  sm:p-4 p-2 relative backdrop-blur-sm border-[1px] ${
-          isBlocked &&
-          isCurrentMonth &&
-          getCurrentGridStatus.payment_status === "under review"
+          isBlocked && isCurrentMonth && (isDateBooking || isReleaseDateChange) && hasUnderReview
             ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
-            : isBlocked &&
-                isCurrentMonth &&
-                getCurrentGridStatus.payment_status === "approved"
-              ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
-              : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && (isDateBooking || isReleaseDateChange) && hasApproved
+            ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && isDateBooking && !hasUnderReview && !hasApproved
+            ? "bg-[#0EA5E9]/30 border-[#0EA5E9] shadow-[#0EA5E9]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && hasUnderReview
+            ? "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
+            : isBlocked && isCurrentMonth && hasApproved
+            ? "bg-[#FFD700]/10 border-[#FFD700] shadow-[#FFD700]/20 shadow-inner"
+            : "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
         }
-        ${isPast ? "opacity-50" : ""}
-        ${!isValidFutureDate ? " opacity-25" : ""}
+        ${isPast && !(isBlocked && isCurrentMonth) ? "opacity-50" : ""}
+        ${!isValidFutureDate && !(isBlocked && isCurrentMonth) ? " opacity-25" : ""}
         ${
-          !isPast && isValidFutureDate
+          isBlocked && isCurrentMonth
             ? "cursor-pointer hover:opacity-80"
             : "cursor-not-allowed"
         }`}
@@ -356,7 +372,7 @@ export default function TimeCalendar() {
           </span>
           {isBlocked &&
             isCurrentMonth &&
-            getCurrentGridStatus.Status === "under review" && (
+            hasUnderReview && (
               <svg
                 className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
                 viewBox="0 0 18 21"
@@ -412,10 +428,14 @@ export default function TimeCalendar() {
                     TIME CALENDAR
                   </h2>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#0EA5E9]"></div>
+                    <span className="text-[#0d3c44]">Date Booking</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
-                    <span className="text-[#0d3c44]">Booked</span>
+                    <span className="text-[#0d3c44]">Booked / Release Date Change (under review)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>

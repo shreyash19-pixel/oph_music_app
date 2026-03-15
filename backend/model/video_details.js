@@ -39,12 +39,13 @@ const setJourneyStatus = async (ophid, song_id) => {
 };
 
 const checkPaymentStatus = async (song_id, ophid) => {
-  // Query should check both song_id and reject_for (for rejected payments where song_id was moved to reject_for)
+  // Query should check song_id, reject_for, and include Date Booking (paid-in-advance)
   const [rows] = await db.execute(
     `SELECT status, reject_reason, song_id, reject_for 
      FROM payments 
      WHERE oph_id = ? 
-     AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')
+     AND (from_source = 'Song Registration' OR from_source = 'Song Repayment' 
+          OR from_source = 'Date booking' OR from_source = 'Date Booking')
      AND (song_id = ? OR reject_for = ?)
      ORDER BY created_at DESC 
      LIMIT 1`,
@@ -67,8 +68,12 @@ const checkPaymentStatus = async (song_id, ophid) => {
     nextPagePath = "pending";
   }
 
-  const rejectReason = rows.length > 0 ? rows[0].reject_reason : null;
   const paymentStatus = rows.length > 0 ? rows[0].status : null;
+  // Only return reject_reason when payment status is actually "rejected".
+  // When user resubmits, status becomes "under review" but old reject_reason may still exist in DB.
+  const rejectReason = rows.length > 0 && paymentStatus === "rejected"
+    ? rows[0].reject_reason
+    : null;
 
   console.log(`✅ Payment status result:`);
   console.log(`   - status: ${paymentStatus}`);

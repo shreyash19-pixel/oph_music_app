@@ -507,9 +507,16 @@ export default function AudioMetadataForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setIsLoading(true);
     if (isSubmitting) return;
 
+    // Validate required audio before starting any submit/loading
+    const manualFile = fileInputRef.current?.files?.[0];
+    if (!manualFile && !selectedFile) {
+      toast.error("Audio file is required");
+      return;
+    }
+
+    setIsLoading(true);
     try {
       setIsSubmitting(true);
 
@@ -566,16 +573,7 @@ export default function AudioMetadataForm() {
       // addArtistsWithImages(composerArtists, "composer");
       // addArtistsWithImages(producerArtists, "producer");
 
-      // Add audio file if exists
-      const manualFile = fileInputRef.current.files[0];
-
-      if (manualFile || selectedFile) {
-        formData.append("audio_file", manualFile || selectedFile);
-      } else {
-        toast.error("Audio file is required");
-        setIsSubmitting(false);
-        return;
-      }
+      formData.append("audio_file", manualFile || selectedFile);
 
       const response = await axiosApi.post(`/audio-details`, formData, {
         headers: {
@@ -594,7 +592,7 @@ export default function AudioMetadataForm() {
               state: {
                 heading: "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/upload-song",
+                redirectTo: "/dashboard",
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
@@ -610,15 +608,16 @@ export default function AudioMetadataForm() {
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
-            // Redirect to video metadata
+            // Video: first-time flow (maintain flow after back) or resubmission (audio+payment rejected)
+            const isResubmission = response.data.wasRejected === true;
             navigate("/dashboard/upload-song/video-metadata/", {
               state: {
                 song_id: response.data.song_id || contentId,
                 songName: response.data.songName || location.state?.songName || songName,
-                release_date: location.state?.release_date,
-                project_type: location.state?.project_type,
-                lyrical_services: location.state?.lyrical_services,
-                isFixingRejected: true,
+                release_date: response.data.releaseDate || location.state?.release_date,
+                project_type: response.data.projectType || location.state?.project_type,
+                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state?.lyrical_services,
+                ...(isResubmission && { isFixingRejected: true, showPayNowOnVideo: response.data.showPayNowOnVideo === true }),
               },
             });
           } else if (response.data.redirectPath === '/auth/payment') {
@@ -627,6 +626,7 @@ export default function AudioMetadataForm() {
               state: {
                 from: "Song Repayment",
                 booking_date: response.data.releaseDate || location.state?.release_date,
+                release_date: response.data.releaseDate || location.state?.release_date,
                 song_id: response.data.song_id || contentId,
                 songName: response.data.songName || location.state?.songName || songName,
                 project_type: response.data.projectType || location.state?.project_type,
@@ -664,7 +664,9 @@ export default function AudioMetadataForm() {
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
+      toast.error(error?.response?.data?.message || "Failed to submit audio. Please try again.");
     } finally {
+      setIsLoading(false);
       setIsSubmitting(false);
     }
   };
@@ -822,10 +824,51 @@ export default function AudioMetadataForm() {
       return;
     }
     
+    // Sync song navigation when entering this page (e.g. after browser back from video-metadata).
+    // Backend sets status to draft when not fixing a rejected step, so song shows as Draft.
+    if (contentId && ophid && headers?.Authorization && location.pathname) {
+      axiosApi.post(
+        "/update-song-navigation",
+        {
+          song_id: contentId,
+          oph_id: ophid,
+          next_page: location.pathname,
+        },
+        { headers }
+      ).catch(() => {});
+    }
+    
     // Check if we're fixing a rejected item from location state
     if (location.state?.isFixingRejected) {
       setIsFixingRejected(true);
       console.log("🔧 User is fixing a rejected item - will not set to draft");
+    }
+    
+    // Draft: check if release date is still free on calendar (source of truth); if taken, redirect to register-song
+    const releaseDateRaw = location.state?.release_date;
+    if (contentId && releaseDateRaw && headers?.Authorization) {
+      const releaseDateForApi = typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
+        ? releaseDateRaw.split("/").reverse().join("-") // DD/MM/YYYY -> YYYY-MM-DD
+        : releaseDateRaw;
+      axiosApi.get("/check-release-date-available", {
+        headers,
+        params: { release_date: releaseDateForApi, song_id: contentId, ophid }
+      }).then((res) => {
+        if (res.data.success && res.data.available === false) {
+          navigate("/dashboard/upload-song/register-song", {
+            replace: true,
+            state: {
+              song_id: contentId,
+              songName: location.state?.songName || songName,
+              release_date: releaseDateRaw,
+              project_type: location.state?.project_type,
+              lyrical_services: location.state?.lyrical_services,
+              dateNoLongerAvailable: true,
+              returnToPage: "/dashboard/upload-song/audio-metadata"
+            }
+          });
+        }
+      }).catch(() => {});
     }
     
     checkAlreadyBookedDate();
@@ -836,7 +879,7 @@ export default function AudioMetadataForm() {
     // No cleanup function needed - status is managed centrally through song_application_status
     // Status only changes when user submits metadata or admin approves/rejects
     // No need to set to "draft" on page leave
-  }, [contentId, headers, location.state, ophid]);
+  }, [contentId, headers, location.state, location.pathname, ophid]);
 
 
   async function getAudioAsBlob(url) {
@@ -868,13 +911,16 @@ export default function AudioMetadataForm() {
   };
 
   if (navigateToSongReg) {
-    navigate("/dashboard/error", {
+    navigate("/dashboard/upload-song/register-song", {
+      replace: true,
       state: {
-        heading:
-          "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
-        btnText: "Song registration",
-        redirectTo: "/dashboard/upload-song/register-song",
-        songName: songName,
+        song_id: contentId,
+        songName,
+        release_date: location.state?.release_date,
+        project_type: location.state?.project_type,
+        lyrical_services: location.state?.lyrical_services,
+        dateNoLongerAvailable: true,
+        returnToPage: "/dashboard/upload-song/audio-metadata",
       },
     });
   }

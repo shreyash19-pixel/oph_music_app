@@ -7,6 +7,8 @@ const {
   getPendingSongsList,
   updateSongStatusToDraft,
   updateSongNavigation,
+  checkReleaseDateAvailable,
+  updateSongReleaseDate,
 } = require("../controllers/songs_register");
 const authMiddleware = require("../middleware/authenticate");
 
@@ -20,5 +22,7 @@ router.post(
 router.get("/pending-song-registeration", authMiddleware, getPendingSongsList);
 router.post("/update-song-status-to-draft", authMiddleware, updateSongStatusToDraft);
 router.post("/update-song-navigation", authMiddleware, updateSongNavigation);
+router.get("/check-release-date-available", authMiddleware, checkReleaseDateAvailable);
+router.post("/update-song-release-date", authMiddleware, updateSongReleaseDate);
 
 module.exports = router;

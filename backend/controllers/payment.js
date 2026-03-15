@@ -11,7 +11,13 @@ const payment = async (req, res) => {
     const step = req.body.step;
     const song_id = req.body.song_id;
     const event_id = req.body.event_id;
-    const release_date = req.body.release_date;
+    let release_date = req.body.release_date ?? req.body.booking_date ?? req.body.date;
+    if (release_date != null && typeof release_date === 'string') {
+      const s = release_date.trim().toLowerCase();
+      if (s === '' || s === 'null' || s === 'undefined' || s === '0000-00-00' || s.startsWith('0000-00-00')) {
+        release_date = null;
+      }
+    }
     const old_release_date = req.body.old_release_date;
     const amount = req.body.amount;
 
@@ -69,6 +75,13 @@ const payment = async (req, res) => {
       });
     }
 
+    if (error.message === 'Registration has not started yet' || error.message === 'Registration has closed' || error.message === 'Event not found') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Payment - server Error",
@@ -115,14 +128,7 @@ const songRepaymentController = async (req, res) => {
     const release_date = req.body.release_date;
     const amount = req.body.amount;
 
-    if (
-      !oph_id ||
-      !transaction_id ||
-      !status ||
-      !step ||
-      !song_id ||
-      !release_date
-    ) {
+    if (!oph_id || !transaction_id || !status || !step || !song_id) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
