@@ -496,6 +496,8 @@ const setPaymentVerificationController = async (req, res) => {
       reason: reason ? "provided" : "missing",
       release_date,
       from,
+      oph_id,
+      song_id,
     });
 
     if (!decision || !release_date || !from) {

@@ -24,8 +24,8 @@ export default function RegisterSongForm() {
   const [payableAmount, setPayableAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [costingData, setCostingData] = useState([]);
-  const [songRegAmount, setSongRegAmount] = useState(799); // Default fallback
-  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(399); // Default fallback
+  const [songRegAmount, setSongRegAmount] = useState(0);
+  const [lyricalVideoAmount, setLyricalVideoAmount] = useState(0);
   const { headers, artist, user, ophid } = useArtist();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false); // Add state for success message
   const [agreement, setAgreement] = useState(false);
@@ -36,17 +36,17 @@ export default function RegisterSongForm() {
 
   const projectType = localStorage.getItem("projectType");
   localStorage.setItem("projectType", projectType);
+  const isUpdateReleaseDateOnly = location.state?.dateNoLongerAvailable === true && location.state?.song_id;
   const [formData, setFormData] = useState({
     oph_id: ophid,
-    name: location.state.songName || "",
-    release_date: "",
+    name: location.state?.songName || "",
+    release_date: location.state?.release_date ? (typeof location.state.release_date === "string" && location.state.release_date.includes("-") ? location.state.release_date : "") : "",
     p_line: "",
     cp_line: "",
     song_reg: songReg,
-    lyrical_services: lyrical_services,
-    // agreement: false,
-    available_on_music_platforms: false, // Add new field for toggle button
-    project_type: projectType,
+    lyrical_services: location.state?.lyrical_services ?? lyrical_services,
+    available_on_music_platforms: false,
+    project_type: location.state?.project_type || projectType,
   });
 
   useEffect(() => {
@@ -57,6 +57,22 @@ export default function RegisterSongForm() {
       }));
     }
   }, [ophid]);
+
+  useEffect(() => {
+    if (location.state?.dateNoLongerAvailable && location.state?.song_id) {
+      setFormData((prev) => ({
+        ...prev,
+        name: location.state.songName || prev.name,
+        release_date: location.state.release_date
+          ? (String(location.state.release_date).includes("/")
+            ? location.state.release_date.split("/").reverse().join("-")
+            : String(location.state.release_date).slice(0, 10))
+          : prev.release_date,
+        lyrical_services: location.state.lyrical_services ?? prev.lyrical_services,
+        project_type: location.state.project_type || prev.project_type,
+      }));
+    }
+  }, [location.state?.dateNoLongerAvailable, location.state?.song_id, location.state?.songName, location.state?.release_date, location.state?.lyrical_services, location.state?.project_type]);
 
   const handleProjectTypeChange = (e) => {
     const { id, checked } = e.target;
@@ -114,24 +130,24 @@ export default function RegisterSongForm() {
 
         setCostingData(costingData);
 
-        // Find Song Registration amount
+        // Find Song Registration amount from costing table
         const songRegCost = costingData.find(
           (item) =>
             item.name && item.name.toLowerCase().includes("song registration")
         );
         if (songRegCost) {
-          setSongRegAmount(parseFloat(songRegCost.cost) || 799);
+          setSongRegAmount(parseFloat(songRegCost.cost) || 0);
           console.log("Song Registration amount:", songRegCost.cost);
         }
 
-        // Find Lyrical Video amount
+        // Find Lyrics Service amount from costing table (paid-in-advance lyrical add-on)
         const lyricalVideoCost = costingData.find(
           (item) =>
             item.name && item.name.toLowerCase().includes("lyrics service")
         );
         if (lyricalVideoCost) {
-          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 399);
-          console.log("Lyrical Video amount:", lyricalVideoCost.cost);
+          setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 0);
+          console.log("Lyrics Service amount:", lyricalVideoCost.cost);
         }
 
         console.log("All costing data:", costingData);
@@ -195,29 +211,34 @@ export default function RegisterSongForm() {
   useEffect(() => {
     const fetchBlockedDatesByOPHID = async () => {
       try {
-        if (!ophid) return;
+        if (!ophid || !headers?.Authorization) return;
 
         const response = await axiosApi.get("/bookings-by-id", {
           headers: headers,
           params: { ophid },
         });
 
-        if (response.data.success) {
+        if (response.data?.success && Array.isArray(response.data.data)) {
           setIsLoading(false);
 
-          // Extract just the dates where song_name is null
+          // Extract dates where song_name is null; dedupe by date string
           const individualDates = response.data.data
-            .filter((date) => date.song_name === null)
-            .map((item) => item.current_booking_date);
+            .filter((item) => item.song_name === null || item.song_name === "")
+            .map((item) => item.current_booking_date)
+            .filter(Boolean);
 
-          // Format each date to YYYY-MM-DD in IST
-          const formattedDates = individualDates.map((d) => {
-            const dateObj = new Date(d);
-            const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-            const day = String(dateObj.getDate()).padStart(2, "0");
-            return `${year}-${month}-${day}`;
-          });
+          // Format to YYYY-MM-DD and deduplicate
+          const seen = new Set();
+          const formattedDates = individualDates
+            .map((d) => {
+              const dateObj = new Date(d);
+              if (isNaN(dateObj.getTime())) return null;
+              const year = dateObj.getFullYear();
+              const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+              const day = String(dateObj.getDate()).padStart(2, "0");
+              return `${year}-${month}-${day}`;
+            })
+            .filter((d) => d && !seen.has(d) && seen.add(d));
 
           setArtistBlockedDates(formattedDates);
         }
@@ -226,7 +247,7 @@ export default function RegisterSongForm() {
       }
     };
     fetchBlockedDatesByOPHID();
-  }, [ophid]);
+  }, [ophid, headers]);
 
   // Modified useEffect to handle initial payment plan selection
   // useEffect(() => {
@@ -412,6 +433,43 @@ export default function RegisterSongForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isUpdateReleaseDateOnly) {
+      const newReleaseDate = formData.release_date;
+      if (!newReleaseDate || String(newReleaseDate).trim() === "") {
+        toast.error("Please select a new release date.");
+        return;
+      }
+      const dateStr = String(newReleaseDate).includes("/")
+        ? newReleaseDate.split("/").reverse().join("-")
+        : String(newReleaseDate).slice(0, 10);
+      try {
+        const res = await axiosApi.post(
+          "/update-song-release-date",
+          { song_id: location.state.song_id, oph_id: ophid, release_date: dateStr },
+          { headers }
+        );
+        if (res.data.success) {
+          toast.success("Release date updated. You can continue with your song.");
+          const returnToPage = location.state?.returnToPage || "/dashboard/upload-song/audio-metadata";
+          const nextState = {
+            song_id: location.state.song_id,
+            songName: location.state.songName || formData.name,
+            release_date: dateStr,
+            project_type: location.state?.project_type || projectType,
+            lyrical_services: location.state?.lyrical_services ?? formData.lyrical_services,
+          };
+          if (location.state?.rejectedSections) nextState.rejectedSections = location.state.rejectedSections;
+          if (location.state?.isFixingRejected != null) nextState.isFixingRejected = location.state.isFixingRejected;
+          navigate(returnToPage, { state: nextState });
+        } else {
+          toast.error(res.data.message || "Failed to update release date.");
+        }
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to update release date.");
+      }
+      return;
+    }
 
     if (!agreement) {
       toast.error("Please agree to the terms and conditions.");
@@ -679,8 +737,14 @@ export default function RegisterSongForm() {
       ) : (
         <div className="max-w-xl">
           <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-            REGISTER YOUR SONG
+            {isUpdateReleaseDateOnly ? "UPDATE RELEASE DATE" : "REGISTER YOUR SONG"}
           </h1>
+          {isUpdateReleaseDateOnly && (
+            <div className="mb-6 p-4 rounded-lg bg-amber-900/30 border border-amber-500/50 text-amber-200">
+              <p className="font-medium">The release date you selected is no longer available.</p>
+              <p className="text-sm mt-1">Please select a new release date for this song to continue.</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Song Name */}
@@ -696,7 +760,7 @@ export default function RegisterSongForm() {
                 onChange={handleChange}
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
                 required
-                disabled={location.state.songName}
+                disabled={!!location.state?.songName || isUpdateReleaseDateOnly}
               />
             </div>
 
@@ -956,7 +1020,7 @@ export default function RegisterSongForm() {
               type="submit"
               className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
             >
-              Continue
+              {isUpdateReleaseDateOnly ? "Update release date & continue" : "Continue"}
             </button>
           </form>
         </div>

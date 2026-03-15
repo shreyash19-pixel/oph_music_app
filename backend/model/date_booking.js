@@ -98,7 +98,7 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date, reason)
 
 const getAllBookings = async () => {
   try {
-    const [rows] = await db.execute(
+    const [rows] = await db.query(
       `SELECT 
         c.id,
         c.oph_id,
@@ -150,9 +150,25 @@ const getAllBookings = async () => {
 };
 
 const getAllBookingsByID = async (ophid) => {
-  const [rows] = await db.execute("SELECT * FROM calender WHERE oph_id = ? AND song_name IS null AND current_booking_date >= CURDATE()", [
-    ophid,
-  ]);
+  // Only show dates that are approved by admin (have an approved "Date booking" payment).
+  // Exclude dates already used by registered songs (songs_register.release_date).
+  const [rows] = await db.execute(
+    `SELECT c.* FROM calender c
+     INNER JOIN payments p ON p.oph_id = c.oph_id
+       AND DATE(p.release_date) = DATE(c.current_booking_date)
+       AND LOWER(TRIM(p.from_source)) = 'date booking'
+       AND LOWER(TRIM(p.status)) = 'approved'
+     WHERE c.oph_id = ?
+       AND (c.song_name IS null OR c.song_name = '')
+       AND DATE(c.current_booking_date) >= CURDATE()
+       AND c.current_booking_date NOT IN (
+         SELECT sr.release_date FROM songs_register sr
+         WHERE (sr.oph_id = ? OR sr.OPH_ID = ?)
+           AND sr.release_date IS NOT NULL
+           AND sr.release_date != '0000-00-00'
+       )`,
+    [ophid, ophid, ophid]
+  );
 
   return rows;
 };

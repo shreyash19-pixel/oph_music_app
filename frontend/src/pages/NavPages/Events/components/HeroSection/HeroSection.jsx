@@ -7,9 +7,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Bounce, toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axiosApi from "../../../../../conf/axios";
+import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime } from "../../../../../utils/date";
 
-const instagramRegex =
- /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
+// Accept either Instagram username or full profile URL (same as Contact / secondary artist)
+const instagramUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
+const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/;
 
 export default function HeroSection({ professions = [] }) {
   const navigate = useNavigate();
@@ -134,8 +136,24 @@ export default function HeroSection({ professions = [] }) {
     }
   }, [upcomingEvents, isModalOpen]);
 
-  // Booking modal triggers
-  const handleBookSpot = (eventId) => {
+  // Booking modal triggers - only allow when registration is open
+  const handleBookSpot = (event, eventId) => {
+    if (!isRegistrationOpenByDateTime(event)) {
+      if (isRegistrationNotStartedYetByDateTime(event)) {
+        toast.info("Registration has not started yet for this event.", {
+          position: "top-right",
+          theme: "dark",
+          transition: Bounce,
+        });
+      } else {
+        toast.info("Registration has closed for this event.", {
+          position: "top-right",
+          theme: "dark",
+          transition: Bounce,
+        });
+      }
+      return;
+    }
     setBookingEventId(eventId);
     setIsModalOpen(true);
   };
@@ -173,13 +191,20 @@ export default function HeroSection({ professions = [] }) {
       ev.preventDefault();
       if (isSubmitting) return;
 
-      // Basic validations
-      if (!instagramRegex.test(form.instagram_handle)) {
-        toast.error("Invalid Instagram URL!", {
-          position: "top-right",
-          theme: "dark",
-          transition: Bounce,
-        });
+      // Basic validations - Instagram: username or profile URL (same as secondary artist on AudioMetadata)
+      const isValidInstagram =
+        instagramUsernameRegex.test(form.instagram_handle?.trim()) ||
+        instagramUrlRegex.test(form.instagram_handle?.trim());
+      if (!isValidInstagram) {
+        toast.error(
+          "Invalid Instagram! Please enter a valid Instagram username or profile link.",
+          {
+            position: "top-right",
+            autoClose: 4000,
+            theme: "dark",
+            transition: Bounce,
+          }
+        );
         return;
       }
       if (!isValidEmail(form.email)) {
@@ -194,10 +219,19 @@ export default function HeroSection({ professions = [] }) {
         return;
       }
 
+      const current = upcomingEvents.find((e) => e.id === bookingEventId) || {};
+      if (!isRegistrationOpenByDateTime(current)) {
+        toast.error(
+          isRegistrationNotStartedYetByDateTime(current)
+            ? "Registration has not started yet for this event."
+            : "Registration has closed for this event.",
+          { position: "top-right", theme: "dark", transition: Bounce }
+        );
+        return;
+      }
+
       setIsSubmitting(true);
       try {
-        const current = upcomingEvents.find((e) => e.id === bookingEventId) || {};
-        
         toast.success("Redirecting to payment...", {
           position: "top-right",
           theme: "dark",
@@ -205,16 +239,23 @@ export default function HeroSection({ professions = [] }) {
         });
         setIsModalOpen(false);
 
-        // Navigate to payment screen
+        // Navigate to payment screen - booking_details creates event_bookings only on payment submit
         navigate("/auth/payment", {
           state: {
             OPH_ID: `${form.first_name} ${form.last_name}`.trim(),
-          
             event_id: current.id,
-            returnPath: "/dashboard/events",
+            returnPath: "/events/online-music-events",
             heading: "Complete Event Registration",
             from: "Event Registration",
             outside_user: true,
+            booking_details: {
+              first_name: form.first_name,
+              last_name: form.last_name,
+              email: form.email,
+              phone: form.phone,
+              instagram_handle: form.instagram_handle,
+              profession_id: form.profession_id,
+            },
           },
         });
       } catch (err) {
@@ -278,7 +319,7 @@ export default function HeroSection({ professions = [] }) {
               value={form.instagram_handle}
               onChange={onChange}
               required
-              placeholder="Instagram profile URL*"
+              placeholder="username or https://instagram.com/username"
               className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
             />
 
@@ -426,11 +467,22 @@ export default function HeroSection({ professions = [] }) {
                         </span>
 
                         <div
-                          className="mt-4 px-6 py-2 bg-[#5DC9DE] rounded-3xl cursor-pointer text-black text-lg font-semibold"
+                          className={`mt-4 px-6 py-2 rounded-3xl text-black text-lg font-semibold ${
+                            isRegistrationOpenByDateTime(event)
+                              ? "bg-[#5DC9DE] cursor-pointer hover:bg-[#4db8cc]"
+                              : "bg-gray-500 cursor-not-allowed opacity-70"
+                          }`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleBookSpot(event.id);
+                            handleBookSpot(event, event.id);
                           }}
+                          title={
+                            isRegistrationNotStartedYetByDateTime(event)
+                              ? "Registration has not started yet"
+                              : !isRegistrationOpenByDateTime(event)
+                                ? "Registration has closed"
+                                : undefined
+                          }
                         >
                           Book Your Spot Now
                         </div>

@@ -33,10 +33,12 @@ const PaymentScreen = () => {
 
   const {
     amount = 0,
+    paymentRepayAmount,
     backPath,
     returnPath,
     heading = "Payment Required",
     lyrical_services = false,
+    isFixingRejected = false,
   } = location.state || {};
 
   const backPathOrReturn = backPath ?? returnPath ?? "/dashboard";
@@ -63,10 +65,11 @@ const PaymentScreen = () => {
           const registrationFee = eventData.registrationFee_normal;
           console.log(outside_user);
           console.log(registrationFee);
-          const finalAmount =
+          const rawFinalAmount =
             outside_user === true || outside_user === 1
               ? registrationFee // Full amount for outside users
               : registrationFee / 2; // Half amount for regular users
+          const finalAmount = Math.round(Number(rawFinalAmount));
 
           // Create a mock costing object for event data
           const eventCosting = {
@@ -105,9 +108,12 @@ const PaymentScreen = () => {
           console.log(from);
           console.log(user_type);
           
-          if (lyrical_services) {
-            // Check if form (project_type) is "paid in advance" for lyrics service
-            if (location.state.project_type === "paid in advance") {
+          const isLyricalSelected = lyrical_services === true || lyrical_services === "true" || lyrical_services === 1;
+          const projectType = location.state?.project_type || location.state?.projectType || "";
+          const isPaidInAdvance = String(projectType).toLowerCase().trim() === "paid in advance";
+          if (isLyricalSelected) {
+            // Paid in advance + lyrical = "lyrics service" (399). Otherwise "lyrical video"
+            if (isPaidInAdvance) {
               searchName = "lyrics service";
             } else {
               searchName = "lyrical video";
@@ -172,42 +178,53 @@ const PaymentScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [from, lyrical_services, event_id]);
+  }, [from, lyrical_services, event_id, location.state?.project_type, location.state?.projectType]);
 
-  // Function to get the appropriate amount based on the matched costing data or fallback
+  // Get cost from costingData by name (case-insensitive contains)
+  const getCostByName = (search) => {
+    const arr = Array.isArray(costingData) ? costingData : [costingData];
+    const item = arr.find((c) => c?.name && String(c.name).toLowerCase().includes(search));
+    return item ? parseFloat(item.cost) : null;
+  };
+
+  // Function to get the appropriate amount based on the matched costing data or fallback from costing table
   const getDisplayAmount = () => {
+    // Repayment: use exact amount for rejected payment(s) only
+    const repay = paymentRepayAmount ?? (isFixingRejected && amount ? amount : null);
+    if (repay != null && repay > 0) return parseFloat(repay);
+
     if (matchedCosting) {
-      // Parse cost as number (handles string format like "799.00")
       return parseFloat(matchedCosting.cost);
     }
 
-    // Fallback to hardcoded amounts if no costing data match
+    // Fallback: derive from costing table by name
     if (lyrical_services) {
-      return 499; // Lyrical video amount
-    } else if (!from || from === "Registration") {
-      return 500; // Registration amount (default or explicit)
-    } else if (
-      from === "Song Repayment" ||
-      from === "Song Registration" ||
-      from === "Date booking"
-    ) {
-      return 799; // Song Registration amount (used by multiple services)
-    } else if (from === "Event Registration") {
-      return 1000;
-    } else if (from === "Release date change") {
-      return 300;
-    } else if (from === "Special artist song registration") {
-      return 200;
+      return getCostByName("lyrics service") ?? getCostByName("lyrical video") ?? amount;
     }
-    return amount; // Default to the passed amount
+    if (!from || from === "Registration") {
+      return getCostByName("registration") ?? amount;
+    }
+    if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") {
+      return getCostByName("song registration") ?? amount;
+    }
+    if (from === "Event Registration") return getCostByName("event") ?? amount;
+    if (from === "Release date change") return getCostByName("release date change") ?? amount;
+    if (from === "Special artist song registration") return getCostByName("special artist") ?? amount;
+    return amount;
   };
 
-  // Function to get the QR code image
+  // Function to get the QR code image (from costing table)
   const getQRCodeImage = () => {
-    if (matchedCosting && matchedCosting.qr_image_path) {
-      return matchedCosting.qr_image_path;
-    }
-    return "/qr.png"; // Fallback to default QR code
+    if (matchedCosting?.qr_image_path) return matchedCosting.qr_image_path;
+    const arr = Array.isArray(costingData) ? costingData : [costingData];
+    const findByName = (search) => arr.find((c) => c?.name && String(c.name).toLowerCase().includes(search));
+    let item = null;
+    if (lyrical_services) item = findByName("lyrics service") || findByName("lyrical video");
+    else if (!from || from === "Registration") item = findByName("registration");
+    else if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") item = findByName("song registration");
+    else if (from === "Release date change") item = findByName("release date change");
+    else if (from === "Special artist song registration") item = findByName("special artist");
+    return item?.qr_image_path || "/qr.png";
   };
 
   useEffect(() => {
@@ -221,6 +238,23 @@ const PaymentScreen = () => {
   useEffect(() => {
     fetchCostingData();
   }, [fetchCostingData]);
+
+  // Sync song navigation when entering payment page for a song (e.g. after browser back from another tab).
+  // Backend sets status to draft when not fixing a rejected step.
+  useEffect(() => {
+    const isSongPayment = song_id && (from === "Song Registration" || from === "Song Repayment");
+    if (isSongPayment && ophid && headers?.Authorization && location.pathname) {
+      axiosApi.post(
+        "/update-song-navigation",
+        {
+          song_id,
+          oph_id: ophid,
+          next_page: location.pathname,
+        },
+        { headers }
+      ).catch(() => {});
+    }
+  }, [song_id, from, ophid, headers, location.pathname]);
 
   const handlePaymentSuccess = async (e) => {
     e.preventDefault();
@@ -238,6 +272,27 @@ const PaymentScreen = () => {
     console.log("- trans:", trans, "(type:", typeof trans, ")");
 
     try {
+      const rawDate =
+        location.state.release_date ||
+        location.state.booking_date ||
+        location.state.date ||
+        location.state.new_booking_date;
+      const toYYYYMMDD = (v) => {
+        if (v == null || v === "") return null;
+        const s = String(v).trim();
+        if (!s || s === "0000-00-00" || s.toLowerCase().startsWith("0000-00-00"))
+          return null;
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+        const parts = s.split(/[/-T]/);
+        if (parts.length >= 3) {
+          const [a, b, c] = parts;
+          if (a.length === 4) return `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}`;
+          if (c.length === 4) return `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`;
+        }
+        return null;
+      };
+      const release_date = toYYYYMMDD(rawDate);
+
       const formData = {
         OPH_ID: oph_id,
         Transaction_ID: trans,
@@ -257,6 +312,17 @@ const PaymentScreen = () => {
         amount: getDisplayAmount(),
       };
 
+      // Include booking_details for event registration (creates event_bookings only on payment submit)
+      if (from === "Event Registration" && location.state?.booking_details) {
+        const bd = location.state.booking_details;
+        formData.first_name = bd.first_name;
+        formData.last_name = bd.last_name;
+        formData.email = bd.email;
+        formData.phone = bd.phone;
+        formData.instagram_handle = bd.instagram_handle;
+        formData.profession_id = bd.profession_id;
+      }
+
       console.log("Final formData being sent:", formData);
       console.log(
         "API Path:",
@@ -271,13 +337,16 @@ const PaymentScreen = () => {
 
       if (response.data.success && from == "Date booking") {
         {
+          // For Date Booking repayment with linked song, pass song_id and song_name
+          const bookingDate = location.state.date || location.state.booking_date || location.state.release_date;
           const CalenderRes = await axiosApi.post(
             "/booking",
             {
               oph_id: oph_id,
-              booking_date: location.state.date,
-              song_name: null,
-              project_type: null,
+              booking_date: bookingDate,
+              song_name: location.state.songName || null,
+              project_type: location.state.project_type || null,
+              song_id: song_id || location.state.song_id || null,
             },
             { headers: headers },
           );
@@ -425,7 +494,7 @@ const PaymentScreen = () => {
                 heading:
                   "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/upload-song",
+                redirectTo: "/dashboard",
               },
             });
           } else if (
@@ -473,9 +542,21 @@ const PaymentScreen = () => {
           });
         }
       } else if (response.data.success && from === "Event Registration") {
-        {
-          console.log(oph_id, "test oph_id");
+        // External users: booking created by PaymentService, navigate to success
+        // Internal users: event_participants updated by PaymentService, /event_part is legacy
+        const isExternal = location.state?.outside_user === true;
+        const redirectTo = location.state?.returnPath || "/events/online-music-events";
 
+        if (isExternal) {
+          navigate("/success", {
+            state: {
+              heading: "Your Event Spot has been booked Successfully!",
+              btnText: "Check Out More Events",
+              redirectTo,
+            },
+            replace: true,
+          });
+        } else {
           const eventResponse = await axiosApi.post(
             "/event_part",
             { OPH_ID: oph_id, event_id: location.state.event_id },
@@ -491,8 +572,8 @@ const PaymentScreen = () => {
             navigate("/dashboard/success", {
               state: {
                 heading: "Your Event Spot has been booked Successfully.",
-                btnText: "Back to Home",
-                redirectTo: "/dashboard/events",
+                btnText: "View Events",
+                redirectTo: location.state?.returnPath || "/dashboard/events",
               },
             });
           }
@@ -525,18 +606,50 @@ const PaymentScreen = () => {
   };
 
   const handleCancel = () => {
-    navigate(backPathOrReturn, {
-      replace: true,
-      state: {
-        from: location.state?.from,
-        booking_date: location.state?.release_date ?? location.state?.booking_date,
-        release_date: location.state?.release_date ?? location.state?.booking_date,
-        song_id: location.state?.song_id,
-        songName: location.state?.songName,
-        project_type: location.state?.project_type,
-        lyrical_services: location.state?.lyrical_services,
-      },
-    });
+    const isSongPayment = song_id && (from === "Song Registration" || from === "Song Repayment");
+    const pathToSet = backPathOrReturn && backPathOrReturn.trim() !== "" ? backPathOrReturn : "/dashboard/upload-song/video-metadata";
+
+    if (isSongPayment && ophid && headers?.Authorization && pathToSet) {
+      // Set song to draft immediately when leaving payment without paying (so list shows Draft, not Under Review)
+      axiosApi
+        .post(
+          "/update-song-navigation",
+          {
+            song_id,
+            oph_id: ophid,
+            next_page: pathToSet,
+          },
+          { headers }
+        )
+        .catch(() => {})
+        .finally(() => {
+          navigate(pathToSet, {
+            replace: true,
+            state: {
+              from: location.state?.from,
+              booking_date: location.state?.release_date ?? location.state?.booking_date,
+              release_date: location.state?.release_date ?? location.state?.booking_date,
+              song_id: location.state?.song_id,
+              songName: location.state?.songName,
+              project_type: location.state?.project_type,
+              lyrical_services: location.state?.lyrical_services,
+            },
+          });
+        });
+    } else {
+      navigate(backPathOrReturn, {
+        replace: true,
+        state: {
+          from: location.state?.from,
+          booking_date: location.state?.release_date ?? location.state?.booking_date,
+          release_date: location.state?.release_date ?? location.state?.booking_date,
+          song_id: location.state?.song_id,
+          songName: location.state?.songName,
+          project_type: location.state?.project_type,
+          lyrical_services: location.state?.lyrical_services,
+        },
+      });
+    }
   };
 
   return (
@@ -545,7 +658,7 @@ const PaymentScreen = () => {
       <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center p-8">
         <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
           {heading}{" "}
-          <span className="text-cyan-400">₹{getDisplayAmount()}/-</span>
+          <span className="text-cyan-400">₹{Math.round(Number(getDisplayAmount()) || 0)}/-</span>
         </h1>
 
         <div className="flex flex-col items-center gap-6 max-w-md w-full">

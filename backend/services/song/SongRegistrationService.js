@@ -1,22 +1,28 @@
 const db = require('../../DB/connect');
 const SongApplicationStatusService = require('./SongApplicationStatusService');
 const songRegModel = require('../../model/songs_register');
+const costingModel = require('../../admin/model/costing');
 
 class SongRegistrationService {
   /**
    * Get pending songs list with status determined from song_application_status
    * Gets reject reasons from individual tables (audio_details, video_details, payments)
    * Determines proper redirect path based on rejected step
+   * Uses costing table for payment amounts (Song Registration, Lyrics Service)
    */
   async getPendingSongsList(ophId) {
     const connection = await db.getConnection();
     
     try {
+      const costs = await costingModel.getCostsForPaymentLogic() || {};
+      const songRegCost = costs.songRegistration ?? 799;
+      const lyricsServiceCost = costs.lyricsService ?? 399;
+
       // Get all songs for the user with song_application_status
       // Use song_application_status.overall_status as the single source of truth
       // Payment: use subquery so we get reject_reason even when payment row has song_id moved to reject_for
       // One row per song: use subqueries for reject_reason so duplicates in ad/vd don't create multiple rows
-      const [rows] = await connection.execute(
+      const [rows] = await connection.query(
         `SELECT 
           sr.song_id,
           sr.Song_name,
@@ -24,6 +30,7 @@ class SongRegistrationService {
           sr.Lyrics_services,
           sr.release_date,
           sr.current_page,
+          sr.status AS register_status,
           sas.status_audio,
           sas.status_video,
           sas.status_payment,
@@ -35,9 +42,25 @@ class SongRegistrationService {
            WHERE vd2.song_id = sr.song_id 
            LIMIT 1) as video_reject_reason,
           (SELECT p2.reject_reason FROM payments p2 
-           WHERE (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id) AND p2.oph_id = sr.oph_id 
-           AND (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
-           ORDER BY p2.created_at DESC LIMIT 1) as payment_reject_reason
+           WHERE p2.oph_id = sr.oph_id 
+           AND (
+             (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id)
+             OR (p2.from_source = 'Date booking' OR p2.from_source = 'Date Booking')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
+           )
+           AND p2.status = 'rejected'
+           ORDER BY p2.created_at DESC LIMIT 1) as payment_reject_reason,
+          (SELECT p2.from_source FROM payments p2 
+           WHERE p2.oph_id = sr.oph_id 
+           AND (
+             (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id)
+             OR (p2.from_source = 'Date booking' OR p2.from_source = 'Date Booking')
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
+           )
+           AND p2.status = 'rejected'
+           ORDER BY p2.created_at DESC LIMIT 1) as payment_from_source
         FROM songs_register sr
         LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
         WHERE sr.oph_id = ?
@@ -45,19 +68,35 @@ class SongRegistrationService {
         [ophId]
       );
 
+      // Get rejected payments for paid-in-advance + lyrical pricing (lyrical = amount < songReg)
+      const [rejectedPaymentsRows] = await connection.query(
+        `SELECT song_id, reject_for, release_date, from_source, amount
+         FROM payments
+         WHERE oph_id = ? AND status = 'rejected'
+         AND (
+           (from_source IN ('Date booking','Date Booking'))
+           OR (from_source IN ('Song Registration','Song Repayment') AND amount < ?)
+         )
+         ORDER BY created_at DESC`,
+        [ophId, songRegCost]
+      );
+
       const songDetails = {};
+      const rowsSafe = rows || [];
 
-      console.log();
-      
-
-      rows.forEach((row) => {
+      rowsSafe.forEach((row) => {
         const songId = row.song_id;
 
         if (!songDetails[songId]) {
           const rejectedSections = [];
           let firstRejectedStepReason = "";
           let currentStep = "";
-          let status = row.overall_status || "pending";
+          // When user went back (register_status = 'draft'), show as draft; when payment not done, show as draft; else use overall_status
+          let status = (row.register_status === 'draft')
+            ? 'pending'
+            : (row.status_payment === 'pending' || !row.status_payment)
+              ? 'pending'   // payment not done = still in progress, show as Draft not "Under Review"
+              : (row.overall_status || "pending");
 
           // Build list of ALL rejected sections (audio, video, payment) in fixed order so next_page = first
           // Use status and/or reject_reason so we don't miss a section when status is out of sync
@@ -75,11 +114,60 @@ class SongRegistrationService {
               reason: row.video_reject_reason || ""
             });
           }
-          if (row.status_payment === "rejected" || (row.payment_reject_reason && String(row.payment_reject_reason).trim() !== "")) {
+          // Only add payment to rejectedSections when status_payment is "rejected".
+          // Do NOT use payment_reject_reason alone: a resubmitted payment can be "under review"
+          // while an old reject_reason still exists in the DB.
+          const isDateBookingPayment =
+            row.payment_from_source === "Date booking" ||
+            row.payment_from_source === "Date Booking";
+          const isPaidInAdvanceLyrical =
+            row.project_type && String(row.project_type).toLowerCase().includes("paid in advance") &&
+            (row.Lyrics_services === true || row.Lyrics_services === 1 || row.Lyrics_services === "true");
+          let rejectedPayments = [];
+          let paymentRepayAmount = 0;
+          if (row.status_payment === "rejected" && isPaidInAdvanceLyrical && (rejectedPaymentsRows?.length || 0) > 0) {
+            const toDateStr = (v) => {
+              if (v == null || v === '') return null;
+              if (typeof v === "string") return v.slice(0, 10);
+              if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString().slice(0, 10);
+              return null;
+            };
+            const dateStr = toDateStr(row.release_date);
+            const seen = { date_booking: false, lyrical: false };
+            for (const rp of rejectedPaymentsRows || []) {
+              const isDateBooking = rp.from_source === "Date booking" || rp.from_source === "Date Booking";
+              const isLyrical = (rp.from_source === "Song Registration" || rp.from_source === "Song Repayment") && Number(rp.amount) < songRegCost;
+              let matches = false;
+              if (isDateBooking && !seen.date_booking) {
+                const rDate = toDateStr(rp.release_date);
+                // reject_for may hold song_id (new) or release_date (legacy)
+                matches = rp.song_id === songId || rp.reject_for === songId || rp.reject_for === dateStr || rDate === dateStr;
+                if (matches) {
+                  seen.date_booking = true;
+                  const amt = Number(rp.amount) || songRegCost;
+                  rejectedPayments.push({ type: "date_booking", amount: amt });
+                  paymentRepayAmount += amt;
+                }
+              } else if (isLyrical && !seen.lyrical) {
+                matches = rp.song_id === songId || String(rp.reject_for) === String(songId);
+                if (matches) {
+                  seen.lyrical = true;
+                  const amt = Number(rp.amount) || lyricsServiceCost;
+                  rejectedPayments.push({ type: "lyrical", amount: amt });
+                  paymentRepayAmount += amt;
+                }
+              }
+            }
+          }
+          if (row.status_payment === "rejected") {
+            const repayAmount = paymentRepayAmount || (isDateBookingPayment ? songRegCost : lyricsServiceCost);
             rejectedSections.push({
               section: "payment",
               label: "Payment Rejected",
-              reason: row.payment_reject_reason || ""
+              reason: row.payment_reject_reason || "",
+              isDateBooking: !!isDateBookingPayment,
+              rejectedPayments: rejectedPayments.length ? rejectedPayments : undefined,
+              paymentRepayAmount: repayAmount,
             });
           }
 
@@ -88,17 +176,22 @@ class SongRegistrationService {
           const firstRejectedStep = firstRejected ? firstRejected.label : "";
           if (firstRejected) firstRejectedStepReason = firstRejected.reason;
 
-          // next_page = first step: audio -> video -> payment. When only payment rejected, send to video-metadata (read-only + Pay now)
+          // next_page = first step: audio -> video -> payment.
+          // Date Booking payment rejected → /auth/payment (repay for date). Song Reg payment rejected → video-metadata (Pay now).
           if (rejectedSections.length > 0) {
             const hasAudio = rejectedSections.some((s) => s.section === "audio");
             const hasVideo = rejectedSections.some((s) => s.section === "video");
-            const hasPayment = rejectedSections.some((s) => s.section === "payment");
+            const paymentSection = rejectedSections.find((s) => s.section === "payment");
+            const hasPayment = !!paymentSection;
+            const isDateBookingPaymentRejected = paymentSection?.isDateBooking === true;
             if (hasAudio) {
               currentStep = "/dashboard/upload-song/audio-metadata/";
             } else if (hasVideo) {
               currentStep = "/dashboard/upload-song/video-metadata/";
+            } else if (hasPayment && isDateBookingPaymentRejected) {
+              currentStep = "/auth/payment"; // Date Booking rejected → payment page (repay for date)
             } else if (hasPayment) {
-              currentStep = "/dashboard/upload-song/video-metadata/"; // only payment → video page then Pay now
+              currentStep = "/dashboard/upload-song/video-metadata/"; // Song Reg payment → video page (Pay now)
             } else {
               currentStep = "/dashboard/upload-song/audio-metadata/";
             }
@@ -142,8 +235,9 @@ class SongRegistrationService {
   }
 
   /**
-   * Update song current_page and status when user navigates to fix rejected item
-   * Sets status to "under review" when user starts fixing a rejected step
+   * Update song current_page and status when user navigates.
+   * Sets status to "under review" only when user is navigating TO a step that was rejected (fixing it).
+   * Otherwise sets status to "draft" so that going back from video-metadata or payment does not mark the song as under review.
    */
   async updateSongNavigation(songId, ophId, nextPage) {
     const connection = await db.getConnection();
@@ -151,15 +245,7 @@ class SongRegistrationService {
     try {
       await connection.beginTransaction();
 
-      // Update current_page in songs_register
-      await connection.execute(
-        `UPDATE songs_register 
-         SET current_page = ?, status = 'under review', updated_at = NOW()
-         WHERE song_id = ? AND oph_id = ?`,
-        [nextPage, songId, ophId]
-      );
-
-      // Determine which step is being fixed based on nextPage
+      // Determine which step we're navigating TO based on nextPage
       let stepToUpdate = null;
       if (nextPage.includes('audio-metadata')) {
         stepToUpdate = 'audio';
@@ -169,26 +255,31 @@ class SongRegistrationService {
         stepToUpdate = 'payment';
       }
 
-      // If we're fixing a rejected step, update that step status back to "under review"
-      if (stepToUpdate) {
-        // Get current status to check if it was rejected
-        const songStatus = await SongApplicationStatusService.getSongApplicationStatus(connection, songId);
-        
-        if (songStatus) {
-          const statusField = `status_${stepToUpdate}`;
-          const currentStatus = songStatus[statusField];
-          
-          // If the step was rejected, update it back to "under review"
-          if (currentStatus === 'rejected') {
-            await SongApplicationStatusService.updateStepStatus(
-              connection,
-              songId,
-              stepToUpdate,
-              'under review'
-            );
-          }
+      let newStatus = 'draft';
+      const songStatus = await SongApplicationStatusService.getSongApplicationStatus(connection, songId);
+      
+      if (stepToUpdate && songStatus) {
+        const statusField = `status_${stepToUpdate}`;
+        const currentStatus = songStatus[statusField];
+        // Only set "under review" when user is fixing a rejected step
+        if (currentStatus === 'rejected') {
+          newStatus = 'under review';
+          await SongApplicationStatusService.updateStepStatus(
+            connection,
+            songId,
+            stepToUpdate,
+            'under review'
+          );
         }
       }
+
+      // Update current_page and status in songs_register (draft when just going back, under review when fixing rejected)
+      await connection.execute(
+        `UPDATE songs_register 
+         SET current_page = ?, status = ?, updated_at = NOW()
+         WHERE song_id = ? AND oph_id = ?`,
+        [nextPage, newStatus, songId, ophId]
+      );
 
       await connection.commit();
       
@@ -280,7 +371,12 @@ class SongRegistrationService {
       // Check payment (if not just submitted)
       else if (justSubmitted !== 'payment' && row.status_payment === 'rejected' && row.payment_reject_reason) {
         nextRejectedSection = 'payment';
-        redirectPath = '/auth/payment';
+        // When coming from audio resubmit: send user to video metadata (read-only + Pay now) instead of payment page
+        if (justSubmitted === 'audio') {
+          redirectPath = '/dashboard/upload-song/video-metadata/';
+        } else {
+          redirectPath = '/auth/payment';
+        }
       }
 
       // If no more rejected sections, redirect to success
@@ -288,9 +384,12 @@ class SongRegistrationService {
         redirectPath = '/dashboard/success';
       }
 
+      const showPayNowOnVideo = nextRejectedSection === 'payment' && redirectPath === '/dashboard/upload-song/video-metadata/';
+
       return {
         nextRejectedSection,
         redirectPath,
+        showPayNowOnVideo: !!showPayNowOnVideo,
         songName,
         songId: row.song_id,
         releaseDate: row.release_date,

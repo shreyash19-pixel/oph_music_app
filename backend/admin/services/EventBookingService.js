@@ -3,6 +3,7 @@ const EventBookingModel = require('../model/eventBookings');
 const EventModel = require('../model/events');
 const EventParticipantModel = require('../model/eventParticipant');
 const { generateBookingReference } = require('../../utils/bookingReference');
+const { getEndOfDayIST } = require('../../utils/registrationWindow');
 
 class EventBookingService {
   /**
@@ -33,7 +34,7 @@ class EventBookingService {
       // Check if registration is open
       const now = new Date();
       const regStart = event.registrationStart ? new Date(event.registrationStart) : null;
-      const regEnd = event.registrationEnd ? new Date(event.registrationEnd) : null;
+      const regEnd = event.registrationEnd ? getEndOfDayIST(event.registrationEnd) : null;
 
       if (regStart && now < regStart) {
         throw new Error('Registration has not started yet');

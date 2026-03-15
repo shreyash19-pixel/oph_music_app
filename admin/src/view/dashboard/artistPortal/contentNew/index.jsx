@@ -259,47 +259,42 @@ const ContentNew = () => {
                               <div className="text-gray-900">{artist.Legal_name || "—"}</div>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-3 pt-2 border-t">
-                            {artist.SpotifyLink && (
-                              <a
-                                href={artist.SpotifyLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-green-600 hover:text-green-800 text-sm font-medium"
-                              >
-                                Spotify ↗
-                              </a>
-                            )}
-                            {artist.InstagramLink && (
-                              <a
-                                href={artist.InstagramLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-pink-600 hover:text-pink-800 text-sm font-medium"
-                              >
-                                Instagram ↗
-                              </a>
-                            )}
-                            {artist.FacebookLink && (
-                              <a
-                                href={artist.FacebookLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                              >
-                                Facebook ↗
-                              </a>
-                            )}
-                            {artist.AppleMusicLink && (
-                              <a
-                                href={artist.AppleMusicLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-red-600 hover:text-red-800 text-sm font-medium"
-                              >
-                                Apple Music ↗
-                              </a>
-                            )}
+                          <div className="space-y-2 pt-2 border-t">
+                            {[
+                              { label: "Spotify", url: artist.SpotifyLink },
+                              { label: "Instagram", url: artist.InstagramLink },
+                              { label: "Facebook", url: artist.FacebookLink },
+                              { label: "Apple Music", url: artist.AppleMusicLink },
+                            ]
+                              .filter((p) => p.url)
+                              .map(({ label, url }) => (
+                                <div
+                                  key={label}
+                                  className="flex items-center gap-2 flex-wrap"
+                                >
+                                  <span className="text-sm font-medium text-gray-700 min-w-[90px]">
+                                    {label}:
+                                  </span>
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:underline truncate max-w-[280px]"
+                                  >
+                                    {url}
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(url);
+                                      toast.success("Link copied");
+                                    }}
+                                    className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                                  >
+                                    Copy
+                                  </button>
+                                </div>
+                              ))}
                           </div>
                         </div>
                       </div>

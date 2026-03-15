@@ -23,17 +23,28 @@ export default function VideoMetadataForm() {
 
   const [nextPage, setNextPage] = useState("");
   const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
+  const formattedDate = (() => {
+    if (!releaseDateRaw) return "";
+    const s = String(releaseDateRaw).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const release_date = new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
+    if (!release_date || !release_date.includes("/")) return "";
+    const parts = release_date.split("/");
+    if (parts.length < 3) return "";
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  })();
   const release_date = releaseDateRaw
     ? new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
     : "";
 
-  const year = release_date ? release_date.split("/")[2] : "";
-  const month = release_date ? release_date.split("/")[0] : "";
-  const day = release_date ? release_date.split("/")[1] : "";
-  const formattedDate = year && month && day ? `${year}-${month}-${day}` : "";
-
   const [songName, setSongName] = useState(location.state?.songName || "");
-  const projectType = localStorage.getItem("projectType") || "";
+  // Prefer location.state (from navigation) so "Paid in Advance" from backend works; fallback to localStorage
+  const projectTypeRaw = location.state?.project_type || localStorage.getItem("projectType") || "";
+  const projectType = typeof projectTypeRaw === "string" ? projectTypeRaw.trim() : "";
+  const isPaidInAdvance = projectType.length > 0 && String(projectType).toLowerCase().includes("paid in advance");
+  const lyricalServices = location.state?.lyrical_services === true || location.state?.lyrical_services === "true"
+    || location.state?.lyrical_services === 1 || location.state?.lyrical_services === "1";
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
     credits: "",
@@ -69,14 +80,21 @@ export default function VideoMetadataForm() {
   const isVideoRejected = location.state?.rejectedSections?.some(
     (s) => s.section === "video"
   );
-  // Only payment rejected = payment needs repayment, video NOT rejected, and no video in rejectedSections
+  // Paid in advance without lyrical: never show Pay now (no payment needed)
+  const isPaidInAdvanceNoLyricalCheck = isPaidInAdvance && !lyricalServices;
+  // Only payment rejected = payment needed AND video was already submitted (so show read-only + Pay now)
   const onlyPaymentRejected =
+    !isPaidInAdvanceNoLyricalCheck &&
     videoMetadataLoaded &&
-    nextPage === "repayment" &&
+    (nextPage === "repayment" || nextPage === "payment") &&
     formData.reject_reason === null &&
-    !isVideoRejected;
-  // Show read-only + Pay now: either only payment rejected, or user just submitted video and payment is next
-  const showReadOnlyAndPayNow = onlyPaymentRejected || showPayNowAfterSubmit;
+    !isVideoRejected &&
+    !!formData.existing_video_url; // must have submitted video before showing read-only
+  // After audio resubmit when both audio and payment were rejected: land here with read-only + Pay now
+  const showPayNowOnVideoFromState = location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
+  // Show read-only + Pay now when: (1) video already submitted and only payment left, (2) user just submitted on this page, or (3) came from audio resubmit (audio+payment rejected)
+  // Never show for paid in advance without lyrical
+  const showReadOnlyAndPayNow = !isPaidInAdvanceNoLyricalCheck && (onlyPaymentRejected || showPayNowAfterSubmit || showPayNowOnVideoFromState);
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
@@ -295,10 +313,11 @@ export default function VideoMetadataForm() {
         },
       });
 
-      if (
-        projectType === "paid in advance" &&
-        location.state.lyrical_services === false
-      ) {
+      // Paid in advance + lyrical NOT selected: no payment, go directly to success
+      const isPaidInAdvanceNoLyrical =
+        isPaidInAdvance &&
+        !lyricalServices;
+      if (isPaidInAdvanceNoLyrical) {
         const response = await axiosApi.post(
           "/insert-calender-song-project",
           {
@@ -333,33 +352,76 @@ export default function VideoMetadataForm() {
               state: {
                 heading: "Your Song Registration has been done successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/events",
+                redirectTo: "/dashboard",
               },
             });
           }
         }
         return;
-      } else if (
-        projectType === "paid in advance" &&
-        location.state.lyrical_services === true
-      ) {
-        navigate("/auth/payment", {
-          state: {
-            from: "Song Registration",
-            booking_date: location.state.release_date,
-            song_id: contentId,
-            songName: location.state.songName,
-            project_type: location.state.project_type,
-            lyrical_services: location.state.lyrical_services,
-            backPath: `/dashboard/upload-song/video-metadata`,
-          },
-        });
-        return;
       }
+      // "paid in advance" + lyrical_services: do not redirect here; fall through to success
+      // so we stay on page with read-only form + Pay now
 
       if (response.data.success) {
         setIsLoading(false);
-        
+
+        // Refetch video metadata so read-only view shows saved thumbnails and video URLs
+        const refetchForReadOnly = async () => {
+          try {
+            const res = await axiosApi.get(`/video-details`, { headers, params: { contentId } });
+            if (res.data?.success && res.data?.data?.video_metadata?.[0]) {
+              const d = res.data.data.video_metadata[0];
+              let imageUrls = [];
+              const rawImageUrl = d.image_url ?? d.image_URL;
+              if (rawImageUrl != null) {
+                if (Array.isArray(rawImageUrl)) imageUrls = rawImageUrl;
+                else if (typeof rawImageUrl === "string") {
+                  try {
+                    const parsed = JSON.parse(rawImageUrl);
+                    imageUrls = Array.isArray(parsed) ? parsed : [parsed].filter(Boolean);
+                  } catch {
+                    imageUrls = [rawImageUrl].filter(Boolean);
+                  }
+                }
+              }
+              const videoUrl = d.video_url ?? d.video_URL ?? null;
+              setFormData((prev) => ({
+                ...prev,
+                credits: d.credits || prev.credits,
+                existing_thumbnails: imageUrls,
+                existing_video_url: videoUrl || prev.existing_video_url,
+                video_file: null,
+                thumbnails: [],
+              }));
+            }
+          } catch (e) {
+            console.warn("Refetch video metadata after submit:", e);
+          }
+        };
+
+        // Paid in advance + lyrical: only show Pay now when PAYMENT is rejected, not when only video was rejected
+        const isPaidInAdvanceWithLyrical = isPaidInAdvance && lyricalServices;
+        if (isPaidInAdvanceWithLyrical) {
+          const isPaymentRejected =
+            nextPage === "repayment" ||
+            nextPage === "payment" ||
+            location.state?.rejectedSections?.some((s) => s.section === "payment");
+          if (isPaymentRejected) {
+            await refetchForReadOnly();
+            setShowPayNowAfterSubmit(true);
+          } else {
+            // Video resubmitted, payment already approved → go under review
+            navigate("/dashboard/pending", {
+              state: {
+                heading: "Your video details are under review",
+                btnText: "Upload a new song",
+                redirectTo: "/dashboard/upload-song",
+              },
+            });
+          }
+          return;
+        }
+
         // Check if there's a redirect path from backend (for rejected sections)
         if (response.data.redirectPath) {
           if (response.data.redirectPath === '/dashboard/success') {
@@ -367,7 +429,7 @@ export default function VideoMetadataForm() {
               state: {
                 heading: "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
-                redirectTo: "/dashboard/upload-song",
+                redirectTo: "/dashboard",
               },
             });
           } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
@@ -395,38 +457,17 @@ export default function VideoMetadataForm() {
               },
             });
           } else if (response.data.redirectPath === '/auth/payment') {
-            // Stay on same page: form becomes read-only, show Pay now (user clicks to go to payment)
+            await refetchForReadOnly();
             setShowPayNowAfterSubmit(true);
           } else {
             // Fallback to default navigation
             navigate(response.data.redirectPath);
           }
         } else {
-          // Default navigation logic (existing behavior)
-          if (nextPage === "repayment") {
-            navigate("/auth/payment", {
-              state: {
-                from: "Song Repayment",
-                booking_date: location.state.release_date,
-                song_id: contentId,
-                songName: location.state.songName,
-                project_type: projectType,
-                lyrical_services: location.state.lyrical_services,
-                backPath: `/dashboard/upload-song/video-metadata`,
-              },
-            });
-          } else if (nextPage === "payment") {
-            navigate("/auth/payment", {
-              state: {
-                from: "Song Registration",
-                booking_date: location.state.release_date,
-                song_id: contentId,
-                songName: location.state.songName,
-                project_type: location.state.project_type,
-                lyrical_services: location.state.lyrical_services,
-                backPath: `/dashboard/upload-song/video-metadata`,
-              },
-            });
+          // Default: only show Pay now when payment step is actually rejected (not when only video was rejected)
+          if (nextPage === "repayment" || nextPage === "payment") {
+            await refetchForReadOnly();
+            setShowPayNowAfterSubmit(true);
           } else if (nextPage === "pending") {
             navigate("/dashboard/pending", {
               state: {
@@ -533,19 +574,29 @@ export default function VideoMetadataForm() {
           return;
         }
 
-        // Parse existing image URLs
-        const imageUrls = data.image_url ? JSON.parse(data.image_url) : [];
+        // Parse existing image URLs (API may return string or already-parsed array; support both key casings)
+        let imageUrls = [];
+        const rawImageUrl = data.image_url ?? data.image_URL;
+        if (rawImageUrl != null) {
+          if (Array.isArray(rawImageUrl)) imageUrls = rawImageUrl;
+          else if (typeof rawImageUrl === "string") {
+            try {
+              const parsed = JSON.parse(rawImageUrl);
+              imageUrls = Array.isArray(parsed) ? parsed : [parsed].filter(Boolean);
+            } catch {
+              imageUrls = [rawImageUrl].filter(Boolean);
+            }
+          }
+        }
 
-        // Don't convert existing thumbnails or video to File objects - keep as URLs only.
-        // Converting video URL to File would download the entire video (can be 100s of MB) and makes the page load very slow.
-        // Preview uses existing_video_url directly in CustomVideoPlayer; no download needed.
+        const videoUrl = data.video_url ?? data.video_URL ?? null;
 
         setFormData({
           credits: data.credits || "",
           existing_thumbnails: imageUrls,
           thumbnails: [],
-          video_file: null, // No File for existing video - preview uses existing_video_url
-          existing_video_url: data.video_url || null,
+          video_file: null,
+          existing_video_url: videoUrl,
           reject_reason: data.reject_reason || null,
         });
       }
@@ -565,26 +616,69 @@ export default function VideoMetadataForm() {
   }, [checkBookingDates]);
 
   useEffect(() => {
+    // Sync song navigation when entering this page (e.g. after browser back from payment).
+    // Backend sets status to draft when not fixing a rejected step, so song shows as Draft.
+    if (contentId && ophid && headers?.Authorization && location.pathname) {
+      axiosApi.post(
+        "/update-song-navigation",
+        {
+          song_id: contentId,
+          oph_id: ophid,
+          next_page: location.pathname,
+        },
+        { headers }
+      ).catch(() => {});
+    }
+
+    // Draft: check if release date is still free on calendar; if taken, redirect to register-song
+    const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
+    if (contentId && releaseDateRaw && headers?.Authorization) {
+      const releaseDateForApi = typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
+        ? releaseDateRaw.split("/").reverse().join("-")
+        : releaseDateRaw;
+      axiosApi.get("/check-release-date-available", {
+        headers,
+        params: { release_date: releaseDateForApi, song_id: contentId, ophid }
+      }).then((res) => {
+        if (res.data.success && res.data.available === false) {
+          navigate("/dashboard/upload-song/register-song", {
+            replace: true,
+            state: {
+              song_id: contentId,
+              songName: location.state?.songName || songName,
+              release_date: releaseDateRaw,
+              project_type: location.state?.project_type,
+              lyrical_services: location.state?.lyrical_services,
+              dateNoLongerAvailable: true,
+              returnToPage: "/dashboard/upload-song/video-metadata"
+            }
+          });
+        }
+      }).catch(() => {});
+    }
     checkAlreadyBookedDate();
     fetchVideoMetadata();
     checkPaymentStaus();
 
     // Re-run when contentId, headers, ophid, or location (e.g. returning from payment cancel) changes
     // location.key changes on every navigate, so we re-fetch when user comes back to this page
-  }, [contentId, headers, ophid, location.key]);
+  }, [contentId, headers, ophid, location.key, location.pathname]);
 
   if (error) {
     return <div className="text-red-500 p-4">{error}</div>;
   }
 
   if (navigateToSongReg) {
-    navigate("/dashboard/error", {
+    navigate("/dashboard/upload-song/register-song", {
+      replace: true,
       state: {
-        heading:
-          "Since your song has been in pending, the date was taken by somebody else, please go back to song registeration to update the date",
-        btnText: "Song registration",
-        redirectTo: "/dashboard/upload-song/register-song",
-        songName: songName,
+        song_id: contentId,
+        songName,
+        release_date: location.state?.release_date ?? location.state?.booking_date,
+        project_type: location.state?.project_type,
+        lyrical_services: location.state?.lyrical_services,
+        dateNoLongerAvailable: true,
+        returnToPage: "/dashboard/upload-song/video-metadata",
       },
     });
     return null;
@@ -613,7 +707,9 @@ export default function VideoMetadataForm() {
         {showReadOnlyAndPayNow ? (
           <div className="space-y-6">
             <p className="text-gray-400">
-              {showPayNowAfterSubmit
+              {showPayNowOnVideoFromState
+                ? "Please complete payment to continue."
+                : showPayNowAfterSubmit
                 ? "Video submitted successfully. Please complete payment to continue."
                 : "Your video details are already approved. Please complete payment to continue."}
             </p>
@@ -653,6 +749,7 @@ export default function VideoMetadataForm() {
                   state: {
                     from: "Song Repayment",
                     booking_date: formattedDate || location.state?.release_date,
+                    release_date: formattedDate || location.state?.release_date,
                     song_id: contentId,
                     songName: location.state?.songName || songName,
                     project_type: projectType,
@@ -706,7 +803,9 @@ export default function VideoMetadataForm() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Camera className="w-5 h-5 text-gray-400" />
-                  <span>Upload Maximum 3 Pictures</span>
+                  <span>
+                    Upload Maximum 3 Pictures <span className="text-red-500">*</span>
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
