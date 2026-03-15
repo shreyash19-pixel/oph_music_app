@@ -259,7 +259,7 @@ const ProfessionalDetailsForm = () => {
       return;
     }
 
-    if (formData.songsPlanned === 0) {
+    if (formData.songsPlanned === 0 && !ophid.includes("SA")) {
       toast.error("Please enter number of songs");
       setLoading(false);
       return;
