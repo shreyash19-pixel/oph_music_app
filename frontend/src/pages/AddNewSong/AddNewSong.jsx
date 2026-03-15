@@ -132,7 +132,15 @@ const AddNewSong = () => {
     let songType = "";
 
     if (formData.songType != "") {
-      songType = formData.songType;
+      if (formData.songType === "free" && isFree === true) {
+        songType = "free";
+      } else if (formData.songType === "free" && isFree === false) {
+        songType = "paid";
+      } else if (formData.songType === "paid" && isFree === true) {
+        songType = "free";
+      } else if (formData.songType === "paid" && isFree === false) {
+        songType = "paid";
+      }
     } else {
       if (isFree === true) {
         songType = "free";
@@ -155,7 +163,6 @@ const AddNewSong = () => {
       console.log(formData.songType);
       const getSongStatus = status.find((stat) => stat.song_id === songId);
       console.log(getSongStatus);
-      
 
       try {
         // setLoading(true);
@@ -176,12 +183,20 @@ const AddNewSong = () => {
           const getSongStatus = status.find((stat) => stat.song_id === songId);
 
           if (formData.songType != "") {
-            if (formData.songType === "free") {
+            if (formData.songType === "free" && isFree === true) {
               navigate("/dashboard/pending", {
                 state: {
                   heading: "Your request is under review",
                   btnText: "Back to Home",
                   redirectTo: "/dashboard",
+                },
+              });
+            } else if (formData.songType === "free" && isFree === false) {
+              navigate("/auth/payment", {
+                state: {
+                  from: "Special artist song registration",
+                  song_id: data[0].song_id,
+                  backPath: "/dashboard/add-new-song",
                 },
               });
             } else if (
