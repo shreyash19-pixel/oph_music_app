@@ -230,6 +230,14 @@ const updateSongStatusToUnderReview = async (connection, song_id, oph_id) => {
   return result;
 };
 
+const updateReleaseDate = async (song_id, oph_id, release_date) => {
+  const [result] = await db.execute(
+    "UPDATE songs_register SET release_date = ?, updated_at = NOW() WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?)",
+    [release_date, song_id, oph_id, oph_id]
+  );
+  return result;
+};
+
 module.exports = {
   insertNewSong,
   insertHybridSong,
@@ -239,4 +247,5 @@ module.exports = {
   updateSongStatusToDraft,
   getSongById,
   updateSongStatusToUnderReview,
+  updateReleaseDate,
 };

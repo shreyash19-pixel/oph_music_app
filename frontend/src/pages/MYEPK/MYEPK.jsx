@@ -82,7 +82,7 @@ const MYEPK = () => {
       );
 
       console.log(response.data.data);
-      
+
       setArtist(response.data.data);
     } catch (err) {
       console.log(err);
@@ -426,66 +426,67 @@ const MYEPK = () => {
                 </thead>
 
                 <tbody>
-                  {artist?.songs.map((song, index) => {
-                    const isFreeSong = index < 2;
-                    const isApproved = song.song_status === "approved";
-                    const isPaidApproved = song.payment_status === "approved";
+                  {artist?.songs
+                    .filter((song) => {
+                      if (
+                        song.song_type === "free" &&
+                        song.song_status === "approved"
+                      ) {
+                        return true;
+                      }
 
-                    if (
-                      (isFreeSong && isApproved) ||
-                      (!isFreeSong && isApproved && isPaidApproved)
-                    ) {
-                      return (
-                        <tr
-                          key={song.id || index}
-                          className="border-b border-gray-800 hover:bg-gray-800/50 text-white"
-                        >
-                          {/* # */}
-                          <td className="py-3 px-1 text-center">{index + 1}</td>
+                      if (
+                        song.song_type === "paid" &&
+                        song.song_status === "approved" &&
+                        song.payment_status === "approved"
+                      ) {
+                        return true;
+                      }
 
-                          {/* Song name + artist */}
-                          <td className="py-3 px-1 text-center">
-                            <div className="flex flex-col items-center">
-                              <span className="font-medium">
-                                {song.song_name}
-                              </span>
-                              <span className="text-gray-400 text-xs">
-                                {song.primary_artist}
-                              </span>
-                            </div>
-                          </td>
+                      return false;
+                    })
+                    .map((song, index) => (
+                      <tr
+                        key={song.id || index}
+                        className="border-b border-gray-800 hover:bg-gray-800/50 text-white"
+                      >
+                        <td className="py-3 px-1 text-center">{index + 1}</td>
 
-                          {/* Plays */}
-                          <td className="py-3 px-1 text-center">
-                            {song.total_song_views > 0
-                              ? song.total_song_views
-                              : "—"}
-                          </td>
+                        <td className="py-3 px-1 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="font-medium">
+                              {song.song_name}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              {song.primary_artist}
+                            </span>
+                          </div>
+                        </td>
 
-                          {/* Time */}
-                          <td className="py-3 px-1 text-center">
-                            <SongDuration url={song.audio_url} />
-                          </td>
+                        <td className="py-3 px-1 text-center">
+                          {song.total_song_views > 0
+                            ? song.total_song_views
+                            : "—"}
+                        </td>
 
-                          {/* Play */}
-                          <td className="py-3 px-1 text-center">
-                            <button
-                              className="p-2 bg-[#6F4FA0] rounded-full"
-                              onClick={() => handlePlayPause(song)}
-                            >
-                              {playingSongId === song.id && !audio?.paused ? (
-                                <Pause className="w-4 h-4" />
-                              ) : (
-                                <Play className="w-4 h-4" />
-                              )}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    }
+                        <td className="py-3 px-1 text-center">
+                          <SongDuration url={song.audio_url} />
+                        </td>
 
-                    return null;
-                  })}
+                        <td className="py-3 px-1 text-center">
+                          <button
+                            className="p-2 bg-[#6F4FA0] rounded-full"
+                            onClick={() => handlePlayPause(song)}
+                          >
+                            {playingSongId === song.id && !audio?.paused ? (
+                              <Pause className="w-4 h-4" />
+                            ) : (
+                              <Play className="w-4 h-4" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             ) : (

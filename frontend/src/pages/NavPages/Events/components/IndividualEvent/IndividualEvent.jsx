@@ -1,11 +1,126 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { Bounce, toast, ToastContainer } from "react-toastify";
+import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime } from "../../../../../utils/date";
 
-const instagramRegex =
-  /^(https?:\/\/)?(www\.)?instagram\.com\/([a-zA-Z0-9._]+)\/?/;
+// Accept either Instagram username or full profile URL (same as HeroSection RegistrationModal)
+const instagramUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
+const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/;
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidPhoneNumber = (phone) => /^\d{10}$/.test(phone);
+
+// Extracted to prevent re-mount on parent re-renders (e.g. countdown timer) - preserves form input
+function EventRegistrationModal({ singleEvent, professions, eventId, onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    instagram_handle: "",
+    phone: "",
+    profession_id: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const isRegistrationOpen = () => isRegistrationOpenByDateTime(singleEvent);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const isValidInstagram =
+      instagramUsernameRegex.test(formData.instagram_handle?.trim()) ||
+      instagramUrlRegex.test(formData.instagram_handle?.trim());
+    if (!isValidInstagram) {
+      toast.error("Invalid Instagram! Please enter a valid Instagram username or profile link.", {
+        position: "top-right", autoClose: 4000, theme: "dark", transition: Bounce,
+      });
+      return;
+    }
+    if (!isValidEmail(formData.email)) {
+      toast.error("Invalid Email Address!", { position: "top-right", theme: "dark" });
+      return;
+    }
+    if (!isValidPhoneNumber(formData.phone)) {
+      toast.error("Invalid Phone Number! Must be 10 digits.", { position: "top-right", theme: "dark" });
+      return;
+    }
+    if (!isRegistrationOpen()) {
+      toast.error("Registration is closed for this event.", { position: "top-right", theme: "dark" });
+      return;
+    }
+
+    toast.success("Proceeding to payment...", { position: "top-right", autoClose: 2000, theme: "dark", transition: Bounce });
+    onClose();
+    onSuccess({
+      amount: singleEvent.fees,
+      returnPath: `/events/${singleEvent.id}`,
+      heading: "Event Registration Fee",
+      planIds: [singleEvent.payment_plan_id].filter(Boolean),
+      event_id: eventId,
+      from: "Event Registration",
+      OPH_ID: `${formData.first_name} ${formData.last_name}`.trim(),
+      outside_user: true,
+      booking_details: {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone,
+        instagram_handle: formData.instagram_handle,
+        profession_id: formData.profession_id,
+      },
+    });
+  };
+
+  const modalContent = (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full mx-4 overflow-visible">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-white">Register for Event</h2>
+            <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div className="flex gap-4">
+            <input type="text" name="first_name" placeholder="First Name*" required className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.first_name} onChange={handleChange} />
+            <input type="text" name="last_name" placeholder="Last Name*" required className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.last_name} onChange={handleChange} />
+          </div>
+          <div>
+            <input type="email" name="email" placeholder="Email Address*" required className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.email} onChange={handleChange} />
+          </div>
+          <div>
+            <input type="text" name="instagram_handle" placeholder="username or https://instagram.com/username" required className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.instagram_handle} onChange={handleChange} />
+          </div>
+          <div className="flex gap-2">
+            <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white"><option value="+91">+91</option></select>
+            <input type="tel" name="phone" placeholder="Phone Number*" required className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.phone} onChange={handleChange} />
+          </div>
+          <div>
+            <select name="profession_id" required className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.profession_id || ""} onChange={handleChange}>
+              <option value="">Select profession</option>
+              {professions?.map((profession, ind) => (
+                <option key={profession.id ?? ind} value={profession.id}>{profession.name}</option>
+              ))}
+            </select>
+          </div>
+          {isRegistrationOpen() ? (
+            <button type="submit" className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit"}</button>
+          ) : (
+            <button type="submit" disabled className="w-full bg-cyan-400 text-black font-medium py-2 px-4 rounded opacity-50 cursor-not-allowed">Registration Expired</button>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+
+  return createPortal(modalContent, document.body);
+}
 
 const IndividualEvent = () => {
   const navigate = useNavigate();
@@ -108,7 +223,7 @@ const IndividualEvent = () => {
 
   const fetchProfessions = async () => {
     try {
-      const response = await axiosApi.get("/professions");
+      const response = await axiosApi.get("/get_professions");
       const data = response?.data?.data ?? response?.data ?? [];
       setProfessions(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -155,17 +270,6 @@ const IndividualEvent = () => {
     };
   }, [singleEvent]);
 
-  // Utility validators
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const isValidPhoneNumber = (phone) => {
-    const phoneRegex = /^\d{10}$/;
-    return phoneRegex.test(phone);
-  };
-
   const dateFormat = (date) => {
     if (!date) return "-";
     const eventDate = new Date(date);
@@ -178,269 +282,6 @@ const IndividualEvent = () => {
       hour12: true,
       timeZone: "Asia/Kolkata",
     });
-  };
-
-  // Registration Modal Component
-  const RegistrationModal = () => {
-    const [formData, setFormData] = useState({
-      first_name: "",
-      last_name: "",
-      email: "",
-      instagram_handle: "",
-      phone: "",
-      profession_id: professions?.[0]?.id ?? "",
-    });
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-      // set default profession_id once professions load
-      if (professions && professions.length && !formData.profession_id) {
-        setFormData((f) => ({ ...f, profession_id: professions[0].id }));
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [professions]);
-
-    const handleChange = (e) => {
-      const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const isRegistrationOpen = () => {
-      // determine if registration period is open
-      try {
-        const start = singleEvent?.regn_start
-          ? new Date(singleEvent.regn_start)
-          : null;
-        const end = singleEvent?.regn_end
-          ? new Date(singleEvent.regn_end)
-          : null;
-        const now = new Date();
-        if (start && end) return now >= start && now <= end;
-        // fallback: if status is "upcoming" and event is in future allow
-        return singleEvent?.status === "upcoming" && isEventInFuture;
-      } catch {
-        return false;
-      }
-    };
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      if (isSubmitting) return;
-
-      // validations
-      if (!instagramRegex.test(formData.instagram_handle)) {
-        toast.error(
-          "Invalid Instagram URL! Please enter a valid profile link.",
-          {
-            position: "top-right",
-            autoClose: 4000,
-            theme: "dark",
-            transition: Bounce,
-          },
-        );
-        return;
-      }
-      if (!isValidEmail(formData.email)) {
-        toast.error("Invalid Email Address!", {
-          position: "top-right",
-          theme: "dark",
-        });
-        return;
-      }
-      if (!isValidPhoneNumber(formData.phone)) {
-        toast.error("Invalid Phone Number! Must be 10 digits.", {
-          position: "top-right",
-          theme: "dark",
-        });
-        return;
-      }
-
-      if (!isRegistrationOpen()) {
-        toast.error("Registration is closed for this event.", {
-          position: "top-right",
-          theme: "dark",
-        });
-        return;
-      }
-
-      setIsSubmitting(true);
-      try {
-        const payload = {
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          phone: formData.phone,
-          instagram_handle: formData.instagram_handle,
-          profession_id: formData.profession_id,
-        };
-
-        const response = await axiosApi.post(`/events/bookings/${id}`, payload);
-
-        if (response?.status === 201 || response?.status === 200) {
-          const bookingData = response.data.data || response.data;
-          const bookingReference = bookingData.booking_reference;
-          
-          toast.success("Registration Successful", {
-            position: "top-right",
-            autoClose: 4000,
-            theme: "dark",
-            transition: Bounce,
-          });
-          setIsModalOpen(false);
-
-          navigate("/payment", {
-            state: {
-              amount: bookingData.amount || singleEvent.fees,
-              returnPath: `/events/${singleEvent.id}`,
-              heading: "Event Registration Fee",
-              planIds: [singleEvent.payment_plan_id].filter(Boolean),
-              event_id: id,
-              from: "Event Registration",
-              OPH_ID: bookingReference, // Use booking_reference as OPH_ID for external users
-              booking_reference: bookingReference,
-              outside_user: true,
-            },
-          });
-        } else {
-          toast.error("Something went wrong with registration.", {
-            position: "top-right",
-            theme: "dark",
-          });
-        }
-      } catch (err) {
-        console.error("Booking error:", err);
-        const errorMessage = err.response?.data?.message || err.message || "Something went wrong";
-        toast.error(errorMessage, {
-          position: "top-right",
-          theme: "dark",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-
-    return (
-      <div className="fixed inset-0  bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg max-w-md w-full mx-4">
-          <form onSubmit={handleSubmit} className="space-y-4 p-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">
-                Register for Event
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  name="first_name"
-                  placeholder="First Name*"
-                  required
-                  className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  name="last_name"
-                  placeholder="Last Name*"
-                  required
-                  className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <input
-                type="email"
-                name="email"
-                placeholder="Email Address*"
-                required
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <input
-                type="text"
-                name="instagram_handle"
-                placeholder="Instagram Handle*"
-                required
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.instagram_handle}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white">
-                <option value="+91">+91</option>
-              </select>
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Phone Number*"
-                required
-                className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <select
-                name="profession_id"
-                required
-                className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-                value={formData.profession_id}
-                onChange={handleChange}
-              >
-                {professions &&
-                  professions.map((profession, ind) => {
-                    return (
-                      <option key={ind} value={profession.id}>
-                        {profession.name}
-                      </option>
-                    );
-                  })}
-              </select>
-            </div>
-
-            {isRegistrationOpen() ? (
-              <button
-                type="submit"
-                className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled
-                className="w-full bg-cyan-400 text-black font-medium py-2 px-4 rounded opacity-50 cursor-not-allowed"
-              >
-                Registration Expired
-              </button>
-            )}
-          </form>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -560,11 +401,20 @@ const IndividualEvent = () => {
               <button
                 onClick={() => setIsModalOpen(true)}
                 className={`bg-[#5DC9DE] text-black text-sm lg:text-2xl px-6 py-3 rounded-full font-semibold drop-shadow-[0_0_20px_white] ${
-                  isEventInFuture
+                  isEventInFuture && isRegistrationOpenByDateTime(singleEvent)
                     ? "hover:font-bold transition delay-300"
                     : "opacity-50 cursor-not-allowed"
                 }`}
-                disabled={!isEventInFuture}
+                disabled={!isEventInFuture || !isRegistrationOpenByDateTime(singleEvent)}
+                title={
+                  !isEventInFuture
+                    ? "Event has ended"
+                    : isRegistrationNotStartedYetByDateTime(singleEvent)
+                      ? `Registration opens at ${dateFormat(singleEvent.registrationStart || singleEvent.regn_start)}`
+                      : !isRegistrationOpenByDateTime(singleEvent)
+                        ? "Registration has closed"
+                        : undefined
+                }
               >
                 Book Your Spot Now
               </button>
@@ -573,7 +423,15 @@ const IndividualEvent = () => {
 
           {/* Modal and Toast */}
           <ToastContainer className="z-[100000]" />
-          {isModalOpen && <RegistrationModal />}
+          {isModalOpen && (
+            <EventRegistrationModal
+              singleEvent={singleEvent}
+              professions={professions}
+              eventId={id}
+              onClose={() => setIsModalOpen(false)}
+              onSuccess={(state) => navigate("/auth/payment", { state })}
+            />
+          )}
         </div>
       )}
     </>

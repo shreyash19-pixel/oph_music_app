@@ -89,9 +89,9 @@ const CustomVideoPlayer = forwardRef(
     }, []);
 
     // Handle play/pause
-    const togglePlayPause = () => {
+    const togglePlayPause = (e) => {
       console.log("sdsd");
-
+      e.preventDefault();
       const video = videoRef.current;
       if (!video) return;
 
@@ -282,7 +282,7 @@ const CustomVideoPlayer = forwardRef(
         return;
       }
 
-      togglePlayPause();
+      togglePlayPause(e);
     };
 
     const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -350,7 +350,7 @@ const CustomVideoPlayer = forwardRef(
               e.preventDefault();
               const video = videoRef.current;
               if (video && video.paused) {
-                togglePlayPause();
+                togglePlayPause(e);
               }
             }}
             className="z-30 pointer-events-auto hover:opacity-80 transition-opacity"

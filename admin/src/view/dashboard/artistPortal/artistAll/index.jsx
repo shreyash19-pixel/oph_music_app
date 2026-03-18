@@ -21,14 +21,14 @@ const ArtistAll = () => {
   useEffect(() => {
     // Set browser flag
     setIsBrowser(true);
-    
+
     // Initialize signature canvas
     const canvas = signatureCanvasRef.current;
     if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx.strokeStyle = '#000000';
+      const ctx = canvas.getContext("2d");
+      ctx.strokeStyle = "#000000";
       ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
     }
   }, []);
 
@@ -38,17 +38,18 @@ const ArtistAll = () => {
         // Fetch artist data and professions in parallel
         const [artistRes, professionsRes] = await Promise.all([
           axiosApi.get(`/completed/${ophid}`),
-          axiosApi.get('/get_professions')
+          axiosApi.get("/get_professions"),
         ]);
-        
+
         console.log(artistRes);
         console.log(professionsRes);
 
-        const { userDetails, professionalDetails, documentationDetails } = artistRes.data;
-        
+        const { userDetails, professionalDetails, documentationDetails } =
+          artistRes.data;
+
         // Debug: Log professional details to see the structure
         console.log("Professional Details:", professionalDetails);
-        
+
         // Set professions data
         if (professionsRes.data.success) {
           setProfessions(professionsRes.data.data);
@@ -60,55 +61,60 @@ const ArtistAll = () => {
           full_name: userDetails.full_name || "",
           stage_name: userDetails.stage_name || "",
           email: userDetails.email || "",
-          contact_number: userDetails.contact_num || "",
+          contact_number: userDetails.contact_number || "",
           artist_type: userDetails.artist_type || "",
           location: userDetails.location || "",
           personal_photo: userDetails.personal_photo || "",
         };
 
-        const totalMonths = professionalDetails.ExperienceMonthly || 0;
+        const totalMonths = professionalDetails.experience_monthly || 0;
         const professionalData = {
-          profession: professionalDetails.Profession || professionalDetails.profession || "",
-          bio: professionalDetails.Bio || "",
-          video: professionalDetails.VideoURL || "",
+          profession:
+            professionalDetails.Profession ||
+            professionalDetails.profession ||
+            "",
+          bio: professionalDetails.bio || "",
+          video: professionalDetails.video_url || "",
           photos: JSON.parse(professionalDetails.photo_urls || "[]"),
-          spotify: professionalDetails.SpotifyLink || "",
-          instagram: professionalDetails.InstagramLink || "",
-          facebook: professionalDetails.FacebookLink || "",
-          apple_music: professionalDetails.AppleMusicLink || "",
+          spotify: professionalDetails.spotify_link || "",
+          instagram: professionalDetails.instagram_link || "",
+          facebook: professionalDetails.facebook_link || "",
+          apple_music: professionalDetails.apple_music_link || "",
           experience_monthly: totalMonths % 12,
-          experience_yearly: Math.floor(totalMonths / 12),
-          songs_planning_count: professionalDetails.SongsPlanningCount || "",
-          songs_planning_type: professionalDetails.SongsPlanningType || "",
+          experience_yearly: professionalDetails.experience_yearly,
+          songs_planning_count: professionalDetails.songs_planning_count || "",
+          songs_planning_type: professionalDetails.songs_planning_type || "",
         };
-        
+
         // Store totalMonths separately for calculations without showing in UI
         professionalData._totalMonths = totalMonths;
 
         const documentData = {
-          aadhar_front: documentationDetails.AadharFrontURL || "",
-          aadhar_back: documentationDetails.AadharBackURL || "",
-          pan_front: documentationDetails.PanFrontURL || "",
-          signature: documentationDetails.SignatureImageURL || "",
-          bank_name: documentationDetails.BankName || "",
-          account_holder: documentationDetails.AccountHolderName || "",
-          account_number: documentationDetails.AccountNumber || "",
-          ifsc_code: documentationDetails.IFSCCode || "",
+          aadhar_front_url: documentationDetails.aadhar_front_url || "",
+          aadhar_back_url: documentationDetails.aadhar_back_url || "",
+          pan_front_url: documentationDetails.pan_front_url || "",
+          signature_image_url: documentationDetails.signature_image_url || "",
+          bank_name: documentationDetails.bank_name || "",
+          account_holder_name: documentationDetails.account_holder_name || "",
+          account_number: documentationDetails.account_number || "",
+          ifsc_code: documentationDetails.ifsc_code || "",
         };
 
         // Initialize locks
         const newLocks = {};
-        [personalData, professionalData, documentData].forEach((sectionData, sectionIdx) => {
-          Object.keys(sectionData).forEach((key) => {
-            if (key === "photos" && Array.isArray(sectionData[key])) {
-              sectionData[key].forEach((_, idx) => {
-                newLocks[`${sectionIdx}_${key}_${idx}`] = true;
-              });
-            } else {
-              newLocks[`${sectionIdx}_${key}`] = true;
-            }
-          });
-        });
+        [personalData, professionalData, documentData].forEach(
+          (sectionData, sectionIdx) => {
+            Object.keys(sectionData).forEach((key) => {
+              if (key === "photos" && Array.isArray(sectionData[key])) {
+                sectionData[key].forEach((_, idx) => {
+                  newLocks[`${sectionIdx}_${key}_${idx}`] = true;
+                });
+              } else {
+                newLocks[`${sectionIdx}_${key}`] = true;
+              }
+            });
+          },
+        );
 
         setPersonal(personalData);
         setProfessional(professionalData);
@@ -129,26 +135,26 @@ const ArtistAll = () => {
 
   const handleFileUpload = (e, key, onChange, index = null) => {
     const file = e.target.files[0];
+
     if (file) {
       const url = URL.createObjectURL(file);
+
       if (index !== null) {
-        // Handle photos array with 5-image limit
         onChange("photos", (prevPhotos) => {
           if (prevPhotos.length >= 5) {
-            toast.error("Maximum 5 images allowed. Please delete some images before adding new ones.");
+            toast.error(
+              "Maximum 5 images allowed. Please delete some images before adding new ones.",
+            );
             return prevPhotos;
           }
+
           const updated = [...prevPhotos];
-          updated[index] = { url, file }; // Store both URL and file object
+          updated[index] = { url, file };
           return updated;
         });
       } else {
-        // For personal photo and video, store both URL and file object
-        if (key === 'personal_photo' || key === 'video') {
-          onChange(key, { url, file });
-        } else {
-          onChange(key, url);
-        }
+        // Store both preview and file for ALL uploads
+        onChange(key, { url, file });
       }
     }
   };
@@ -157,7 +163,7 @@ const ArtistAll = () => {
   const startDrawing = (e) => {
     setIsDrawing(true);
     const canvas = signatureCanvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
     ctx.beginPath();
     ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
@@ -166,7 +172,7 @@ const ArtistAll = () => {
   const draw = (e) => {
     if (!isDrawing) return;
     const canvas = signatureCanvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.stroke();
@@ -178,7 +184,7 @@ const ArtistAll = () => {
 
   const clearSignature = () => {
     const canvas = signatureCanvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
@@ -186,12 +192,12 @@ const ArtistAll = () => {
     const canvas = signatureCanvasRef.current;
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], 'signature.png', { type: 'image/png' });
+        const file = new File([blob], "signature.png", { type: "image/png" });
         const url = URL.createObjectURL(blob);
-        onChange('signature', { url, file });
-        toast.success('Signature saved successfully!');
+        onChange("signature", { url, file });
+        toast.success("Signature saved successfully!");
       }
-    }, 'image/png');
+    }, "image/png");
   };
 
   const toggleLock = (lockKey) => {
@@ -222,7 +228,7 @@ const ArtistAll = () => {
           </div>
         </span>
       ),
-      { duration: 5000 }
+      { duration: 5000 },
     );
   };
 
@@ -248,38 +254,46 @@ const ArtistAll = () => {
   const updatePersonalDetails = async (personalData) => {
     try {
       const formData = new FormData();
-      
+
       // Prepare the data object for the API
       const userData = {
-        full_name: personalData.full_name || '',
-        stage_name: personalData.stage_name || '',
-        contact_num: personalData.contact_number || '',
-        location: personalData.location || '',
-        email: personalData.email || '',
-        artist_type: personalData.artist_type || '', 
+        full_name: personalData.full_name || "",
+        stage_name: personalData.stage_name || "",
+        contact_number: personalData.contact_number || "",
+        location: personalData.location || "",
+        email: personalData.email || "",
+        artist_type: personalData.artist_type || "",
       };
-      
+
       // Append the data object as JSON string
-      formData.append('ophid', ophid);
-      formData.append('data', JSON.stringify(userData));
-      
+      formData.append("ophid", ophid);
+      formData.append("data", JSON.stringify(userData));
+
       // Handle profile image upload
       let hasNewImage = false;
       if (personalData.personal_photo) {
-        if (typeof personalData.personal_photo === 'object' && personalData.personal_photo.file) {
+        if (
+          typeof personalData.personal_photo === "object" &&
+          personalData.personal_photo.file
+        ) {
           // New file uploaded
-          formData.append('profile_image', personalData.personal_photo.file);
+          formData.append("profile_image", personalData.personal_photo.file);
           hasNewImage = true;
         } else if (personalData.personal_photo instanceof File) {
           // Direct file object
-          formData.append('profile_image', personalData.personal_photo);
+          formData.append("profile_image", personalData.personal_photo);
           hasNewImage = true;
-        } else if (typeof personalData.personal_photo === 'string' && personalData.personal_photo.startsWith('blob:')) {
+        } else if (
+          typeof personalData.personal_photo === "string" &&
+          personalData.personal_photo.startsWith("blob:")
+        ) {
           // Convert blob URL to file if needed
           const response = await fetch(personalData.personal_photo);
           const blob = await response.blob();
-          const file = new File([blob], 'profile_image.jpg', { type: blob.type });
-          formData.append('profile_image', file);
+          const file = new File([blob], "profile_image.jpg", {
+            type: blob.type,
+          });
+          formData.append("profile_image", file);
           hasNewImage = true;
         }
       }
@@ -288,84 +302,97 @@ const ArtistAll = () => {
       if (!hasNewImage) {
         try {
           // Fetch existing user data to get current personal_photo
-          const existingDataResponse = await axiosApi.get(`/auth/personal-details?ophid=${ophid}`);
-          if (existingDataResponse.data.success && existingDataResponse.data.data.profile_pic) {
+          const existingDataResponse = await axiosApi.get(
+            `/auth/personal-details?ophid=${ophid}`,
+          );
+          if (
+            existingDataResponse.data.success &&
+            existingDataResponse.data.data.profile_pic
+          ) {
             // Add existing image URL to the data object
-            userData.existing_image_url = existingDataResponse.data.data.profile_pic;
+            userData.existing_image_url =
+              existingDataResponse.data.data.profile_pic;
             // Update the data in formData
-            formData.set('data', JSON.stringify(userData));
+            formData.set("data", JSON.stringify(userData));
           }
         } catch (fetchError) {
-          console.warn('Could not fetch existing image data:', fetchError);
+          console.warn("Could not fetch existing image data:", fetchError);
           // Continue without existing image - the backend will handle this case
         }
       }
 
-      const response = await axiosApi.put('/update-user-details', formData, {
+      const response = await axiosApi.put("/update-user-details", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
       if (response.data.success) {
-        toast.success('Personal details updated successfully!');
+        toast.success("Personal details updated successfully!");
         // Optionally refresh the data
         // await fetchData();
       } else {
-        toast.error(response.data.message || 'Failed to update personal details');
+        toast.error(
+          response.data.message || "Failed to update personal details",
+        );
       }
     } catch (error) {
-      console.error('Error updating personal details:', error);
-      toast.error('Failed to update personal details. Please try again.');
+      console.error("Error updating personal details:", error);
+      toast.error("Failed to update personal details. Please try again.");
     }
   };
 
   const updateProfessionalDetails = async (professionalData) => {
     try {
       const formData = new FormData();
-      
+
       // Prepare the data object for the API
       const userData = {
-        profession: professionalData.profession || '',
-        bio: professionalData.bio || '',
-        video: typeof professionalData.video === 'object' ? professionalData.video.url : (professionalData.video || ''),
+        profession: professionalData.profession || "",
+        bio: professionalData.bio || "",
+        video:
+          typeof professionalData.video === "object"
+            ? professionalData.video.url
+            : professionalData.video || "",
         photos: professionalData.photos || [],
-        spotify: professionalData.spotify || '',
-        instagram: professionalData.instagram || '',
-        facebook: professionalData.facebook || '',
-        apple_music: professionalData.apple_music || '',
+        spotify: professionalData.spotify || "",
+        instagram: professionalData.instagram || "",
+        facebook: professionalData.facebook || "",
+        apple_music: professionalData.apple_music || "",
         experience_yearly: professionalData.experience_yearly || 0,
         experience_monthly: professionalData.experience_monthly || 0,
         songs_planning_count: professionalData.songs_planning_count || 0,
-        songs_planning_type: professionalData.songs_planning_type || ''
+        songs_planning_type: professionalData.songs_planning_type || "",
       };
-      
+
       // Append the data object as JSON string
-      formData.append('ophid', ophid);
-      formData.append('data', JSON.stringify(userData));
+      formData.append("ophid", ophid);
+      formData.append("data", JSON.stringify(userData));
 
       // Handle photo uploads - convert blob URLs to files and upload
       let fileCount = 0;
       if (professionalData.photos && Array.isArray(professionalData.photos)) {
         console.log("Processing photos for upload:", professionalData.photos);
         for (const photo of professionalData.photos) {
-          if (photo && typeof photo === 'object' && photo.url && photo.file) {
+          if (photo && typeof photo === "object" && photo.url && photo.file) {
             // This is a new file upload with file object
             console.log("Adding file object:", photo.file);
-            formData.append('photos', photo.file);
+            formData.append("photos", photo.file);
             fileCount++;
-          } else if (typeof photo === 'string' && photo.startsWith('blob:')) {
+          } else if (typeof photo === "string" && photo.startsWith("blob:")) {
             // This is a blob URL that needs to be converted to file
             try {
               console.log("Converting blob URL to file:", photo);
               const response = await fetch(photo);
               const blob = await response.blob();
-              const file = new File([blob], `photo_${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+              const file = new File([blob], `photo_${Date.now()}.jpg`, {
+                type: blob.type || "image/jpeg",
+              });
               console.log("Converted blob to file:", file);
-              formData.append('photos', file);
+              formData.append("photos", file);
               fileCount++;
             } catch (error) {
-              console.error('Error converting blob to file:', error);
+              console.error("Error converting blob to file:", error);
             }
           }
         }
@@ -373,18 +400,23 @@ const ArtistAll = () => {
 
       // Handle video upload - convert blob URL to file and upload
       if (professionalData.video) {
-        const videoUrl = typeof professionalData.video === 'object' ? professionalData.video.url : professionalData.video;
-        if (videoUrl && videoUrl.startsWith('blob:')) {
+        const videoUrl =
+          typeof professionalData.video === "object"
+            ? professionalData.video.url
+            : professionalData.video;
+        if (videoUrl && videoUrl.startsWith("blob:")) {
           try {
             console.log("Converting video blob URL to file:", videoUrl);
             const response = await fetch(videoUrl);
             const blob = await response.blob();
-            const file = new File([blob], `video_${Date.now()}.mp4`, { type: blob.type || 'video/mp4' });
+            const file = new File([blob], `video_${Date.now()}.mp4`, {
+              type: blob.type || "video/mp4",
+            });
             console.log("Converted video blob to file:", file);
-            formData.append('video', file);
+            formData.append("video", file);
             fileCount++;
           } catch (error) {
-            console.error('Error converting video blob to file:', error);
+            console.error("Error converting video blob to file:", error);
           }
         }
       }
@@ -394,155 +426,188 @@ const ArtistAll = () => {
       console.log("Sending professional data:", {
         ophid,
         userData,
-        photoCount: professionalData.photos ? professionalData.photos.length : 0
+        photoCount: professionalData.photos
+          ? professionalData.photos.length
+          : 0,
       });
 
-      const response = await axiosApi.put('/update-professional-details', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      const response = await axiosApi.put(
+        "/update-professional-details",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
 
       if (response.data.success) {
-        toast.success('Professional details updated successfully!');
+        toast.success("Professional details updated successfully!");
       } else {
-        toast.error(response.data.message || 'Failed to update professional details');
+        toast.error(
+          response.data.message || "Failed to update professional details",
+        );
       }
     } catch (error) {
-      console.error('Error updating professional details:', error);
-      toast.error('Failed to update professional details. Please try again.');
+      console.error("Error updating professional details:", error);
+      toast.error("Failed to update professional details. Please try again.");
     }
   };
 
   const updateDocumentationDetails = async (documentData) => {
     try {
-      const formData = new FormData();
-      formData.append('ophid', ophid);
+      console.log(documentData.aadhar_front_url);
 
-      // Handle file uploads for documentation
-      const fileFields = ['aadhar_front', 'aadhar_back', 'pan_front', 'signature'];
-      
+      const formData = new FormData();
+      formData.append("ophid", ophid);
+      formData.append("bank_name", documentData.bank_name);
+      formData.append("account_holder_name", documentData.account_holder_name);
+      formData.append("account_number", documentData.account_number);
+      formData.append("ifsc_code", documentData.ifsc_code);
+
+      const fileFields = [
+        "aadhar_front_url",
+        "aadhar_back_url",
+        "pan_front_url",
+        "signature_image_url",
+      ];
+
       for (const field of fileFields) {
-        if (documentData[field]) {
-          if (typeof documentData[field] === 'object' && documentData[field].file) {
-            // This is a new file upload with file object
-            console.log(`Adding ${field} file:`, documentData[field].file);
-            formData.append(field === 'aadhar_front' ? 'AadharFrontURL' : 
-                          field === 'aadhar_back' ? 'AadharBackURL' :
-                          field === 'pan_front' ? 'PanFrontURL' :
-                          'SignatureImageURL', documentData[field].file);
-          } else if (typeof documentData[field] === 'string' && documentData[field].startsWith('blob:')) {
-            // This is a blob URL that needs to be converted to file
-            try {
-              console.log(`Converting ${field} blob URL to file:`, documentData[field]);
-              const response = await fetch(documentData[field]);
-              const blob = await response.blob();
-              const file = new File([blob], `${field}_${Date.now()}.png`, { type: blob.type || 'image/png' });
-              console.log(`Converted ${field} blob to file:`, file);
-              formData.append(field === 'aadhar_front' ? 'AadharFrontURL' : 
-                            field === 'aadhar_back' ? 'AadharBackURL' :
-                            field === 'pan_front' ? 'PanFrontURL' :
-                            'SignatureImageURL', file);
-            } catch (error) {
-              console.error(`Error converting ${field} blob to file:`, error);
-            }
-          }
+        const value = documentData[field];
+
+        if (!value) continue;
+
+        // case 1: {url, file}
+        if (typeof value === "object" && value.file) {
+          formData.append(field, value.file);
+        }
+
+        // case 2: blob preview URL
+        else if (typeof value === "string" && value.startsWith("blob:")) {
+          const response = await fetch(value);
+          const blob = await response.blob();
+
+          const file = new File([blob], `${field}_${Date.now()}.png`, {
+            type: blob.type || "image/png",
+          });
+
+          formData.append(field, file);
+        }
+
+        // case 3: existing AWS URL
+        else if (typeof value === "string") {
+          formData.append(field, value);
         }
       }
 
-      console.log("Sending documentation data:", {
-        ophid,
-        fileFields: fileFields.map(field => ({ field, hasFile: !!documentData[field] }))
-      });
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
-      const response = await axiosApi.post('/update-documentation-details', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      // return;
+
+      const response = await axiosApi.post(
+        "/update-documentation-details",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
 
       if (response.data.success) {
-        toast.success('Documentation details updated successfully!');
+        toast.success("Documentation details updated successfully!");
       } else {
-        toast.error(response.data.message || 'Failed to update documentation details');
+        toast.error(
+          response.data.message || "Failed to update documentation details",
+        );
       }
     } catch (error) {
-      console.error('Error updating documentation details:', error);
-      toast.error('Failed to update documentation details. Please try again.');
+      console.error("Error updating documentation details:", error);
+      toast.error("Failed to update documentation details. Please try again.");
     }
   };
 
   const downloadPDF = async () => {
     try {
       // Check if we're in a browser environment
-      if (typeof window === 'undefined' || typeof window.document === 'undefined') {
-        console.error('Not in browser environment');
-        toast.error('Download feature is not available in this environment');
+      if (
+        typeof window === "undefined" ||
+        typeof window.document === "undefined"
+      ) {
+        console.error("Not in browser environment");
+        toast.error("Download feature is not available in this environment");
         return;
       }
 
       if (!personal.full_name) {
-        toast.error('No artist name available for PDF download');
+        toast.error("No artist name available for PDF download");
         return;
       }
 
-      console.log('Starting PDF download...');
+      console.log("Starting PDF download...");
 
       // Show loading toast
-      const loadingToast = toast.loading('Downloading PDF...');
+      const loadingToast = toast.loading("Downloading PDF...");
 
       // Construct the PDF URL from AWS S3
-      const pdfFileName = `${personal.full_name.replace(/\s+/g, '_')}.pdf`;
+      const pdfFileName = `${personal.full_name.replace(/\s+/g, "_")}.pdf`;
       const s3Bucket = import.meta.env.VITE_S3_BUCKET || "";
       const s3Region = import.meta.env.VITE_S3_REGION || "";
+
+      console.log(s3Bucket);
+      console.log(s3Region);
+
       const pdfUrl = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/pdfs/${pdfFileName}`;
 
-      console.log('PDF URL:', pdfUrl);
+      console.log("PDF URL:", pdfUrl);
 
       // Fetch the PDF file
       const response = await fetch(pdfUrl);
-      
-      console.log('Response status:', response.status);
-      
+
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error(`PDF not found: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `PDF not found: ${response.status} ${response.statusText}`,
+        );
       }
 
       // Convert response to blob
       const blob = await response.blob();
-      console.log('Blob created, size:', blob.size);
-      
+      console.log("Blob created, size:", blob.size);
+
       // Force download by creating a blob with proper MIME type
-      const downloadBlob = new Blob([blob], { 
-        type: 'application/pdf',
-        name: pdfFileName 
+      const downloadBlob = new Blob([blob], {
+        type: "application/pdf",
+        name: pdfFileName,
       });
-      
+
       const url = URL.createObjectURL(downloadBlob);
-      console.log('Object URL created:', url);
-      
+      console.log("Object URL created:", url);
+
       // Create download link with proper attributes
-      const tempLink = window.document.createElement('a');
+      const tempLink = window.document.createElement("a");
       tempLink.href = url;
       tempLink.download = pdfFileName;
-      tempLink.style.display = 'none';
-      
+      tempLink.style.display = "none";
+
       // Add to DOM, click, and remove
       window.document.body.appendChild(tempLink);
       tempLink.click();
       window.document.body.removeChild(tempLink);
-      
+
       // Clean up after a short delay
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, 100);
-      
+
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);
-      toast.success('PDF downloaded successfully!');
-      
+      toast.success("PDF downloaded successfully!");
     } catch (error) {
-      console.error('Error downloading PDF:', error);
+      console.error("Error downloading PDF:", error);
       toast.error(`Failed to download PDF: ${error.message}`);
     }
   };
@@ -558,16 +623,6 @@ const ArtistAll = () => {
       lower.includes("pan");
     const isVideo = lower.includes("video");
 
-    if (key === "experience_yearly") {
-      // Use the original total months for calculation, not the modulo result
-      const totalMonths = allData._totalMonths || 0;
-      const years = Math.floor(totalMonths / 12);
-      return (
-        <div className="w-full p-2 border rounded-md text-black bg-gray-100">
-          {years}
-        </div>
-      );
-    }
 
     if (key === "photos" && Array.isArray(value)) {
       return (
@@ -585,7 +640,7 @@ const ArtistAll = () => {
                   }}
                 >
                   <img
-                    src={typeof photoUrl === 'object' ? photoUrl.url : photoUrl}
+                    src={typeof photoUrl === "object" ? photoUrl.url : photoUrl}
                     alt={`photo-${index}`}
                     className="w-32 h-32 rounded object-cover border mb-2"
                   />
@@ -598,9 +653,14 @@ const ArtistAll = () => {
                   type="file"
                   accept="image/*"
                   onChange={(e) =>
-                    handleFileUpload(e, key, (field, updater) => {
-                      onChange(field, updater);
-                    }, index)
+                    handleFileUpload(
+                      e,
+                      key,
+                      (field, updater) => {
+                        onChange(field, updater);
+                      },
+                      index,
+                    )
                   }
                   className="hidden"
                 />
@@ -608,7 +668,10 @@ const ArtistAll = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      onChange("photos", allData.photos.filter((_, idx) => idx !== index));
+                      onChange(
+                        "photos",
+                        allData.photos.filter((_, idx) => idx !== index),
+                      );
                     }}
                     className="p-1 bg-red-500 text-white rounded-full border shadow hover:bg-red-600 transition"
                     title="Delete photo"
@@ -637,34 +700,45 @@ const ArtistAll = () => {
               type="button"
               onClick={() => {
                 if (allData.photos.length >= 5) {
-                  toast.error("Maximum 5 images allowed. Please delete some images before adding new ones.");
+                  toast.error(
+                    "Maximum 5 images allowed. Please delete some images before adding new ones.",
+                  );
                   return;
                 }
                 fileInputRefs.current[`add_new_${sectionIdx}_${key}`]?.click();
               }}
               disabled={allData.photos.length >= 5}
               className={`mt-2 px-3 py-1 rounded ${
-                allData.photos.length >= 5 
-                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                  : 'bg-[#0d3c44] text-white hover:bg-[#0a2d33]'
+                allData.photos.length >= 5
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-[#0d3c44] text-white hover:bg-[#0a2d33]"
               }`}
             >
-              {allData.photos.length >= 5 ? 'Maximum 5 images' : 'Add New Photo'}
+              {allData.photos.length >= 5
+                ? "Maximum 5 images"
+                : "Add New Photo"}
             </button>
 
             <input
-              ref={(ref) => (fileInputRefs.current[`add_new_${sectionIdx}_${key}`] = ref)}
+              ref={(ref) =>
+                (fileInputRefs.current[`add_new_${sectionIdx}_${key}`] = ref)
+              }
               type="file"
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
                   if (allData.photos.length >= 5) {
-                    toast.error("Maximum 5 images allowed. Please delete some images before adding new ones.");
+                    toast.error(
+                      "Maximum 5 images allowed. Please delete some images before adding new ones.",
+                    );
                     return;
                   }
                   const newUrl = URL.createObjectURL(file);
-                  onChange("photos", [...allData.photos, { url: newUrl, file }]);
+                  onChange("photos", [
+                    ...allData.photos,
+                    { url: newUrl, file },
+                  ]);
                 }
               }}
               className="hidden"
@@ -677,13 +751,13 @@ const ArtistAll = () => {
     const locked = locks[lockKey];
 
     // Special handling for signature field
-    if (key === 'signature') {
+    if (key === "signature") {
       return (
         <div className="space-y-4">
           {value && (
             <div className="relative">
               <img
-                src={typeof value === 'object' ? value.url : value}
+                src={typeof value === "object" ? value.url : value}
                 alt="Signature"
                 className="w-40 h-20 rounded border mb-2 object-contain bg-gray-50"
               />
@@ -692,7 +766,7 @@ const ArtistAll = () => {
               </div>
             </div>
           )}
-          
+
           {!locked && (
             <div className="border rounded-lg p-4 bg-gray-50">
               <h4 className="text-sm font-medium mb-2">Draw your signature:</h4>
@@ -702,10 +776,10 @@ const ArtistAll = () => {
                   width={400}
                   height={200}
                   className="w-full max-w-full h-auto border border-gray-300 rounded cursor-crosshair bg-white"
-                  style={{ 
-                    touchAction: 'none',
-                    maxWidth: '100%',
-                    height: 'auto'
+                  style={{
+                    touchAction: "none",
+                    maxWidth: "100%",
+                    height: "auto",
                   }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
@@ -731,13 +805,13 @@ const ArtistAll = () => {
               </div>
             </div>
           )}
-          
+
           {locked && !value && (
             <div className="text-gray-400 border border-dashed p-4 rounded text-center">
               Click the unlock button to add a signature
             </div>
           )}
-          
+
           <input
             ref={(ref) => (fileInputRefs.current[lockKey] = ref)}
             type="file"
@@ -761,7 +835,7 @@ const ArtistAll = () => {
             {isPhoto && value && (
               <>
                 <img
-                  src={typeof value === 'object' ? value.url : value}
+                  src={typeof value === "object" ? value.url : value}
                   alt={key}
                   className="w-40 h-40 rounded object-cover border mb-2"
                 />
@@ -775,7 +849,7 @@ const ArtistAll = () => {
                 <video
                   className="w-full max-w-xs rounded border mb-2"
                   controls
-                  src={typeof value === 'object' ? value.url : value}
+                  src={typeof value === "object" ? value.url : value}
                 />
                 <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
                   Click to replace
@@ -802,8 +876,10 @@ const ArtistAll = () => {
     // Handle profession dropdown
     if (key === "profession") {
       // Check if the current value exists in the professions list
-      const currentProfessionExists = professions.some(prof => prof.name === value);
-      
+      const currentProfessionExists = professions.some(
+        (prof) => prof.name === value,
+      );
+
       return (
         <select
           value={value}
@@ -812,7 +888,9 @@ const ArtistAll = () => {
           disabled={locked || professionsLoading}
         >
           <option value="">
-            {professionsLoading ? "Loading professions..." : "Select a profession"}
+            {professionsLoading
+              ? "Loading professions..."
+              : "Select a profession"}
           </option>
           {professions.map((profession) => (
             <option key={profession.id} value={profession.name}>
@@ -903,43 +981,46 @@ const Section = ({
     </h2>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {Object.entries(data)
-        .filter(([key]) => !key.startsWith('_')) // Filter out internal fields like _totalMonths
+        .filter(([key]) => !key.startsWith("_")) // Filter out internal fields like _totalMonths
         .map(([key, value]) => {
-        const lockKey = `${sectionIdx}_${key}`;
-        return (
-          <div key={key}>
-            <label className="block text-gray-700 text-sm font-semibold mb-1 capitalize">
-              {key.replace(/_/g, " ")}
-            </label>
-            <div className="relative">
-              {renderInput(key, value, onChange, data, lockKey, sectionIdx)}
-              {key !== "photos" && (
-                <button
-                  type="button"
-                  onClick={() => toggleLock(lockKey)}
-                  className="absolute top-1 right-1 p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
-                >
-                  {locks[lockKey] ? (
-                    <Lock size={16} className="text-gray-600" />
-                  ) : (
-                    <Unlock size={16} className="text-green-600" />
-                  )}
-                </button>
-              )}
+          const lockKey = `${sectionIdx}_${key}`;
+          return (
+            <div key={key}>
+              <label className="block text-gray-700 text-sm font-semibold mb-1 capitalize">
+                {key.replace(/_/g, " ")}
+              </label>
+              <div className="relative">
+                {renderInput(key, value, onChange, data, lockKey, sectionIdx)}
+                {key !== "photos" && (
+                  <button
+                    type="button"
+                    onClick={() => toggleLock(lockKey)}
+                    className="absolute top-1 right-1 p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
+                  >
+                    {locks[lockKey] ? (
+                      <Lock size={16} className="text-gray-600" />
+                    ) : (
+                      <Unlock size={16} className="text-green-600" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
     <div className="mt-6 flex justify-between items-center">
       {showDownloadButton && onDownloadPDF && isBrowser && (
         <button
           onClick={(e) => {
             e.preventDefault();
-            if (typeof window !== 'undefined' && typeof window.document !== 'undefined') {
+            if (
+              typeof window !== "undefined" &&
+              typeof window.document !== "undefined"
+            ) {
               onDownloadPDF();
             } else {
-              console.error('Not in browser environment when button clicked');
+              console.error("Not in browser environment when button clicked");
             }
           }}
           className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"

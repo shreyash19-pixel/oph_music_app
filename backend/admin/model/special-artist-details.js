@@ -82,12 +82,14 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
         [type, null, ophid, section],
       );
     } else if (section === "Image update") {
+      console.log("sdsdds");
+      
       [rows] = await db.execute(
         "SELECT photo_urls FROM professional_details WHERE oph_id = ?",
         [ophid],
       );
 
-      let getData = JSON.parse(rows[0].PhotoURLs);
+      let getData = JSON.parse(rows[0].photo_urls);
 
       getData.push(content)[rows] = await db.execute(
         "UPDATE professional_details SET photo_urls = ? WHERE oph_id = ?",

@@ -76,8 +76,8 @@ const getTopSearchedArtists = async (searchQuery) => {
   const key = `%${searchQuery}%`;
 
   const [rows] = await db.execute(
-    "SELECT kpi.OPH_ID, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id WHERE ud.stage_name LIKE ? OR ud.stage_name LIKE ?",
-    [key, key],
+    "SELECT kpi.oph_id, ud.personal_photo, ud.stage_name, pd.profession, ud.location, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.oph_id = ud.oph_id   LEFT JOIN professional_details pd ON kpi.oph_id = pd.oph_id WHERE ud.stage_name LIKE ? OR ud.location LIKE ? OR pd.profession LIKE ?",
+    [key, key, key],
   );
 
   return rows;
@@ -85,7 +85,7 @@ const getTopSearchedArtists = async (searchQuery) => {
 
 const getTopArtists = async () => {
   const [rows] = await db.execute(
-    `SELECT kpi.OPH_ID, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id  LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID `,
+    `SELECT kpi.oph_id, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id  LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID `,
   );
   return rows;
 };
@@ -104,7 +104,7 @@ const getArtistProfile = async (ophid) => {
   );
 
   const [song_count] = await db.execute(
-    "WITH CTEArtistSongCount AS (SELECT sr.OPH_ID, sr.`status` song_registration_status , ad.`status` audio_details_status, vd.`status` video_details_status FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE sr.OPH_ID = ?) SELECT OPH_ID, COUNT(OPH_ID) song_count FROM CTEArtistSongCount WHERE song_registration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' GROUP BY OPH_ID",
+    "WITH CTEArtistSongCount AS (SELECT sr.oph_id, sr.`status` song_registration_status , ad.`status` audio_details_status, vd.`status` video_details_status FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE sr.oph_id = ?) SELECT oph_id, COUNT(oph_id) song_count FROM CTEArtistSongCount WHERE song_registration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' GROUP BY oph_id",
     [ophid],
   );
 

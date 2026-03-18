@@ -37,11 +37,46 @@ const insertPayment = async (
 };
 
 const insertSongId = async (connection, ophId, songId) => {
+  // Only update payments that are NOT rejected. Rejected payments have song_id moved to NULL
+  // but reject_for holds the original song; we must never overwrite them with a different song.
   const [rows] = await connection.execute(
-    "UPDATE payments SET song_id = ? WHERE oph_id = ? AND from_source = 'Song Registration' AND song_id IS NULL",
+    `UPDATE payments SET song_id = ?
+     WHERE oph_id = ? AND from_source = 'Song Registration' AND song_id IS NULL
+     AND (status IS NULL OR status != 'rejected')`,
     [songId, ophId]
   );
   return rows;
+};
+
+/**
+ * Link Date Booking payment to song (paid-in-advance flow).
+ * When user completes video for a paid-in-advance song, the Date Booking payment
+ * (created when they blocked the date) needs to be linked to the song.
+ */
+const linkDateBookingPaymentToSong = async (
+  connection,
+  ophId,
+  songId,
+  releaseDate
+) => {
+  if (!releaseDate) return;
+  const dateStr =
+    typeof releaseDate === "string"
+      ? releaseDate.trim().slice(0, 10)
+      : releaseDate instanceof Date
+        ? releaseDate.toISOString().slice(0, 10)
+        : null;
+  if (!dateStr) return;
+
+  const [result] = await connection.execute(
+    `UPDATE payments SET song_id = ?
+     WHERE oph_id = ? AND (release_date = ? OR DATE(release_date) = ?)
+     AND (from_source = 'Date booking' OR from_source = 'Date Booking')
+     AND song_id IS NULL
+     AND (status IS NULL OR status != 'rejected')`,
+    [songId, ophId, dateStr, dateStr]
+  );
+  return result;
 };
 
 const getPaymentByOphId = async (connection, ophId, fromSource = null) => {
@@ -79,6 +114,7 @@ const getSignupPaymentByOphId = async (OPH_ID) => {
 module.exports = {
   insertPayment,
   insertSongId,
+  linkDateBookingPaymentToSong,
   getPaymentByOphId,
-  getPaymentByTransactionId
+  getPaymentByTransactionId,
 };

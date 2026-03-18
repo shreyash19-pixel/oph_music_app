@@ -39,7 +39,9 @@ const ProfessionalDetailsForm = () => {
 
   const fetchPageMedia = async () => {
     try {
-      const response = await axiosApi.get("/page-media?page_name=professional_details");
+      const response = await axiosApi.get(
+        "/page-media?page_name=professional_details",
+      );
       if (response.data.success && response.data.data) {
         setVideo(response.data.data.video_url);
         setThumbnail(response.data.data.thumbnail_url);
@@ -250,6 +252,25 @@ const ProfessionalDetailsForm = () => {
     e.preventDefault();
     setLoading(true);
     // Add validation checks
+
+    if (formData.ExperienceYearly === 0 && formData.experienceMonths === 0) {
+      toast.error("Please enter your experience");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.songsPlanned === 0 && !ophid.includes("SA")) {
+      toast.error("Please enter number of songs");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.photos.length === 0) {
+      toast.error("Please upload atleast one image");
+      setLoading(false);
+      return;
+    }
+
     if (!formData.profession) {
       toast.error("Please select your profession");
       setLoading(false);
@@ -281,11 +302,11 @@ const ProfessionalDetailsForm = () => {
       formDataToSend.append("OPH_ID", ophid);
       // Find the profession name by ID and send the name as text
       const selectedProfession = professions.find(
-        (p) => p.id == formData.profession
+        (p) => p.id == formData.profession,
       );
       formDataToSend.append(
         "Profession",
-        selectedProfession ? selectedProfession.name : ""
+        selectedProfession ? selectedProfession.name : "",
       );
       formDataToSend.append("Bio", formData.bio);
       formDataToSend.append("SpotifyLink", formData.spotifyUrl);
@@ -294,7 +315,10 @@ const ProfessionalDetailsForm = () => {
       formDataToSend.append("AppleMusicLink", formData.appleMusicUrl);
       let stepPath;
       console.log(formData.step_status);
-      if (formData.step_status === "under review" || formData.step_status === null) {
+      if (
+        formData.step_status === "under review" ||
+        formData.step_status === null
+      ) {
         stepPath = "/auth/create-profile/documentation-details";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/profile-status`;
@@ -314,7 +338,7 @@ const ProfessionalDetailsForm = () => {
         formDataToSend.append("SongsPlanningCount", formData.songsPlanned);
         formDataToSend.append(
           "SongsPlanningType",
-          formData.songPlanningDuration
+          formData.songPlanningDuration,
         );
       }
 
@@ -357,7 +381,8 @@ const ProfessionalDetailsForm = () => {
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to update professional details"
+        error.response?.data?.message ||
+          "Failed to update professional details",
       );
     } finally {
       setLoading(false);
@@ -456,7 +481,7 @@ const ProfessionalDetailsForm = () => {
                 onPlay={handlePlay}
                 onPause={handlePause}
                 onClick={togglePlayPause}
-                className={`w-[800px] h-[50vh] object-cover rounded-lg ${!isPlaying ? 'hidden' : ''}`}
+                className={`w-[800px] h-[50vh] object-cover rounded-lg ${!isPlaying ? "hidden" : ""}`}
                 controls={false}
               />
             )}

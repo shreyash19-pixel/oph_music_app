@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import RegistrationModal from "../../components/registration/Registration";
-import { isRegistrationOpen, isRegistrationNotStartedYet, IST } from "../../utils/date";
+import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime, IST } from "../../utils/date";
 
 export default function Events() {
   const { headers, ophid } = useArtist();
@@ -204,13 +204,13 @@ export default function Events() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-gray-400">Registration fees:</span>
                     <span className="text-red-400 line-through">
-                      ₹{event.registrationFee_normal}
+                      ₹{Math.round(Number(event.registrationFee_normal) || 0)}
                     </span>
                     <span className="text-cyan-400 font-semibold">
-                      ₹{(parseInt(event.registrationFee_normal) / 2).toFixed(0)}
+                      ₹{Math.round((Number(event.registrationFee_normal) || 0) / 2)}
                     </span>
                     <span className="text-green-400 text-sm font-medium">
-                      ({event.registrationFee_offer_discount} off for {event.registrationFee_offer_availableFor})
+                      ({event.registrationFee_offer_discount || "50%"} off for community members {event.registrationFee_offer_availableFor || ""})
                     </span>
                   </div>
                   <div>
@@ -237,11 +237,11 @@ export default function Events() {
                     >
                       Registered
                     </button>
-                  ) : isRegistrationNotStartedYet(event) ? (
+                  ) : isRegistrationNotStartedYetByDateTime(event) ? (
                     <button className="px-6 py-2 bg-gray-600 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed" disabled title={`Registration opens at 12:00 AM IST on ${formatDateInline(event.registrationStart)}`}>
                       Registration opens 12:00 AM IST, {formatDateInline(event.registrationStart)}
                     </button>
-                  ) : isRegistrationOpen(event) ? (
+                  ) : isRegistrationOpenByDateTime(event) ? (
                     <button
                       onClick={(e) => {
                         e.preventDefault();

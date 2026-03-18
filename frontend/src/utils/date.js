@@ -64,7 +64,7 @@ export function toDateStringIST(dateValue) {
   return d.toLocaleDateString("en-CA", { timeZone: IST });
 }
 
-/** Registration opens at midnight IST on start day, closes at end of end day IST */
+/** Registration opens at midnight IST on start day, closes at 11:59 PM IST of end day (inclusive) */
 export function isRegistrationOpen(event) {
   if (!event) return false;
   const todayIST = getTodayIST();
@@ -75,12 +75,45 @@ export function isRegistrationOpen(event) {
   return true;
 }
 
+/** Returns end-of-day (23:59:59.999) in IST for the given date - registration closes at 11:59 PM */
+function getEndOfDayIST(dateValue) {
+  if (!dateValue) return null;
+  const d = new Date(dateValue);
+  if (isNaN(d.getTime())) return null;
+  const dateStr = d.toLocaleDateString("en-CA", { timeZone: IST });
+  return new Date(`${dateStr}T23:59:59.999+05:30`);
+}
+
 /** True if registration start date (in IST) is still in the future */
 export function isRegistrationNotStartedYet(event) {
   if (!event) return false;
   const startDayIST = toDateStringIST(event.registrationStart);
   if (!startDayIST) return false;
   return getTodayIST() < startDayIST;
+}
+
+/**
+ * Registration open check using full date+time (matches backend EventBookingService).
+ * Registration end date is inclusive until 11:59:59 PM IST of that day.
+ */
+export function isRegistrationOpenByDateTime(event) {
+  if (!event) return false;
+  const now = new Date();
+  const start = event.registrationStart ? new Date(event.registrationStart) : null;
+  const end = event.registrationEnd ? getEndOfDayIST(event.registrationEnd) : null;
+  if (start && isNaN(start.getTime())) return false;
+  if (end && isNaN(end.getTime())) return false;
+  if (start && now < start) return false;
+  if (end && now > end) return false;
+  return true;
+}
+
+/** True if registration start date/time has not yet been reached (matches backend) */
+export function isRegistrationNotStartedYetByDateTime(event) {
+  if (!event) return false;
+  const start = event.registrationStart ? new Date(event.registrationStart) : null;
+  if (!start || isNaN(start.getTime())) return false;
+  return new Date() < start;
 }
 
 export default formatDateAndAdjustMonth;

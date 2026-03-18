@@ -12,7 +12,7 @@ const checkRejectedStep = async (ophid) => {
   const [rows] = await db.execute(
     `SELECT *
   FROM application_status
-  WHERE OPH_ID = ? `,
+  WHERE oph_id = ? `,
     [ophid],
   );
 
@@ -21,7 +21,7 @@ const checkRejectedStep = async (ophid) => {
 
 const getArtistDetail = async (ophid) => {
   const [rows] = await db.execute(
-    "SELECT overall_status FROM application_status WHERE OPH_ID = ?",
+    "SELECT overall_status FROM application_status WHERE oph_id = ?",
     [ophid],
   );
   return rows;

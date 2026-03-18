@@ -101,29 +101,83 @@ const updateBooking = async (oph_id, old_booking_date, new_booking_date) => {
 };
 
 const getAllBookings = async () => {
-  const [rows] = await db.execute(
-    `SELECT DISTINCT 
-      c.*, 
+  const [rawRows] = await db.query(
+    `SELECT 
+      c.id,
+      c.oph_id,
+      c.song_id,
+      c.current_booking_date,
+      c.previous_booking_date,
+      c.original_booking_date,
+      c.song_name,
+      c.project_type,
+      c.created_at,
+      c.updated_at,
       COALESCE(
-        (SELECT p.status 
+        (SELECT GROUP_CONCAT(p.status ORDER BY p.created_at ASC SEPARATOR ',')
          FROM payments p 
-         WHERE p.release_date = c.current_booking_date 
+         WHERE (p.release_date = c.current_booking_date OR DATE(p.release_date) = DATE(c.current_booking_date))
          AND p.oph_id = c.oph_id
          AND (
            p.from_source = 'Date booking' 
+           OR p.from_source = 'Date Booking'
            OR p.from_source = 'Release date change'
            OR (p.from_source = 'Song Registration' AND (p.song_id = c.song_id OR c.song_id IS NOT NULL))
+           OR (p.from_source = 'Song Repayment')
          )
-         ORDER BY p.created_at DESC 
-         LIMIT 1
         ),
         'pending'
       ) as payment_status,
+      (SELECT GROUP_CONCAT(p.from_source ORDER BY p.created_at ASC SEPARATOR ',')
+       FROM payments p 
+       WHERE (p.release_date = c.current_booking_date OR DATE(p.release_date) = DATE(c.current_booking_date))
+       AND p.oph_id = c.oph_id
+       AND (
+         p.from_source = 'Date booking' 
+         OR p.from_source = 'Date Booking'
+         OR p.from_source = 'Release date change'
+         OR p.from_source = 'Song Registration'
+         OR p.from_source = 'Song Repayment'
+       )
+      ) as from_source,
       COALESCE(ud.full_name, '') as full_name
     FROM calender c 
-    LEFT JOIN user_details ud ON c.oph_id = ud.oph_id
+    LEFT JOIN user_details ud ON (c.oph_id = ud.oph_id OR c.oph_id = ud.OPH_ID)
     ORDER BY c.current_booking_date ASC`
   );
+  const rows = Array.isArray(rawRows) ? rawRows : [];
+
+  // Include Release date change payments that may not have a calendar row yet (e.g. payment submitted, calendar not yet updated)
+  const [releaseDateChangePayments] = await db.query(
+    `SELECT p.oph_id, p.release_date as current_booking_date, p.song_id, p.status as payment_status, p.from_source, COALESCE(ud.full_name, '') as full_name
+     FROM payments p
+     LEFT JOIN user_details ud ON (p.oph_id = ud.oph_id OR p.oph_id = ud.OPH_ID)
+     WHERE (p.from_source = 'Release date change' OR p.from_source = 'Release Date Change')
+     AND p.release_date IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM calender c
+       WHERE c.oph_id = p.oph_id
+       AND (DATE(c.current_booking_date) = DATE(p.release_date) OR c.current_booking_date = p.release_date)
+     )`
+  );
+  const rdcRows = Array.isArray(releaseDateChangePayments) ? releaseDateChangePayments : [];
+  rdcRows.forEach((r) => {
+    rows.push({
+      id: null,
+      oph_id: r.oph_id,
+      song_id: r.song_id,
+      current_booking_date: r.current_booking_date,
+      previous_booking_date: null,
+      original_booking_date: null,
+      song_name: null,
+      project_type: null,
+      created_at: null,
+      updated_at: null,
+      payment_status: r.payment_status,
+      from_source: r.from_source,
+      full_name: r.full_name,
+    });
+  });
 
   const rowsWithIST = rows.map((row) => ({
     ...row,
@@ -146,6 +200,15 @@ const getAllBookings = async () => {
           .format("YYYY-MM-DD")
       : null,
   }));
+
+  // Sort by date; for same date put calendar rows (id != null) before Release date change–only rows (id == null)
+  rowsWithIST.sort((a, b) => {
+    if (!a.current_booking_date) return 1;
+    if (!b.current_booking_date) return -1;
+    const dateCmp = a.current_booking_date.localeCompare(b.current_booking_date);
+    if (dateCmp !== 0) return dateCmp;
+    return (a.id != null ? 0 : 1) - (b.id != null ? 0 : 1);
+  });
 
   return rowsWithIST;
 };

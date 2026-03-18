@@ -12,6 +12,8 @@ export default function UploadSongs() {
   const { ophid, headers } = useArtist();
 
   useEffect(() => {
+    setError(null);
+
     const fetchPendingContent = async () => {
       try {
         const response = await axiosApi.get('/pending-song-registeration', {
@@ -20,33 +22,44 @@ export default function UploadSongs() {
         });
 
         if (response.data.success) {
-          console.log('Fetched pending songs:', response.data.data);
           setPendingContent(response.data.data || {});
+        } else {
+          setPendingContent({});
         }
       } catch (err) {
         console.error('Error fetching pending content:', err);
-        setError('Failed to load pending content');
+        const message = err.response?.status === 401
+          ? 'Please log in again.'
+          : err.response?.data?.message || 'Failed to load pending content';
+        setError(message);
+        setPendingContent({});
       } finally {
         setIsLoading(false);
       }
     };
 
-    // only fetch if both values are available
-    if (ophid && headers && headers.Authorization) {
+    if (ophid && headers?.Authorization) {
       fetchPendingContent();
+    } else {
+      setIsLoading(false);
     }
   }, [ophid, headers]);
 
-  // Resolve first step: audio -> video -> payment. When only payment is rejected, still go to
-  // video-metadata first (read-only + Pay now), then user clicks Pay now to go to payment.
+  // Resolve first step: audio -> video -> payment.
+  // Date Booking payment rejected → /auth/payment (repay for date). Song Reg payment → video (Pay now).
   const getFirstRejectedPage = (rejectedSections) => {
     if (!rejectedSections?.length) return '/dashboard/upload-song/audio-metadata/';
     const hasAudio = rejectedSections.some((s) => s.section === 'audio');
     const hasVideo = rejectedSections.some((s) => s.section === 'video');
-    const hasPayment = rejectedSections.some((s) => s.section === 'payment');
+    const paymentSection = rejectedSections.find((s) => s.section === 'payment');
+    const hasPayment = !!paymentSection;
+    const isDateBookingPayment = paymentSection?.isDateBooking === true;
+    const hasRejectedPaymentDetails = paymentSection?.rejectedPayments?.length > 0;
     if (hasAudio) return '/dashboard/upload-song/audio-metadata/';
     if (hasVideo) return '/dashboard/upload-song/video-metadata/';
-    if (hasPayment) return '/dashboard/upload-song/video-metadata/'; // only payment rejected → video page (read-only + Pay now)
+    // Date Booking or paid-in-advance+lyrical (one or both rejected) → payment page
+    if (hasPayment && (isDateBookingPayment || hasRejectedPaymentDetails)) return '/auth/payment';
+    if (hasPayment) return '/dashboard/upload-song/video-metadata/'; // Song Reg → video (Pay now)
     return '/dashboard/upload-song/audio-metadata/';
   };
 
@@ -98,6 +111,17 @@ export default function UploadSongs() {
     return colorMap[status] || 'text-gray-400 border-gray-400/30';
   };
 
+  // Display label for status (capitalised for UI)
+  const getStatusLabel = (status) => {
+    const labelMap = {
+      'pending': 'Draft',
+      'under review': 'Under Review',
+      'approved': 'Approved',
+      'rejected': 'Rejected'
+    };
+    return labelMap[status] ?? status;
+  };
+
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
       <div className="max-w-2xl space-y-8">
@@ -112,8 +136,30 @@ export default function UploadSongs() {
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-4">
+          <div className="text-center py-4 space-y-2">
             <p className="text-red-400">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                if (ophid && headers?.Authorization) {
+                  axiosApi.get('/pending-song-registeration', { headers, params: { ophid } })
+                    .then((res) => {
+                      if (res.data.success) setPendingContent(res.data.data || {});
+                      else setPendingContent({});
+                    })
+                    .catch((err) => {
+                      console.error('Retry failed:', err);
+                      setError(err.response?.data?.message || 'Failed to load pending content');
+                      setPendingContent({});
+                    })
+                    .finally(() => setIsLoading(false));
+                } else setIsLoading(false);
+              }}
+              className="px-4 py-2 rounded-full border border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 text-sm"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -148,20 +194,67 @@ export default function UploadSongs() {
             key={song.id} // Add key prop here
             className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
             
-            onClick={(e) => {
+            onClick={async (e) => {
               if (['pending', 'rejected'].includes(song.status)) {
-                // Single flow: go to first step (audio/video/payment); backend redirects through remaining steps until done
-                navigate(song.next_page, {
-                  state: {
-                    song_id: song.id,
-                    songName: song.name,
-                    release_date: song.release_date,
-                    project_type: song.projectType,
-                    lyrical_services: song.lyrical_services,
-                    isFixingRejected: song.status === 'rejected',
-                    rejectedSections: song.rejectedSections
+                const paymentSection = song.rejectedSections?.find((s) => s.section === 'payment');
+                const isDateBookingPaymentRejected = paymentSection?.isDateBooking === true;
+                const paymentRepayAmount = paymentSection?.paymentRepayAmount;
+                const rejectedPayments = paymentSection?.rejectedPayments;
+                const bothRejected = rejectedPayments?.length >= 2;
+                const isPaymentRepayment = paymentSection && song.status === 'rejected';
+                const state = {
+                  song_id: song.id,
+                  songName: song.name,
+                  release_date: song.release_date,
+                  project_type: song.projectType,
+                  lyrical_services: song.lyrical_services,
+                  isFixingRejected: song.status === 'rejected',
+                  rejectedSections: song.rejectedSections,
+                  ...(isPaymentRepayment && paymentRepayAmount != null && {
+                    amount: paymentRepayAmount,
+                    paymentRepayAmount,
+                    rejectedPayments,
+                  }),
+                  // Both Date Booking + lyrical rejected: use Date booking (triggers /booking), amount=1198
+                  ...(isPaymentRepayment && bothRejected && {
+                    from: 'Date booking',
+                    booking_date: song.release_date,
+                    date: song.release_date,
+                  }),
+                  // Date Booking only repayment
+                  ...(isPaymentRepayment && !bothRejected && isDateBookingPaymentRejected && {
+                    from: 'Date booking',
+                    booking_date: song.release_date,
+                    date: song.release_date,
+                  }),
+                  // Lyrical-only repayment (paid-in-advance + lyrical)
+                  ...(isPaymentRepayment && !bothRejected && !isDateBookingPaymentRejected && rejectedPayments?.length > 0 && {
+                    from: 'Song Repayment',
+                  }),
+                };
+                // For draft (pending): check if release date is still free on calendar
+                if (song.status === 'pending' && song.release_date) {
+                  try {
+                    const res = await axiosApi.get('/check-release-date-available', {
+                      headers,
+                      params: { release_date: song.release_date, song_id: song.id, ophid }
+                    });
+                    if (res.data.success && res.data.available === false) {
+                      navigate('/dashboard/upload-song/register-song', {
+                        state: {
+                          ...state,
+                          dateNoLongerAvailable: true,
+                          returnToPage: song.next_page
+                        }
+                      });
+                      localStorage.setItem("projectType", song.projectType);
+                      return;
+                    }
+                  } catch (err) {
+                    console.error('Check release date:', err);
                   }
-                });
+                }
+                navigate(song.next_page, { state });
                 localStorage.setItem("projectType", song.projectType);
               } else {
                 e.preventDefault();
@@ -176,7 +269,7 @@ export default function UploadSongs() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-4 py-1 rounded-full text-sm border ${getStatusColor(song.status)}`}>
-                  {song.status}
+                  {getStatusLabel(song.status)}
                 </span>
               </div>
 
