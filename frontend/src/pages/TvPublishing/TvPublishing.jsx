@@ -24,18 +24,26 @@ export default function TVPublishing() {
 
   useEffect(() => {
     const fetchContent = async () => {
+      console.log("[TVPublishing] ophid:", ophid);
       if (!ophid) return;
       try {
         const response = await axiosApi.get(`/TvUser?OPH_ID=${ophid}`);
+        console.log("[TVPublishing] API response:", response.data);
+        console.log("[TVPublishing] contents array:", response.data.data);
 
         setContents(response.data.data);
         if (response.data.data.length > 0) {
-          setSelectedContentId(response.data.data[0].id);
-          setSelectedContent(response.data.data[0]);
-          console.log(response);
+          const first = response.data.data[0];
+          console.log("[TVPublishing] first item keys:", Object.keys(first));
+          console.log("[TVPublishing] first item:", first);
+          console.log("[TVPublishing] first.id:", first.id, "| first.song_id:", first.song_id, "| first.status:", first.status);
+          setSelectedContentId(first.song_id);
+          setSelectedContent(first);
+        } else {
+          console.warn("[TVPublishing] No contents returned from API");
         }
       } catch (error) {
-        console.error("Error fetching content:", error);
+        console.error("[TVPublishing] Error fetching content:", error);
       } finally {
         setLoading(false);
       }
@@ -77,64 +85,7 @@ export default function TVPublishing() {
     return file ? URL.createObjectURL(file) : defaultUrl;
   };
 
-  // const handleSubmit = async () => {
-  //   if (!agreement) {
-  //     alert("Please agree to the terms and conditions");
-  //     return;
-  //   }
-
-  //   if (
-  //     (!files.audio && !selectedContent.audio_file_url) ||
-  //     (!files.video && !selectedContent.video_file_url)
-  //   ) {
-  //     alert("Please provide both audio and video files");
-  //     return;
-  //   }
-
-  //   const formData = new FormData();
-  //   if (files.audio) formData.append("audio", files.audio);
-  //   if (files.video) formData.append("video", files.video);
-
-  //   try {
-  //     setLoading(true);
-  //     const response = await axiosApi.put(
-  //       `/tv-publishing/content/${selectedContent.id}`,
-  //       formData,
-  //       {
-  //         headers: {
-  //           "Content-Type": "multipart/form-data",
-  //           ...headers,
-  //         },
-  //         onUploadProgress: (e) => {
-  //           const progress = Math.round((e.loaded * 100) / e.total);
-  //           const fileType = e.target?.name;
-  //           setUploadProgress((prev) => ({
-  //             ...prev,
-  //             [fileType]: progress,
-  //           }));
-  //         },
-  //       }
-  //     );
-
-  //     if (response.data.success) {
-  //       alert("Submitted successfully!");
-  //       setFiles({ audio: null, video: null });
-  //       setAgreement(false);
-  //     } else {
-  //       throw new Error(response.data.message || "Submission failed");
-  //     }
-  //   } catch (error) {
-  //     console.error("Submit error:", error);
-  //     alert(
-  //       error.response?.data?.message ||
-  //         "Failed to submit TV publishing request"
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //     setUploadProgress({ audio: 0, video: 0 });
-  //   }
-  // };
-
+  
   const handleSubmit = async () => {
     if (!agreement) {
       alert("Please agree to the terms and conditions");
