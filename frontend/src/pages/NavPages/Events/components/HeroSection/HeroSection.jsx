@@ -10,8 +10,9 @@ import axiosApi from "../../../../../conf/axios";
 import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime } from "../../../../../utils/date";
 
 // Accept either Instagram username or full profile URL (same as Contact / secondary artist)
+// URL regex allows optional query params (e.g. ?igsh=...) from share links
 const instagramUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
-const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/;
+const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
 
 export default function HeroSection({ professions = [] }) {
   const navigate = useNavigate();

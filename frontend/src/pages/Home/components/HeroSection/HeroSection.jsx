@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import axiosApi from "../../../../conf/axios";
-import formatDateAndAdjustMonth, { isRegistrationOpen, isRegistrationNotStartedYet, formatDateIST } from "../../../../utils/date";
+import formatDateAndAdjustMonth, { isRegistrationOpen, isRegistrationNotStartedYet, formatRegistrationStartDate, formatRegistrationEndDate } from "../../../../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useArtist } from "../../../auth/API/ArtistContext";
@@ -11,7 +11,14 @@ import SongCard from "../../../../components/SongCard";
 import Video from '../../../../assets/videos/video.mp4'
 import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
-const HeroSection = ({ upcomingSong, upcomingEvent }) => {
+const isArtistRegistered = (eventId, artistBookEvents = []) =>
+  artistBookEvents.some(
+    (e) =>
+      Number(e.event_id) === Number(eventId) &&
+      (e.status === "under review" || e.status === "accepted")
+  );
+
+const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const eventID = useSelector((state) => state.event.selectedEvent);
@@ -154,10 +161,9 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <span>Registration Date:</span>
+                  <span>Registration:</span>
                   <span className="font-medium text-white">
-                    {formatDateAndAdjustMonth(upcomingEvent.registrationStart)} -{" "}
-                    {formatDateAndAdjustMonth(upcomingEvent.registrationEnd)}
+                    {formatRegistrationStartDate(upcomingEvent.registrationStart)} to {formatRegistrationEndDate(upcomingEvent.registrationEnd)}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -170,7 +176,7 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
 
               {/* Register Button – same logic as Events page: active period only clickable */}
               <div>
-                {upcomingEvent.is_registered ? (
+                {isArtistRegistered(upcomingEvent.event_id ?? upcomingEvent.id, artistBookEvents) ? (
                   <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
                     Registered
                   </button>
@@ -179,15 +185,16 @@ const HeroSection = ({ upcomingSong, upcomingEvent }) => {
                     type="button"
                     disabled
                     className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                    title={`Registration opens at 12:00 AM IST on ${formatDateIST(upcomingEvent.registrationStart)}`}
+                    title={`Registration opens at ${formatRegistrationStartDate(upcomingEvent.registrationStart)}`}
                   >
-                    Registration opens 12:00 AM IST, {formatDateIST(upcomingEvent.registrationStart)}
+                    Registration opens {formatRegistrationStartDate(upcomingEvent.registrationStart)}
                   </button>
                 ) : !isRegistrationOpen(upcomingEvent) ? (
                   <button
                     type="button"
                     disabled
                     className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
+                    title={`Registration closed at ${formatRegistrationEndDate(upcomingEvent.registrationEnd)}`}
                   >
                     Closed
                   </button>

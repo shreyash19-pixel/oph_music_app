@@ -379,7 +379,7 @@ class SongApplicationStatusService {
    * Fetches audio_url and video_url from audio_details and video_details
    */
   async insertTvPublishing(connection, songData) {
-    const { oph_id, song_id } = songData;
+    const { oph_id, song_id, song_name } = songData;
 
     const [existing] = await connection.query(
       `SELECT 1 FROM tvPublishing WHERE song_id = ? LIMIT 1`,
@@ -403,9 +403,9 @@ class SongApplicationStatusService {
 
     await connection.query(
       `INSERT INTO tvPublishing 
-        (audio_url, video_url, reason, status, song_id, OPH_ID, \`lock\`, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
-      [audio_url, video_url, '', 'pending', song_id, oph_id],
+        (audio_url, video_url, reason, status, song_id, song_name, OPH_ID, \`lock\`, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())`,
+      [audio_url, video_url, '', 'pending', song_id, song_name || null, oph_id],
     );
 
     console.log(`tvPublishing initialized for song_id: ${song_id}`);

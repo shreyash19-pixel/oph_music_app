@@ -10,7 +10,14 @@ import getToken from "../../../../utils/getToken";
 import axiosApi from "../../../../conf/axios";
 import ReleaseBlur from "../../../../../public/assets/images/release_blur.png";
 
-const EventsNewReleases = ({ upcomingEvent }) => {
+const isArtistRegistered = (eventId, artistBookEvents = []) =>
+  artistBookEvents.some(
+    (e) =>
+      Number(e.event_id) === Number(eventId) &&
+      (e.status === "under review" || e.status === "accepted")
+  );
+
+const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
   const { ophid } = useArtist();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [audio, setAudio] = useState(null); // State for audio object
@@ -154,12 +161,12 @@ const EventsNewReleases = ({ upcomingEvent }) => {
                 <h3 className="text-2xl font-bold mb-2">
                   {upcomingEvent.EventName}
                 </h3>
-                {upcomingEvent.is_registered ? (
+                {isArtistRegistered(upcomingEvent.event_id ?? upcomingEvent.id, artistBookEvents) ? (
                   <button
                     disabled={true}
                     className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm"
                   >
-                    Booked
+                    Registered
                   </button>
                 ) : (
                   <button

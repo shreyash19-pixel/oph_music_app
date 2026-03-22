@@ -42,9 +42,9 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Validate Instagram handle format (optional)
+    // Validate Instagram handle format (optional) - allows query params from share links (e.g. ?igsh=...)
     if (instagram_handle) {
-      const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/([a-zA-Z0-9._]+)\/?/;
+      const instagramRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
       if (!instagramRegex.test(instagram_handle)) {
         return res.status(400).json({
           success: false,

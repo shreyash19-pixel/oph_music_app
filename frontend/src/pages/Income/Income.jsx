@@ -30,6 +30,9 @@ export default function IncomeWithdrawal() {
             incomeData.total_youtube_revenue || 0,
           ),
           total_audio_revenue: parseFloat(incomeData.total_audio_revenue || 0),
+          total_events_revenue: parseFloat(
+            incomeData.total_events_revenue || 0,
+          ),
         });
       } else {
         setIncome({
@@ -37,6 +40,7 @@ export default function IncomeWithdrawal() {
           total_song_count: 0,
           total_youtube_revenue: 0,
           total_audio_revenue: 0,
+          total_events_revenue: 0,
         });
       }
     } catch (err) {
@@ -47,6 +51,7 @@ export default function IncomeWithdrawal() {
         total_song_count: 0,
         total_youtube_revenue: 0,
         total_audio_revenue: 0,
+        total_events_revenue: 0,
       });
     } finally {
       setLoading(false);
@@ -313,7 +318,7 @@ export default function IncomeWithdrawal() {
             </p>
           </div>
           {income && (
-            <div className="mt-4 text-sm text-purple-200">
+            <div className="mt-4 text-sm text-purple-200 space-y-1">
               <p>Total Songs: {income.total_song_count}</p>
               <p>
                 YouTube Revenue: ₹
@@ -323,6 +328,12 @@ export default function IncomeWithdrawal() {
                 Audio Revenue: ₹
                 {parseFloat(income.total_audio_revenue).toFixed(2)}
               </p>
+              {(income.total_events_revenue ?? 0) > 0 && (
+                <p>
+                  Event Winnings: ₹
+                  {parseFloat(income.total_events_revenue).toFixed(2)}
+                </p>
+              )}
             </div>
           )}
         </div>

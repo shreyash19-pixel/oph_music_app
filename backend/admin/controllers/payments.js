@@ -325,32 +325,44 @@ const updateEventPaymentSp = async (req, res) => {
       eventId,
     });
 
-    // Send notification to user
-    const { saveNotification } = require("../../utils/notify");
-    const message =
-      status === "rejected"
-        ? `Your event payment with Transaction ID: ${transactionId} has been ${status}${reject_reason ? ` due to: ${reject_reason}` : ""}.`
-        : `Your event payment with Transaction ID: ${transactionId} has been ${status}.`;
+    // Send notification only for internal users (OPH-*) - external users don't have dashboard
+    const isInternalUser = ophId && String(ophId).trim().match(/^OPH-/);
+    if (isInternalUser) {
+      const { saveNotification } = require("../../utils/notify");
+      const EventModel = require("../model/events");
+      const event = await EventModel.getEventById(parseInt(eventId, 10));
+      const eventName = event?.EventName || "Event";
 
-    const notificationPayload = {
-      ophid: ophId,
-      message: message,
-      title: `Event Payment ${status}`,
-      link: status === "rejected" ? "/dashboard/events" : null,
-    };
+      const statusLabel = (status === "approved" || status === "Approved") ? "approved" : "rejected";
+      const title =
+        statusLabel === "approved"
+          ? `Event "${eventName}" Registration Approved`
+          : `Event "${eventName}" Registration Rejected`;
+      const message =
+        statusLabel === "rejected"
+          ? `Your registration for "${eventName}" has been rejected${reject_reason ? `: ${reject_reason}` : "."}`
+          : `Your registration for "${eventName}" has been approved. You're all set!`;
 
-    await saveNotification(notificationPayload);
+      const notificationPayload = {
+        ophid: ophId,
+        message,
+        title,
+        link: "/dashboard/events",
+      };
 
-    // Emit socket event if user is online
-    const io = req.app.get("io");
-    const onlineUsers = req.app.get("onlineUsers");
-    const userSocketId = onlineUsers?.get(ophId);
-    if (userSocketId) {
-      io.to(userSocketId).emit("Payment-update", notificationPayload);
+      const notification = await saveNotification(notificationPayload);
+
+      // Emit socket for real-time toast + bell indicator
+      const io = req.app.get("io");
+      const onlineUsers = req.app.get("onlineUsers");
+      const userSocketId = onlineUsers?.get(ophId);
+      if (io && onlineUsers && userSocketId) {
+        io.to(userSocketId).emit("Event-update", { ...notification, ...notificationPayload });
+      }
     }
 
-    // Send email if payment is approved
-    if (status === "approved") {
+    // Send email if payment is approved (internal users only)
+    if ((status === "approved" || status === "Approved") && isInternalUser) {
       console.log("Payment approved, fetching user email...");
       const db = require('../../DB/connect');
       const [userDetails] = await db.execute("SELECT email, full_name FROM user_details WHERE oph_id = ?", [ophId]);
@@ -531,11 +543,65 @@ const setPaymentVerificationController = async (req, res) => {
     console.log("[setPaymentVerificationController] Response:", response);
 
     if (response && response.success) {
+      // Send notification for date approved/rejected (Date booking or Release date change)
+      const isDateRelated =
+        (from || "").toLowerCase().includes("date booking") ||
+        (from || "").toLowerCase().includes("release date change");
+      const ophIdVal = (oph_id || "").trim();
+      const isInternalUser = ophIdVal && ophIdVal.match(/^OPH-/);
+
+      if (isDateRelated && isInternalUser && ophIdVal) {
+        const { saveNotification } = require("../../utils/notify");
+        const statusLabel =
+          decision === "approved" || decision === "Approved"
+            ? "approved"
+            : "rejected";
+        const dateStr =
+          release_date && typeof release_date === "string"
+            ? release_date.split("T")[0] || release_date
+            : release_date;
+        const dateDisplay = dateStr || "selected date";
+        const title =
+          statusLabel === "approved"
+            ? `Date Booking Approved: ${dateDisplay}`
+            : `Date Booking Rejected: ${dateDisplay}`;
+        const message =
+          statusLabel === "rejected"
+            ? `Your date booking for ${dateStr || "the selected date"} has been rejected${reason ? `: ${reason}` : "."}`
+            : `Your date booking for ${dateStr || "the selected date"} has been approved.`;
+
+        const notificationPayload = {
+          ophid: ophIdVal,
+          message,
+          title,
+          link: "/dashboard/time-calendar",
+        };
+
+        const notification = await saveNotification(notificationPayload);
+
+        const io = req.app.get("io");
+        const onlineUsers = req.app.get("onlineUsers");
+        const userSocketId = onlineUsers?.get(ophIdVal);
+        if (io && onlineUsers && userSocketId) {
+          io.to(userSocketId).emit("Date-update", {
+            ...notification,
+            ...notificationPayload,
+          });
+        }
+      }
+
       // Send email if decision is approved and from is Date Booking
-      if (decision === "approved" && from === "Date Booking") {
+      const fromNorm = (from || "").trim();
+      if (
+        (decision === "approved" || decision === "Approved") &&
+        (fromNorm === "Date Booking" || fromNorm === "Date booking")
+      ) {
         console.log("Date booking approved, sending email...");
         const db = require("../../DB/connect");
-        const [userDetails] = await db.execute("SELECT email, full_name FROM user_details WHERE oph_id = ?", [oph_id]);
+        const [userDetails] = await db.execute(
+          "SELECT email, full_name FROM user_details WHERE oph_id = ?",
+          [oph_id || ophIdVal]
+        );
         const userEmail = userDetails[0]?.email;
         const userName = userDetails[0]?.full_name;
         

@@ -13,6 +13,7 @@ function Home() {
   const [upcomingSong, setUpcomingSong] = useState([]);
   const [upcomingEventHero, setUpcomingEventHero] = useState(false);
   const [upcomingEventNewReleases, setUpcomingEventNewReleases] = useState(false);
+  const [artistBookEvents, setArtistBookEvents] = useState([]);
   const [error, setError] = useState(null);
   const { headers, ophid } = useArtist();
 
@@ -52,17 +53,23 @@ function Home() {
       });
 
       if (response.data.success && Array.isArray(response.data.data)) {
+        const now = new Date();
         const events = response.data.data;
-        const sorted = [...events].sort((a, b) => {
-          const dateA = new Date(a.created_at || a.createdAt || 0);
-          const dateB = new Date(b.created_at || b.createdAt || 0);
-          return dateB - dateA; // newest first by created_at
-        });
-        // HeroSection: prefer event with registration open, else first (previous logic)
-        const withActiveReg = sorted.find(isRegistrationOpen);
-        setUpcomingEventHero(withActiveReg || sorted[0] || false);
-        // EventsNewReleases: show second event (by created_at) when 2+; else first
-        setUpcomingEventNewReleases(sorted.length >= 2 ? sorted[1] : sorted[0] || false);
+        // Only future events — otherwise sort position [1] is a past event, not "2nd upcoming"
+        const upcomingSorted = [...events]
+          .filter((e) => new Date(e.dateTime || 0) > now)
+          .sort((a, b) => {
+            const dateA = new Date(a.dateTime || 0);
+            const dateB = new Date(b.dateTime || 0);
+            return dateA - dateB; // soonest upcoming first
+          });
+        // HeroSection: prefer upcoming with registration open, else soonest upcoming
+        const withActiveReg = upcomingSorted.find(isRegistrationOpen);
+        setUpcomingEventHero(withActiveReg || upcomingSorted[0] || false);
+        // EventsNewReleases: 2nd upcoming by event date when 2+; else same as hero when only one
+        setUpcomingEventNewReleases(
+          upcomingSorted.length >= 2 ? upcomingSorted[1] : upcomingSorted[0] || false
+        );
       }
     } catch (err) {
       console.log(err);
@@ -81,6 +88,22 @@ function Home() {
       fetchUpcomingSong();
     }
   }, [headers, ophid]);
+
+  useEffect(() => {
+    if (!ophid || !headers?.Authorization) return;
+    const fetchArtistBookEvents = async () => {
+      try {
+        const response = await axiosApi.get(`/event_part/${ophid}`, { headers });
+        const data = response.data;
+        const normalized = Array.isArray(data) ? data : data ? [data] : [];
+        setArtistBookEvents(normalized);
+      } catch (err) {
+        console.error("Error fetching event participations:", err);
+        setArtistBookEvents([]);
+      }
+    };
+    fetchArtistBookEvents();
+  }, [ophid, headers]);
 
   return (
     <div>
@@ -117,8 +140,12 @@ function Home() {
           <HeroSection
             upcomingSong={upcomingSong}
             upcomingEvent={upcomingEventHero}
+            artistBookEvents={artistBookEvents}
           />
-          <EventsNewReleases upcomingEvent={upcomingEventNewReleases} />
+          <EventsNewReleases
+            upcomingEvent={upcomingEventNewReleases}
+            artistBookEvents={artistBookEvents}
+          />
           <ArtistRankingSection data={artistsdata} selectedMonth={"January"} />
         </>
       )}

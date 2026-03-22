@@ -75,6 +75,28 @@ export function isRegistrationOpen(event) {
   return true;
 }
 
+/**
+ * Format registration start for display: "DD/MM/YYYY, 12:00 AM IST"
+ */
+export function formatRegistrationStartDate(isoDate) {
+  if (!isoDate) return "";
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return "";
+  const dateStr = d.toLocaleDateString("en-GB", istOptions({ day: "2-digit", month: "2-digit", year: "numeric" }));
+  return `${dateStr}, 12:00 AM IST`;
+}
+
+/**
+ * Format registration end for display: "DD/MM/YYYY, 11:59 PM IST" (closes at end of day)
+ */
+export function formatRegistrationEndDate(isoDate) {
+  if (!isoDate) return "";
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return "";
+  const dateStr = d.toLocaleDateString("en-GB", istOptions({ day: "2-digit", month: "2-digit", year: "numeric" }));
+  return `${dateStr}, 11:59 PM IST`;
+}
+
 /** Returns end-of-day (23:59:59.999) in IST for the given date - registration closes at 11:59 PM */
 function getEndOfDayIST(dateValue) {
   if (!dateValue) return null;
