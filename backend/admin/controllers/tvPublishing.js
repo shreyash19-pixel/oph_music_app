@@ -40,21 +40,21 @@ const getAllTv = async (req, res) => {
   
 
 const updateLockStatus = async (req, res) => {
-  const { song_id, lock } = req.body;
+  const { song_id, lock, status } = req.body;
 
   if (!song_id || typeof lock !== "number") {
     return res.status(400).json({ success: false, message: "Invalid input" });
   }
 
   try {
-    await tvModel.updateTvLock(song_id, lock);
+    await tvModel.updateTvLock(song_id, lock, status);
     
     // Get OPH_ID and song name for notification
     const { ophid, songName } = await tvModel.getOphIdAndSongNameFromSongId(song_id);
     
     if (ophid) {
       // Create and save notification
-      const lockStatus = lock === 1 ? "locked" : "unlocked";
+      const lockStatus = lock === 1 ? "unlocked" : "locked";
       const notificationPayload = {
         ophid,
         title: `TV Publishing "${songName}" ${lockStatus.charAt(0).toUpperCase() + lockStatus.slice(1)}`,

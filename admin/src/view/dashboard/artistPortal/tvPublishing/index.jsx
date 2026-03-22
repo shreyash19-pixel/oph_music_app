@@ -56,10 +56,10 @@
             setOriginalVideoURL(data.video_url || null);
 
             // Set page-wide unlock state from backend lock
-            setunlock(data.lock === 0);
+            setunlock(data.lock === 1);
 
-            // If locked (lock = 1), lock audio/video editing by default
-            setLocked(data.lock === 1);
+            // If locked (lock = 0), lock audio/video editing by default
+            setLocked(data.lock === 0);
 
             // Set status from data if available, else Submitted
             setSelectedStatus(data.status || "Submitted");
@@ -85,16 +85,19 @@
         setUnlocking(true);
         await axiosApi.post("/updateLockStatus", {
           song_id,
-          lock: 0,
+          lock: 1,
+          status: "Open",
         });
         setunlock(true); // Unlock page
         // Also unlock editing
         setLocked(false);
-        // Update tvData.lock to 0 locally
-        setTvData((prev) => ({ ...prev, lock: 0 }));
+        // Update tvData.lock to 1 and status to Open locally
+        setTvData((prev) => ({ ...prev, lock: 1, status: "Open" }));
+        setSelectedStatus("Open");
+        toast.success("Record unlocked and status set to Open!");
       } catch (err) {
         console.error("Error unlocking:", err);
-        alert("Failed to unlock. Try again.");
+        toast.error("Failed to unlock. Try again.");
       } finally {
         setUnlocking(false);
       }
@@ -203,8 +206,8 @@
     if (loading) return <div>Loading...</div>;
     if (!tvData) return <div>No data found for Song ID: {song_id}</div>;
 
-    // If page locked (lock=1) and not unlock yet, show overlay
-    if (tvData.lock === 1 && !unlock) {
+    // If page locked (lock=0) and not unlock yet, show overlay
+    if (tvData.lock === 0 && !unlock) {
       return (
         <div
           style={{

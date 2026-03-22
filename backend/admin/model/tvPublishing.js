@@ -16,12 +16,20 @@ const getTv = async (song_id) => {
   return rows;
 };
 
-const updateTvLock = async (song_id, lock) => {
-  const [result] = await db.execute(
-    "UPDATE tvPublishing SET `lock` = ? WHERE song_id = ?",
-    [lock, song_id]
-  );
-  return result;
+const updateTvLock = async (song_id, lock, status) => {
+  if (status) {
+    const [result] = await db.execute(
+      "UPDATE tvPublishing SET `lock` = ?, status = ? WHERE song_id = ?",
+      [lock, status, song_id]
+    );
+    return result;
+  } else {
+    const [result] = await db.execute(
+      "UPDATE tvPublishing SET `lock` = ? WHERE song_id = ?",
+      [lock, song_id]
+    );
+    return result;
+  }
 };
 
 const updateTvStatus = async (song_id, status, reason) => {
