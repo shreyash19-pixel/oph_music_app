@@ -74,10 +74,34 @@ const useSocketRegistration = (OPH_ID, onNewNotification) => {
       if (typeof onNewNotification === "function") onNewNotification();
     };
 
+    const handleEventUpdate = (data) => {
+      console.log("Received Event-update event:", data);
+
+      toast.success(data.title, {
+        duration: 10000,
+        position: "top-right",
+        icon: data.title?.toLowerCase().includes("rejected") ? "❌" : "✅",
+      });
+      if (typeof onNewNotification === "function") onNewNotification();
+    };
+
+    const handleDateUpdate = (data) => {
+      console.log("Received Date-update event:", data);
+
+      toast.success(data.title, {
+        duration: 10000,
+        position: "top-right",
+        icon: data.title?.toLowerCase().includes("rejected") ? "❌" : "📅",
+      });
+      if (typeof onNewNotification === "function") onNewNotification();
+    };
+
     socket.on("Music-update", handleTicketUpdate);
     socket.on("Payment-update", handlePaymentUpdate);
     socket.on("Profile-update", handleProfileUpdate);
     socket.on("TV-update", handleTVUpdate);
+    socket.on("Event-update", handleEventUpdate);
+    socket.on("Date-update", handleDateUpdate);
 
     // Cleanup on unmount
     return () => {
@@ -86,6 +110,8 @@ const useSocketRegistration = (OPH_ID, onNewNotification) => {
       socket.off("Payment-update", handlePaymentUpdate);
       socket.off("Profile-update", handleProfileUpdate);
       socket.off("TV-update", handleTVUpdate);
+      socket.off("Event-update", handleEventUpdate);
+      socket.off("Date-update", handleDateUpdate);
 
       // If the context unmounts (or user logs out and OPH_ID becomes null),
       // we can disconnect to avoid background reconnect loops.

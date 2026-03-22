@@ -1,4 +1,5 @@
 const Event = require("../model/events");
+const EventParticipant = require("../model/eventParticipant");
 const { uploadToS3 } = require("../../utils");
 
 const fetchAllEvents = async (req, res) => {
@@ -75,7 +76,11 @@ const getEventById = async (req, res) => {
         .json({ success: false, message: "Event not found" });
     }
 
-    return res.json({ success: true, data: event });
+    const participantCount = await EventParticipant.getParticipantCountByEventId(eventId);
+    return res.json({
+      success: true,
+      data: { ...event, participant_count: participantCount },
+    });
   } catch (err) {
     console.error("Error fetching event:", err);
     return res

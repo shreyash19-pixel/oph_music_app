@@ -70,6 +70,17 @@ const getOphIdFromSongId = async (song_id) => {
   return rows.length > 0 ? rows[0].OPH_ID : null;
 };
 
+const getOphIdAndSongNameFromSongId = async (song_id) => {
+  const [rows] = await db.execute(
+    "SELECT OPH_ID, Song_name FROM songs_register WHERE song_id = ?",
+    [song_id]
+  );
+  if (rows.length === 0) return { ophid: null, songName: null };
+  return {
+    ophid: rows[0].OPH_ID,
+    songName: rows[0].Song_name || "Song",
+  };
+};
 
 module.exports = {
   getAllTv,
@@ -78,4 +89,5 @@ module.exports = {
   updateTvStatus,
   updateTvFiles,
   getOphIdFromSongId,
+  getOphIdAndSongNameFromSongId,
 };

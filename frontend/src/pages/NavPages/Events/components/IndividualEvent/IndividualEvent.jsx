@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { Bounce, toast, ToastContainer } from "react-toastify";
-import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime } from "../../../../../utils/date";
+import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime, formatRegistrationStartDate, formatRegistrationEndDate } from "../../../../../utils/date";
 
 // Accept either Instagram username or full profile URL (same as HeroSection RegistrationModal)
+// URL regex allows optional query params (e.g. ?igsh=...) from share links
 const instagramUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
-const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/;
+const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhoneNumber = (phone) => /^\d{10}$/.test(phone);
@@ -204,7 +205,11 @@ const IndividualEvent = () => {
         reward_amount: raw.reward_amount ?? raw.winnerReward ?? raw.reward ?? 0,
         thumbnail_url: raw.thumbnail_url ?? raw.image ?? raw.thumbnail ?? "",
         total_bookings:
-          raw.total_bookings ?? raw.participants ?? raw.booking_count ?? 0,
+          raw.participant_count ??
+          raw.total_bookings ??
+          raw.participants ??
+          raw.booking_count ??
+          0,
         status: raw.status ?? raw.state ?? "upcoming",
         payment_plan_id: raw.payment_plan_id ?? null,
       };
@@ -369,10 +374,9 @@ const IndividualEvent = () => {
             {/* Event Details */}
             <div className="space-y-4 mb-8">
               <div className="text-amber-400">
-                Registration Date:{" "}
+                Registration:{" "}
                 <span className="text-white">
-                  {dateFormat(singleEvent.regn_start)} -{" "}
-                  {dateFormat(singleEvent.regn_end)}
+                  {formatRegistrationStartDate(singleEvent.registrationStart || singleEvent.regn_start)} to {formatRegistrationEndDate(singleEvent.registrationEnd || singleEvent.regn_end)}
                 </span>
               </div>
               <div className="text-gray-300">
@@ -410,9 +414,9 @@ const IndividualEvent = () => {
                   !isEventInFuture
                     ? "Event has ended"
                     : isRegistrationNotStartedYetByDateTime(singleEvent)
-                      ? `Registration opens at ${dateFormat(singleEvent.registrationStart || singleEvent.regn_start)}`
+                      ? `Registration opens at ${formatRegistrationStartDate(singleEvent.registrationStart || singleEvent.regn_start)}`
                       : !isRegistrationOpenByDateTime(singleEvent)
-                        ? "Registration has closed"
+                        ? `Registration closed at ${formatRegistrationEndDate(singleEvent.registrationEnd || singleEvent.regn_end)}`
                         : undefined
                 }
               >

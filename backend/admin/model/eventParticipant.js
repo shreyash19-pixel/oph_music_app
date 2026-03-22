@@ -73,6 +73,24 @@ const getParticipantsByEventId = async (event_id) => {
   return rows;
 };
 
+/**
+ * Returns total participant count for an event (internal + external, all statuses).
+ * Matches admin EventParticipation counting: event_participants + event_bookings.
+ */
+const getParticipantCountByEventId = async (event_id) => {
+  const [internalRows] = await db.execute(
+    "SELECT COUNT(*) AS cnt FROM event_participants WHERE event_id = ?",
+    [event_id]
+  );
+  const [externalRows] = await db.execute(
+    "SELECT COUNT(*) AS cnt FROM event_bookings WHERE event_id = ?",
+    [event_id]
+  );
+  const internal = Number(internalRows?.[0]?.cnt ?? 0);
+  const external = Number(externalRows?.[0]?.cnt ?? 0);
+  return internal + external;
+};
+
 const registerParticipant = async ({ OPH_ID, event_id, status = 'under review' }) => {
   // Use INSERT ... ON DUPLICATE KEY UPDATE to handle cases where participant already exists
   // This prevents duplicate key errors when a user tries to register for the same event multiple times
@@ -99,6 +117,7 @@ module.exports = {
   getParticipantByOphAndEvent,
   getParticipantsByOphId,
   getParticipantsByEventId,
+  getParticipantCountByEventId,
   registerParticipant,
   updateParticipantStatus,
   getParticipant,

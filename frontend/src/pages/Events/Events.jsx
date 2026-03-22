@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import RegistrationModal from "../../components/registration/Registration";
-import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime, IST } from "../../utils/date";
+import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime, formatRegistrationStartDate, formatRegistrationEndDate } from "../../utils/date";
 
 export default function Events() {
   const { headers, ophid } = useArtist();
@@ -35,10 +35,16 @@ export default function Events() {
   console.log(JSON.stringify(musicEvents));
 
 
-  const sortByCreatedAtDesc = (a, b) => {
-    const dateA = new Date(a.created_at || a.createdAt || 0);
-    const dateB = new Date(b.created_at || b.createdAt || 0);
-    return dateB - dateA; // newest first
+  const sortByEventDateAsc = (a, b) => {
+    const dateA = new Date(a.dateTime || 0);
+    const dateB = new Date(b.dateTime || 0);
+    return dateA - dateB; // soonest first
+  };
+
+  const sortByEventDateDesc = (a, b) => {
+    const dateA = new Date(a.dateTime || 0);
+    const dateB = new Date(b.dateTime || 0);
+    return dateB - dateA; // most recent past first
   };
 
   const upcomingEvents = musicEvents
@@ -46,14 +52,14 @@ export default function Events() {
       const eventDate = new Date(event.dateTime);
       return eventDate > new Date();
     })
-    .sort(sortByCreatedAtDesc);
+    .sort(sortByEventDateAsc);
 
   const previousEvents = musicEvents
     .filter((event) => {
       const eventDate = new Date(event.dateTime);
       return eventDate <= new Date();
     })
-    .sort(sortByCreatedAtDesc);
+    .sort(sortByEventDateDesc);
 
 
   useEffect(() => {
@@ -113,25 +119,6 @@ export default function Events() {
   //   const [day, month, year] = dateStr.split("/").map(Number);
   //   return new Date(year, month - 1, day);
   // };
-
-  // const formatDateInline = (dateStr) => {
-  //   if (!dateStr) return "";
-  //   const [day, month, year] = dateStr.split("/");
-  //   return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
-  // };
-
-  const formatDateInline = (isoDate) => {
-    if (!isoDate) return "";
-    const date = new Date(isoDate);
-    if (isNaN(date)) return "";
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      timeZone: IST,
-    });
-  };
-
 
   const isArtistRegistered = (eventId) => {
     return artistBookEvents.some(
@@ -215,10 +202,10 @@ export default function Events() {
                   </div>
                   <div>
                     <span className="text-gray-400">
-                      Registration Start date to end date:
+                      Registration:{" "}
                     </span>
                     <span className="text-cyan-400">
-                      {formatDateInline(event.registrationStart)} - {formatDateInline(event.registrationEnd)}
+                      {formatRegistrationStartDate(event.registrationStart)} to {formatRegistrationEndDate(event.registrationEnd)}
                     </span>
                   </div>
                   <div className="text-green-400 font-bold">
@@ -238,8 +225,8 @@ export default function Events() {
                       Registered
                     </button>
                   ) : isRegistrationNotStartedYetByDateTime(event) ? (
-                    <button className="px-6 py-2 bg-gray-600 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed" disabled title={`Registration opens at 12:00 AM IST on ${formatDateInline(event.registrationStart)}`}>
-                      Registration opens 12:00 AM IST, {formatDateInline(event.registrationStart)}
+                    <button className="px-6 py-2 bg-gray-600 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed" disabled title={`Registration opens at ${formatRegistrationStartDate(event.registrationStart)}`}>
+                      Registration opens {formatRegistrationStartDate(event.registrationStart)}
                     </button>
                   ) : isRegistrationOpenByDateTime(event) ? (
                     <button
@@ -252,7 +239,7 @@ export default function Events() {
                       Register
                     </button>
                   ) : (
-                    <button className="px-6 py-2 bg-gray-700 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed">
+                    <button className="px-6 py-2 bg-gray-700 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed" title={`Registration closed at ${formatRegistrationEndDate(event.registrationEnd)}`}>
                       Closed
                     </button>
                   )}

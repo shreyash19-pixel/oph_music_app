@@ -3,9 +3,9 @@ const db = require("../DB/connect");
 
 const getNotificationsByOphid = async (ophid) => {
   const sql = `
-    SELECT id, title, message, link, read_status, created_at
+    SELECT id, oph_id, title, message, link, read_status, created_at, updated_at
     FROM notifications
-    WHERE ophid = ?
+    WHERE oph_id = ?
     ORDER BY read_status ASC, created_at DESC
   `;
   const [rows] = await db.execute(sql, [ophid]);

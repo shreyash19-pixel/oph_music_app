@@ -1,32 +1,86 @@
 const db = require("../DB/connect");
 
-// Get income summary from original tables (song_social_metrics + song_audio_metrics)
+// Get income summary: song_social_metrics + song_audio_metrics + artist_income
+// artist_income holds revenue from Content Analysis, Audio Platform, and Event prizes
 const getIncome = async (ophid) => {
-    const [rows] = await db.execute(
+    const oph = String(ophid || "").trim();
+    if (!oph) return [];
+
+    // 1) Song count + revenue from song_social_metrics and song_audio_metrics
+    const [metricsRows] = await db.execute(
         `SELECT
             sm.OPH_ID,
             COUNT(DISTINCT sm.song_id) AS distinct_song_count,
             COUNT(sm.song_id) AS total_song_count,
-            IFNULL(SUM(sm.youtube_revenue), 0) AS total_youtube_revenue,
-            IFNULL(am.total_audio_revenue, 0) AS total_audio_revenue,
-            IFNULL(SUM(sm.youtube_revenue), 0) + IFNULL(am.total_audio_revenue, 0) AS total_revenue
-         FROM
-            song_social_metrics sm
+            IFNULL(SUM(sm.youtube_revenue), 0) AS metrics_youtube,
+            IFNULL(am.total_audio_revenue, 0) AS metrics_audio
+         FROM song_social_metrics sm
          LEFT JOIN (
-            SELECT
-                OPH_ID,
-                SUM(audio_platform_revenue) AS total_audio_revenue
-            FROM
-                song_audio_metrics
-            GROUP BY
-                OPH_ID
-         ) am
-            ON sm.OPH_ID = am.OPH_ID
+            SELECT OPH_ID, SUM(audio_platform_revenue) AS total_audio_revenue
+            FROM song_audio_metrics
+            GROUP BY OPH_ID
+         ) am ON sm.OPH_ID = am.OPH_ID
          WHERE sm.OPH_ID = ?
          GROUP BY sm.OPH_ID`,
-        [ophid]
+        [oph]
     );
-    return rows;
+
+    // 2) Revenue from artist_income (Content Analysis, Audio Platform, Event prizes)
+    let aiYoutube = 0, aiAudio = 0, aiEvents = 0, aiOther = 0;
+    try {
+        const [aiRows] = await db.execute(
+            `SELECT income_type, IFNULL(SUM(amount), 0) AS total
+             FROM artist_income
+             WHERE oph_id = ?
+             GROUP BY income_type`,
+            [oph]
+        );
+        (aiRows || []).forEach((r) => {
+            const t = parseFloat(r.total) || 0;
+            if (r.income_type === "youtube_revenue") aiYoutube = t;
+            else if (r.income_type === "audio_platform_revenue") aiAudio = t;
+            else if (r.income_type === "Events") aiEvents = t;
+            else aiOther += t;
+        });
+    } catch {
+        // artist_income table may not exist
+    }
+
+    const metrics = metricsRows[0];
+    if (!metrics) {
+        // No songs in metrics; return row from artist_income only
+        const totalYoutube = aiYoutube;
+        const totalAudio = aiAudio;
+        const totalRevenue = totalYoutube + totalAudio + aiEvents + aiOther;
+        if (totalRevenue === 0) return [];
+        return [{
+            OPH_ID: oph,
+            distinct_song_count: 0,
+            total_song_count: 0,
+            total_youtube_revenue: totalYoutube,
+            total_audio_revenue: totalAudio,
+            total_events_revenue: aiEvents + aiOther,
+            total_revenue: totalRevenue,
+        }];
+    }
+
+    // Combine song metrics + artist_income
+    const metricsYoutube = parseFloat(metrics.metrics_youtube) || 0;
+    const metricsAudio = parseFloat(metrics.metrics_audio) || 0;
+    // Use max(metrics, artist_income) per type to avoid double-count when same revenue is in both
+    const totalYoutube = Math.max(metricsYoutube, aiYoutube);
+    const totalAudio = Math.max(metricsAudio, aiAudio);
+    const totalRevenue = totalYoutube + totalAudio + aiEvents + aiOther;
+
+    return [{
+        OPH_ID: metrics.OPH_ID,
+        distinct_song_count: metrics.distinct_song_count,
+        total_song_count: metrics.total_song_count,
+        total_youtube_revenue: totalYoutube,
+        total_audio_revenue: totalAudio,
+        total_events_revenue: aiEvents + aiOther,
+        total_revenue: totalRevenue,
+    }];
 };
 
 // Get combined transaction history (income from artist_income + withdrawals)

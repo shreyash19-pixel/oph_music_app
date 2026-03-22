@@ -7,7 +7,8 @@ import ContactBG from '../../../../../public/assets/images/music_bg.png'
 import Glow from '../../../../../public/assets/images/contact-elipise.png'
 
 const instagramRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
-const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?$/;
+// Username, optional trailing slash, and optional query params (e.g. ?igsh=...) from share links
+const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
 
 function HeroSection() {
   const [modal,setModal] = useState(false)

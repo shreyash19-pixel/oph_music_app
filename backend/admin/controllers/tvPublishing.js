@@ -49,16 +49,16 @@ const updateLockStatus = async (req, res) => {
   try {
     await tvModel.updateTvLock(song_id, lock, status);
     
-    // Get OPH_ID for notification
-    const ophid = await tvModel.getOphIdFromSongId(song_id);
+    // Get OPH_ID and song name for notification
+    const { ophid, songName } = await tvModel.getOphIdAndSongNameFromSongId(song_id);
     
     if (ophid) {
       // Create and save notification
       const lockStatus = lock === 1 ? "unlocked" : "locked";
       const notificationPayload = {
         ophid,
-        title: `TV Publishing ${lockStatus.charAt(0).toUpperCase() + lockStatus.slice(1)}`,
-        message: `Your TV publishing content has been ${lockStatus} by admin.`,
+        title: `TV Publishing "${songName}" ${lockStatus.charAt(0).toUpperCase() + lockStatus.slice(1)}`,
+        message: `Your TV publishing content for "${songName}" has been ${lockStatus} by admin.`,
         link: `/dashboard/tv-publishing`
       };
 
@@ -123,17 +123,17 @@ const updateTvStatus = async (req, res) => {
      );
 
      if (result.affectedRows > 0) {
-       // Get OPH_ID for notification
-       const ophid = await tvModel.getOphIdFromSongId(song_id);
+       // Get OPH_ID and song name for notification
+       const { ophid, songName } = await tvModel.getOphIdAndSongNameFromSongId(song_id);
        
        if (ophid) {
          // Create and save notification
          const notificationPayload = {
            ophid,
-           title: `TV Publishing ${finalStatus}`,
+           title: `TV Publishing "${songName}" ${finalStatus}`,
            message: finalStatus === "Accepted" 
-             ? "Your TV publishing content has been accepted by admin."
-             : `Your TV publishing content has been rejected. Reason: ${finalReason}`,
+             ? `Your TV publishing content for "${songName}" has been accepted by admin.`
+             : `Your TV publishing content for "${songName}" has been rejected. Reason: ${finalReason}`,
            link: `/dashboard/tv-publishing`
          };
 
