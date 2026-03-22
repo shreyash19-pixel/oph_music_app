@@ -541,74 +541,51 @@ const ArtistAll = () => {
         return;
       }
 
-      if (!personal.full_name) {
-        toast.error("No artist name available for PDF download");
+      if (!ophid) {
+        toast.error("No artist ID available for PDF download");
         return;
       }
 
-      console.log("Starting PDF download...");
-
-      // Show loading toast
       const loadingToast = toast.loading("Downloading PDF...");
 
-      // Construct the PDF URL from AWS S3
-      const pdfFileName = `${personal.full_name.replace(/\s+/g, "_")}.pdf`;
-      const s3Bucket = import.meta.env.VITE_S3_BUCKET || "";
-      const s3Region = import.meta.env.VITE_S3_REGION || "";
-
-      console.log(s3Bucket);
-      console.log(s3Region);
-
-      const pdfUrl = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/pdfs/${pdfFileName}`;
-
-      console.log("PDF URL:", pdfUrl);
-
-      // Fetch the PDF file
-      const response = await fetch(pdfUrl);
-
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        throw new Error(
-          `PDF not found: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      // Convert response to blob
-      const blob = await response.blob();
-      console.log("Blob created, size:", blob.size);
-
-      // Force download by creating a blob with proper MIME type
-      const downloadBlob = new Blob([blob], {
-        type: "application/pdf",
-        name: pdfFileName,
+      // Get pre-signed URL from backend (S3 bucket is private - direct URLs return 403)
+      const { data } = await axiosApi.get("/auth/membership/pdf-url", {
+        params: { ophid },
       });
 
-      const url = URL.createObjectURL(downloadBlob);
-      console.log("Object URL created:", url);
+      if (!data?.success || !data?.url) {
+        throw new Error(data?.message || "Failed to get PDF download link");
+      }
 
-      // Create download link with proper attributes
+      const pdfUrl = data.url;
+      const pdfFileName = `${(personal.full_name || "membership").replace(/\s+/g, "_")}.pdf`;
+
+      const response = await fetch(pdfUrl);
+
+      if (!response.ok) {
+        throw new Error(`PDF not found: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const downloadBlob = new Blob([blob], { type: "application/pdf" });
+      const objectUrl = URL.createObjectURL(downloadBlob);
+
       const tempLink = window.document.createElement("a");
-      tempLink.href = url;
+      tempLink.href = objectUrl;
       tempLink.download = pdfFileName;
       tempLink.style.display = "none";
-
-      // Add to DOM, click, and remove
       window.document.body.appendChild(tempLink);
       tempLink.click();
       window.document.body.removeChild(tempLink);
 
-      // Clean up after a short delay
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 100);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
 
-      // Dismiss loading toast and show success
       toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully!");
     } catch (error) {
       console.error("Error downloading PDF:", error);
-      toast.error(`Failed to download PDF: ${error.message}`);
+      toast.dismiss();
+      toast.error(`Failed to download PDF: ${error.response?.data?.message || error.message}`);
     }
   };
 

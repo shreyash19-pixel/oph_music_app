@@ -298,4 +298,21 @@ const deleteFromS3 = async (key) => {
   }
 };
 
-module.exports = { uploadToS3, uploadToS3Form, readFromS3, saveToS3, deleteFromS3 };
+/**
+ * Generate a pre-signed URL for downloading a private S3 object.
+ * Use when the bucket is private and direct URLs return 403.
+ * @param {string} key - S3 object key (e.g. "pdfs/Artist_Name.pdf")
+ * @param {number} expiresIn - URL validity in seconds (default 900 = 15 min)
+ * @returns {string} Pre-signed URL
+ */
+const getPresignedDownloadUrl = (key, expiresIn = 900) => {
+  const params = {
+    Bucket: process.env.S3_BUCKET,
+    Key: key,
+    Expires: expiresIn,
+    ResponseContentDisposition: `attachment; filename="${key.split("/").pop()}"`,
+  };
+  return s3.getSignedUrl("getObject", params);
+};
+
+module.exports = { uploadToS3, uploadToS3Form, readFromS3, saveToS3, deleteFromS3, getPresignedDownloadUrl };
