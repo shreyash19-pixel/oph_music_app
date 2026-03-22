@@ -398,7 +398,8 @@ const updateProfessionalDetailsController = async (req, res) => {
 
 const updateDocumentationDetails = async (req, res) => {
   try {
-    const { ophid } = req.body;
+
+    const { ophid,bank_name,account_holder_name,account_number,ifsc_code } = req.body;
 
     if (!ophid) {
       return res.status(400).json({
@@ -421,22 +422,27 @@ const updateDocumentationDetails = async (req, res) => {
 
     // Initialize documentation data with existing values
     const documentationData = {
-      aadhar_front_url: existingDetails.AadharFrontURL || "",
-      aadhar_back_url: existingDetails.AadharBackURL || "",
-      pan_front_url: existingDetails.PanFrontURL || "",
-      signature_image_url: existingDetails.SignatureImageURL || "",
+      aadhar_front_url: existingDetails.aadhar_front_url || "",
+      aadhar_back_url: existingDetails.aadhar_back_url || "",
+      pan_front_url: existingDetails.pan_front_url || "",
+      signature_image_url: existingDetails.signature_image_url || "",
+      bank_name: bank_name,
+      account_holder_name:account_holder_name,
+      account_number:account_number,
+      ifsc_code:ifsc_code
     };
 
     // Process file uploads to S3
     const fileFields = [
-      "AadharFrontURL",
-      "AadharBackURL",
-      "PanFrontURL",
-      "SignatureImageURL",
+      "aadhar_front_url",
+      "aadhar_back_url",
+      "pan_front_url",
+      "signature_image_url",
     ];
 
     for (const field of fileFields) {
       if (req.files[field] && req.files[field].length > 0) {
+         console.log("sdddsdsdsd");
         const file = req.files[field][0];
         console.log(`Uploading ${field}:`, {
           originalname: file.originalname,
@@ -452,6 +458,8 @@ const updateDocumentationDetails = async (req, res) => {
           console.log(`${field} S3 upload successful:`, s3Url);
           if (s3Url) {
             documentationData[field] = s3Url;
+            
+            
           }
         } catch (uploadError) {
           console.error(`Error uploading ${field} to S3:`, uploadError);
