@@ -16,7 +16,7 @@ const updateContentFiles = async (song_id, audio_url, video_url) => {
 
 const TvUser = async (OPH_ID) => {
   const [rows] = await db.execute(
-    "SELECT * FROM tvPublishing WHERE OPH_ID = ? AND `lock` = 0;",
+    "SELECT * FROM tvPublishing WHERE OPH_ID = ? AND `lock` = 1;",
     [OPH_ID]
   );
   return rows;
