@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import Loading from "../../components/Loading";
+import toast from "react-hot-toast";
 
 export default function TVPublishing() {
   const [loading, setLoading] = useState(false);
@@ -14,7 +15,7 @@ export default function TVPublishing() {
   const audioInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const [uploadProgress, setUploadProgress] = useState({ audio: 0, video: 0 });
-  const isSubmitted = selectedContent?.status == "Submitted";
+  const isSubmitted = selectedContent?.status?.toLowerCase() === "submitted";
   // const status = {
   //   1: "Pending",
   //   2: "Approved",
@@ -37,6 +38,7 @@ export default function TVPublishing() {
           console.log("[TVPublishing] first item keys:", Object.keys(first));
           console.log("[TVPublishing] first item:", first);
           console.log("[TVPublishing] first.id:", first.id, "| first.song_id:", first.song_id, "| first.status:", first.status);
+          console.log("[TVPublishing] first.reason:", first.reason);
           setSelectedContentId(first.song_id);
           setSelectedContent(first);
         } else {
@@ -56,23 +58,24 @@ export default function TVPublishing() {
     if (!file) return;
 
     if (type === "audio" && !file.type.startsWith("audio/")) {
-      alert("Invalid audio file format.");
+      toast.error("Invalid audio file format.");
       return;
     }
     if (type === "video" && !file.type.startsWith("video/")) {
-      alert("Invalid video file format.");
+      toast.error("Invalid video file format.");
       return;
     }
     if (type === "audio" && file.size > 50 * 1024 * 1024) {
-      alert("Audio file too large. Max 50MB");
+      toast.error("Audio file too large. Max 50MB");
       return;
     }
     if (type === "video" && file.size > 500 * 1024 * 1024) {
-      alert("Video file too large. Max 500MB");
+      toast.error("Video file too large. Max 500MB");
       return;
     }
 
     setFiles((prev) => ({ ...prev, [type]: file }));
+    toast.success(`${type === "audio" ? "Audio" : "Video"} file selected successfully!`);
   };
 
   const getFilePreview = (type) => {
@@ -85,15 +88,14 @@ export default function TVPublishing() {
     return file ? URL.createObjectURL(file) : defaultUrl;
   };
 
-  
   const handleSubmit = async () => {
     if (!agreement) {
-      alert("Please agree to the terms and conditions");
+      toast.error("Please agree to the terms and conditions");
       return;
     }
 
     if (!files.audio || !files.video) {
-      alert("Please upload both audio and video files");
+      toast.error("Please upload both audio and video files");
       return;
     }
 
@@ -104,6 +106,7 @@ export default function TVPublishing() {
 
     try {
       setLoading(true);
+      toast.loading("Uploading content...", { id: "upload" });
 
       const response = await axiosApi.post("/content", formData, {
         headers: {
@@ -116,17 +119,27 @@ export default function TVPublishing() {
         },
       });
 
+      toast.dismiss("upload");
+
       if (response.data.success) {
-        alert("Content uploaded successfully!");
+        toast.success("Content uploaded successfully!");
         setFiles({ audio: null, video: null });
         setAgreement(false);
         // Optionally refresh or update state to reflect changes
+        // Refresh the content list
+        const refreshResponse = await axiosApi.get(`/TvUser?OPH_ID=${ophid}`);
+        setContents(refreshResponse.data.data);
+        const updatedContent = refreshResponse.data.data.find(c => c.song_id === selectedContent.song_id);
+        if (updatedContent) {
+          setSelectedContent(updatedContent);
+        }
       } else {
-        alert("Upload failed: " + response.data.message);
+        toast.error("Upload failed: " + response.data.message);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Error uploading content");
+      toast.dismiss("upload");
+      toast.error("Error uploading content. Please try again.");
     } finally {
       setLoading(false);
       setUploadProgress(0);
@@ -200,23 +213,41 @@ export default function TVPublishing() {
                 </span>
               </div>
 
-              {["Open", "Submitted", "Rejected"].includes(
-                selectedContent?.status
-              ) && (
-                <div
-                  className={`relative space-y-6 mt-6 p-4 border rounded-lg ${
-                    selectedContent?.status === "Rejected"
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }`}
-                >
-                  {selectedContent?.status === "Rejected" && (
-                    <div className="absolute inset-0 bg-black/70 z-10 flex items-center justify-center rounded-lg">
-                      <p className="text-red-400 text-xl font-bold">
-                        This content was rejected. Please contact support.
-                      </p>
-                    </div>
-                  )}
+              {(() => {
+                const shouldShowForm = ["Open", "Submitted", "Rejected", "open", "submitted", "rejected"].includes(
+                  selectedContent?.status
+                );
+                console.log("[TVPublishing Render] selectedContent:", selectedContent);
+                console.log("[TVPublishing Render] selectedContent?.status:", selectedContent?.status);
+                console.log("[TVPublishing Render] shouldShowForm:", shouldShowForm);
+                console.log("[TVPublishing Render] Status check - Open:", selectedContent?.status === "Open");
+                console.log("[TVPublishing Render] Status check - Submitted:", selectedContent?.status === "Submitted");
+                console.log("[TVPublishing Render] Status check - Rejected:", selectedContent?.status === "Rejected");
+                console.log("[TVPublishing Render] Status check - rejected (lowercase):", selectedContent?.status === "rejected");
+                
+                return shouldShowForm && (
+                  <div className="relative space-y-6 mt-6 p-4 border rounded-lg">
+                    {(selectedContent?.status === "Rejected" || selectedContent?.status === "rejected") && selectedContent?.reason && (
+                      <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+                        <p className="text-red-400 font-semibold mb-2">
+                          ❌ Rejection Reason:
+                        </p>
+                        <p className="text-gray-300">{selectedContent.reason}</p>
+                        <p className="text-yellow-400 text-sm mt-2">
+                          Please reupload your files and resubmit.
+                        </p>
+                      </div>
+                    )}
+                    {(selectedContent?.status === "Rejected" || selectedContent?.status === "rejected") && !selectedContent?.reason && (
+                      <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+                        <p className="text-red-400 font-semibold mb-2">
+                          ❌ This content was rejected.
+                        </p>
+                        <p className="text-yellow-400 text-sm mt-2">
+                          Please reupload your files and resubmit.
+                        </p>
+                      </div>
+                    )}
 
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* VIDEO UPLOAD */}
@@ -360,14 +391,15 @@ export default function TVPublishing() {
                     {loading ? "Submitting..." : "Submit for TV Publishing"}
                   </button>
                 </div>
-              )}
+              );
+            })()}
 
-              {selectedContent?.status == "Open" && (
+              {selectedContent?.status?.toLowerCase() === "open" && (
                 <p className="text-gray-300 mt-6">
                   Your TV publishing request is Open.
                 </p>
               )}
-              {selectedContent?.status == "Submitted" && (
+              {selectedContent?.status?.toLowerCase() === "submitted" && (
                 <p className="text-gray-300 mt-6">
                   Your content has been published on TV!
                 </p>

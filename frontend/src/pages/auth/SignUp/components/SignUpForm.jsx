@@ -9,11 +9,11 @@ import Struggle from "../../../../../public/assets/images/struggle.png";
 import Elipse from "../../../../../public/assets/images/elipse.png";
 import Elipse2 from "../../../../../public/assets/images/elipse2.png";
 import { useArtist } from "../../API/ArtistContext";
+import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 const SignUpForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isPlaying, setIsPlaying] = useState(false); // Track video play state
-  const videoRef = useRef(null); // Reference to the video element
+  const [videoModal, setVideoModal] = useState(false);
 
   const [video, setVideo] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
@@ -27,19 +27,6 @@ const SignUpForm = () => {
       }
     } catch (err) {
       console.log(err);
-    }
-  };
-  const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
-
-  // Toggle Play/Pause when clicking the play button
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
     }
   };
 
@@ -469,7 +456,7 @@ const SignUpForm = () => {
           {/* Image Section */}
           <div className="lg:w-1/2  mt-5 lg:mt-0 relative">
             <div className="aspect-[3/4] lg:aspect-[5/6] overflow-hidden rounded-lg relative">
-              {!isPlaying && thumbnail && (
+              {thumbnail && (
                 <img
                   src={thumbnail}
                   alt="Sign Up"
@@ -477,19 +464,8 @@ const SignUpForm = () => {
                 />
               )}
               {video && (
-                <video
-                  ref={videoRef}
-                  src={video}
-                  onPlay={handlePlay}
-                  onPause={handlePause}
-                  onClick={togglePlayPause}
-                  className={`w-full h-full object-cover rounded-lg ${!isPlaying ? 'hidden' : ''}`}
-                  controls={false}
-                />
-              )}
-              {!isPlaying && video && (
                 <button
-                  onClick={togglePlayPause}
+                  onClick={() => setVideoModal(true)}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
                 >
                   <img src={PlayBtn} alt="Play" className="w-32 h-32" />
@@ -499,6 +475,37 @@ const SignUpForm = () => {
           </div>
         </div>
         <div className="container w-full h-[1px] mx-auto bg-[#959494] my-10 opacity-30 relative"></div>
+
+        {/* Video Modal */}
+        {videoModal && (
+          <div
+            className="fixed inset-0 -top-[5%] bg-black bg-opacity-80 flex items-center justify-center z-50"
+            onClick={() => setVideoModal(false)}
+          >
+            <div
+              className="relative w-[90%] md:w-[60%] lg:w-[50%] max-h-[80%] bg-black rounded-lg overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setVideoModal(false)}
+                className="absolute top-4 right-4 text-white text-2xl font-bold z-50"
+              >
+                ✕
+              </button>
+
+              {/* Video */}
+              <CustomVideoPlayer
+                id="signup-video-player"
+                src={video}
+                className="w-full h-auto max-h-[70vh] rounded-lg"
+                autoPlay
+                pauseOtherVideos={true}
+              />
+            </div>
+          </div>
+        )}
+
         <img src={Elipse} className="absolute h-[600px] right-0" alt="" />
         <img
           src={Elipse2}
