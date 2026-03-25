@@ -152,6 +152,24 @@ exports.createVideoDetails = async (req, res) => {
         }
         throw error;
       }
+    } else {
+      // No new video file: keep existing URL in DB (do not overwrite with empty string)
+      const bodyExisting = req.body.existing_video_url;
+      if (bodyExisting && String(bodyExisting).trim() !== "") {
+        videoURL = String(bodyExisting).trim();
+        console.log(`[Video Upload] No new video file; using existing_video_url from request`);
+      } else {
+        try {
+          const existingRows = await videoDetails.getVideoDetails(song_id);
+          const existingUrl = existingRows?.[0]?.video_url;
+          if (existingUrl && String(existingUrl).trim() !== "") {
+            videoURL = existingUrl;
+            console.log(`[Video Upload] No new video file; preserving existing video_url from DB`);
+          }
+        } catch (e) {
+          console.warn("[Video Upload] Could not load existing video_url:", e.message);
+        }
+      }
     }
 
     // Check if request was aborted before database operations

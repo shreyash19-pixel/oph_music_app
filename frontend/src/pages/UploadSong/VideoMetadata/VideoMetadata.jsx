@@ -219,6 +219,9 @@ export default function VideoMetadataForm() {
 
       if (formData.video_file) {
         formDataToSend.append("video_file", formData.video_file);
+      } else if (formData.existing_video_url) {
+        // Preserve existing S3 URL when user resubmits without choosing a new file
+        formDataToSend.append("existing_video_url", formData.existing_video_url);
       }
 
       // Only send NEW thumbnails (File objects), not existing ones that were converted from URLs

@@ -2,11 +2,9 @@ const docs = require("../model/documentation_details");
 const personal_details = require("../model/personal_details");
 const prof_details = require("../model/professional_details");
 const professions = require("../model/professions");
-const puppeteer = require("puppeteer");
-const chromium = require("@sparticuz/chromium");
 const fs = require("fs");
-const { uploadToS3, uploadToS3Form } = require("../utils");
-const { log } = require("console");
+const { uploadToS3, uploadToS3Form, getPresignedDownloadUrl } = require("../utils");
+const { launchChromiumBrowser } = require("../utils/puppeteerLaunch");
 
 const membershipForm = async (req, res) => {
   try {
@@ -1751,6 +1749,8 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
       res.status(200).send(html);
 
       // Best-effort PDF generation in the background.
+      const pdfArtist = artist;
+      const pdfOphid = ophid;
       setImmediate(async () => {
         // If S3 isn't configured, skip PDF upload entirely.
         if (!process.env.S3_BUCKET) {
@@ -1758,56 +1758,93 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
           return;
         }
 
-        try {
-          // Try to launch a browser in a way that works both on EC2 and serverless.
+        const MAX_RETRIES = 2;
+        const PDF_TIMEOUT_MS = 90000;  // 90 seconds for PDF generation
+        const PAGE_LOAD_TIMEOUT_MS = 45000;  // 45 seconds for setContent (external images)
+
+        const generateAndUploadPdf = async () => {
           let browser = null;
           try {
-            const executablePath = await chromium.executablePath().catch(() => null);
-            if (executablePath) {
-              browser = await puppeteer.launch({
-                args: chromium.args,
-                defaultViewport: chromium.defaultViewport,
-                executablePath,
-                headless: chromium.headless,
-                ignoreHTTPSErrors: true,
-              });
-            }
-          } catch (e) {
-            browser = null;
-          }
+            browser = await launchChromiumBrowser({ logPrefix: "[membership] PDF" });
 
-          if (!browser) {
-            browser = await puppeteer.launch({
-              args: ["--no-sandbox", "--disable-setuid-sandbox"],
-              headless: true,
-              ignoreHTTPSErrors: true,
+            const page = await browser.newPage();
+            page.setDefaultTimeout(PAGE_LOAD_TIMEOUT_MS);
+
+            // Use "load" instead of "networkidle0" - more reliable with external S3 images
+            // networkidle0 can hang if images are slow or fail to load
+            await page.setContent(html, { waitUntil: "load", timeout: PAGE_LOAD_TIMEOUT_MS });
+
+            const pdfPromise = page.pdf({
+              format: "A4",
+              printBackground: true,
+              margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
             });
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("PDF generation timeout (90s)")), PDF_TIMEOUT_MS)
+            );
+            let pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]);
+
+            if (!pdfBuffer || pdfBuffer.length < 1000) {
+              throw new Error(`Invalid PDF buffer: size=${pdfBuffer?.length || 0}`);
+            }
+
+            // Puppeteer may return Uint8Array instead of Buffer in some environments
+            if (!Buffer.isBuffer(pdfBuffer)) {
+              pdfBuffer = Buffer.from(pdfBuffer);
+            }
+
+            const safeName =
+              (pdfArtist?.[0]?.full_name && String(pdfArtist[0].full_name)) || pdfOphid || "membership";
+            const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
+
+            const file = {
+              originalname: fileName,
+              buffer: pdfBuffer,
+              mimetype: "application/pdf",
+            };
+
+            // Retry S3 upload up to 3 times (transient network/S3 errors)
+            let lastError;
+            for (let uploadAttempt = 1; uploadAttempt <= 3; uploadAttempt++) {
+              try {
+                const s3Url = await uploadToS3Form(file, "pdfs");
+                return s3Url;
+              } catch (uploadErr) {
+                lastError = uploadErr;
+                if (uploadAttempt < 3) {
+                  console.warn(`[membership] S3 upload attempt ${uploadAttempt} failed, retrying:`, uploadErr.message);
+                  await new Promise((r) => setTimeout(r, 1000 * uploadAttempt));
+                }
+              }
+            }
+            throw lastError;
+          } finally {
+            if (browser) {
+              try {
+                await browser.close();
+              } catch (closeErr) {
+                console.warn("[membership] Error closing browser:", closeErr.message);
+              }
+            }
           }
+        };
 
-          const page = await browser.newPage();
-          await page.setContent(html, { waitUntil: "networkidle0" });
-          const pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
-          });
-          await browser.close();
-
-          const safeName =
-            (artist?.[0]?.full_name && String(artist[0].full_name)) || ophid || "membership";
-          const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
-
-          const file = {
-            originalname: fileName,
-            buffer: pdfBuffer,
-            mimetype: "application/pdf",
-          };
-
-          // S3 upload overwrites if key already exists, so no explicit delete is required.
-          const s3Url = await uploadToS3Form(file, "pdfs");
-          console.log(`[membership] PDF uploaded: ${s3Url}`);
-        } catch (error) {
-          console.error("[membership] PDF generation/upload failed (non-blocking):", error);
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const s3Url = await generateAndUploadPdf();
+            console.log(`[membership] PDF uploaded successfully: ${s3Url} (ophid=${pdfOphid})`);
+            return;
+          } catch (error) {
+            console.error(
+              `[membership] PDF generation/upload failed (attempt ${attempt}/${MAX_RETRIES}, ophid=${pdfOphid}):`,
+              error.message
+            );
+            if (attempt === MAX_RETRIES) {
+              console.error("[membership] PDF upload exhausted retries. Full error:", error);
+            } else {
+              await new Promise((r) => setTimeout(r, 2000));  // 2s delay before retry
+            }
+          }
         }
       });
   } catch (error) {
@@ -1820,4 +1857,39 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
   }
 };
 
+/**
+ * GET /auth/membership/pdf-url?ophid=xxx
+ * Returns a pre-signed S3 URL for downloading the membership PDF.
+ * Fixes 403 Forbidden when S3 bucket is private.
+ */
+const getPdfDownloadUrl = async (req, res) => {
+  try {
+    const { ophid } = req.query;
+    if (!ophid) {
+      return res.status(400).json({ success: false, message: "Missing ophid parameter" });
+    }
+
+    const artist = await personal_details.getFullPersonalDetails(ophid);
+    if (!artist || artist.length === 0) {
+      return res.status(404).json({ success: false, message: "Artist not found" });
+    }
+
+    const safeName =
+      (artist[0]?.full_name && String(artist[0].full_name)) || ophid || "membership";
+    const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
+    const key = `pdfs/${fileName}`;
+
+    const url = getPresignedDownloadUrl(key, 900);
+    res.json({ success: true, url });
+  } catch (error) {
+    console.error("[membership] getPdfDownloadUrl error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get PDF download URL",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = membershipForm;
+module.exports.getPdfDownloadUrl = getPdfDownloadUrl;
