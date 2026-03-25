@@ -2,11 +2,9 @@ const docs = require("../model/documentation_details");
 const personal_details = require("../model/personal_details");
 const prof_details = require("../model/professional_details");
 const professions = require("../model/professions");
-const puppeteer = require("puppeteer");
-const chromium = require("@sparticuz/chromium");
 const fs = require("fs");
 const { uploadToS3, uploadToS3Form, getPresignedDownloadUrl } = require("../utils");
-const { log } = require("console");
+const { launchChromiumBrowser } = require("../utils/puppeteerLaunch");
 
 const membershipForm = async (req, res) => {
   try {
@@ -1767,29 +1765,7 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
         const generateAndUploadPdf = async () => {
           let browser = null;
           try {
-            // Launch browser - prefer @sparticuz/chromium for serverless, fallback to local Puppeteer
-            try {
-              const executablePath = await chromium.executablePath().catch(() => null);
-              if (executablePath) {
-                browser = await puppeteer.launch({
-                  args: chromium.args,
-                  defaultViewport: chromium.defaultViewport,
-                  executablePath,
-                  headless: chromium.headless,
-                  ignoreHTTPSErrors: true,
-                });
-              }
-            } catch (e) {
-              browser = null;
-            }
-
-            if (!browser) {
-              browser = await puppeteer.launch({
-                args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-                headless: true,
-                ignoreHTTPSErrors: true,
-              });
-            }
+            browser = await launchChromiumBrowser({ logPrefix: "[membership] PDF" });
 
             const page = await browser.newPage();
             page.setDefaultTimeout(PAGE_LOAD_TIMEOUT_MS);
