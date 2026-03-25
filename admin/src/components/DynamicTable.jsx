@@ -202,7 +202,7 @@ const DynamicTable = ({
         return (
           <div className="flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-red-500"
+              className="w-5 h-5 text-green-500"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -218,7 +218,7 @@ const DynamicTable = ({
         return (
           <div className="flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-green-500"
+              className="w-5 h-5 text-red-500"
               fill="currentColor"
               viewBox="0 0 20 20"
             >

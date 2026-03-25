@@ -121,45 +121,76 @@
       }
     };
 
+  const handleRejectClick = () => {
+    console.log("[handleRejectClick] Called");
+    console.log("[handleRejectClick] tvData.status:", tvData.status);
+    console.log("[handleRejectClick] selectedStatus:", selectedStatus);
+    console.log("[handleRejectClick] isRejecting:", isRejecting);
+    
+    // Check if already rejected (case-insensitive)
+    if (tvData.status?.toLowerCase() === "rejected" || selectedStatus?.toLowerCase() === "rejected") {
+      console.log("[handleRejectClick] Already rejected, showing error");
+      toast.error("This song has already been rejected.");
+      return;
+    }
+    console.log("[handleRejectClick] Setting isRejecting to true");
+    setIsRejecting(true);
+  };
+
   const handleSubmitDecision = async (status) => {
-    if (status === "Accepted") {
-      setSelectedStatus("Accepted");
-      setIsRejecting(false);
-    } else if (status === "Rejected") {
-      setSelectedStatus("Rejected");
-      setIsRejecting(true);
-      if (!reason || reason.trim() === "") {
-        toast.error("Please provide a reason for rejection.");
-        return;
-      }
+    console.log("[handleSubmitDecision] Called with status:", status);
+    console.log("[handleSubmitDecision] Current tvData.status:", tvData.status);
+    console.log("[handleSubmitDecision] Current selectedStatus:", selectedStatus);
+    console.log("[handleSubmitDecision] Reason:", reason);
+    
+    if (status === "Rejected" && (!reason || reason.trim() === "")) {
+      console.log("[handleSubmitDecision] No reason provided, showing error");
+      toast.error("Please provide a reason for rejection.");
+      return;
     }
 
     try {
       setSubmitting(true);
+      console.log("[handleSubmitDecision] Sending API request to update status");
+      
       await axiosApi.post("/updateTvStatus", {
         song_id: tvData.song_id,
         status,
         reason: status === "Rejected" ? reason : null,
       });
 
-      setTvData((prev) => ({
-        ...prev,
-        status,
-        reason: status === "Rejected" ? reason : null,
-      }));
+      console.log("[handleSubmitDecision] API request successful");
+      
+      // Update tvData immediately to reflect the new status
+      setTvData((prev) => {
+        const updated = {
+          ...prev,
+          status,
+          reason: status === "Rejected" ? reason : null,
+        };
+        console.log("[handleSubmitDecision] Updated tvData:", updated);
+        return updated;
+      });
+      
+      console.log("[handleSubmitDecision] Setting selectedStatus to:", status);
+      setSelectedStatus(status);
+      
+      console.log("[handleSubmitDecision] Setting isRejecting to false");
+      setIsRejecting(false); // Close the rejection form
 
       if (status === "Accepted") {
         toast.success("Song has been approved successfully!");
       } else if (status === "Rejected") {
-        toast.error("Song has been rejected.");
+        toast.success("Song has been rejected successfully!");
       }
 
+      console.log("[handleSubmitDecision] Scheduling page reload in 2.5 seconds");
       // Delay reload to allow toast to be seen
       setTimeout(() => {
         window.location.reload();
       }, 2500); // 2.5 seconds
     } catch (err) {
-      console.error("Error updating status:", err);
+      console.error("[handleSubmitDecision] Error updating status:", err);
       toast.error("Failed to update status. Please try again.");
     } finally {
       setSubmitting(false);
@@ -254,7 +285,7 @@
             <strong>Song ID:</strong> {tvData.song_id}
           </p>
           <p>
-            <strong>OPH ID:</strong> {tvData.oph_id}
+            <strong>OPH ID:</strong> {tvData.OPH_ID}
           </p>
         </div>
 
@@ -332,59 +363,92 @@
         </div>
 
         {/* Approve / Reject buttons */}
-        {selectedStatus === "Accepted" || selectedStatus === "Rejected" ? (
-          <div className="mb-6 text-gray-700 font-semibold flex items-center gap-2">
-            <span className="text-lg">
-              {selectedStatus === "Accepted" ? "✅" : "❌"}
-            </span>
-            <span>
-              This song has already been{" "}
-              <span
-                className={
-                  selectedStatus === "Accepted"
-                    ? "text-green-700"
-                    : "text-red-700"
-                }
-              >
-                {selectedStatus.toLowerCase()}.
+        {(() => {
+          const shouldShowMessage = 
+            tvData.status?.toLowerCase() === "accepted" || 
+            tvData.status?.toLowerCase() === "rejected" || 
+            selectedStatus?.toLowerCase() === "accepted" || 
+            selectedStatus?.toLowerCase() === "rejected";
+          console.log("[UI Render] tvData.status:", tvData.status);
+          console.log("[UI Render] selectedStatus:", selectedStatus);
+          console.log("[UI Render] isRejecting:", isRejecting);
+          console.log("[UI Render] shouldShowMessage:", shouldShowMessage);
+          
+          return shouldShowMessage ? (
+            <div className="mb-6 text-gray-700 font-semibold flex items-center gap-2">
+              <span className="text-lg">
+                {(tvData.status?.toLowerCase() === "accepted" || selectedStatus?.toLowerCase() === "accepted") ? "✅" : "❌"}
               </span>
-            </span>
-          </div>
-        ) : (
-          <div className="mb-6 flex gap-4">
-            <button
-              onClick={() => handleSubmitDecision("Accepted")}
-              className="px-6 py-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700"
-              disabled={submitting || locked || !unlock}
-            >
-              {submitting ? "Processing..." : "Approve"}
-            </button>
-            <button
-              onClick={() => handleSubmitDecision("Rejected")}
-              className="px-6 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700"
-              disabled={submitting || locked || !unlock}
-            >
-              {submitting ? "Processing..." : "Reject"}
-            </button>
-          </div>
-        )}
-
-        {/* Show reason input if rejecting */}
-        {isRejecting && (
-          <div className="mb-6">
-            <label className="block font-semibold mb-2 text-red-700">
-              Rejection Reason
-            </label>
-            <textarea
-              className="w-full p-2 border border-red-600 rounded-md"
-              rows={4}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              disabled={locked || !unlock}
-              placeholder="Enter reason for rejection"
-            />
-          </div>
-        )}
+              <span>
+                This song has already been{" "}
+                <span
+                  className={
+                    (tvData.status?.toLowerCase() === "accepted" || selectedStatus?.toLowerCase() === "accepted")
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }
+                >
+                  {(tvData.status?.toLowerCase() === "accepted" || selectedStatus?.toLowerCase() === "accepted") ? "accepted" : "rejected"}.
+                </span>
+              </span>
+            </div>
+          ) : (
+            <>
+              {!isRejecting ? (
+                <div className="mb-6 flex gap-4">
+                  <button
+                    onClick={() => handleSubmitDecision("Accepted")}
+                    className="px-6 py-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700"
+                    disabled={submitting || locked || !unlock}
+                  >
+                    {submitting ? "Processing..." : "Approve"}
+                  </button>
+                  <button
+                    onClick={handleRejectClick}
+                    className="px-6 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700"
+                    disabled={submitting || locked || !unlock}
+                  >
+                    Reject
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <label className="block font-semibold mb-2 text-red-700">
+                    Rejection Reason
+                  </label>
+                  <textarea
+                    className="w-full p-2 border border-red-600 rounded-md mb-4"
+                    rows={4}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    disabled={locked || !unlock}
+                    placeholder="Enter reason for rejection"
+                  />
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => handleSubmitDecision("Rejected")}
+                      className="px-6 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700"
+                      disabled={submitting || locked || !unlock}
+                    >
+                      {submitting ? "Processing..." : "Submit Rejection"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        console.log("[Cancel] Clicked, resetting isRejecting and reason");
+                        setIsRejecting(false);
+                        setReason("");
+                      }}
+                      className="px-6 py-2 rounded-md font-semibold bg-gray-500 text-white hover:bg-gray-600"
+                      disabled={submitting}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Save button */}
         <div className="text-right">
