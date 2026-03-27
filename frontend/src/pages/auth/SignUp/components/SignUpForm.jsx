@@ -182,6 +182,7 @@ const SignUpForm = () => {
           state: {
             from: "Registration",
             user_type: formData.artistType,
+            backPath : "/auth/signup"
           },
           replace: true,
         });
