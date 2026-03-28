@@ -37,13 +37,11 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
     getCurrentMonth();
   }, []);
 
-  const handleProfileClick = async (artistId) => {
+  const resolveArtistId = (artist) => artist?.oph_id || artist?.OPH_ID || artist?.ophid;
 
-    console.log("in profile click");
-    console.log(artistId);
-    
-    // Add your view profile logic here
-     try {
+  const handleProfileClick = async (artistId) => {
+    if (!artistId) return;
+    try {
       const response = await axiosApi.post("/increment-traffic", {ophid: artistId, traffic_counter : 1} , {
         headers: {
           ...headers,
@@ -56,6 +54,8 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
       }
     } catch (err) {
       console.error(err);
+      // Do not block navigation if traffic increment fails.
+      navigate(`/dashboard/artist-detail?id=${artistId}`);
     }
   };
 
@@ -88,9 +88,9 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
         {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
           leaderboard.map((artist, index) => (
             <div
-              key={artist.OPH_ID}
+              key={resolveArtistId(artist) || index}
               className="flex items-center px-4 py-3 rounded-lg hover:bg-gray-900/30 transition-colors"
-              onClick={() => handleProfileClick(artist.OPH_ID)} // Make the row clickable
+              onClick={() => handleProfileClick(resolveArtistId(artist))}
             >
               <div className="flex-1">
                 {artist.ranks === 1 ? (
@@ -138,7 +138,10 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
               <div className="flex-1 items-center justify-center sm:flex hidden">
                 <button
                   className="px-4 py-2 text-sm text-white rounded-full bg-[#6F4FA0] hover:text-black transition-colors"
-                  onClick={() => handleProfileClick(artist.OPH_ID)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleProfileClick(resolveArtistId(artist));
+                  }}
                 >
                   View Profile
                 </button>

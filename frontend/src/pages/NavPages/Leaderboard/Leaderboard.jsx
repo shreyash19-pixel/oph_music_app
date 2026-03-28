@@ -286,7 +286,10 @@ function Leaderboard() {
                       <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                         <button
                           onClick={() =>
-                            navigateToArtistDetail(navigate, artist.OPH_ID)
+                            navigateToArtistDetail(
+                              navigate,
+                              artist.oph_id || artist.OPH_ID,
+                            )
                           }
                           className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
                         >
