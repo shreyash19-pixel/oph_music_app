@@ -44,7 +44,8 @@ const SignInForm = () => {
           navigate(path, {
             state: {
               from: "Registration",
-              user_type: response.artist_type
+              user_type: response.artist_type,
+              backPath : "/auth/login"
             },
             replace: true,
           });

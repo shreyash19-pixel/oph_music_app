@@ -44,6 +44,7 @@ const CustomVideoPlayer = forwardRef(
     const [showControls, setShowControls] = useState(true);
     const controlsTimeoutRef = useRef(null);
     const wasPlayingBeforeSeek = useRef(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     // Expose video ref methods
     useImperativeHandle(ref, () => ({
@@ -135,16 +136,60 @@ const CustomVideoPlayer = forwardRef(
       video.currentTime = Math.min(video.duration, video.currentTime + 10);
     };
 
-    // Handle progress bar click
+    // Handle progress bar click and drag
     const handleProgressClick = (e) => {
       const video = videoRef.current;
       const progress = progressRef.current;
       if (!video || !progress) return;
 
       const rect = progress.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
+      const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       video.currentTime = percent * video.duration;
     };
+
+    const handleProgressMouseDown = (e) => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      setIsDragging(true);
+      wasPlayingBeforeSeek.current = !video.paused;
+      console.log('[Drag] Was playing before seek:', wasPlayingBeforeSeek.current);
+      if (wasPlayingBeforeSeek.current) {
+        video.pause();
+      }
+
+      handleProgressClick(e);
+    };
+
+    const handleProgressMouseMove = (e) => {
+      if (!isDragging) return;
+      handleProgressClick(e);
+    };
+
+    const handleProgressMouseUp = () => {
+      if (!isDragging) return;
+      console.log('[Drag] Mouse up, was playing:', wasPlayingBeforeSeek.current);
+      setIsDragging(false);
+
+      const video = videoRef.current;
+      if (video && wasPlayingBeforeSeek.current) {
+        console.log('[Drag] Resuming playback');
+        video.play().catch((err) => console.error('[Drag] Play error:', err));
+      }
+    };
+
+    // Add global mouse event listeners for dragging
+    useEffect(() => {
+      if (isDragging) {
+        document.addEventListener('mousemove', handleProgressMouseMove);
+        document.addEventListener('mouseup', handleProgressMouseUp);
+
+        return () => {
+          document.removeEventListener('mousemove', handleProgressMouseMove);
+          document.removeEventListener('mouseup', handleProgressMouseUp);
+        };
+      }
+    }, [isDragging]);
 
     // Handle volume change
     const handleVolumeChange = (e) => {
@@ -326,12 +371,14 @@ const CustomVideoPlayer = forwardRef(
             onPause?.();
           }}
           onSeeking={(e) => {
-            // Track if video was playing before seek
-            wasPlayingBeforeSeek.current = !e.target.paused;
+            // Only track if not dragging (dragging handles its own state)
+            if (!isDragging) {
+              wasPlayingBeforeSeek.current = !e.target.paused;
+            }
           }}
           onSeeked={(e) => {
-            // After seeking/dragging timeline, resume if it was playing before
-            if (wasPlayingBeforeSeek.current && e.target.paused) {
+            // Only resume if not dragging (dragging handles its own resume)
+            if (!isDragging && wasPlayingBeforeSeek.current && e.target.paused) {
               e.target.play().catch(() => {});
             }
           }}
@@ -373,13 +420,16 @@ const CustomVideoPlayer = forwardRef(
           {/* Progress Bar */}
           <div
             ref={progressRef}
-            className="w-full h-1 bg-gray-600 cursor-pointer group/progress"
-            onClick={handleProgressClick}
+            className="w-full h-3 bg-gray-600 cursor-pointer group/progress relative"
+            onMouseDown={handleProgressMouseDown}
           >
             <div
-              className="h-full bg-[#5DC9DE] transition-all duration-150"
+              className="h-full bg-[#5DC9DE] relative"
               style={{ width: `${progressPercent}%` }}
-            />
+            >
+              {/* Draggable thumb */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing" />
+            </div>
           </div>
 
           {/* Controls Bar */}

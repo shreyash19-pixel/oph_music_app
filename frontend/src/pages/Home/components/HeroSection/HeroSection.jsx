@@ -237,7 +237,7 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
         >
           <div
             className="relative w-[90%] md:w-[60%] lg:w-[50%] max-h-[80%] bg-black rounded-lg overflow-hidden"
-            onClick={(e) => e.stopPropagation()} // Prevent modal close on video click
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
@@ -245,29 +245,6 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
               className="absolute top-4 right-4 text-white text-2xl font-bold z-50"
             >
               ✕
-            </button>
-
-            {/* Play button */}
-            <button
-              onClick={() => {
-                const video = document.getElementById("video-player");
-                console.log(video);
-                
-                if (video.paused) {
-                  console.log("hello");
-                  video.play();
-                } else {
-                  video.pause();
-                }
-              }}
-              className="absolute inset-0 flex items-center justify-center z-40"
-            >
-              <img
-                src="/assets/images/play_button.png"
-                alt="Play"
-                className="w-[100px] hidden" // Initially hidden
-                id="play-button"
-              />
             </button>
 
             {/* Video */}
