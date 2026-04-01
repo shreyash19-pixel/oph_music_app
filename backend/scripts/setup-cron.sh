@@ -88,13 +88,13 @@ echo "# Generated on $(date)" >> "$CRON_TEMP"
 echo "# All times are in UTC" >> "$CRON_TEMP"
 echo "" >> "$CRON_TEMP"
 
-# Daily tasks - Run at midnight UTC (12:00 AM)
-echo "# Daily KPI calculation - Runs at midnight UTC (12:00 AM) daily" >> "$CRON_TEMP"
-echo "0 0 * * * cd $BACKEND_DIR && $NVM_SOURCE node scripts/cron-runner.js kpi >> $LOGS_DIR/cron-kpi.log 2>&1" >> "$CRON_TEMP"
+# KPI + Leaderboard — 4 times per day (every 6 hours, UTC): 00:00, 06:00, 12:00, 18:00
+echo "# KPI calculation — 4x daily (every 6h UTC)" >> "$CRON_TEMP"
+echo "0 */6 * * * cd $BACKEND_DIR && $NVM_SOURCE node scripts/cron-runner.js kpi >> $LOGS_DIR/cron-kpi.log 2>&1" >> "$CRON_TEMP"
 echo "" >> "$CRON_TEMP"
 
-echo "# Daily Leaderboard generation - Runs at midnight UTC (12:00 AM) daily" >> "$CRON_TEMP"
-echo "0 0 * * * cd $BACKEND_DIR && $NVM_SOURCE node scripts/cron-runner.js leaderboard >> $LOGS_DIR/cron-leaderboard.log 2>&1" >> "$CRON_TEMP"
+echo "# Leaderboard generation — 4x daily (every 6h UTC)" >> "$CRON_TEMP"
+echo "0 */6 * * * cd $BACKEND_DIR && $NVM_SOURCE node scripts/cron-runner.js leaderboard >> $LOGS_DIR/cron-leaderboard.log 2>&1" >> "$CRON_TEMP"
 echo "" >> "$CRON_TEMP"
 
 # Monthly tasks - Run on the 1st of each month at midnight UTC (12:00 AM)
@@ -122,8 +122,8 @@ echo ""
 echo -e "${GREEN}✓ Cron jobs installed successfully!${NC}"
 echo ""
 echo "Installed cron jobs:"
-echo "  - Daily KPI calculation: midnight UTC (12:00 AM)"
-echo "  - Daily Leaderboard generation: midnight UTC (12:00 AM)"
+echo "  - KPI calculation: 4x daily — 00:00, 06:00, 12:00, 18:00 UTC (every 6 hours)"
+echo "  - Leaderboard generation: 4x daily — same schedule as KPI"
 echo "  - Monthly KPI backup: 1st of month, midnight UTC (12:00 AM)"
 echo "  - Monthly Leaderboard backup: 1st of month, midnight UTC (12:00 AM)"
 echo "  - Monthly Song backup: 1st of month, midnight UTC (12:00 AM)"

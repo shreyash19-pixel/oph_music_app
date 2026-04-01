@@ -111,6 +111,16 @@ const getMetricByOph = async (req, res) => {
 
 const kpi = async (req, res) => {
   try {
+    const [[freshness]] = await db.execute(
+      `SELECT MAX(updated_at) AS max_metric_time FROM song_social_metrics`
+    );
+    const maxT = freshness?.max_metric_time;
+    if (maxT != null) {
+      const iso =
+        maxT instanceof Date ? maxT.toISOString() : String(maxT);
+      res.setHeader("X-Leaderboard-Metrics-Through", iso);
+    }
+
     const [rows] = await db.execute(`
       SELECT
               OPH_ID,
