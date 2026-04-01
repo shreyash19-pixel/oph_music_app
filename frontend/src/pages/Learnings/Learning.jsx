@@ -1,31 +1,38 @@
 import React, { useEffect, useState, useRef } from "react";
 import axiosApi from "../../conf/axios";
-import getToken from "../../utils/getToken"; // Import your token retrieval function
+import { useArtist } from "../auth/API/ArtistContext";
 
 const Learnings = () => {
   const [learnings, setLearnings] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [modalVideo, setModalVideo] = useState(null);
   const modalRef = useRef(null);
+  const { headers, ophid } = useArtist();
 
   const fetchLearnings = async () => {
+    if (!headers?.Authorization) {
+      setLoadError("Sign in to view learning resources.");
+      setLearnings([]);
+      return;
+    }
     try {
-      const token = localStorage.getItem('token') // Retrieve the token
-      const response = await axiosApi.get("/allLearning", {
-        headers: {
-          Authorization: `Bearer ${token}`, // Set the Authorization header
-        },
+      setLoadError(null);
+      const response = await axiosApi.get("/learning/visible-for-artist", {
+        headers,
       });
       if (response.status === 200) {
-        setLearnings(response.data.data);
+        setLearnings(response.data.data || []);
       }
     } catch (err) {
       console.log(err);
+      setLoadError("Could not load learnings.");
+      setLearnings([]);
     }
   };
 
   useEffect(() => {
     fetchLearnings();
-  }, []);
+  }, [ophid, headers?.Authorization]);
 
   const openModal = (videoUrl) => {
     setModalVideo(videoUrl);
@@ -38,6 +45,9 @@ const Learnings = () => {
   return (
     <div className="px-8">
       <h2 className="text-2xl font-bold mb-4 text-cyan-300">Learnings</h2>
+      {loadError && (
+        <p className="text-amber-300/90 text-sm mb-4">{loadError}</p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
         {learnings.length > 0 &&

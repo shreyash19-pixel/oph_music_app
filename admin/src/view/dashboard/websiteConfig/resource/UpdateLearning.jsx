@@ -17,6 +17,7 @@ const UpdateLearning = () => {
     views: 0,
     credit_name: "",
     keywords: "",
+    audience: "both",
   });
 
   const [videoPreview, setVideoPreview] = useState(null);
@@ -38,6 +39,11 @@ const UpdateLearning = () => {
           views: data.views || 0,
           credit_name: data.credit_name || "",
           keywords: data.keywords || "",
+          audience: ["ia", "sa", "both"].includes(
+            String(data.audience || "").toLowerCase(),
+          )
+            ? String(data.audience).toLowerCase()
+            : "both",
           thumbnail_url: null,
           video_url: null,
         });
@@ -301,6 +307,28 @@ const UpdateLearning = () => {
             onChange={handleChange}
             className="w-full border border-gray-300 px-4 py-2 rounded-xl"
           />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Visible to artists (by OPH ID)
+            </label>
+            <select
+              name="audience"
+              value={formData.audience}
+              onChange={handleChange}
+              className="w-full border border-gray-300 px-4 py-2 rounded-xl bg-white"
+            >
+              <option value="both">
+                Both — Independent (-IA-) and Specialist (-SA-)
+              </option>
+              <option value="ia">Independent only (OPH ID contains -IA-)</option>
+              <option value="sa">Specialist only (OPH ID contains -SA-)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Dashboard Learnings list only shows items allowed for the signed-in
+              artist&apos;s OPH ID pattern.
+            </p>
+          </div>
 
           {/* Buttons */}
           <div className="flex justify-end gap-4 pt-4">
