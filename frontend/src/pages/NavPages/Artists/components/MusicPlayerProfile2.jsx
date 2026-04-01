@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Slider from "react-slick";
 import "./TopPicksSection.css";
-import { useSelector } from "react-redux";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { Image, Shimmer } from "react-shimmer";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +13,8 @@ const MusicPlayerProfile2 = () => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const audioRef = useRef(null); // Ref for audio
-  const [artistData, setArtistData] = useState([])
+  const [artistData, setArtistData] = useState({});
+  const [loadState, setLoadState] = useState("loading"); // loading | ready | error | empty
 
   useEffect(() => {
 
@@ -23,15 +23,19 @@ const MusicPlayerProfile2 = () => {
       try{
         const response = await axiosApi.get("/kpi_score")
 
-        if(response.data.success)
+        if(response.data.success && response.data.data != null)
         {
-          setArtistData(response.data.data)
+          setArtistData(response.data.data);
+          const hasAny = Object.keys(response.data.data || {}).length > 0;
+          setLoadState(hasAny ? "ready" : "empty");
+        } else {
+          setLoadState("empty");
         }
       }
       catch(err)
       {
         console.error(err.message);
-        
+        setLoadState("error");
       }
     }
 
@@ -40,9 +44,9 @@ const MusicPlayerProfile2 = () => {
   },[])
 
   
-  const songsArray = Object.values(artistData).sort(
-    (a, b) => b.kpiScore - a.kpiScore
-  );
+  const songsArray = Object.values(artistData)
+    .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
+    .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0));
 
   const [playingSongId, setPlayingSongId] = useState(null);
 
@@ -97,11 +101,15 @@ const MusicPlayerProfile2 = () => {
     };
   }, []);
 
+  const canLoop = songsArray.length > 3;
+  const desktopSlides = Math.min(3, Math.max(1, songsArray.length));
+  const tabletSlides = Math.min(2, Math.max(1, songsArray.length));
+
   const settings = {
     dots: true,
-    infinite: true,
+    infinite: canLoop,
     speed: 500,
-    slidesToShow: 3,
+    slidesToShow: desktopSlides,
     slidesToScroll: 1,
     arrows: false,
     autoplay: !playingSongId, // Pause autoplay when audio playing
@@ -110,13 +118,15 @@ const MusicPlayerProfile2 = () => {
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: tabletSlides,
+          infinite: songsArray.length > tabletSlides,
         },
       },
       {
         breakpoint: 768,
         settings: {
           slidesToShow: 1,
+          infinite: songsArray.length > 1,
           centerMode: false,
         },
       },
@@ -134,7 +144,41 @@ const MusicPlayerProfile2 = () => {
     return val[(rank % 5) + 1];
   };
 
-  return songsArray.length > 0 ? (
+  if (loadState === "loading") {
+    return (
+      <div className="bg-black text-white min-h-screen py-14">
+        <div className="container mx-auto">
+          <p className="text-center text-gray-400">Loading Top Picks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <div className="bg-black text-white min-h-screen py-14">
+        <div className="container mx-auto">
+          <p className="text-center text-gray-400">
+            Could not load Top Picks. Please try again later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === "empty" || songsArray.length === 0) {
+    return (
+      <div className="bg-black text-white min-h-screen py-14">
+        <div className="container mx-auto">
+          <p className="text-center text-gray-400">
+            No spotlight tracks yet. Approved songs with audio will appear here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="toppicks-section xl:px-16 pt-20 pb-14 bg-black z-20 relative text-white lg:px-10 px-6">
       <div className="mx-auto">
         <div className="flex justify-between">
@@ -177,7 +221,7 @@ const MusicPlayerProfile2 = () => {
         <Slider ref={sliderRef} {...settings} className="gap-6">
           {songsArray.map((artist, index) => (
             <div
-              key={index}
+              key={artist.oph_id || index}
               className="lg:px-4 px-5 py-5 max-w-full sm:max-w-[95%]"
             >
               <div className="relative overflow-visible rounded-xl">
@@ -199,14 +243,14 @@ const MusicPlayerProfile2 = () => {
                   <Image
                     src={artist.personalPhoto}
                     fallback={<Shimmer width="100%" height="100%" />}
-                    alt={artist.primaryArtist}
+                    alt={artist.stageName || artist.primaryArtist || "Artist"}
                     NativeImgProps={{
                       className: "w-full h-full object-cover",
                     }}
                   />
                   <div className="absolute bottom-0 left-0 p-6 text-white">
                     <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
-                      {artist.primaryArtist}
+                      {artist.stageName || artist.primaryArtist || artist.fullName}
                     </h3>
                     <p className="text-sm text-gray-500">
                       Stage Name:{" "}
@@ -230,8 +274,8 @@ const MusicPlayerProfile2 = () => {
                             <h4 className="font-semibold">{song.songName}</h4>
                             <p className="text-sm text-gray-400">
                               {song.primaryArtist}
-                              {song.secondaryArtist.length > 0 && (
-                                <span>, {song.secondaryArtist.join(", ")}</span>
+                              {(song.secondaryArtist || []).length > 0 && (
+                                <span>, {(song.secondaryArtist || []).join(", ")}</span>
                               )}
                             </p>
                           </div>
@@ -258,12 +302,6 @@ const MusicPlayerProfile2 = () => {
             </div>
           ))}
         </Slider>
-      </div>
-    </div>
-  ) : (
-    <div className="bg-black text-white min-h-screen py-14">
-      <div className="container mx-auto">
-        <p className="text-center text-gray-400">Loading Top Picks...</p>
       </div>
     </div>
   );

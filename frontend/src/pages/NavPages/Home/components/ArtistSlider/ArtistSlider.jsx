@@ -181,13 +181,15 @@ const ArtistSlider = ({ rows = 1 }) => {
               ],
             }}
           >
-            {artists.map((artist, index) => (
-              <div key={artist.OPH_ID} className="px-4 cursor-pointer mb-10">
+            {artists.map((artist, index) => {
+              const id = artist.oph_id ?? artist.OPH_ID;
+              return (
+              <div key={id ?? `artist-slide-${index}`} className="px-4 cursor-pointer mb-10">
                 <div
                   className="group relative pointer-events-auto"
                   onTouchEnd={(e) => {
                     //  e.preventDefault();
-                    handleArtistClick(artist.OPH_ID, index);
+                    handleArtistClick(id, index);
                   }}
                 >
                   <div className="flex justify-center overflow-hidden">
@@ -206,7 +208,7 @@ const ArtistSlider = ({ rows = 1 }) => {
       w-[200px] h-[200px] 
       rounded-full 
       object-cover 
-      ${artist.OPH_ID === currArtist ? "border-4 border-primary" : ""}
+      ${id === currArtist ? "border-4 border-primary" : ""}
     `,
                       }}
                     />
@@ -215,25 +217,25 @@ const ArtistSlider = ({ rows = 1 }) => {
                     className="flex flex-col text-center items-center justify-end p-4"
                     onMouseUp={(e) => {
                       if (e.button === 0)
-                        handleArtistClick(artist.OPH_ID, index);
+                        handleArtistClick(id, index);
                     }}
                   >
                     <a
                       className={`text-lg font-semibold ${
-                        artist.OPH_ID === currArtist
+                        id === currArtist
                           ? "text-[#5DC9DE]"
                           : "text-white"
                       }`}
                       onClick={(e) => {
                         e.preventDefault();
-                        handleArtistClick(artist.OPH_ID, index);
+                        handleArtistClick(id, index);
                       }}
                     >
                       {artist.stage_name}
                     </a>
                     <p
                       className={`text-sm ${
-                        artist.OPH_ID === currArtist
+                        id === currArtist
                           ? "text-white"
                           : "text-gray-400"
                       }`}
@@ -248,7 +250,8 @@ const ArtistSlider = ({ rows = 1 }) => {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </Slider>
         </div>
       </div>

@@ -4,6 +4,13 @@ import axiosApi from "../../../../conf/axios";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import toast from "react-hot-toast";
 
+const audienceLabel = (a) => {
+  const v = String(a || "both").toLowerCase();
+  if (v === "ia") return "Visible: Independent (IA) only";
+  if (v === "sa") return "Visible: Specialist (SA) only";
+  return "Visible: Both IA & SA";
+};
+
 const ViewLearning = () => {
   const navigate = useNavigate();
   const [learning, setLearning] = useState([]);
@@ -112,6 +119,9 @@ const ViewLearning = () => {
                   <h3 className="text-lg font-bold text-[#0d3c44]">
                     {learningItem.title}
                   </h3>
+                  <p className="text-xs font-medium text-[#0d3c44]/80">
+                    {audienceLabel(learningItem.audience)}
+                  </p>
                   <p className="text-sm text-gray-700">
                     <strong>Artist:</strong> {learningItem.artist_name || "N/A"}
                   </p>

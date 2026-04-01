@@ -131,16 +131,17 @@ const getTopArtistsController = async (req, res) => {
 
   try {
 
-    const response = await SongSocialMetrics.getTopArtists()
-    // const specialArtisdt
-    
-    if (response) {
-      return res.status(200).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: response,
-      })
-    }
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page, 10) || 6));
+    const { rows, total } = await SongSocialMetrics.getTopArtists(page, perPage);
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: rows,
+      pagination: totalPages,
+    });
 
   }
 
@@ -156,12 +157,7 @@ const getTopArtistsController = async (req, res) => {
 
 const fetchAllKpiScores = async (req, res) => {
   try {
-    console.log("before");
-    
     const scores = await SongSocialMetrics.getAllKpiScores();
-
-    console.log(scores);
-    
 
     res.status(200).json({
       success: true,
@@ -190,7 +186,6 @@ const getArtistProfile = async (req, res) => {
     }
 
     const response = await SongSocialMetrics.getArtistProfile(id)
-    console.log(response);
     
     if(response)
     {
@@ -200,6 +195,12 @@ const getArtistProfile = async (req, res) => {
         data: response
       })
     }
+
+    return res.status(404).json({
+      success: false,
+      message: "Artist details not found",
+      data: null,
+    })
 
   }
 

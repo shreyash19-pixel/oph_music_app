@@ -18,12 +18,17 @@ const ArtistProfile = ({ id }) => {
 
   const fetchArtistDetail = async () => {
     setLoading(true);
+    setError(null);
     try {
-      console.log('in api');
-
       const response = await axiosApi.get(`/get-top-artist-detail?id=${id}`);
-      setArtist(response.data.data);
+      if (response?.data?.success && response?.data?.data) {
+        setArtist(response.data.data);
+      } else {
+        setArtist(null);
+        setError("Artist details not found");
+      }
     } catch (err) {
+      setArtist(null);
       setError("Failed to load artists");
     } finally {
       setLoading(false);
@@ -129,6 +134,11 @@ const ArtistProfile = ({ id }) => {
           <p className="mt-2 text-[#5DC9DE]">
             🎤 "Warming up the mic... Almost there!"
           </p>
+        </div>
+      )}
+      {!loading && error && (
+        <div className="text-center h-[90vh] w-full py-32">
+          <p className="mt-2 text-[#5DC9DE]">{error}</p>
         </div>
       )}
       {!loading && artist && (

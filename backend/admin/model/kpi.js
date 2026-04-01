@@ -83,11 +83,39 @@ const getTopSearchedArtists = async (searchQuery) => {
   return rows;
 };
 
-const getTopArtists = async () => {
-  const [rows] = await db.execute(
-    `SELECT kpi.oph_id, pf.profession, ud.location, ud.personal_photo, ud.stage_name, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.OPH_ID = ud.oph_id  LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID `,
+const getTopArtists = async (page = 1, perPage = 6) => {
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const per = Math.min(100, Math.max(1, parseInt(perPage, 10) || 6));
+  const offset = (p - 1) * per;
+
+  const [countRows] = await db.execute(`
+    SELECT COUNT(DISTINCT ud.oph_id) AS total
+    FROM user_details ud
+    INNER JOIN application_status app
+      ON ud.oph_id = app.oph_id AND app.overall_status = 'completed'
+  `);
+  const total = Number(countRows[0]?.total) || 0;
+
+  const [rows] = await db.query(
+    `
+    SELECT
+      ud.oph_id,
+      pf.profession,
+      ud.location,
+      ud.personal_photo,
+      ud.stage_name,
+      IFNULL(kpi.total_views, 0) AS total_views
+    FROM user_details ud
+    INNER JOIN application_status app
+      ON ud.oph_id = app.oph_id AND app.overall_status = 'completed'
+    LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
+    LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID
+    ORDER BY IFNULL(kpi.score, 0) DESC, IFNULL(kpi.total_views, 0) DESC, ud.stage_name ASC
+    LIMIT ${per} OFFSET ${offset}
+    `,
   );
-  return rows;
+
+  return { rows, total };
 };
 
 const getSpecialArtist = async () => {
@@ -116,12 +144,13 @@ const getArtistProfile = async (ophid) => {
   const songMap = {};
 
   rows.forEach((row) => {
-    const ophid = row.ophid;
+    const rowOphId = row.oph_id;
 
-    if (!songMap[ophid]) {
-      songMap[ophid] = {
+    if (!songMap[rowOphId]) {
+      songMap[rowOphId] = {
         personal_photo: row.personal_photo,
         stage_name: row.stage_name,
+        name: row.full_name,
         full_name: row.full_name,
         profession: row.Profession,
         location: row.location,
@@ -132,7 +161,7 @@ const getArtistProfile = async (ophid) => {
       };
     }
 
-    const existingSong = songMap[ophid].songs.find(
+    const existingSong = songMap[rowOphId].songs.find(
       (song) => song.name === row.Song_name,
     );
 
@@ -144,7 +173,7 @@ const getArtistProfile = async (ophid) => {
         existingSong.featuring_artists.push(row.artist_name);
       }
     } else {
-      songMap[ophid].songs.push({
+      songMap[rowOphId].songs.push({
         name: row.Song_name,
         song_id: row.song_id,
         youtube_views: row.youtube_views,
@@ -154,7 +183,7 @@ const getArtistProfile = async (ophid) => {
     }
   });
 
-  return songMap[ophid];
+  return songMap[ophid] || null;
 };
 
 // Fetch all KPI scores, sorted by score descending
@@ -170,26 +199,40 @@ const getAllKpiScores = async () => {
         ad.primary_artist,
         ad.audio_url,
         sa.artist_name,
-        kpi.score,
+        IFNULL(kpi.score, 0) AS score,
         sr.song_id,
         sr.status AS song_register_status,
         ad.status AS audio_details_status,
         vd.status AS video_details_status
       FROM user_details ud
+      INNER JOIN application_status app
+        ON ud.oph_id = app.oph_id AND app.overall_status = 'completed'
+      LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
       LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
+      LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
       LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
       LEFT JOIN video_details vd ON sr.song_id = vd.song_id
       LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
-      JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
+      WHERE sr.song_id IS NOT NULL
+        AND ad.audio_url IS NOT NULL
+        AND TRIM(ad.audio_url) <> ''
+        AND (
+          LOWER(TRIM(COALESCE(sas.overall_status, ''))) = 'approved'
+          OR (
+            sr.status = 'Approved'
+            AND ad.status = 'approved'
+            AND vd.status = 'approved'
+          )
+        )
     )
     SELECT *
     FROM CTEKPI`);
 
-  console.log("wqas");
-
   const songMap = {};
 
   rows.forEach((row) => {
+    if (!row.song_id) return;
+
     const ophid = row.oph_id;
 
     if (!songMap[ophid]) {
@@ -198,6 +241,7 @@ const getAllKpiScores = async () => {
         fullName: row.full_name,
         stageName: row.stage_name,
         personalPhoto: row.personal_photo,
+        primaryArtist: row.stage_name || row.full_name,
         kpiScore: row.score,
         songs: [],
       };

@@ -1,14 +1,22 @@
 import React, { createContext, useEffect, useState } from "react";
 export const NavbarContext = createContext();
 import logo from "/logo.svg";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useArtist } from "../pages/auth/API/ArtistContext";
 
 function Navbar() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [verified, setVerified] = useState(false);
   const { headers, logout, login } = useArtist();
+
+  const isPaymentPage =
+    pathname === "/payment" ||
+    pathname === "/auth/payment" ||
+    pathname === "/dashboard/payment" ||
+    pathname === "/song-payment" ||
+    pathname.endsWith("/payment");
   const [reload, setReload] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const openSignup = () => setShowSignup(true);
@@ -105,14 +113,14 @@ function Navbar() {
 
         {/* Desktop Login/Signup Buttons */}
         <div className="hidden lg:flex space-x-4">
-          {verified ? (
+          {verified && !isPaymentPage ? (
             <button
               className="px-4 py-2 text-red-500 font-bold uppercase"
               onClick={logout}
             >
               Logout
             </button>
-          ) : (
+          ) : !verified ? (
             <div>
               <button 
                 className="px-4 py-2 text-primary font-bold uppercase"
@@ -149,7 +157,7 @@ function Navbar() {
                 Sign Up
               </button>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -247,14 +255,14 @@ function Navbar() {
 
         {/* Keep Logout Always Visible at Bottom */}
         <div className="absolute bottom-4 left-0 px-4 w-full border-t border-gray-700">
-          {verified ? (
+          {verified && !isPaymentPage ? (
             <button
               className="w-full text-red-500 font-bold uppercase"
               onClick={logout}
             >
               Logout
             </button>
-          ) : (
+          ) : !verified ? (
             <div className="flex flex-col space-y-2">
               <button 
                 className="w-full text-primary font-bold uppercase"
@@ -286,7 +294,7 @@ function Navbar() {
                 Sign Up
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </nav>

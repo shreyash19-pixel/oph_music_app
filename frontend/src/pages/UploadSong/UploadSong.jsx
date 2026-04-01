@@ -63,20 +63,59 @@ export default function UploadSongs() {
     return '/dashboard/upload-song/audio-metadata/';
   };
 
+  // Draft (pending): same UX as song-reg "payment rejected" — open video metadata with Pay now, not standalone /auth/payment.
+  // Still send users to /auth/payment for date-booking repayment or date+lyrical both rejected.
+  const normalizeSongStatus = (status) => {
+    const raw = (status ?? "").toString().toLowerCase().trim();
+    if (!raw || raw === "draft") return "pending";
+    if (raw === "pending") return "pending";
+    if (raw === "under review") return "under review";
+    if (raw === "rejected") return "rejected";
+    if (raw === "approved") return "approved";
+    if (raw === "published") return "Published";
+    return (status ?? "").toString().trim();
+  };
+
+  const isDraftLikeStatus = (status) => {
+    const raw = (status ?? "").toString().toLowerCase().trim();
+    return !raw || raw === "draft" || raw === "pending";
+  };
+
+  const resolveNextPageForDraft = (song, rawNext) => {
+    if (!isDraftLikeStatus(song.status) || rawNext !== "/auth/payment") {
+      return { next_page: rawNext, resumeVideoPayNow: false };
+    }
+    const rejectedSections = song.rejectedSections || [];
+    const paymentSection = rejectedSections.find((s) => s.section === 'payment');
+    const isDateBooking = paymentSection?.isDateBooking === true;
+    const rp = paymentSection?.rejectedPayments || [];
+    const bothRejected = rp.length >= 2;
+    if (isDateBooking || bothRejected) {
+      return { next_page: rawNext, resumeVideoPayNow: false };
+    }
+    return {
+      next_page: '/dashboard/upload-song/video-metadata/',
+      resumeVideoPayNow: true,
+    };
+  };
+
   // Get the most recently updated pending content
   // pendingContent is an object with song_id as keys, convert to array
   const submittedSongs = pendingContent && typeof pendingContent === 'object' && Object.keys(pendingContent).length > 0 
-    ? Object.values(pendingContent).map(song => {
+    ? Object.values(pendingContent).map((song, rowIndex) => {
         const rejectedSections = song.rejectedSections || [];
-        const next_page = rejectedSections.length > 0
+        const rawNext = rejectedSections.length > 0
           ? getFirstRejectedPage(rejectedSections)
           : (song.next_page || '/dashboard/upload-song/audio-metadata/');
+        const { next_page, resumeVideoPayNow } = resolveNextPageForDraft(song, rawNext);
         return {
           name: song.Song_name,
-          status: song.status || 'draft',
+          status: normalizeSongStatus(song.status),
           id: song.song_id,
+          rowIndex,
           reject_reason: song.reject_reason,
           next_page,
+          resumeVideoPayNow,
           projectType: song.projectType,
           release_date: song.release_date,
           lyrical_services: song.lyrical_services,
@@ -88,8 +127,6 @@ export default function UploadSongs() {
 
   
   const handleProjectClick = (projectType) => {
-    ;
-
     localStorage.setItem("projectType", projectType);
     // Navigate to the appropriate project type page
     navigate("/dashboard/upload-song/register-song", {
@@ -191,25 +228,27 @@ export default function UploadSongs() {
         {/* Submitted Song Section */}
         {submittedSongs.length > 0 ? submittedSongs.map((song) => (
           <div
-            key={song.id} // Add key prop here
-            className="bg-gray-800/50 rounded-lg p-4 cursor-pointer"
-            
+            key={`song-${song.id != null ? song.id : "noid"}-${song.rowIndex}`}
+            className="relative z-[1] bg-gray-800/50 rounded-lg p-4 cursor-pointer"
             onClick={async (e) => {
-              if (['pending', 'rejected'].includes(song.status)) {
+              const st = (song.status ?? "").toString().toLowerCase().trim();
+              if (isDraftLikeStatus(song.status) || st === "rejected") {
                 const paymentSection = song.rejectedSections?.find((s) => s.section === 'payment');
                 const isDateBookingPaymentRejected = paymentSection?.isDateBooking === true;
                 const paymentRepayAmount = paymentSection?.paymentRepayAmount;
                 const rejectedPayments = paymentSection?.rejectedPayments;
                 const bothRejected = rejectedPayments?.length >= 2;
-                const isPaymentRepayment = paymentSection && song.status === 'rejected';
-                const state = {
+                const isPaymentRepayment =
+                  paymentSection && st === "rejected";
+                let state = {
                   song_id: song.id,
                   songName: song.name,
                   release_date: song.release_date,
                   project_type: song.projectType,
                   lyrical_services: song.lyrical_services,
-                  isFixingRejected: song.status === 'rejected',
+                  isFixingRejected: st === "rejected",
                   rejectedSections: song.rejectedSections,
+                  ...(song.resumeVideoPayNow && { showPayNowOnVideo: true }),
                   ...(isPaymentRepayment && paymentRepayAmount != null && {
                     amount: paymentRepayAmount,
                     paymentRepayAmount,
@@ -232,29 +271,60 @@ export default function UploadSongs() {
                     from: 'Song Repayment',
                   }),
                 };
-                // For draft (pending): check if release date is still free on calendar
-                if (song.status === 'pending' && song.release_date) {
+
+                // Draft / pending can still resume at /auth/payment (next_page from API). Without `from`,
+                // PaymentScreen falls back to member "registration" pricing (wrong amount, e.g. ₹2999).
+                if (song.next_page === '/auth/payment' && !state.from) {
+                  if (bothRejected || isDateBookingPaymentRejected) {
+                    state = {
+                      ...state,
+                      from: 'Date booking',
+                      booking_date: song.release_date,
+                      date: song.release_date,
+                    };
+                  } else if (rejectedPayments?.length > 0) {
+                    state = { ...state, from: 'Song Repayment' };
+                  } else {
+                    state = {
+                      ...state,
+                      from: 'Song Registration',
+                      backPath: '/dashboard/upload-song',
+                    };
+                  }
+                }
+                // For draft (pending): check if release date is still free on calendar (non-blocking on failure/timeout)
+                const hasSongId = song.id != null && song.id !== "";
+                if (isDraftLikeStatus(song.status) && song.release_date && hasSongId) {
                   try {
-                    const res = await axiosApi.get('/check-release-date-available', {
+                    const res = await axiosApi.get("/check-release-date-available", {
                       headers,
-                      params: { release_date: song.release_date, song_id: song.id, ophid }
+                      params: {
+                        release_date: song.release_date,
+                        song_id: song.id,
+                        ophid,
+                      },
+                      timeout: 6_000,
                     });
                     if (res.data.success && res.data.available === false) {
-                      navigate('/dashboard/upload-song/register-song', {
+                      navigate("/dashboard/upload-song/register-song", {
                         state: {
                           ...state,
                           dateNoLongerAvailable: true,
-                          returnToPage: song.next_page
-                        }
+                          returnToPage: song.next_page,
+                        },
                       });
                       localStorage.setItem("projectType", song.projectType);
                       return;
                     }
                   } catch (err) {
-                    console.error('Check release date:', err);
+                    console.error("Check release date:", err);
                   }
                 }
-                navigate(song.next_page, { state });
+                const path =
+                  song.next_page && String(song.next_page).trim()
+                    ? String(song.next_page).trim()
+                    : "/dashboard/upload-song/audio-metadata/";
+                navigate(path, { state });
                 localStorage.setItem("projectType", song.projectType);
               } else {
                 e.preventDefault();

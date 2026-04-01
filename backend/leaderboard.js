@@ -88,7 +88,14 @@ try {
     console.error("Error fetching data:");
     console.error("Status:", error?.response?.status);
     console.error("Response:", error?.response?.data);
-    console.error("Message:", error.message);
+    console.error("Message:", error?.message);
+    console.error("Code:", error?.code);
+    if (!error?.response) {
+      console.error(
+        "No HTTP response — is the API running? Expected baseURL:",
+        Backendaxios.defaults.baseURL
+      );
+    }
     return [];
   }
 }

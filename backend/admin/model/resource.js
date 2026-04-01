@@ -323,13 +323,37 @@ const Resource = {
 
   createLearning: async (learningData) => {
     try {
-      const { title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords } = learningData;
-      
+      const {
+        title,
+        video_url,
+        thumbnail_url,
+        artist_name,
+        duration_in_minutes,
+        views,
+        credit_name,
+        keywords,
+        audience,
+      } = learningData;
+      const aud =
+        audience && ["ia", "sa", "both"].includes(String(audience).toLowerCase())
+          ? String(audience).toLowerCase()
+          : "both";
+
       const [result] = await db.query(
         `INSERT INTO resource_learning
-         (title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords],
+         (title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords, audience)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          title,
+          video_url,
+          thumbnail_url,
+          artist_name,
+          duration_in_minutes,
+          views,
+          credit_name,
+          keywords,
+          aud,
+        ],
       );
       
       return result.insertId;
@@ -353,7 +377,7 @@ const Resource = {
 
   getLearningById: async (learningId) => {
     const [rows] = await db.query(
-      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords, audience
          FROM resource_learning
          WHERE id = ?`,
       [learningId],
