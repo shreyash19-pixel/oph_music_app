@@ -1,4 +1,6 @@
 import Backendaxios from "./utils/backendAxios.js";
+import { fileURLToPath } from "url";
+import path from "path";
 const viewWeight = 1000;
 const songWeight = 500;
 
@@ -44,46 +46,71 @@ const calculateScore = (views, song) => {
 // console.log("Score of artist5000:", scoreMap.get("artist5000"));
 
 
+function ophKey(entry) {
+  return entry.OPH_ID ?? entry.oph_id;
+}
+
 async function leaderboardGenerate() {
-try {
-    const res = await Backendaxios.get('/leaderboard_data');
-    console.log(res.data);
+  const res = await Backendaxios.get("/leaderboard_data");
+  const metricsThrough =
+    res.headers?.["x-leaderboard-metrics-through"] ??
+    res.headers?.["X-Leaderboard-Metrics-Through"];
+  console.log(
+    "[leaderboard] API rows:",
+    Array.isArray(res.data) ? res.data.length : 0,
+    "| song_social_metrics newest updated_at (UTC):",
+    metricsThrough ?? "(header missing)"
+  );
+  console.log(res.data);
 
-    const data = res.data;
+  const data = Array.isArray(res.data) ? res.data : [];
 
-    console.time("Score calculation time");
+  console.time("Score calculation time");
 
-    const artistScores = data.map(entry => {
-      const views = entry.total_views;
-      const score = calculateScore(views, entry.song_count);
-      return { ...entry, score };  // Add score to entry
-    });
+  const artistScores = data.map((entry) => {
+    const views = entry.total_views;
+    const score = calculateScore(views, entry.song_count);
+    return { ...entry, score };
+  });
 
-    artistScores.sort((a, b) => b.score - a.score);
+  artistScores.sort((a, b) => b.score - a.score);
 
-    const scoreMap = new Map();
-    artistScores.forEach(artist => {
-      scoreMap.set(artist.OPH_ID, artist.score);
-    });
+  const scoreMap = new Map();
+  artistScores.forEach((artist) => {
+    scoreMap.set(ophKey(artist), artist.score);
+  });
 
-    console.timeEnd("Score calculation time");
-    console.log("Top 5 OPH_IDs:", artistScores.slice(0, 5));
+  console.timeEnd("Score calculation time");
+  console.log("Top 5 OPH_IDs:", artistScores.slice(0, 5));
 
-    // Post each artist's score to the /update_leaderboard endpoint
-    for (const artist of artistScores) {
-      try {
-        await Backendaxios.post('/update_leaderboard', {
-          OPH_ID: artist.OPH_ID,
-          song_count: artist.song_count,
-          total_views: artist.total_views,
-          score: artist.score
-        });
-      } catch (postErr) {
-        console.error(`Failed to update score for ${artist.OPH_ID}:`, postErr.message);
-      }
+  let postFailures = 0;
+  for (const artist of artistScores) {
+    const id = ophKey(artist);
+    try {
+      await Backendaxios.post("/update_leaderboard", {
+        OPH_ID: id,
+        song_count: artist.song_count,
+        total_views: artist.total_views,
+        score: artist.score,
+      });
+    } catch (postErr) {
+      postFailures += 1;
+      console.error(`Failed to update score for ${id}:`, postErr.message);
     }
+  }
 
-    return artistScores;
+  if (postFailures > 0) {
+    throw new Error(
+      `Leaderboard: ${postFailures} of ${artistScores.length} POST /update_leaderboard call(s) failed`
+    );
+  }
+
+  return artistScores;
+}
+
+export default async function runLeaderboardTask() {
+  try {
+    await leaderboardGenerate();
   } catch (error) {
     console.error("Error fetching data:");
     console.error("Status:", error?.response?.status);
@@ -96,9 +123,17 @@ try {
         Backendaxios.defaults.baseURL
       );
     }
-    return [];
+    throw error;
   }
 }
 
+const isDirectRun =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 
-leaderboardGenerate();
+if (isDirectRun) {
+  runLeaderboardTask().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

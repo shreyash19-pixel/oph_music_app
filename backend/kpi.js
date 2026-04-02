@@ -1,7 +1,6 @@
 import Backendaxios from "./utils/backendAxios.js";
-import axios from "axios"; // used to send to your backend server (e.g. http://localhost:5000)
-
-console.time("totalTime");
+import { fileURLToPath } from "url";
+import path from "path";
 
 const TRAFFIC_WEIGHT = 0.2;
 const SONGS_WEIGHT = 0.15;
@@ -92,15 +91,27 @@ const processArtists = async () => {
   console.log("✅ All KPI scores inserted/updated.");
 };
 
-console.time("dataFetch");
-console.time("scoreCalculation");
-console.time("sorting");
-console.time("totalTime");
-
-processArtists()
-  .then(() => {
+export default async function runKpiTask() {
+  console.time("totalTime");
+  console.time("dataFetch");
+  console.time("scoreCalculation");
+  console.time("sorting");
+  try {
+    await processArtists();
     console.timeEnd("scoreCalculation");
     console.timeEnd("sorting");
+  } finally {
     console.timeEnd("totalTime");
-  })
-  .catch((err) => console.error("Processing failed:", err));
+  }
+}
+
+const isDirectRun =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isDirectRun) {
+  runKpiTask().catch((err) => {
+    console.error("Processing failed:", err);
+    process.exit(1);
+  });
+}

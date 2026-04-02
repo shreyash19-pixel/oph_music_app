@@ -144,6 +144,12 @@ const MusicPlayerProfile2 = () => {
     return val[(rank % 5) + 1];
   };
 
+  const openPublicArtistProfile = (artist) => {
+    const oid = artist?.oph_id ?? artist?.OPH_ID;
+    if (!oid) return;
+    navigateToArtistDetail(navigate, oid);
+  };
+
   if (loadState === "loading") {
     return (
       <div className="bg-black text-white min-h-screen py-14">
@@ -235,20 +241,24 @@ const MusicPlayerProfile2 = () => {
                   </span>
                 </div>
 
-                <div
-                  className="relative h-64 hover:cursor-pointer"
-                  onClick={() => navigateToArtistDetail(navigate, artist.oph_id)}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+                <div className="relative h-64">
                   <Image
                     src={artist.personalPhoto}
                     fallback={<Shimmer width="100%" height="100%" />}
                     alt={artist.stageName || artist.primaryArtist || "Artist"}
                     NativeImgProps={{
-                      className: "w-full h-full object-cover",
+                      className: "w-full h-full object-cover pointer-events-none select-none",
                     }}
                   />
-                  <div className="absolute bottom-0 left-0 p-6 text-white">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+                  {/* Full-area hit target: increments traffic via navigateToArtistDetail, then opens public profile */}
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[1] cursor-pointer bg-transparent border-0 p-0 text-left"
+                    onClick={() => openPublicArtistProfile(artist)}
+                    aria-label={`View profile of ${artist.stageName || artist.primaryArtist || "artist"}`}
+                  />
+                  <div className="absolute bottom-0 left-0 p-6 text-white z-[2] pointer-events-none">
                     <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
                       {artist.stageName || artist.primaryArtist || artist.fullName}
                     </h3>
