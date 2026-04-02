@@ -1,12 +1,14 @@
 const db = require("../DB/connect")
 
 
-const incrementTrafficCounter = async (ophid, traffic_counter) => {    
-    const [rows] = await db.execute("UPDATE user_details SET traffic = ? WHERE oph_id = ?", [traffic_counter, ophid])
-
-    return rows
-
-}
+/** Add delta to traffic (atomic; NULL traffic treated as 0). */
+const incrementTrafficCounter = async (ophid, delta) => {
+  const [rows] = await db.execute(
+    "UPDATE user_details SET traffic = COALESCE(traffic, 0) + ? WHERE oph_id = ?",
+    [delta, ophid],
+  );
+  return rows;
+};
 
 const getTrafficCounter = async (ophid) => {
 
