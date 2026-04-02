@@ -11,6 +11,7 @@ import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
 import { SongDuration } from "../../ArtistSpotlight/ArtistSpotlight";
 import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
+import { resolveProfessionLabel } from "../../../utils/professionDisplay";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -233,15 +234,6 @@ const ArtistDetail = () => {
     fetchProfessions();
   }, []);
 
-  const setProfession = (prof) => {
-    const profession = professions.find((p) => {
-      if (parseInt(prof) === p.id) {
-        return p;
-      }
-    });
-    return profession ? profession.name : "Unknown";
-  };
-
   return (
     <>
       {isLoading && (
@@ -318,7 +310,10 @@ const ArtistDetail = () => {
                 <p className="text-gray-400 mb-2">
                   Profession:{" "}
                   <span className="font-bold text-white">
-                    {setProfession(artist.profession)}
+                    {resolveProfessionLabel(
+                      artist.profession ?? artist.Profession,
+                      professions
+                    )}
                   </span>
                 </p>
                 <p className="text-gray-400 mb-2">

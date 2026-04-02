@@ -18,7 +18,7 @@ function Leaderboard({ leaderboardData, artistId }) {
         { ophid: artistId, traffic_counter: 1 },
         {
           headers: {
-            ...headers,
+            ...(headers?.Authorization ? headers : {}),
             "Content-Type": "application/json",
           },
         },
@@ -29,6 +29,7 @@ function Leaderboard({ leaderboardData, artistId }) {
       }
     } catch (err) {
       console.error(err);
+      navigate(`/dashboard/artist-detail?id=${artistId}`);
     }
   };
 

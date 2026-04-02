@@ -42,19 +42,22 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
   const handleProfileClick = async (artistId) => {
     if (!artistId) return;
     try {
-      const response = await axiosApi.post("/increment-traffic", {ophid: artistId, traffic_counter : 1} , {
-        headers: {
-          ...headers,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await axiosApi.post(
+        "/increment-traffic",
+        { ophid: artistId, traffic_counter: 1 },
+        {
+          headers: {
+            ...(headers?.Authorization ? headers : {}),
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.data.success) {
         navigate(`/dashboard/artist-detail?id=${artistId}`);
       }
     } catch (err) {
       console.error(err);
-      // Do not block navigation if traffic increment fails.
       navigate(`/dashboard/artist-detail?id=${artistId}`);
     }
   };

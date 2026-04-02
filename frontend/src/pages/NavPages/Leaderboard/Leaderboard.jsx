@@ -332,6 +332,23 @@ function Leaderboard() {
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      navigateToArtistDetail(
+                        navigate,
+                        artist.oph_id || artist.OPH_ID,
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigateToArtistDetail(
+                          navigate,
+                          artist.oph_id || artist.OPH_ID,
+                        );
+                      }
+                    }}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                       artistExists &&
                       artistExists.some(

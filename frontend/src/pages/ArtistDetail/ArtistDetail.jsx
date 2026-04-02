@@ -12,6 +12,7 @@ import { useSelector } from "react-redux";
 import { IoIosArrowRoundDown } from "react-icons/io";
 import { SongDuration } from "../ArtistSpotlight/ArtistSpotlight";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
+import { resolveProfessionLabel } from "../../utils/professionDisplay";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -69,13 +70,8 @@ const ArtistDetail = () => {
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
     try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers are not ready");
-        return;
-      }
-
       const response = await axiosApi.get(`/get-artist-detail?id=${id}`, {
-        headers: headers,
+        ...(headers?.Authorization ? { headers } : {}),
       });
       setArtist(response.data.data);
     } catch (err) {
@@ -88,15 +84,12 @@ const ArtistDetail = () => {
 
   const fetchRankedArtists = async () => {
     try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers are not ready");
-        return;
-      }
+      if (!artist?.profession) return;
 
       const response = await axiosApi.get(
         `/get-releated-artists?q=${artist.profession}`,
         {
-          headers: headers,
+          ...(headers?.Authorization ? { headers } : {}),
         }
       );
 
@@ -112,16 +105,16 @@ const ArtistDetail = () => {
   };
 
   useEffect(() => {
-    if (ophid) {
+    if (id) {
       fetchIndividualArtist();
     }
-  }, [headers, ophid, id]);
+  }, [headers, id]);
 
   useEffect(() => {
-    if (ophid) {
+    if (artist?.profession) {
       fetchRankedArtists();
     }
-  }, [artist, headers, ophid]);
+  }, [artist?.profession, artist?.oph_id, headers, id]);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -230,15 +223,6 @@ const ArtistDetail = () => {
     fetchProfessions();
   }, []);
 
-  const setProfession = (prof) => {
-    const profession = professions.find((p) => {
-      if (parseInt(prof) === p.id) {
-        return p;
-      }
-    });
-    return profession ? profession.name : "Unknown";
-  };
-
   return (
     <>
       {isLoading && (
@@ -316,7 +300,10 @@ const ArtistDetail = () => {
                 <p className="text-gray-400 mb-2">
                   Profession:{" "}
                   <span className="font-bold text-white">
-                    {setProfession(artist.profession)}
+                    {resolveProfessionLabel(
+                      artist.profession ?? artist.Profession,
+                      professions
+                    )}
                   </span>
                 </p>
                 <p className="text-gray-400 mb-2">

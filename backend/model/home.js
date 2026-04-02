@@ -48,7 +48,7 @@ const newReleases = async () => {
 
 const getReleatedArtists = async (profession) => {
   const [rows] = await db.execute(
-    "SELECT ud.oph_id, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id WHERE pd.Profession = ?",
+    "SELECT ud.oph_id, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id WHERE pd.profession = ?",
     [profession],
   );
   return rows;
