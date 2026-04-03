@@ -6,6 +6,8 @@ import { useArtist } from "../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
 import { resolveLeaderboardOphId } from "../../utils/artistHash";
 
+const ARTIST_SPOTLIGHT_EMPTY_NOTE = "No Note Provided Yet.";
+
 function formatReach(views) {
   const n = Number(views ?? 0);
   if (!Number.isFinite(n) || n < 0) return "—";
@@ -348,27 +350,23 @@ export default function ArtistSpotlight() {
   const [artist, setArtist] = useState([]);
   const { headers, ophid } = useArtist();
 
-  const [notes, setNotes] = useState("No Note Provided Yet.");
+  const [notes, setNotes] = useState(ARTIST_SPOTLIGHT_EMPTY_NOTE);
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        if (!ophid || !headers) return;
-        const response = await axiosApi.get(`/notes/${ophid}`, {
-          headers,
-        });
-
-        if (response.data) {
-          setNotes(response.data[0]?.Notes || "No Note Provided Yet.");
-          console.log(response, "data");
-        }
-      } catch (err) {
-        console.error("Failed to fetch notes", err);
-      }
-    };
-
-    fetchNotes();
-  }, [ophid, headers]);
+  const applyNoteFromRow = (row) => {
+    if (!row) {
+      setNotes(ARTIST_SPOTLIGHT_EMPTY_NOTE);
+      return;
+    }
+    const raw =
+      row.Notes ?? row.notes ?? row.NOTE ?? row.note ?? null;
+    const text =
+      raw == null ||
+      raw === "null" ||
+      String(raw).trim() === ""
+        ? ARTIST_SPOTLIGHT_EMPTY_NOTE
+        : String(raw);
+    setNotes(text);
+  };
 
   const [professions, setProfessions] = useState([]);
 
@@ -402,8 +400,10 @@ export default function ArtistSpotlight() {
         params: { ophid },
       });
       if (response.data.success) {
-        setArtist(response.data.data[0]);
-        setArtistID(response.data.data[0].oph_id);
+        const row = response.data.data[0];
+        setArtist(row);
+        setArtistID(row.oph_id);
+        applyNoteFromRow(row);
         setIsLoading(false);
       }
     } catch (err) {
@@ -414,13 +414,15 @@ export default function ArtistSpotlight() {
     }
   };
 
-  function getProfession(profession) {
-    let prof = professions.find((pf) => {
-      if (pf.id === parseInt(profession)) {
-        return pf;
-      }
-    });
-    return prof ? prof.name : "Unknown";
+  function formatProfessionLabel(raw) {
+    if (raw == null || String(raw).trim() === "") return "—";
+    const s = String(raw).trim();
+    if (/^\d+$/.test(s)) {
+      const id = parseInt(s, 10);
+      const prof = professions.find((pf) => pf.id === id);
+      return prof?.name ?? s;
+    }
+    return s;
   }
 
   const getArtistRank = () => {
@@ -520,7 +522,10 @@ export default function ArtistSpotlight() {
 
             <div className="px-6">
               <p className="text-gray-400">
-                Profession: {getProfession(artist.Profession)}
+                Profession:{" "}
+                {formatProfessionLabel(
+                  artist.Profession ?? artist.profession,
+                )}
               </p>
               <p className="text-gray-500 mt-4">{artist.Bio}</p>
             </div>
@@ -571,7 +576,7 @@ export default function ArtistSpotlight() {
                 Note (How to improve ranking):
               </h3>
               <p className="text-gray-500 whitespace-pre-line">
-                {notes || "No notes available yet."}
+                {notes}
               </p>
             </div>
           </div>
