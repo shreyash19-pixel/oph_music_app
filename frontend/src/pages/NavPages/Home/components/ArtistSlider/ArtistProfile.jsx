@@ -17,19 +17,33 @@ const ArtistProfile = ({ id }) => {
   const [showVideoModal, setShowVideoModal] = useState(false);
 
   const fetchArtistDetail = async () => {
+    if (id == null || id === "") {
+      setLoading(false);
+      setArtist(null);
+      setError("No artist selected");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosApi.get(`/get-top-artist-detail?id=${id}`);
+      const response = await axiosApi.get("/get-top-artist-detail", {
+        params: { id: String(id) },
+      });
       if (response?.data?.success && response?.data?.data) {
         setArtist(response.data.data);
       } else {
         setArtist(null);
-        setError("Artist details not found");
+        setError(
+          response?.data?.message || "Artist details not found",
+        );
       }
     } catch (err) {
       setArtist(null);
-      setError("Failed to load artists");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load artist",
+      );
     } finally {
       setLoading(false);
     }

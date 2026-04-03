@@ -24,20 +24,20 @@ const generateRandomHash = () => {
 
 /**
  * Generate a structured hash for an OPH ID
- * Format: stagename-profession-abc123
+ * Format: stagename-profession-epk-abc123
  */
 const generateStructuredHash = (stageName, profession) => {
   const sanitizedStageName = sanitizeForUrl(stageName) || "artist";
   const sanitizedProfession = sanitizeForUrl(profession) || "artist";
   const randomHash = generateRandomHash();
-  
-  return `${sanitizedStageName}-${sanitizedProfession}-${randomHash}`;
+
+  return `${sanitizedStageName}-${sanitizedProfession}-epk-${randomHash}`;
 };
 
 /**
  * Get or create a hash for an OPH ID
  * If hash exists and is active, return it. Otherwise, create a new one.
- * Format: stagename-profession-abc123
+ * Format: stagename-profession-epk-abc123
  */
 const getOrCreateHash = async (ophId) => {
   try {

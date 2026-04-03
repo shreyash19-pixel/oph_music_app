@@ -95,6 +95,7 @@ export const ArtistProvider = ({ children }) => {
           "/resources/music-learning-education",
           "/find-your-collaborator",
           "/public-artist-detail",
+          "/collaboration-artist-detail",
           "/content",
           "/success",
           "/privacy-policy",

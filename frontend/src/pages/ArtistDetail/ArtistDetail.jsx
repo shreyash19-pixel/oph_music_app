@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import axiosApi from "../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Face from "../../../public/assets/images/facebook.png";
@@ -9,10 +9,10 @@ import Insta from "../../../public/assets/images/instagram.png";
 import Story from "../../../public/assets/images/story.png";
 import { useArtist } from "../../pages/auth/API/ArtistContext";
 import { useSelector } from "react-redux";
-import { IoIosArrowRoundDown } from "react-icons/io";
 import { SongDuration } from "../ArtistSpotlight/ArtistSpotlight";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 import { resolveProfessionLabel } from "../../utils/professionDisplay";
+import { navigateToArtistDetail } from "../../utils/artistHash";
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,6 +23,7 @@ const ArtistDetail = () => {
   const [playingSongId, setPlayingSongId] = useState(null);
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
+  const token = searchParams.get("token");
 
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,11 +70,24 @@ const ArtistDetail = () => {
 
   const fetchIndividualArtist = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const response = await axiosApi.get(`/get-artist-detail?id=${id}`, {
+      if (!token && !id) {
+        setError("Artist Not Found");
+        return;
+      }
+      const param = token
+        ? `token=${encodeURIComponent(token)}`
+        : `id=${encodeURIComponent(id)}`;
+      const response = await axiosApi.get(`/get-artist-detail?${param}`, {
         ...(headers?.Authorization ? { headers } : {}),
       });
-      setArtist(response.data.data);
+      const data = response.data?.data;
+      if (data) {
+        setArtist(data);
+      } else {
+        setError("Artist Not Found");
+      }
     } catch (err) {
       console.log(err);
       setError("Artist Not Found");
@@ -83,38 +97,58 @@ const ArtistDetail = () => {
   };
 
   const fetchRankedArtists = async () => {
+    const profession = artist?.profession ?? artist?.Profession;
+    if (
+      profession === undefined ||
+      profession === null ||
+      String(profession).trim() === ""
+    ) {
+      setRelatedArtists([]);
+      return;
+    }
     try {
-      if (!artist?.profession) return;
-
-      const response = await axiosApi.get(
-        `/get-releated-artists?q=${artist.profession}`,
-        {
-          ...(headers?.Authorization ? { headers } : {}),
-        }
+      const response = await axiosApi.get("/get-releated-artists", {
+        params: { q: String(profession).trim() },
+        ...(headers?.Authorization ? { headers } : {}),
+      });
+      const list = Array.isArray(response.data?.data) ? response.data.data : [];
+      const excludeOph = new Set(
+        [id, artist?.oph_id, artist?.OPH_ID, artist?.ophid]
+          .filter((x) => x != null && String(x).trim() !== "")
+          .map((x) => String(x).trim()),
       );
-
-      console.log(response.data.data.filter((data) => data.oph_id !== id).slice(0, 8));
-      
-
       setRelatedArtists(
-        response.data.data.filter((data) => data.oph_id !== id).slice(0, 8)
+        list
+          .filter((row) => {
+            const oid = row?.oph_id ?? row?.ophid;
+            if (oid == null) return false;
+            return !excludeOph.has(String(oid).trim());
+          })
+          .slice(0, 8),
       );
     } catch (error) {
       console.error("Failed to fetch related artists", error);
+      setRelatedArtists([]);
     }
   };
 
   useEffect(() => {
-    if (id) {
+    if (token || id) {
       fetchIndividualArtist();
+    } else {
+      setIsLoading(false);
+      setError("Artist Not Found");
     }
-  }, [headers, id]);
+  }, [headers, id, token]);
 
   useEffect(() => {
-    if (artist?.profession) {
+    const prof = artist?.profession ?? artist?.Profession;
+    if (prof !== undefined && prof !== null && String(prof).trim() !== "") {
       fetchRankedArtists();
+    } else {
+      setRelatedArtists([]);
     }
-  }, [artist?.profession, artist?.oph_id, headers, id]);
+  }, [artist?.profession, artist?.Profession, artist?.oph_id, headers, id]);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -192,16 +226,15 @@ const ArtistDetail = () => {
     return `${views} Listeners`;
   };
 
-  const handleSongDownload = (song, name) => {
-    const link = document.createElement("a");
-    console.log(name);
-
-    link.href = song.audio_file_url; // Ensure the URL is correct and accessible
-    link.setAttribute("download", name || "song.mp3"); // Set a default file name
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // const handleSongDownload = (song, name) => {
+  //   const link = document.createElement("a");
+  //   console.log(name);
+  //   link.href = song.audio_file_url;
+  //   link.setAttribute("download", name || "song.mp3");
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  // };
 
   const [professions, setProfessions] = useState([]);
 
@@ -243,7 +276,7 @@ const ArtistDetail = () => {
           </Link>
         </div>
       )}
-      {!isLoading && !error && artist && artist.name && (
+      {!isLoading && !error && artist && (artist.name || artist.stage_name) && (
         <div className="relative  text-white    min-h-screen">
           {/* Background with gradient */}
           <div
@@ -425,7 +458,7 @@ const ArtistDetail = () => {
                   <th className="pb-3 px-1 text-center">PLAYS</th>
                   <th className="pb-3 px-1 text-center">TIME</th>
                   <th className="pb-3 px-1 text-center">PLAY</th>
-                  <th className="pb-3 px-1 text-center">DOWNLOAD</th>
+                  {/* <th className="pb-3 px-1 text-center">DOWNLOAD</th> */}
                 </tr>
               </thead>
 
@@ -484,7 +517,7 @@ const ArtistDetail = () => {
                       </div>
                     </td>
 
-                    {/* Download button */}
+                    {/* Song download column (disabled)
                     <td className="py-3 px-1 text-center">
                       <div className="flex justify-center items-center h-full w-full">
                         <button
@@ -495,6 +528,7 @@ const ArtistDetail = () => {
                         </button>
                       </div>
                     </td>
+                    */}
                   </tr>
                 ))}
               </tbody>
@@ -551,15 +585,15 @@ const ArtistDetail = () => {
 export default ArtistDetail;
 
 const RelatedArtists = ({ rankedArtists }) => {
-  console.log(rankedArtists);
-
+  const navigate = useNavigate();
   const formatListeners = (views) => {
-    if (views >= 1000000) {
-      return `${(views / 1000000).toFixed(1)}M+ Listeners`;
-    } else if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}K+ Listeners`;
+    const v = views == null || Number.isNaN(Number(views)) ? 0 : Number(views);
+    if (v >= 1000000) {
+      return `${(v / 1000000).toFixed(1)}M+ Listeners`;
+    } else if (v >= 1000) {
+      return `${(v / 1000).toFixed(1)}K+ Listeners`;
     }
-    return `${views} Listeners`;
+    return `${v} Listeners`;
   };
   return (
     <div className="w-full pb-20 pt-28">
@@ -569,12 +603,24 @@ const RelatedArtists = ({ rankedArtists }) => {
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {rankedArtists &&
-          rankedArtists.map((artist, index) => (
-            <Link
-              key={index}
-              to={`/dashboard/artist-detail?id=${artist.oph_id}`}
-            >
-              <div className="flex flex-col items-center">
+          rankedArtists.map((artist, index) => {
+            const oid = artist?.oph_id ?? artist?.ophid;
+            return (
+              <div
+                key={oid ?? index}
+                role="button"
+                tabIndex={0}
+                className="flex flex-col items-center cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => {
+                  if (oid) void navigateToArtistDetail(navigate, String(oid).trim());
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (oid) void navigateToArtistDetail(navigate, String(oid).trim());
+                  }
+                }}
+              >
                 <div className="flex justify-center mb-2">
                   <img
                     src={artist.personal_photo}
@@ -590,8 +636,8 @@ const RelatedArtists = ({ rankedArtists }) => {
                   {formatListeners(artist.total_views)}
                 </p>
               </div>
-            </Link>
-          ))}
+            );
+          })}
       </div>
     </div>
   );

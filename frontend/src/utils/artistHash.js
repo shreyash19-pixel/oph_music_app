@@ -120,13 +120,13 @@ export const navigateToArtistDetail = async (
   try {
     const token = await getArtistHash(ophId);
     if (token) {
-      navigate(`/public-artist-detail?token=${token}`);
+      navigate(`/collaboration-artist-detail?artist=${encodeURIComponent(token)}`);
     } else {
-      navigate(`/public-artist-detail?id=${ophId}`);
+      navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
     }
   } catch (error) {
     console.error("Error navigating to artist detail:", error);
-    navigate(`/public-artist-detail?id=${ophId}`);
+    navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
   }
 };
 

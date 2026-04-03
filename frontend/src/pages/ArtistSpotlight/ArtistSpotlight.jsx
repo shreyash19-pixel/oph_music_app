@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Play, ChevronDown, Pause } from "lucide-react";
 import axiosApi from "../../conf/axios";
 import { useSelector } from "react-redux";
 import { useArtist } from "../auth/API/ArtistContext";
@@ -17,11 +16,28 @@ function formatReach(views) {
   return `${n.toLocaleString()}+`;
 }
 
+function rankBadgeVisualClass(rank) {
+  if (rank === 1) return "bg-yellow-400 text-black ring-2 ring-yellow-200/60";
+  if (rank === 2) return "bg-emerald-400 text-black ring-2 ring-emerald-200/60";
+  if (rank === 3) return "bg-cyan-400 text-black ring-2 ring-cyan-200/60";
+  return "bg-[#1f2937] text-white ring-2 ring-[#5DC9DE]";
+}
+
 function Leaderboard({ leaderboardData, artistId }) {
   const navigate = useNavigate();
   const { headers, ophid } = useArtist();
-  console.log(artistId);
-  
+
+  const myOphId = String(ophid ?? artistId ?? "").trim();
+  const fullList = Array.isArray(leaderboardData) ? leaderboardData : [];
+  const meRow = myOphId
+    ? fullList.find((entry) => resolveLeaderboardOphId(entry) === myOphId)
+    : null;
+  const meRankRaw = meRow?.ranks ?? meRow?.rank;
+  const meRank =
+    meRankRaw != null && meRankRaw !== ""
+      ? Number(meRankRaw)
+      : null;
+  const meRankValid = Number.isFinite(meRank) ? meRank : null;
 
   const incrementTraffic = async (artistId) => {
     if (!artistId) return;
@@ -51,7 +67,87 @@ function Leaderboard({ leaderboardData, artistId }) {
     : [];
 
   return (
-    <div className="overflow-x-auto">
+    <div className="px-6 lg:px-0">
+      <div
+        className={`mb-6 rounded-xl border px-4 py-4 sm:px-5 sm:py-5 ${
+          meRankValid != null
+            ? "border-[#5DC9DE]/35 bg-gray-800/50 ring-1 ring-[#5DC9DE]/25"
+            : "border-gray-700/60 bg-gray-800/30"
+        }`}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            {meRankValid != null ? (
+              <span
+                className={`flex min-h-[2.25rem] min-w-[2.25rem] shrink-0 -rotate-12 items-center justify-center rounded-full px-2 py-1 text-base font-bold tabular-nums sm:min-h-[2.5rem] sm:min-w-[2.5rem] sm:text-lg ${rankBadgeVisualClass(
+                  meRankValid,
+                )}`}
+                title={`Community leaderboard rank #${meRankValid}`}
+                aria-label={`Your leaderboard rank ${meRankValid}`}
+              >
+                {meRankValid}
+              </span>
+            ) : (
+              <span
+                className="flex min-h-[2.25rem] min-w-[2.25rem] shrink-0 -rotate-12 items-center justify-center rounded-full bg-gray-800/90 px-2 py-1 text-sm font-medium tabular-nums text-gray-400 ring-1 ring-gray-600"
+                title="Not on the community leaderboard yet"
+                aria-label="Not on the community leaderboard"
+              >
+                –
+              </span>
+            )}
+            <div className="text-left">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                Your position
+              </p>
+              {meRankValid != null ? (
+                <p className="text-lg font-bold text-white sm:text-xl">
+                  #{meRankValid}{" "}
+                  <span className="font-normal text-gray-400">
+                    on the community leaderboard
+                  </span>
+                </p>
+              ) : (
+                <p className="text-base text-gray-400">
+                  You&apos;re not on the leaderboard yet — keep publishing and
+                  engaging to appear here.
+                </p>
+              )}
+            </div>
+          </div>
+          {meRow && meRankValid != null && (
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-300 sm:justify-end">
+              <span>
+                <span className="text-gray-500">Stage: </span>
+                <span className="font-medium text-[#5DC9DE]">
+                  {meRow.stage_name ?? "—"}
+                </span>
+              </span>
+              <span>
+                <span className="text-gray-500">Songs: </span>
+                <span className="font-semibold text-white">
+                  {meRow.song_count ??
+                    meRow.songCount ??
+                    meRow.SONG_COUNT ??
+                    "—"}
+                </span>
+              </span>
+              <span>
+                <span className="text-gray-500">Reach: </span>
+                <span className="font-semibold text-white">
+                  {formatReach(
+                    meRow.total_views ??
+                      meRow.Total_views ??
+                      meRow.totalViews,
+                  )}
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
       <table className="w-[100%] border-separate border-spacing-y-2">
         <thead>
           <tr className="text-center text-gray-400 rounded-2xl border-gray-800 rounded-2xl">
@@ -119,6 +215,7 @@ function Leaderboard({ leaderboardData, artistId }) {
             ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -157,186 +254,18 @@ const formatTime = (seconds) => {
 };
 
 function Songs() {
-  const [audio, setAudio] = useState(null);
-  const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
-  const [artistSongs, setArtistSongs] = useState([]);
-
-  const { ophid, headers } = useArtist();
-
-  const fetchSongRankingsById = async () => {
-    try {
-      if (!headers || !headers.Authorization) {
-        console.warn("Headers are not ready yet");
-        return;
-      }
-
-      const response = await axiosApi.get(
-        "/artist-spotlight/get-songs-rankings-by-id",
-        {
-          headers: headers,
-          params: { ophid },
-        },
-      );
-      if (response.data.success) {
-        setArtistSongs(response.data.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-  const handlePlayPause = (song) => {
-    if (playingSongId === song.song_id) {
-      // Toggle play/pause for the same song
-      if (!audio?.paused) {
-        audio?.pause();
-        setPlayingSongId(null);
-      } else {
-        audio?.play()?.catch((error) => {
-          console.error("Audio play failed:", error);
-        });
-        setPlayingSongId(song.song_id);
-      }
-    } else {
-      // New song selected
-      if (audio) {
-        audio.pause();
-      }
-      const newAudio = new Audio(song.audio_url);
-      newAudio.play().catch((error) => {
-        console.error("Audio play failed:", error);
-      });
-      setAudio(newAudio);
-      setPlayingSongId(song.song_id);
-    }
-  };
-
-  useEffect(() => {
-    if (ophid) {
-      fetchSongRankingsById();
-    }
-  }, [headers, ophid]);
-
+  /* Previous song rankings tables + audio — restore from git if needed:
+   * get-songs-rankings-by-id, artistSongs state, handlePlayPause, two <table> blocks
+   * ("Current Song" card + "Other Songs" section).
+   */
   return (
     <div className="space-y-6">
-      {/* Current Song */}
-      <div className="bg-gray-800/30 rounded-lg p-4">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-gray-400">
-              <th className="py-2 px-2 lg:px-4">#</th>
-              <th className="py-2 px-2 lg:px-4">SONGS NAME</th>
-              <th className="py-2 px-2 lg:px-4">PLAYS</th>
-              <th className="py-2 px-2 hidden lg:block lg:px-4">TIME</th>
-              <th className="py-2 px-2 lg:px-4">PLAY</th>
-            </tr>
-          </thead>
-          <tbody>
-            {artistSongs &&
-              Object.values(artistSongs)?.map((artist, index) => (
-                <tr key={index}>
-                  <td className="py-4 px-2 lg:px-4">
-                    <span className="bg-green-500 px-2 py-1 text-sm">
-                      {/* {artist.rank} */}
-                      {index}
-                    </span>
-                  </td>
-                  <td className="py-4 px-2 lg:px-4">
-                    <div
-                      onClick={() => {
-                        window.open(
-                          `${import.meta.env.VITE_WEBSITE_URL}content/${
-                            artist.OPH_ID
-                          }`,
-                          "_blank",
-                        );
-                      }}
-                    >
-                      <div>{artist.Song_name}</div>
-                      <div className="text-sm text-gray-400">
-                        {artist.secondary_artists
-                          .map((art) => art.artist_name)
-                          .filter(Boolean) // removes null or undefined names
-                          .join(", ")}
-                      </div>
-                    </div>
-                  </td>
-                  {/* <td className="py-4 px-2 lg:px-4">{artist.total_reach}</td> */}
-                  <td className="py-4 px-2 lg:px-4">93,52,548</td>
-                  <SongDuration url={artist.audio_url} />
-                  <td className="py-4 px-2 lg:px-4">
-                    <button
-                      className="p-2 bg-[#6F4FA0] rounded-full hover:bg-[#6F4FA0] transition-colors"
-                      onClick={() => handlePlayPause(artist)}
-                    >
-                      {playingSongId === artist.song_id && !audio?.paused ? (
-                        <Pause className="w-4 h-4" />
-                      ) : (
-                        <Play className="w-4 h-4" />
-                      )}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Other Songs Section */}
-      <div className="space-y-6">
-        <h3 className="text-xl font-semibold lg:px-0 px-6 text-cyan-400">
-          Other Songs
-        </h3>
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-gray-400">
-              <th className="py-2 px-2 lg:px-4">#</th>
-              <th className="py-2 px-2 lg:px-4">SONGS NAME</th>
-              <th className="py-2 px-2 lg:px-4">PLAYS</th>
-              <th className="py-2 px-2 hidden lg:block lg:px-4">TIME</th>
-              <th className="py-2 px-2 lg:px-4">PLAY</th>
-            </tr>
-          </thead>
-          <tbody>
-            {artistSongs &&
-              Object.values(artistSongs)
-                .slice(5, )
-                .map((artist, index) => (
-                  <tr key={index}>
-                    <td className="py-4 px-2 lg:px-4">
-                      <span className="px-2 py-1 rounded text-sm">{index}</span>
-                    </td>
-                    <td className="py-4 px-2 lg:px-4">
-                      <div>
-                        <div>{artist.Song_name}</div>
-                        <div className="text-sm text-gray-400">
-                          {artist.secondary_artists
-                            .map((art) => art.artist_name)
-                            .filter(Boolean) // removes null or undefined names
-                            .join(", ")}
-                        </div>
-                      </div>
-                    </td>
-                    {/* <td className="py-4 px-2 lg:px-4">{artist.total_reach}</td> */}
-                    <td className="py-4 px-2 lg:px-4">93,52,548</td>
-                    {/* <td className="py-4 lg:block hidden px-2 lg:px-4">{calculateSongDur(artist.audio_url)}</td> */}
-                    <SongDuration url={artist.audio_url} />
-                    <td className="py-4 px-2 lg:px-4">
-                      <button
-                        className="p-2 bg-[#6F4FA0] rounded-full hover:bg-[#6F4FA0] transition-colors"
-                        onClick={() => handlePlayPause(artist)}
-                      >
-                        {playingSongId === artist.content_id &&
-                        !audio?.paused ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-          </tbody>
-        </table>
+      <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+        <div className="flex min-h-[200px] sm:min-h-[260px] items-center justify-center px-4">
+          <h2 className="text-center text-4xl font-bold tracking-tight text-cyan-400 sm:text-5xl md:text-6xl lg:text-7xl">
+            Coming soon
+          </h2>
+        </div>
       </div>
     </div>
   );

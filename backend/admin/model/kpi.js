@@ -92,7 +92,8 @@ const getTopArtists = async (page = 1, perPage = 6) => {
     SELECT COUNT(DISTINCT ud.oph_id) AS total
     FROM user_details ud
     INNER JOIN application_status app
-      ON ud.oph_id = app.oph_id AND app.overall_status = 'completed'
+      ON ud.oph_id = app.oph_id
+      AND LOWER(TRIM(app.overall_status)) IN ('completed', 'approved')
   `);
   const total = Number(countRows[0]?.total) || 0;
 
@@ -107,7 +108,8 @@ const getTopArtists = async (page = 1, perPage = 6) => {
       IFNULL(kpi.total_views, 0) AS total_views
     FROM user_details ud
     INNER JOIN application_status app
-      ON ud.oph_id = app.oph_id AND app.overall_status = 'completed'
+      ON ud.oph_id = app.oph_id
+      AND LOWER(TRIM(app.overall_status)) IN ('completed', 'approved')
     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
     LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID
     ORDER BY IFNULL(kpi.score, 0) DESC, IFNULL(kpi.total_views, 0) DESC, ud.stage_name ASC
@@ -120,7 +122,7 @@ const getTopArtists = async (page = 1, perPage = 6) => {
 
 const getSpecialArtist = async () => {
   const [rows] = await db.execute(
-    "SELECT * FROM application_status WHERE overall_status = 'completed'",
+    "SELECT * FROM application_status WHERE LOWER(TRIM(overall_status)) IN ('completed', 'approved')",
   );
   return rows;
 };
@@ -183,7 +185,40 @@ const getArtistProfile = async (ophid) => {
     }
   });
 
-  return songMap[ophid] || null;
+  if (songMap[ophid]) {
+    return songMap[ophid];
+  }
+
+  // /get-top-artist lists all fully registered artists (Independent -IA- and Special -SA-);
+  // detail view still returns a profile even if the strict triple-approved song CTE is empty.
+  const [fallback] = await db.execute(
+    `SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, ud.location, pd.Bio,
+            IFNULL(kpi.total_views, 0) AS total_views
+     FROM user_details ud
+     INNER JOIN application_status app ON ud.oph_id = app.oph_id
+       AND LOWER(TRIM(app.overall_status)) IN ('completed', 'approved')
+     LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
+     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID
+     WHERE ud.oph_id = ?
+     LIMIT 1`,
+    [ophid],
+  );
+  if (!fallback || fallback.length === 0) {
+    return null;
+  }
+  const u = fallback[0];
+  return {
+    personal_photo: u.personal_photo,
+    stage_name: u.stage_name,
+    name: u.full_name,
+    full_name: u.full_name,
+    profession: u.Profession,
+    location: u.location,
+    total_views: u.total_views,
+    bio: u.Bio,
+    total_content: parseInt(totalSongs, 10) || 0,
+    songs: [],
+  };
 };
 
 // Fetch all KPI scores, sorted by score descending
@@ -206,7 +241,8 @@ const getAllKpiScores = async () => {
         vd.status AS video_details_status
       FROM user_details ud
       INNER JOIN application_status app
-        ON ud.oph_id = app.oph_id AND app.overall_status = 'completed'
+        ON ud.oph_id = app.oph_id
+        AND LOWER(TRIM(app.overall_status)) IN ('completed', 'approved')
       LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
       LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
       LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id

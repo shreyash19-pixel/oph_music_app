@@ -3,7 +3,7 @@ const { getOrCreateHash, regenerateHash } = require("../model/artist_hash_mappin
 /**
  * Generate or get token for an OPH ID
  * This endpoint can be used to generate tokens for OPH IDs
- * Format: stagename-profession-abc123
+ * Format: stagename-profession-epk-abc123
  */
 const generateHashController = async (req, res) => {
   try {

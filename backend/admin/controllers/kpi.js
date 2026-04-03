@@ -141,6 +141,7 @@ const getTopArtistsController = async (req, res) => {
       message: "Data fetched successfully",
       data: rows,
       pagination: totalPages,
+      total,
     });
 
   }

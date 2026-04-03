@@ -80,25 +80,37 @@ const getMetricByOph = async (req, res) => {
       .json({ success: false, message: "Missing OPH ID in query" });
   } else {
     try {
-       const Metric = await SongSocialMetrics.getMetricByOph(OPH_ID);
-      
-      const Key = "monthly_kpi/song_metrics.json";
+      const Metric = await SongSocialMetrics.getMetricByOph(OPH_ID);
 
-      const s3Data = await readFromS3(Key);
+      let matchedRecords = [];
+      try {
+        const Key = "monthly_kpi/song_metrics.json";
+        const s3Data = await readFromS3(Key);
+        if (s3Data && typeof s3Data === "object") {
+          for (const year of Object.keys(s3Data)) {
+            const yearObj = s3Data[year];
+            if (!yearObj || typeof yearObj !== "object") continue;
+            for (const month of Object.keys(yearObj)) {
+              const records = yearObj[month];
+              if (!Array.isArray(records)) continue;
+              matchedRecords.push(
+                ...records.filter((r) => r && r.OPH_ID === OPH_ID),
+              );
+            }
+          }
+        }
+      } catch (s3Err) {
+        console.warn(
+          "[getMetricByOph] S3 song_metrics.json unavailable:",
+          s3Err?.message || s3Err,
+        );
+      }
 
-       // 3. Extract only records for the given OPH_ID
-       const matchedRecords = [];
-       for (const year of Object.keys(s3Data)) {
-         for (const month of Object.keys(s3Data[year])) { 
-           const records = s3Data[year][month];
-           const filtered = records.filter((r) => r.OPH_ID === OPH_ID);
-           if (filtered.length > 0) {
-             matchedRecords.push(...filtered);
-           }
-         }
-       }
-
-      res.status(200).json({ success: true, data: Metric, s3Metrics: matchedRecords });
+      res.status(200).json({
+        success: true,
+        data: Metric,
+        s3Metrics: matchedRecords,
+      });
     } catch (error) {
       console.error("Error fetching Metric:", error);
       console.log("Controller - ophID:", OPH_ID);
