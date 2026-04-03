@@ -72,13 +72,58 @@ const KpiScore = async (
   ]);
 };
 
-const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
+const getArtistSearchFilterOptions = async () => {
+  const visible = `
+    IFNULL(ud.is_active, 1) = 1
+    AND (
+      UPPER(ud.oph_id) LIKE '%-SA-%'
+      OR LOWER(TRIM(IFNULL(app.overall_status, ''))) IN ('completed', 'approved')
+    )
+  `;
+
+  const [profRows] = await db.execute(
+    `
+    SELECT DISTINCT TRIM(pd.profession) AS val
+    FROM user_details ud
+    LEFT JOIN application_status app ON ud.oph_id = app.oph_id
+    LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
+    WHERE ${visible}
+      AND pd.profession IS NOT NULL AND TRIM(pd.profession) <> ''
+    ORDER BY val ASC
+    `,
+  );
+
+  const [locRows] = await db.execute(
+    `
+    SELECT DISTINCT TRIM(ud.location) AS val
+    FROM user_details ud
+    LEFT JOIN application_status app ON ud.oph_id = app.oph_id
+    WHERE ${visible}
+      AND ud.location IS NOT NULL AND TRIM(ud.location) <> ''
+    ORDER BY val ASC
+    `,
+  );
+
+  return {
+    professions: profRows.map((r) => r.val).filter(Boolean),
+    locations: locRows.map((r) => r.val).filter(Boolean),
+  };
+};
+
+const getTopSearchedArtists = async (
+  searchQuery,
+  page = 1,
+  perPage = 10,
+  filterOpts = {},
+) => {
   const raw = String(searchQuery ?? "").trim();
+  const profession = String(filterOpts.profession ?? "").trim();
+  const location = String(filterOpts.location ?? "").trim();
   const p = Math.max(1, parseInt(page, 10) || 1);
   const per = Math.min(50, Math.max(1, parseInt(perPage, 10) || 10));
   const offset = (p - 1) * per;
 
-  if (!raw) {
+  if (!raw && !profession && !location) {
     return {
       rows: [],
       total: 0,
@@ -88,10 +133,40 @@ const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
     };
   }
 
-  const esc = raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-  const key = `%${esc}%`;
-  // Notes column omitted: legacy DBs use `Notes` vs `notes` and break the whole query.
-  const likeParams = [key, key, key, key, key, key, key, key];
+  const likeParams = [];
+  let textSearchSql = "";
+  if (raw) {
+    const esc = raw
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_");
+    const key = `%${esc}%`;
+    for (let i = 0; i < 8; i++) likeParams.push(key);
+    textSearchSql = `
+      AND (
+        LOWER(IFNULL(ud.oph_id, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.stage_name, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.full_name, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.location, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.email, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.contact_number, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.artist_type, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(pd.profession, '')) LIKE LOWER(?)
+      )`;
+  }
+
+  let filterSql = "";
+  const filterParams = [];
+  if (profession) {
+    filterSql += " AND LOWER(TRIM(IFNULL(pd.profession, ''))) = LOWER(?)";
+    filterParams.push(profession);
+  }
+  if (location) {
+    filterSql += " AND LOWER(TRIM(IFNULL(ud.location, ''))) = LOWER(?)";
+    filterParams.push(location);
+  }
+
+  const paramArray = [...likeParams, ...filterParams];
 
   const fromWhere = `
     FROM user_details ud
@@ -107,21 +182,13 @@ const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
         UPPER(ud.oph_id) LIKE '%-SA-%'
         OR LOWER(TRIM(IFNULL(app.overall_status, ''))) IN ('completed', 'approved')
       )
-      AND (
-        LOWER(IFNULL(ud.oph_id, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(ud.stage_name, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(ud.full_name, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(ud.location, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(ud.email, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(ud.contact_number, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(ud.artist_type, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(pd.profession, '')) LIKE LOWER(?)
-      )
+      ${textSearchSql}
+      ${filterSql}
   `;
 
   const [countRows] = await db.execute(
     `SELECT COUNT(DISTINCT ud.oph_id) AS total ${fromWhere}`,
-    likeParams,
+    paramArray,
   );
   const total = Number(countRows[0]?.total) || 0;
 
@@ -139,7 +206,7 @@ const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
     ORDER BY IFNULL(kpi.total_views, 0) DESC, ud.stage_name ASC
     LIMIT ${per} OFFSET ${offset}
     `,
-    likeParams,
+    paramArray,
   );
 
   const totalPages = total > 0 ? Math.ceil(total / per) : 0;
@@ -492,6 +559,7 @@ module.exports = {
   getMetricsSummary,
   getAllKpiScores,
   KpiScore,
+  getArtistSearchFilterOptions,
   getTopSearchedArtists,
   getTopArtists,
   getArtistProfile,
