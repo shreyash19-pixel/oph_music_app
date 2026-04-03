@@ -178,8 +178,10 @@ WHERE overall_status = 'approved';
             song_id: row.song_id,
             song_name: row.song_name,
             primaryArtist: row.primary_artist,
+            primary_artist: row.primary_artist,
             total_song_views: row.total_song_views,
-            duration_in_minutes: row.audio_url,
+            audio_url: row.audio_url,
+            audio_file_url: row.audio_url,
           },
         ],
       };
@@ -188,8 +190,10 @@ WHERE overall_status = 'approved';
         song_id: row.song_id,
         song_name: row.song_name,
         primaryArtist: row.primary_artist,
+        primary_artist: row.primary_artist,
         total_song_views: row.total_song_views,
-        duration_in_minutes: row.audio_url,
+        audio_url: row.audio_url,
+        audio_file_url: row.audio_url,
       });
     }
   });

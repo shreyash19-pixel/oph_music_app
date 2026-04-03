@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import SongCard from "../../../../components/SongCard";
-import axiosApi from "../../../../conf/axios";
 import { useArtist } from "../../../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
+import { navigateToArtistDetail } from "../../../../utils/artistHash";
 
 const LEADERBOARD_HOME_MAX_ROWS = 10;
 
@@ -49,27 +49,13 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
     return n.toLocaleString();
   };
 
-  const handleProfileClick = async (artistId) => {
+  const handleProfileClick = (artistId) => {
     if (!artistId) return;
-    try {
-      const response = await axiosApi.post(
-        "/increment-traffic",
-        { ophid: artistId, traffic_counter: 1 },
-        {
-          headers: {
-            ...(headers?.Authorization ? headers : {}),
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        navigate(`/dashboard/artist-detail?id=${artistId}`);
-      }
-    } catch (err) {
-      console.error(err);
-      navigate(`/dashboard/artist-detail?id=${artistId}`);
-    }
+    void navigateToArtistDetail(
+      navigate,
+      artistId,
+      headers?.Authorization ? headers : null,
+    );
   };
 
   return (

@@ -72,15 +72,86 @@ const KpiScore = async (
   ]);
 };
 
-const getTopSearchedArtists = async (searchQuery) => {
-  const key = `%${searchQuery}%`;
+const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
+  const raw = String(searchQuery ?? "").trim();
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const per = Math.min(50, Math.max(1, parseInt(perPage, 10) || 10));
+  const offset = (p - 1) * per;
 
-  const [rows] = await db.execute(
-    "SELECT kpi.oph_id, ud.personal_photo, ud.stage_name, pd.profession, ud.location, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.oph_id = ud.oph_id   LEFT JOIN professional_details pd ON kpi.oph_id = pd.oph_id WHERE ud.stage_name LIKE ? OR ud.location LIKE ? OR pd.profession LIKE ?",
-    [key, key, key],
+  if (!raw) {
+    return {
+      rows: [],
+      total: 0,
+      page: 1,
+      perPage: per,
+      totalPages: 0,
+    };
+  }
+
+  const esc = raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+  const key = `%${esc}%`;
+  // Notes column omitted: legacy DBs use `Notes` vs `notes` and break the whole query.
+  const likeParams = [key, key, key, key, key, key, key, key, key];
+
+  const fromWhere = `
+    FROM user_details ud
+    LEFT JOIN application_status app
+      ON ud.oph_id = app.oph_id
+    LEFT JOIN professional_details pd
+      ON ud.oph_id = pd.OPH_ID
+    LEFT JOIN KPI_score kpi
+      ON ud.oph_id = kpi.oph_id
+    WHERE
+      IFNULL(ud.is_active, 1) = 1
+      AND (
+        UPPER(ud.oph_id) LIKE '%-SA-%'
+        OR LOWER(TRIM(IFNULL(app.overall_status, ''))) IN ('completed', 'approved')
+      )
+      AND (
+        LOWER(IFNULL(ud.oph_id, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.stage_name, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.full_name, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.location, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.email, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.contact_number, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.artist_type, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(pd.profession, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(pd.bio, '')) LIKE LOWER(?)
+      )
+  `;
+
+  const [countRows] = await db.execute(
+    `SELECT COUNT(DISTINCT ud.oph_id) AS total ${fromWhere}`,
+    likeParams,
+  );
+  const total = Number(countRows[0]?.total) || 0;
+
+  const [rows] = await db.query(
+    `
+    SELECT DISTINCT
+      ud.oph_id,
+      ud.personal_photo,
+      ud.full_name,
+      ud.stage_name,
+      pd.profession,
+      ud.location,
+      IFNULL(kpi.total_views, 0) AS total_views
+    ${fromWhere}
+    ORDER BY IFNULL(kpi.total_views, 0) DESC, ud.stage_name ASC
+    LIMIT ${per} OFFSET ${offset}
+    `,
+    likeParams,
   );
 
-  return rows;
+  const totalPages = total > 0 ? Math.ceil(total / per) : 0;
+
+  return {
+    rows,
+    total,
+    page: p,
+    perPage: per,
+    totalPages,
+  };
 };
 
 const getTopArtists = async (page = 1, perPage = 6) => {

@@ -3,7 +3,10 @@ import axiosApi from "../../conf/axios";
 import { useSelector } from "react-redux";
 import { useArtist } from "../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
-import { resolveLeaderboardOphId } from "../../utils/artistHash";
+import {
+  navigateToArtistDetail,
+  resolveLeaderboardOphId,
+} from "../../utils/artistHash";
 
 const ARTIST_SPOTLIGHT_EMPTY_NOTE = "No Note Provided Yet.";
 const LEADERBOARD_UI_MAX_ROWS = 10;
@@ -39,27 +42,13 @@ function Leaderboard({ leaderboardData, artistId }) {
       : null;
   const meRankValid = Number.isFinite(meRank) ? meRank : null;
 
-  const incrementTraffic = async (artistId) => {
-    if (!artistId) return;
-    try {
-      const response = await axiosApi.post(
-        "/increment-traffic",
-        { ophid: artistId, traffic_counter: 1 },
-        {
-          headers: {
-            ...(headers?.Authorization ? headers : {}),
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (response.data.success) {
-        navigate(`/dashboard/artist-detail?id=${artistId}`);
-      }
-    } catch (err) {
-      console.error(err);
-      navigate(`/dashboard/artist-detail?id=${artistId}`);
-    }
+  const goToArtistProfile = (ophId) => {
+    if (!ophId) return;
+    void navigateToArtistDetail(
+      navigate,
+      ophId,
+      headers?.Authorization ? headers : null,
+    );
   };
 
   const rows = Array.isArray(leaderboardData)
@@ -164,11 +153,19 @@ function Leaderboard({ leaderboardData, artistId }) {
           {rows.length > 0 &&
             rows.map((artist, index) => (
               <tr
+                role="button"
+                tabIndex={0}
                 onClick={() =>
-                  incrementTraffic(resolveLeaderboardOphId(artist))
+                  goToArtistProfile(resolveLeaderboardOphId(artist))
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goToArtistProfile(resolveLeaderboardOphId(artist));
+                  }
+                }}
                 key={`${resolveLeaderboardOphId(artist) || "row"}-${index}`}
-                className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
+                className={`cursor-pointer rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
                   artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
                 }`}
               >
@@ -207,7 +204,16 @@ function Leaderboard({ leaderboardData, artistId }) {
                   )}
                 </td>
                 <td className="py-2 hidden lg:block px-3 lg:px-4">
-                  <button className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
+                  <button
+                    type="button"
+                    className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const oid = resolveLeaderboardOphId(artist);
+                      if (!oid) return;
+                      goToArtistProfile(oid);
+                    }}
+                  >
                     View Profile
                   </button>
                 </td>
@@ -220,31 +226,45 @@ function Leaderboard({ leaderboardData, artistId }) {
   );
 }
 
-export const SongDuration = ({ url }) => {
+export const SongDuration = ({
+  url,
+  className = "",
+  as: As = "span",
+}) => {
   const [duration, setDuration] = useState(null);
 
-  console.log(url);
-  
-
   useEffect(() => {
-    if (!url) return;
+    if (!url || typeof url !== "string" || !url.trim()) {
+      setDuration(null);
+      return;
+    }
 
-    const audio = new Audio(url);
-    audio.addEventListener("loadedmetadata", () => {
-      setDuration(audio.duration); // duration is in seconds
-    });
+    const audio = new Audio(url.trim());
+    const onMeta = () => {
+      setDuration(
+        Number.isFinite(audio.duration) && audio.duration > 0
+          ? audio.duration
+          : null,
+      );
+    };
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("error", () => setDuration(null));
 
-    // Cleanup
     return () => {
-      audio.removeEventListener("loadedmetadata", () => {});
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.pause();
+      audio.src = "";
     };
   }, [url]);
 
-  return (
-    <td className="py-4 lg:block hidden px-2 lg:px-4">
-      {duration ? formatTime(duration) : "Loading..."}
-    </td>
-  );
+  const text =
+    !url || (typeof url === "string" && !url.trim())
+      ? "—"
+      : duration != null
+        ? formatTime(duration)
+        : "…";
+
+  return <As className={className}>{text}</As>;
 };
 
 const formatTime = (seconds) => {

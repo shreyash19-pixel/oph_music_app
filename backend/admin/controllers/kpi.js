@@ -96,7 +96,7 @@ const insertOrUpdateKpiScore = async (req, res) => {
 const getTopSearchedArtistsController = async (req, res) => {
 
   try {
-    const { q } = req.query
+    const { q, page, per_page: perPageQ, perPage: perPageCamel } = req.query
 
     if (!q) {
       return res.status(400).json({
@@ -105,15 +105,18 @@ const getTopSearchedArtistsController = async (req, res) => {
       })
     }
 
-    const response = await SongSocialMetrics.getTopSearchedArtists(q)
+    const perRaw = perPageQ ?? perPageCamel
+    const result = await SongSocialMetrics.getTopSearchedArtists(q, page, perRaw)
 
-    if (response) {
-      return res.status(201).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: response
-      })
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: result.rows,
+      total: result.total,
+      page: result.page,
+      perPage: result.perPage,
+      totalPages: result.totalPages,
+    })
 
   }
 

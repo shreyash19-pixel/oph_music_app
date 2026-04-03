@@ -1,52 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import searchIc from "/assets/images/artists/searchIc.svg";
-import { useNavigate } from "react-router-dom";
-import axiosApi from "../../../../conf/axios";
 
-const HeroSection = ({ onSearchResults }) => {
+const HeroSection = ({ onSearchQueryChange }) => {
   const [inputName, setInputName] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
   const searchContainerRef = useRef(null);
-  const navigate = useNavigate();
 
-  const handleSearch = async (query) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      onSearchResults([]); // Clear search results in parent
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await axiosApi.get(`/get-top-searched-artist?q=${query}`);
-      setSearchResults(response.data.data);
-      onSearchResults(response.data.data); // Send search results to parent
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-      onSearchResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectArtist = (artist) => {
-    navigate(`/artists/${artist.id}`);
-    setIsDropdownOpen(false);
-  };
-
-  // Debounced search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (inputName) {
-        handleSearch(inputName);
-      }
+      onSearchQueryChange?.(inputName.trim());
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [inputName]);
+  }, [inputName, onSearchQueryChange]);
+
+  const handleSearchClick = () => {
+    onSearchQueryChange?.(inputName.trim());
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -94,8 +64,9 @@ const HeroSection = ({ onSearchResults }) => {
               onFocus={() => setIsDropdownOpen(true)}
             />
             <button
+              type="button"
               className="px-4 sm:px-8 py-3 bg-[#5DC9DE] hover:bg-cyan-500 rounded-full flex items-center justify-center transition-colors ml-2 mr-2 min-w-[44px]"
-              onClick={() => handleSearch(inputName)}
+              onClick={handleSearchClick}
             >
               <img
                 src={searchIc}
