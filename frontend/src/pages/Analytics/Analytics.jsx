@@ -5,6 +5,17 @@ import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 
+const AUDIO_CHART_COLORS = [
+  "#22d3ee",
+  "#8959D3",
+  "#34a853",
+  "#f59e0b",
+  "#ec4899",
+  "#6366f1",
+  "#14b8a6",
+  "#f97316",
+];
+
 function sameSongId(metricSongId, selectedId) {
   if (metricSongId == null || selectedId == null) return false;
   const a = Number(metricSongId);
@@ -240,13 +251,6 @@ useEffect(() => {
     ? selectedContent.reduce((sum, c) => sum + (c.insta_engagement || 0), 0)
     : selectedContent?.insta_engagement || 0;
 
-  const AudioMetric = Array.isArray(selectedContent)
-    ? selectedContent.reduce(
-        (sum, c) => sum + (Number(c.audio_platform_streams) || 0),
-        0,
-      )
-    : Number(selectedContent?.audio_platform_streams) || 0;
-
   /** Dedupe by string id — Map treats 23 and "23" as different keys, which duplicated <option> keys. */
   const uniqueSongs = Array.from(
     new Map(
@@ -287,6 +291,29 @@ useEffect(() => {
 
   const filteredChartData = filterByDuration(chartData, "date");
   const filteredAudioChartData = filterByDuration(AudiochartData, "date");
+
+  /** One chart per audio platform (S3 / DB rows), sorted by total streams desc. */
+  const audioPlatformChartGroups = (() => {
+    const byPlatform = new Map();
+    for (const d of filteredAudioChartData) {
+      const label =
+        d.name != null && String(d.name).trim() !== ""
+          ? String(d.name).trim()
+          : "Unknown platform";
+      if (!byPlatform.has(label)) byPlatform.set(label, []);
+      byPlatform.get(label).push(d);
+    }
+    for (const pts of byPlatform.values()) {
+      pts.sort(
+        (a, b) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
+    }
+    return Array.from(byPlatform.entries()).sort((a, b) => {
+      const sum = (pts) => pts.reduce((s, p) => s + (Number(p.value) || 0), 0);
+      return sum(b[1]) - sum(a[1]);
+    });
+  })();
 
   console.log("🔍 FILTER RESULTS:", {
     originalChartData: chartData.length,
@@ -593,20 +620,27 @@ useEffect(() => {
                   }
 
                   if (selectedStream === "Audio Platform") {
-                    chartsArray = [
-                      <Chart
-                        key="audio"
-                        type="area"
-                        data={filteredAudioChartData.map((d) => ({
-                          name: d.date,
-                          value: d.value,
-                        }))}
-                        title={AudiochartData[0]?.name || "Audio Streams"}
-                        subtitle="Count in Millions"
-                        metric={AudioMetric}
-                        colors={["#22d3ee"]}
-                      />,
-                    ];
+                    chartsArray = audioPlatformChartGroups.map(
+                      ([platformLabel, points], idx) => (
+                        <Chart
+                          key={`audio-${platformLabel}-${idx}`}
+                          type="area"
+                          data={points.map((p) => ({
+                            name: p.dateFormatted,
+                            value: p.value,
+                          }))}
+                          title={platformLabel}
+                          subtitle="Streams (selected period)"
+                          metric={points.reduce(
+                            (s, p) => s + (Number(p.value) || 0),
+                            0,
+                          )}
+                          colors={[
+                            AUDIO_CHART_COLORS[idx % AUDIO_CHART_COLORS.length],
+                          ]}
+                        />
+                      ),
+                    );
                   }
 
                   const paginatedCharts = getPaginatedCharts(chartsArray);

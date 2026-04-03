@@ -1,4 +1,4 @@
-import React,{ useState } from "react";
+import React, { useId } from "react";
 import {
   LineChart,
   Line,
@@ -40,6 +40,8 @@ export default function Chart({
   showLegend = false,
   height = 200,
 }) {
+  const gradientId = `chart-grad-${useId().replace(/:/g, "")}`;
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-gray-900/50 rounded-lg p-4 h-[300px] flex items-center justify-center">
@@ -152,7 +154,7 @@ export default function Chart({
             />
             <Tooltip content={<CustomTooltip />} />
             <defs>
-              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={colors[0]} stopOpacity={0.3} />
                 <stop offset="95%" stopColor={colors[0]} stopOpacity={0.05} />
               </linearGradient>
@@ -161,7 +163,7 @@ export default function Chart({
               type="monotone"
               dataKey="value"
               stroke={colors[0]}
-              fill="url(#colorGradient)"
+              fill={`url(#${gradientId})`}
               strokeWidth={2}
             />
           </AreaChart>
