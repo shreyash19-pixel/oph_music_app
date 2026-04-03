@@ -72,6 +72,15 @@ const getMetricById = async (req, res) => {
   }
 };
 
+/** song_metrics.json: skip rows with no streams so Analytics does not chart empty platforms. */
+function s3AudioStreamsPositive(r) {
+  if (!r || typeof r !== "object") return false;
+  const v = r.audio_platform_streams;
+  if (v == null || v === "") return false;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0;
+}
+
 const getMetricByOph = async (req, res) => {
   const { OPH_ID } = req.query;
   if (!OPH_ID) {
@@ -94,7 +103,12 @@ const getMetricByOph = async (req, res) => {
               const records = yearObj[month];
               if (!Array.isArray(records)) continue;
               matchedRecords.push(
-                ...records.filter((r) => r && r.OPH_ID === OPH_ID),
+                ...records.filter(
+                  (r) =>
+                    r &&
+                    r.OPH_ID === OPH_ID &&
+                    s3AudioStreamsPositive(r),
+                ),
               );
             }
           }

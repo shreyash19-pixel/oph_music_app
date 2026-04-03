@@ -30,6 +30,95 @@ function toNum(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+const AUDIO_TZ = "Asia/Kolkata";
+
+/** YYYY-MM in AUDIO_TZ for sorting / bucketing. */
+function audioMonthKeyFromDate(isoOrDate) {
+  if (isoOrDate == null || isoOrDate === "") return "";
+  const d = new Date(isoOrDate);
+  if (Number.isNaN(d.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: AUDIO_TZ,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  return y && m ? `${y}-${m}` : "";
+}
+
+/** X-axis label: month + year only (no day). */
+function audioMonthLabelFromKey(monthKey) {
+  if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) return "Unknown";
+  const [ys, ms] = monthKey.split("-");
+  const y = Number(ys);
+  const m = Number(ms);
+  return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("en-GB", {
+    timeZone: AUDIO_TZ,
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function prevAudioMonthKey(monthKey) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) return "";
+  const [y0, m0] = monthKey.split("-").map(Number);
+  let m = m0 - 1;
+  let y = y0;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  }
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+/** Latest snapshot per calendar month (same platform). */
+function aggregateAudioPointsByMonth(points) {
+  const byMonth = new Map();
+  for (const p of points) {
+    const key = p.monthKey || "";
+    if (!key) continue;
+    const t = p.date ? new Date(p.date).getTime() : 0;
+    const cur = byMonth.get(key);
+    if (!cur || t >= new Date(cur.date).getTime()) {
+      byMonth.set(key, {
+        monthKey: key,
+        monthLabel: p.monthLabel || audioMonthLabelFromKey(key),
+        value: toNum(p.value),
+        date: p.date,
+      });
+    }
+  }
+  return Array.from(byMonth.values()).sort((a, b) =>
+    a.monthKey.localeCompare(b.monthKey),
+  );
+}
+
+/** First month with streams > 0: prepend previous month @ 0 for a visible ramp. */
+function audioChartDataWithBaseline(monthPoints) {
+  if (!monthPoints.length) return [];
+  const sorted = [...monthPoints].sort((a, b) =>
+    a.monthKey.localeCompare(b.monthKey),
+  );
+  const mapped = sorted.map((p) => ({
+    name: p.monthLabel,
+    value: toNum(p.value),
+    monthKey: p.monthKey,
+  }));
+  const first = mapped[0];
+  if (first.value <= 0) {
+    return mapped.map(({ name, value }) => ({ name, value }));
+  }
+  const prevKey = prevAudioMonthKey(first.monthKey);
+  const baselineLabel = prevKey
+    ? audioMonthLabelFromKey(prevKey)
+    : "Start";
+  return [
+    { name: baselineLabel, value: 0 },
+    ...mapped.map(({ name, value }) => ({ name, value })),
+  ];
+}
+
 export default function AnalyticsDashboard() {
   const { ophid, headers } = useArtist();
   const [selectedContentId, setSelectedContentId] = useState(null);
@@ -189,9 +278,9 @@ useEffect(() => {
 
   const audioChartRows = rows.filter(
     (c) =>
-      (c.audio_platform_name != null &&
-        String(c.audio_platform_name).trim() !== "") ||
-      (Number(c.audio_platform_streams) || 0) > 0,
+      toNum(c.audio_platform_streams) > 0 &&
+      c.audio_platform_name != null &&
+      String(c.audio_platform_name).trim() !== "",
   );
 
   const parseDuration = (durationStr) => {
@@ -236,14 +325,16 @@ useEffect(() => {
       ]
     : [];
 
-  const AudiochartData = audioChartRows.map((c) => ({
-    name: c.audio_platform_name,
-    date: c.audioDate,
-    dateFormatted: c.audioDate
-      ? new Date(c.audioDate).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
-      : "Unknown Date",
-    value: Number(c.audio_platform_streams) || 0,
-  }));
+  const AudiochartData = audioChartRows.map((c) => {
+    const monthKey = audioMonthKeyFromDate(c.audioDate);
+    return {
+      name: c.audio_platform_name,
+      date: c.audioDate,
+      monthKey,
+      monthLabel: monthKey ? audioMonthLabelFromKey(monthKey) : "Unknown",
+      value: Number(c.audio_platform_streams) || 0,
+    };
+  });
 
   const totalDurationSeconds = chartData.reduce(
     (sum, d) => sum + toNum(d.valueDuration),
@@ -316,10 +407,13 @@ useEffect(() => {
           new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
     }
-    return Array.from(byPlatform.entries()).sort((a, b) => {
-      const sum = (pts) => pts.reduce((s, p) => s + toNum(p.value), 0);
-      return sum(b[1]) - sum(a[1]);
-    });
+    return Array.from(byPlatform.entries())
+      .map(([label, pts]) => [label, aggregateAudioPointsByMonth(pts)])
+      .sort((a, b) => {
+        const latest = (arr) =>
+          arr.length ? toNum(arr[arr.length - 1].value) : 0;
+        return latest(b[1]) - latest(a[1]);
+      });
   })();
 
   console.log("🔍 FILTER RESULTS:", {
@@ -627,24 +721,26 @@ useEffect(() => {
                   }
 
                   if (selectedStream === "Audio Platform") {
-                    chartsArray = audioPlatformChartGroups.map(
-                      ([platformLabel, points], idx) => (
+                    chartsArray = audioPlatformChartGroups
+                      .filter(([, pts]) => pts.length > 0)
+                      .map(([platformLabel, points], idx) => (
                         <Chart
                           key={`audio-${platformLabel}-${idx}`}
                           type="area"
-                          data={points.map((p) => ({
-                            name: p.dateFormatted,
-                            value: p.value,
-                          }))}
+                          data={audioChartDataWithBaseline(points)}
                           title={platformLabel}
-                          subtitle="Streams (selected period)"
-                          metric={points.reduce((s, p) => s + toNum(p.value), 0)}
+                          subtitle="Streams by month"
+                          metric={
+                            points.length
+                              ? toNum(points[points.length - 1].value)
+                              : 0
+                          }
+                          yFromZero
                           colors={[
                             AUDIO_CHART_COLORS[idx % AUDIO_CHART_COLORS.length],
                           ]}
                         />
-                      ),
-                    );
+                      ));
                   }
 
                   const paginatedCharts = getPaginatedCharts(chartsArray);
