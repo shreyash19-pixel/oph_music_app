@@ -9,8 +9,30 @@
      useEffect(() => {
        const fetchData = async () => {
          const res = await axiosApi.get("/leaderboard");
-         setTableData(res.data.data);
-         console.log(res.data.data);
+         const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+         const viewsRaw = (row) =>
+           row.total_views ?? row.Total_views ?? row.totalViews ?? null;
+         setTableData(
+           rows.map((row) => {
+             const v = viewsRaw(row);
+             const viewsDisplay =
+               v == null || v === ""
+                 ? "—"
+                 : Number.isFinite(Number(v))
+                   ? Number(v).toLocaleString()
+                   : String(v);
+             return {
+               ranks: row.ranks,
+               ophid: row.oph_id ?? row.OPH_ID ?? row.ophid ?? "",
+               stage_name: row.stage_name,
+               personal_photo: row.personal_photo,
+               location: row.location,
+               song_count: row.song_count,
+               views: viewsDisplay,
+               score: row.score,
+             };
+           }),
+         );
        };
  
        fetchData();
@@ -24,13 +46,14 @@
              title="LeaderBoard"
              data={tableData}
              includeColumns={[
+               "ranks",
+               "ophid",
                "stage_name",
                "personal_photo",
                "location",
-               "OPH_ID",
                "song_count",
+               "views",
                "score",
-               "ranks",
              ]}
              showStatusIndicator={false}
              pageSize={10}

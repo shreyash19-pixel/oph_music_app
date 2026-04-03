@@ -71,17 +71,10 @@ export default function Audio_Metrics() {
             .map((platform) => platform.name || platform)
             .filter(Boolean);
           setPlatforms(platformNames);
-          if (platformNames.length > 0 && !selectedPlatform) {
-            setSelectedPlatform(platformNames[0]);
-          }
         }
       } catch (err) {
         console.error("Failed to fetch audio platforms:", err);
-        // Fallback to initial platforms if API fails
         setPlatforms(initialPlatforms);
-        if (!selectedPlatform) {
-          setSelectedPlatform(initialPlatforms[0]);
-        }
       } finally {
         setPlatformsLoading(false);
       }
@@ -100,21 +93,29 @@ export default function Audio_Metrics() {
     return out;
   };
 
-  // helper: choose a record from an array according to rules:
-  // exact match -> unnamed (empty) -> first -> null
+  const UNASSIGNED = "";
+  /** Shown in UI for the default row (no `audio_platform_name` in DB yet). */
+  const UNASSIGNED_LABEL = "Overall metrics";
+
+  const isUnassignedRecord = (r) =>
+    r &&
+    (!r.audio_platform_name ||
+      String(r.audio_platform_name).trim() === "");
+
+  // Named platform: exact match only. Unassigned slot: only the placeholder row (empty name).
   const pickRecordForPlatform = (arr, platform) => {
     if (!Array.isArray(arr) || arr.length === 0) return null;
-    const exact = arr.find(
-      (r) => r && String(r.audio_platform_name) === String(platform),
+    const slot =
+      platform === UNASSIGNED ||
+      (typeof platform === "string" && platform.trim() === "");
+    if (slot) {
+      return arr.find((r) => isUnassignedRecord(r)) || null;
+    }
+    return (
+      arr.find(
+        (r) => r && String(r.audio_platform_name) === String(platform),
+      ) || null
     );
-    if (exact) return exact;
-    const unnamed = arr.find(
-      (r) =>
-        r &&
-        (!r.audio_platform_name || String(r.audio_platform_name).trim() === ""),
-    );
-    if (unnamed) return unnamed;
-    return arr[0] || null;
   };
 
   // fetch records only when songId changes
@@ -130,14 +131,18 @@ export default function Audio_Metrics() {
         const data = res.data.data ?? [];
         const arr = Array.isArray(data) ? data : [data];
 
-        // Note: platforms are now fetched from /get_audio_platforms API
-        // We don't override them here anymore
-
         // store full records
         setRecords(arr);
 
-        // pick record for current selectedPlatform
-        const picked = pickRecordForPlatform(arr, selectedPlatform);
+        // If only an unassigned placeholder exists, show Unassigned slot (do not map it to a named platform).
+        let picked = pickRecordForPlatform(arr, selectedPlatform);
+        if (!picked) {
+          const unnamed = arr.find((r) => isUnassignedRecord(r));
+          if (unnamed) {
+            setSelectedPlatform(UNASSIGNED);
+            picked = unnamed;
+          }
+        }
 
         if (!picked) {
           setOriginalMetrics({
@@ -176,9 +181,9 @@ export default function Audio_Metrics() {
             updated_at: picked.updated_at ?? null,
           });
 
-          // sync dropdown if needed
           if (
             picked.audio_platform_name &&
+            String(picked.audio_platform_name).trim() !== "" &&
             picked.audio_platform_name !== selectedPlatform
           ) {
             setSelectedPlatform(picked.audio_platform_name);
@@ -396,7 +401,9 @@ export default function Audio_Metrics() {
   };
 
   if (loading) return <div className="p-10 text-center">Loading...</div>;
-  const recordMissing = !originalMetrics.audio_platform_name;
+  const showCreatePlatformPrompt =
+    Boolean(String(selectedPlatform || "").trim()) &&
+    !pickRecordForPlatform(records, selectedPlatform);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -417,11 +424,14 @@ export default function Audio_Metrics() {
               {platformsLoading ? (
                 <option>Loading platforms...</option>
               ) : (
-                platforms.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))
+                <>
+                  <option value={UNASSIGNED}>{UNASSIGNED_LABEL}</option>
+                  {platforms.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </>
               )}
             </select>
 
@@ -429,7 +439,10 @@ export default function Audio_Metrics() {
               onClick={() => {
                 // force re-evaluate selection (keeps same selectedPlatform but triggers no fetch)
                 setSelectedPlatform((s) => (s ? String(s) : s));
-                toast.success("Platform selected: " + selectedPlatform);
+                toast.success(
+                  "Platform selected: " +
+                    (selectedPlatform ? selectedPlatform : UNASSIGNED_LABEL),
+                );
               }}
               className="bg-[#0d3c44] text-white px-6 py-3 rounded-xl hover:bg-[#0a2d33] transition"
             >
@@ -437,7 +450,7 @@ export default function Audio_Metrics() {
             </button>
           </div>
 
-          {recordMissing && (
+          {showCreatePlatformPrompt && (
             <div className="mt-4 p-4 border rounded-md bg-gray-50">
               <div className="text-sm text-gray-700 font-semibold mb-2">
                 No platform record found — create one
@@ -453,11 +466,14 @@ export default function Audio_Metrics() {
                   {platformsLoading ? (
                     <option>Loading platforms...</option>
                   ) : (
-                    platforms.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))
+                    <>
+                      <option value={UNASSIGNED}>{UNASSIGNED_LABEL}</option>
+                      {platforms.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </>
                   )}
                 </select>
                 <button
@@ -484,7 +500,11 @@ export default function Audio_Metrics() {
             <strong>OphID:</strong> {originalMetrics.OPH_ID} &nbsp; | &nbsp;{" "}
             <strong>SongID:</strong> {songId} &nbsp; | &nbsp;{" "}
             <strong>Platform:</strong>{" "}
-            {originalMetrics.audio_platform_name || selectedPlatform}
+            {originalMetrics.audio_platform_name ||
+              (selectedPlatform === UNASSIGNED
+                ? UNASSIGNED_LABEL
+                : selectedPlatform) ||
+              "-"}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -496,7 +516,12 @@ export default function Audio_Metrics() {
             />
             <ReadOnlyField
               label="Audio Platform Name"
-              value={originalMetrics.audio_platform_name ?? "-"}
+              value={
+                originalMetrics.audio_platform_name &&
+                String(originalMetrics.audio_platform_name).trim() !== ""
+                  ? originalMetrics.audio_platform_name
+                  : UNASSIGNED_LABEL
+              }
             />
 
             {/* Uncontrolled inputs: use refs so DOM node is stable while typing */}
@@ -573,11 +598,14 @@ export default function Audio_Metrics() {
                 .filter(
                   (r) =>
                     r &&
-                    r.audio_platform_name &&
-                    r.audio_platform_name !==
-                      originalMetrics.audio_platform_name,
+                    r.id !== originalMetrics.id,
                 )
-                .map((r) => r.audio_platform_name || "Unnamed")
+                .map((r) =>
+                  r.audio_platform_name &&
+                  String(r.audio_platform_name).trim() !== ""
+                    ? r.audio_platform_name
+                    : UNASSIGNED_LABEL,
+                )
                 .join(", ") || "-"}
             </div>
           )}

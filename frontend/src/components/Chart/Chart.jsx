@@ -1,4 +1,4 @@
-import React,{ useState } from "react";
+import React, { useId } from "react";
 import {
   LineChart,
   Line,
@@ -39,7 +39,11 @@ export default function Chart({
   stacked = false,
   showLegend = false,
   height = 200,
+  /** Area/line: lock Y axis at 0 so a flat series (e.g. 120) does not show as 108–132 ticks. */
+  yFromZero = false,
 }) {
+  const gradientId = `chart-grad-${useId().replace(/:/g, "")}`;
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-gray-900/50 rounded-lg p-4 h-[300px] flex items-center justify-center">
@@ -60,15 +64,21 @@ export default function Chart({
       tickLine: { stroke: "#374151" },
     };
 
-    // Calculate min and max values for Y-axis
-    const values = data.flatMap(d => 
-      Object.entries(d)
-        .filter(([key]) => key !== 'name')
-        .map(([, value]) => Number(value))
-    );
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const values = data
+      .flatMap((d) =>
+        Object.entries(d)
+          .filter(([key]) => key !== "name")
+          .map(([, value]) => Number(value)),
+      )
+      .filter((n) => Number.isFinite(n));
+    const minValue = values.length ? Math.min(...values) : 0;
+    const maxValue = values.length ? Math.max(...values) : 0;
     const yAxisPadding = maxValue * 0.1; // Add 10% padding
+    const yMax = Math.max(maxValue, 0);
+    const yTop = yFromZero
+      ? yMax + Math.max(yMax * 0.1, 1)
+      : maxValue + yAxisPadding;
+    const yBottom = yFromZero ? 0 : minValue - yAxisPadding;
 
     switch (type) {
       case "line":
@@ -80,9 +90,9 @@ export default function Chart({
               vertical={false}
             />
             <XAxis dataKey="name" {...commonAxisProps} />
-            <YAxis 
+            <YAxis
               {...commonAxisProps}
-              domain={[minValue - yAxisPadding, maxValue + yAxisPadding]}
+              domain={[yBottom, yTop]}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
@@ -146,23 +156,30 @@ export default function Chart({
               vertical={false}
             />
             <XAxis dataKey="name" {...commonAxisProps} />
-            <YAxis 
+            <YAxis
               {...commonAxisProps}
-              domain={[minValue - yAxisPadding, maxValue + yAxisPadding]}
+              domain={[yBottom, yTop]}
             />
             <Tooltip content={<CustomTooltip />} />
             <defs>
-              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={colors[0]} stopOpacity={0.3} />
                 <stop offset="95%" stopColor={colors[0]} stopOpacity={0.05} />
               </linearGradient>
             </defs>
             <Area
-              type="monotone"
+              type="linear"
               dataKey="value"
               stroke={colors[0]}
-              fill="url(#colorGradient)"
+              fill={`url(#${gradientId})`}
               strokeWidth={2}
+              connectNulls
+              dot={
+                yFromZero
+                  ? { r: 3, fill: colors[0], strokeWidth: 0 }
+                  : false
+              }
+              activeDot={yFromZero ? { r: 5 } : undefined}
             />
           </AreaChart>
         );

@@ -5,10 +5,127 @@ import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 
+const AUDIO_CHART_COLORS = [
+  "#22d3ee",
+  "#8959D3",
+  "#34a853",
+  "#f59e0b",
+  "#ec4899",
+  "#6366f1",
+  "#14b8a6",
+  "#f97316",
+];
+
+function sameSongId(metricSongId, selectedId) {
+  if (metricSongId == null || selectedId == null) return false;
+  const a = Number(metricSongId);
+  const b = Number(selectedId);
+  return Number.isFinite(a) && Number.isFinite(b) && a === b;
+}
+
+/** API/DB often returns numeric fields as strings; `0 + "1500"` becomes `"01500"` (wrong). */
+function toNum(v) {
+  if (v == null || v === "") return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+const AUDIO_TZ = "Asia/Kolkata";
+
+/** YYYY-MM in AUDIO_TZ for sorting / bucketing. */
+function audioMonthKeyFromDate(isoOrDate) {
+  if (isoOrDate == null || isoOrDate === "") return "";
+  const d = new Date(isoOrDate);
+  if (Number.isNaN(d.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: AUDIO_TZ,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  return y && m ? `${y}-${m}` : "";
+}
+
+/** X-axis label: month + year only (no day). */
+function audioMonthLabelFromKey(monthKey) {
+  if (!monthKey || !/^\d{4}-\d{2}$/.test(monthKey)) return "Unknown";
+  const [ys, ms] = monthKey.split("-");
+  const y = Number(ys);
+  const m = Number(ms);
+  return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("en-GB", {
+    timeZone: AUDIO_TZ,
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function prevAudioMonthKey(monthKey) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) return "";
+  const [y0, m0] = monthKey.split("-").map(Number);
+  let m = m0 - 1;
+  let y = y0;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  }
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+/** Latest snapshot per calendar month (same platform). */
+function aggregateAudioPointsByMonth(points) {
+  const byMonth = new Map();
+  for (const p of points) {
+    const key = p.monthKey || "";
+    if (!key) continue;
+    const t = p.date ? new Date(p.date).getTime() : 0;
+    const cur = byMonth.get(key);
+    if (!cur || t >= new Date(cur.date).getTime()) {
+      byMonth.set(key, {
+        monthKey: key,
+        monthLabel: p.monthLabel || audioMonthLabelFromKey(key),
+        value: toNum(p.value),
+        date: p.date,
+      });
+    }
+  }
+  return Array.from(byMonth.values()).sort((a, b) =>
+    a.monthKey.localeCompare(b.monthKey),
+  );
+}
+
+/** First month with streams > 0: prepend previous month @ 0 for a visible ramp. */
+function audioChartDataWithBaseline(monthPoints) {
+  if (!monthPoints.length) return [];
+  const sorted = [...monthPoints].sort((a, b) =>
+    a.monthKey.localeCompare(b.monthKey),
+  );
+  const mapped = sorted.map((p) => ({
+    name: p.monthLabel,
+    value: toNum(p.value),
+    monthKey: p.monthKey,
+  }));
+  const first = mapped[0];
+  if (first.value <= 0) {
+    return mapped.map(({ name, value }) => ({ name, value }));
+  }
+  const prevKey = prevAudioMonthKey(first.monthKey);
+  const baselineLabel = prevKey
+    ? audioMonthLabelFromKey(prevKey)
+    : "Start";
+  return [
+    { name: baselineLabel, value: 0 },
+    ...mapped.map(({ name, value }) => ({ name, value })),
+  ];
+}
+
 export default function AnalyticsDashboard() {
   const { ophid, headers } = useArtist();
   const [selectedContentId, setSelectedContentId] = useState(null);
-  const [contents, setContents] = useState([]);
+  const [contents, setContents] = useState({
+    dbMetrics: [],
+    s3Metrics: [],
+  });
   const [selectedContent, setSelectedContent] = useState("");
   const [streams, setStreams] = useState([]);
   const [selectedStream, setSelectedStream] = useState("");
@@ -43,37 +160,18 @@ export default function AnalyticsDashboard() {
   useEffect(() => {
     const fetchContent = async () => {
       if (!ophid) return;
-      try {
-        const response = await axiosApi.get(`/getMetricByOph?OPH_ID=${ophid}`);
-
-        setContents(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedContentId(null);
-          setSelectedContent(null);
-          console.log("RES", response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching content:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchContent();
-  }, [ophid]);
-
-  useEffect(() => {
-    const fetchContent = async () => {
-      if (!ophid) return;
       setIsLoading(true);
 
       try {
         const response = await axiosApi.get(`/getMetricByOph?OPH_ID=${ophid}`);
 
         if (response.data.success) {
-          // Store both DB and S3 metrics in state
+          const db = response.data.data;
           setContents({
-            dbMetrics: response.data.data || [],
-            s3Metrics: response.data.s3Metrics || [],
+            dbMetrics: Array.isArray(db) ? db : [],
+            s3Metrics: Array.isArray(response.data.s3Metrics)
+              ? response.data.s3Metrics
+              : [],
           });
 
           // Optionally reset selection
@@ -109,7 +207,7 @@ useEffect(() => {
       const response = await axiosApi.get(`/getVideoyId/${songId}`);
       console.log("res", response.data);
 
-      if (response.status = 200) {
+      if (response.status === 200) {
         setVideoData(response.data); // ✅ store separately for reuse
         console.log("✅ Fetched content by song ID:", response.data);
       } else {
@@ -131,26 +229,42 @@ useEffect(() => {
 
   const submitMetric = (contents.dbMetrics || [])
     .concat(contents.s3Metrics || [])
-    .map((metric) => ({
-      name: metric.song_name,
-      date: metric.updated_at || null,
-      Id: metric.Id || metric.id,
-      song_id: metric.song_id,
-      video_url: metric.video_url,
-      image_url: metric.image_url,
-      credits: metric.credits,
-      youtube_views: metric.youtube_views ?? metric.audio_platform_streams ?? 0,
-      youtube_engagement: metric.youtube_engagement ?? 0,
-      youtube_avg_view_duration: metric.youtube_avg_view_duration ?? "00:00:00",
-      youtube_revenue:
-        metric.youtube_revenue ?? metric.audio_platform_revenue ?? "0.00",
-      insta_engagement: metric.insta_engagement ?? 0,
-      Notes: metric.Notes ?? "",
-      audio_platform_name: metric.audio_platform_name ?? null,
-      audio_platform_streams: metric.audio_platform_streams ?? null,
-      audio_platform_revenue: metric.audio_platform_revenue ?? null,
-      audioDate: metric.audioDate ?? metric.updated_at ?? null,
-    }));
+    .map((metric) => {
+      const streams =
+        metric.audio_platform_streams != null &&
+        metric.audio_platform_streams !== ""
+          ? Number(metric.audio_platform_streams)
+          : null;
+      const revenueRaw = metric.audio_platform_revenue;
+      const revenueNum =
+        revenueRaw != null && revenueRaw !== ""
+          ? Number(revenueRaw)
+          : null;
+      return {
+        name: metric.song_name,
+        date: metric.updated_at || null,
+        Id: metric.Id || metric.id,
+        song_id: metric.song_id,
+        video_url: metric.video_url,
+        image_url: metric.image_url,
+        credits: metric.credits,
+        youtube_views: toNum(metric.youtube_views),
+        youtube_engagement: toNum(metric.youtube_engagement),
+        youtube_avg_view_duration:
+          metric.youtube_avg_view_duration ?? "00:00:00",
+        youtube_revenue: metric.youtube_revenue ?? "0.00",
+        insta_engagement: toNum(metric.insta_engagement),
+        Notes: metric.Notes ?? "",
+        audio_platform_name: metric.audio_platform_name ?? null,
+        audio_platform_streams: Number.isFinite(streams) ? streams : null,
+        audio_platform_revenue: Number.isFinite(revenueNum) ? revenueNum : null,
+        audioDate:
+          metric.audioDate ??
+          metric.updated_at ??
+          metric.created_at ??
+          null,
+      };
+    });
 
   console.log("Combined metrics:", submitMetric);
 
@@ -161,6 +275,13 @@ useEffect(() => {
     : selectedContent
     ? [selectedContent]
     : [];
+
+  const audioChartRows = rows.filter(
+    (c) =>
+      toNum(c.audio_platform_streams) > 0 &&
+      c.audio_platform_name != null &&
+      String(c.audio_platform_name).trim() !== "",
+  );
 
   const parseDuration = (durationStr) => {
     if (!durationStr) return 0;
@@ -204,61 +325,56 @@ useEffect(() => {
       ]
     : [];
 
-  const AudiochartData = Array.isArray(selectedContent)
-    ? selectedContent.map((c) => ({
-        name: c.audio_platform_name,
-        date: c.audioDate,
-        dateFormatted: c.audioDate
-          ? new Date(c.audioDate).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
-          : "Unknown Date",
-        value: c.audio_platform_streams,
-      }))
-    : selectedContent
-    ? [
-        {
-          name: selectedContent.audio_platform_name,
-          date: selectedContent.audioDate,
-          dateFormatted: selectedContent.audioDate
-            ? new Date(selectedContent.audioDate).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
-            : "Unknown Date",
-          value: selectedContent.audio_platform_streams,
-        },
-      ]
-    : [];
+  const AudiochartData = audioChartRows.map((c) => {
+    const monthKey = audioMonthKeyFromDate(c.audioDate);
+    return {
+      name: c.audio_platform_name,
+      date: c.audioDate,
+      monthKey,
+      monthLabel: monthKey ? audioMonthLabelFromKey(monthKey) : "Unknown",
+      value: Number(c.audio_platform_streams) || 0,
+    };
+  });
 
   const totalDurationSeconds = chartData.reduce(
-    (sum, d) => sum + (d.valueDuration || 0),
-    0
+    (sum, d) => sum + toNum(d.valueDuration),
+    0,
   );
 
   const engagementMetric = Array.isArray(selectedContent)
-    ? selectedContent.reduce((sum, c) => sum + (c.youtube_engagement || 0), 0)
-    : selectedContent?.youtube_engagement || 0;
+    ? selectedContent.reduce((sum, c) => sum + toNum(c.youtube_engagement), 0)
+    : toNum(selectedContent?.youtube_engagement);
 
   const InstagramMetric = Array.isArray(selectedContent)
-    ? selectedContent.reduce((sum, c) => sum + (c.insta_engagement || 0), 0)
-    : selectedContent?.insta_engagement || 0;
+    ? selectedContent.reduce((sum, c) => sum + toNum(c.insta_engagement), 0)
+    : toNum(selectedContent?.insta_engagement);
 
-  const AudioMetric = Array.isArray(selectedContent)
-    ? selectedContent.reduce(
-        (sum, c) => sum + (c.audio_platform_streams || 0),
-        0
-      )
-    : selectedContent?.audio_platform_streams || 0;
-
+  /** Dedupe by string id — Map treats 23 and "23" as different keys, which duplicated <option> keys. */
   const uniqueSongs = Array.from(
-    new Map(submitMetric.map((c) => [c.song_id, c])).values()
+    new Map(
+      submitMetric.flatMap((c) => {
+        const sid = c.song_id;
+        if (sid != null && String(sid).trim() !== "") {
+          return [[String(sid), c]];
+        }
+        const fid = c.Id ?? c.id;
+        if (fid != null && String(fid).trim() !== "") {
+          return [[`id-${String(fid)}`, { ...c, song_id: fid }]];
+        }
+        return [];
+      }),
+    ).values(),
   );
 
   // normalize to rows (array) and compute totals
 
   const totalRevenueINR = rows.reduce((sum, r) => {
     if (selectedStream === "Audio Platform") {
-      return sum + Number(r.audio_platform_revenue ?? 0);
-    } else if (selectedStream === "YouTube") {
-      return sum + Number(r.youtube_revenue ?? 0);
+      return sum + toNum(r.audio_platform_revenue);
     }
-    // you can add Instagram revenue if needed
+    if (selectedStream === "YouTube") {
+      return sum + toNum(r.youtube_revenue);
+    }
     return sum;
   }, 0);
 
@@ -273,6 +389,32 @@ useEffect(() => {
 
   const filteredChartData = filterByDuration(chartData, "date");
   const filteredAudioChartData = filterByDuration(AudiochartData, "date");
+
+  /** One chart per audio platform (S3 / DB rows), sorted by total streams desc. */
+  const audioPlatformChartGroups = (() => {
+    const byPlatform = new Map();
+    for (const d of filteredAudioChartData) {
+      const label =
+        d.name != null && String(d.name).trim() !== ""
+          ? String(d.name).trim()
+          : "Unknown platform";
+      if (!byPlatform.has(label)) byPlatform.set(label, []);
+      byPlatform.get(label).push(d);
+    }
+    for (const pts of byPlatform.values()) {
+      pts.sort(
+        (a, b) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
+    }
+    return Array.from(byPlatform.entries())
+      .map(([label, pts]) => [label, aggregateAudioPointsByMonth(pts)])
+      .sort((a, b) => {
+        const latest = (arr) =>
+          arr.length ? toNum(arr[arr.length - 1].value) : 0;
+        return latest(b[1]) - latest(a[1]);
+      });
+  })();
 
   console.log("🔍 FILTER RESULTS:", {
     originalChartData: chartData.length,
@@ -357,7 +499,10 @@ useEffect(() => {
                     }}
                   >
                     {durationOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <option
+                        key={`duration-${option.value}`}
+                        value={option.value}
+                      >
                         {option.label}
                       </option>
                     ))}
@@ -376,8 +521,8 @@ useEffect(() => {
                   onChange={(e) => {
                     const songId = parseInt(e.target.value, 10);
 
-                    const selectedRows = submitMetric.filter(
-                      (metric) => metric.song_id === songId
+                    const selectedRows = submitMetric.filter((metric) =>
+                      sameSongId(metric.song_id, songId),
                     );
 
                     if (selectedRows.length === 0) {
@@ -390,13 +535,13 @@ useEffect(() => {
                     setSelectedContent(selectedRows); // ✅ update displayed data immediately
                   }}
                 >
-                  <option value="" disabled>
+                  <option key="song-placeholder" value="" disabled>
                     Select a Song
                   </option>
-                  {uniqueSongs.map((uniqueContent) => (
+                  {uniqueSongs.map((uniqueContent, songIdx) => (
                     <option
-                      key={uniqueContent.song_id}
-                      value={uniqueContent.song_id.toString()}
+                      key={`song-${String(uniqueContent.song_id)}-${songIdx}`}
+                      value={String(uniqueContent.song_id)}
                     >
                       {uniqueContent.song_name || uniqueContent.name}
                     </option>
@@ -413,13 +558,13 @@ useEffect(() => {
                   value={selectedStream || ""}
                   onChange={(e) => setSelectedStream(e.target.value)}
                 >
-                  <option value="" disabled>
+                  <option key="platform-placeholder" value="" disabled>
                     Select Platform
                   </option>
                   {[
-                    { key: 1, value: "YouTube" },
-                    { key: 2, value: "Instagram" },
-                    { key: 3, value: "Audio Platform" },
+                    { key: "yt", value: "YouTube" },
+                    { key: "ig", value: "Instagram" },
+                    { key: "audio", value: "Audio Platform" },
                   ].map((platform) => (
                     <option key={platform.key} value={platform.value}>
                       {platform.value}
@@ -470,7 +615,7 @@ useEffect(() => {
                     {selectedContent
                       ? Array.isArray(selectedContent)
                         ? selectedContent.reduce(
-                            (sum, c) => sum + (Number(c.youtube_views) || 0),
+                            (sum, c) => sum + toNum(c.youtube_views),
                             0
                           )
                         : Number(selectedContent?.youtube_views || 0)
@@ -526,8 +671,8 @@ useEffect(() => {
                         title="Views"
                         subtitle="Count in Millions"
                         metric={rows.reduce(
-                          (sum, r) => sum + (r.youtube_views || 0),
-                          0
+                          (sum, r) => sum + toNum(r.youtube_views),
+                          0,
                         )}
                         colors={["#22d3ee"]}
                       />,
@@ -576,20 +721,26 @@ useEffect(() => {
                   }
 
                   if (selectedStream === "Audio Platform") {
-                    chartsArray = [
-                      <Chart
-                        key="audio"
-                        type="area"
-                        data={filteredAudioChartData.map((d) => ({
-                          name: d.date,
-                          value: d.value,
-                        }))}
-                        title={AudiochartData[0]?.name || "Audio Streams"}
-                        subtitle="Count in Millions"
-                        metric={AudioMetric}
-                        colors={["#22d3ee"]}
-                      />,
-                    ];
+                    chartsArray = audioPlatformChartGroups
+                      .filter(([, pts]) => pts.length > 0)
+                      .map(([platformLabel, points], idx) => (
+                        <Chart
+                          key={`audio-${platformLabel}-${idx}`}
+                          type="area"
+                          data={audioChartDataWithBaseline(points)}
+                          title={platformLabel}
+                          subtitle="Streams by month"
+                          metric={
+                            points.length
+                              ? toNum(points[points.length - 1].value)
+                              : 0
+                          }
+                          yFromZero
+                          colors={[
+                            AUDIO_CHART_COLORS[idx % AUDIO_CHART_COLORS.length],
+                          ]}
+                        />
+                      ));
                   }
 
                   const paginatedCharts = getPaginatedCharts(chartsArray);

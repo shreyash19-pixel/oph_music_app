@@ -4,6 +4,18 @@ import axiosApi from "../conf/axios";
 const hashCache = new Map();
 
 /**
+ * OPH id from leaderboard / API rows (field names vary by endpoint and driver).
+ */
+export const resolveLeaderboardOphId = (artist) => {
+  if (!artist || typeof artist !== "object") return "";
+  const id =
+    artist.oph_id ?? artist.OPH_ID ?? artist.ophid ?? artist.ophId;
+  if (id == null) return "";
+  const s = String(id).trim();
+  return s;
+};
+
+/**
  * Get or generate hash for an OPH ID
  * @param {string} ophId - The OPH ID
  * @returns {Promise<string>} - The hash for the OPH ID
@@ -74,7 +86,8 @@ export const getArtistHashWithRegenerate = async (ophId, regenerate = false) => 
  * @param {object|null} authHeaders - e.g. { Authorization: "Bearer ..." } when logged in
  */
 export const incrementProfileTraffic = async (ophId, authHeaders = null) => {
-  const oid = ophId != null ? String(ophId).trim() : "";
+  const oid =
+    typeof ophId === "string" ? ophId.trim() : ophId != null ? String(ophId).trim() : "";
   if (!oid) return;
   try {
     await axiosApi.post(
@@ -107,13 +120,13 @@ export const navigateToArtistDetail = async (
   try {
     const token = await getArtistHash(ophId);
     if (token) {
-      navigate(`/public-artist-detail?token=${token}`);
+      navigate(`/collaboration-artist-detail?artist=${encodeURIComponent(token)}`);
     } else {
-      navigate(`/public-artist-detail?id=${ophId}`);
+      navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
     }
   } catch (error) {
     console.error("Error navigating to artist detail:", error);
-    navigate(`/public-artist-detail?id=${ophId}`);
+    navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
   }
 };
 

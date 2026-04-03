@@ -44,7 +44,7 @@ const HeroSection = ({ handleSearch, setArtistExists, artistExists, handleFilter
           Easily find and explore artists ranked on the leaderboard.
         </h2>
 
-        {/* Search bar */}
+        {/* Search bar — commented out
         <div className="flex justify-center mt-8">
           <form
             onSubmit={handleFormSubmit}
@@ -74,6 +74,7 @@ const HeroSection = ({ handleSearch, setArtistExists, artistExists, handleFilter
             </button>
           </form>
         </div>
+        */}
 
         {/* No Found message */}
         <div className="h-6 mt-4">

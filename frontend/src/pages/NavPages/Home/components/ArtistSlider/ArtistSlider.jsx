@@ -2,49 +2,91 @@ import React, { useState, useEffect, useRef } from "react";
 import Slider from "react-slick";
 import arrowRightIc from "/assets/images/arrowRightIc.svg";
 import arrowLeftIc from "/assets/images/arrowLeftIc.svg";
-import { useSelector } from "react-redux";
 import axiosApi from "../../../../../conf/axios";
 import MusicBg from "../../../../../../public/assets/images/music_bg.png";
 import Elipse from "../../../../../../public/assets/images/elipse2.png";
 import { Image, Shimmer } from "react-shimmer";
 import ArtistProfile from "./ArtistProfile";
 
+/** Max per_page allowed by /get-top-artist (see admin kpi controller). */
+const TOP_ARTIST_PAGE_SIZE = 100;
+
 const ArtistSlider = ({ rows = 1 }) => {
   const sliderRef = useRef(null);
   const artistProfileRef = useRef(null);
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [artists, setArtists] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [autoplay, setAutoplay] = useState(false);
-  const perPage = 6;
 
   const [currArtist, setCurrentArtist] = useState(null);
 
   useEffect(() => {
-    const fetchArtists = async (page) => {
+    let cancelled = false;
+
+    const fetchAllTopArtists = async () => {
+      const merged = [];
+      const seen = new Set();
+      let totalFromApi = null;
+      let page = 1;
+
       try {
-        const response = await axiosApi.get(
-          `/get-top-artist?page=${page}&per_page=${perPage}`
-        );
-        setArtists(response.data.data);
-        console.log("Ar", response.data.data);
-        setTotalPages(response.data.pagination);
+        while (page <= 50) {
+          const response = await axiosApi.get(
+            `/get-top-artist?page=${page}&per_page=${TOP_ARTIST_PAGE_SIZE}`,
+          );
+          if (cancelled) return;
+
+          const list = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
+          const total = response.data?.total;
+          if (typeof total === "number" && Number.isFinite(total)) {
+            totalFromApi = total;
+          }
+
+          for (const row of list) {
+            const oid = String(row.oph_id ?? row.OPH_ID ?? "").trim();
+            if (!oid || seen.has(oid)) continue;
+            seen.add(oid);
+            merged.push(row);
+          }
+
+          const gotAll =
+            list.length < TOP_ARTIST_PAGE_SIZE ||
+            (totalFromApi != null && merged.length >= totalFromApi);
+          if (gotAll) break;
+          page += 1;
+        }
+
+        if (cancelled) return;
+        setArtists(merged);
+
+        if (import.meta.env.DEV) {
+          console.groupCollapsed("[ArtistSlider] get-top-artist (all pages)");
+          console.log("total from API", totalFromApi);
+          console.log("unique loaded", merged.length);
+          console.table(
+            merged.map((a) => ({
+              oph_id: a.oph_id ?? a.OPH_ID,
+              stage_name: a.stage_name,
+              total_views: a.total_views,
+            })),
+          );
+          console.groupEnd();
+        }
       } catch (error) {
         console.error("Error fetching artists:", error);
       }
     };
 
-    if (currentPage) {
-      fetchArtists(currentPage);
-    }
-  }, [currentPage]);
+    fetchAllTopArtists();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
-      setCurrentPage(newPage);
-    }
-  };
+  /** Slick infinite mode clones slides; disable when too few unique slides vs slidesToShow (~6). */
+  const useInfiniteCarousel = artists.length >= 12;
 
   const handleSliderNav = (direction) => {
     if (sliderRef.current) {
@@ -102,6 +144,10 @@ const ArtistSlider = ({ rows = 1 }) => {
               Artists trusting us to support their Music Career. Their success
               stories are just the beginning.
             </p>
+            {/* Leaderboard total line — restore useState(totalArtistCount) + setTotalArtistCount in fetch if re-enabled:
+            <p className="mt-3 text-sm font-medium text-[#5DC9DE] tabular-nums">
+              …
+            </p> */}
           </div>
           <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16 relative z-50">
             <button
@@ -136,14 +182,15 @@ const ArtistSlider = ({ rows = 1 }) => {
         {/* Slider Section */}
         <div className="relative">
           <Slider
+            key={artists.length ? `artists-${artists.length}` : "artists-empty"}
             ref={sliderRef}
             {...{
               dots: false,
               speed: 300,
-              autoplay: true,
+              autoplay: artists.length > 0,
               autoplaySpeed: 3000,
               pauseOnHover: true,
-              infinite: true,
+              infinite: useInfiniteCarousel,
               slidesToShow: 5.6,
               slidesToScroll: 1,
               arrows: false,

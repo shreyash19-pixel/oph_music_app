@@ -5,6 +5,8 @@ import axiosApi from "../../../../conf/axios";
 import { useArtist } from "../../../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
 
+const LEADERBOARD_HOME_MAX_ROWS = 10;
+
 const months = [
   "January",
   "February",
@@ -97,7 +99,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
       {/* Rows */}
       <div className="space-y-2">
         {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
-          leaderboard.map((artist, index) => (
+          leaderboard.slice(0, LEADERBOARD_HOME_MAX_ROWS).map((artist, index) => (
             <div
               key={resolveArtistId(artist) || index}
               className="flex items-center px-4 py-3 rounded-lg hover:bg-gray-900/30 transition-colors"

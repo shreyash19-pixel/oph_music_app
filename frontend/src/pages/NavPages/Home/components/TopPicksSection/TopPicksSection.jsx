@@ -140,7 +140,14 @@ const TopPicksSection = () => {
               .slice() // make a safe copy
               .sort((a, b) => a.ranks - b.ranks)
               .slice(0, 3)
-              .map((artist, index) => (
+              .map((artist, index) => {
+                const legal = String(artist.name || "").trim();
+                const stage = String(artist.stage_name || "").trim();
+                const headline = legal || stage || "Artist";
+                const showStage =
+                  Boolean(legal && stage) && legal.toLowerCase() !== stage.toLowerCase();
+
+                return (
                 <div
                   key={index}
                   className="lg:px-4 px-10 py-5 max-w-full sm:max-w-[95%]"
@@ -168,21 +175,21 @@ const TopPicksSection = () => {
                       <Image
                         src={artist.personal_photo || "/default-avatar.png"}
                         fallback={<Shimmer width={400} height={300} />}
-                        alt={artist.name || "Artist"}
+                        alt={headline}
                         NativeImgProps={{
                           className: "w-full h-full object-cover",
                         }}
                       />
                       <div className="absolute bottom-0 left-0 p-6 text-white z-10">
                         <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
-                          {artist.name}
+                          {headline}
                         </h3>
-                        <p className="text-sm text-gray-300">
-                          Stage Name:{" "}
-                          <span className="text-[#5DC9DE]">
-                            {artist.stage_name}
-                          </span>
-                        </p>
+                        {showStage && (
+                          <p className="text-sm text-gray-300">
+                            Stage name:{" "}
+                            <span className="text-[#5DC9DE]">{stage}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -226,7 +233,8 @@ const TopPicksSection = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
         </Slider>
       </div>
     </div>
