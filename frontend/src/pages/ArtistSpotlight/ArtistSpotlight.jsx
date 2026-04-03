@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { resolveLeaderboardOphId } from "../../utils/artistHash";
 
 const ARTIST_SPOTLIGHT_EMPTY_NOTE = "No Note Provided Yet.";
+const LEADERBOARD_UI_MAX_ROWS = 10;
 
 function formatReach(views) {
   const n = Number(views ?? 0);
@@ -45,6 +46,10 @@ function Leaderboard({ leaderboardData, artistId }) {
     }
   };
 
+  const rows = Array.isArray(leaderboardData)
+    ? leaderboardData.slice(0, LEADERBOARD_UI_MAX_ROWS)
+    : [];
+
   return (
     <div className="overflow-x-auto">
       <table className="w-[100%] border-separate border-spacing-y-2">
@@ -60,8 +65,8 @@ function Leaderboard({ leaderboardData, artistId }) {
           </tr>
         </thead>
         <tbody>
-          {leaderboardData &&
-            leaderboardData.map((artist, index) => (
+          {rows.length > 0 &&
+            rows.map((artist, index) => (
               <tr
                 onClick={() =>
                   incrementTraffic(resolveLeaderboardOphId(artist))
