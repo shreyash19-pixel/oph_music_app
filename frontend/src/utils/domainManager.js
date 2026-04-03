@@ -64,28 +64,36 @@ export const getOriginUrl = (path = null) => {
   return null;
 };
 
+/** Paths nginx proxies on ophcommunity.org — must not client-redirect to .com (drops SPA / query). */
+const ORG_SPA_STAY_PATHS = [
+  "/auth",
+  "/dashboard",
+  "/assets",
+  "/@",
+  "/collaboration-artist-detail",
+  "/public-artist-detail",
+];
+
+function staysOnOrgSpa(pathname) {
+  const p = pathname || "";
+  return ORG_SPA_STAY_PATHS.some((prefix) => p.startsWith(prefix));
+}
+
 /**
  * Check if we're on .org and should redirect to origin (or .com by default)
  */
 export const shouldRedirectToOrigin = () => {
   const hostname = window.location.hostname;
   const pathname = window.location.pathname;
-  
-  // Only redirect if:
-  // 1. We're on .org
-  // 2. We're NOT on an auth route (auth routes should stay on .org)
-  // 3. We're NOT on dashboard routes (dashboard can stay on .org)
-  // 4. We're NOT on assets routes
-  if (
-    hostname.includes('ophcommunity.org') &&
-    !pathname.startsWith('/auth') &&
-    !pathname.startsWith('/dashboard') &&
-    !pathname.startsWith('/assets') &&
-    !pathname.startsWith('/@')
-  ) {
-    return true;
+
+  if (!hostname.includes("ophcommunity.org")) {
+    return false;
   }
-  
-  return false;
+
+  if (staysOnOrgSpa(pathname)) {
+    return false;
+  }
+
+  return true;
 };
 
