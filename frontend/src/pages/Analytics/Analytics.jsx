@@ -23,6 +23,13 @@ function sameSongId(metricSongId, selectedId) {
   return Number.isFinite(a) && Number.isFinite(b) && a === b;
 }
 
+/** API/DB often returns numeric fields as strings; `0 + "1500"` becomes `"01500"` (wrong). */
+function toNum(v) {
+  if (v == null || v === "") return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export default function AnalyticsDashboard() {
   const { ophid, headers } = useArtist();
   const [selectedContentId, setSelectedContentId] = useState(null);
@@ -152,12 +159,12 @@ useEffect(() => {
         video_url: metric.video_url,
         image_url: metric.image_url,
         credits: metric.credits,
-        youtube_views: metric.youtube_views ?? 0,
-        youtube_engagement: metric.youtube_engagement ?? 0,
+        youtube_views: toNum(metric.youtube_views),
+        youtube_engagement: toNum(metric.youtube_engagement),
         youtube_avg_view_duration:
           metric.youtube_avg_view_duration ?? "00:00:00",
         youtube_revenue: metric.youtube_revenue ?? "0.00",
-        insta_engagement: metric.insta_engagement ?? 0,
+        insta_engagement: toNum(metric.insta_engagement),
         Notes: metric.Notes ?? "",
         audio_platform_name: metric.audio_platform_name ?? null,
         audio_platform_streams: Number.isFinite(streams) ? streams : null,
@@ -239,17 +246,17 @@ useEffect(() => {
   }));
 
   const totalDurationSeconds = chartData.reduce(
-    (sum, d) => sum + (d.valueDuration || 0),
-    0
+    (sum, d) => sum + toNum(d.valueDuration),
+    0,
   );
 
   const engagementMetric = Array.isArray(selectedContent)
-    ? selectedContent.reduce((sum, c) => sum + (c.youtube_engagement || 0), 0)
-    : selectedContent?.youtube_engagement || 0;
+    ? selectedContent.reduce((sum, c) => sum + toNum(c.youtube_engagement), 0)
+    : toNum(selectedContent?.youtube_engagement);
 
   const InstagramMetric = Array.isArray(selectedContent)
-    ? selectedContent.reduce((sum, c) => sum + (c.insta_engagement || 0), 0)
-    : selectedContent?.insta_engagement || 0;
+    ? selectedContent.reduce((sum, c) => sum + toNum(c.insta_engagement), 0)
+    : toNum(selectedContent?.insta_engagement);
 
   /** Dedupe by string id — Map treats 23 and "23" as different keys, which duplicated <option> keys. */
   const uniqueSongs = Array.from(
@@ -272,11 +279,11 @@ useEffect(() => {
 
   const totalRevenueINR = rows.reduce((sum, r) => {
     if (selectedStream === "Audio Platform") {
-      return sum + Number(r.audio_platform_revenue ?? 0);
-    } else if (selectedStream === "YouTube") {
-      return sum + Number(r.youtube_revenue ?? 0);
+      return sum + toNum(r.audio_platform_revenue);
     }
-    // you can add Instagram revenue if needed
+    if (selectedStream === "YouTube") {
+      return sum + toNum(r.youtube_revenue);
+    }
     return sum;
   }, 0);
 
@@ -310,7 +317,7 @@ useEffect(() => {
       );
     }
     return Array.from(byPlatform.entries()).sort((a, b) => {
-      const sum = (pts) => pts.reduce((s, p) => s + (Number(p.value) || 0), 0);
+      const sum = (pts) => pts.reduce((s, p) => s + toNum(p.value), 0);
       return sum(b[1]) - sum(a[1]);
     });
   })();
@@ -514,7 +521,7 @@ useEffect(() => {
                     {selectedContent
                       ? Array.isArray(selectedContent)
                         ? selectedContent.reduce(
-                            (sum, c) => sum + (Number(c.youtube_views) || 0),
+                            (sum, c) => sum + toNum(c.youtube_views),
                             0
                           )
                         : Number(selectedContent?.youtube_views || 0)
@@ -570,8 +577,8 @@ useEffect(() => {
                         title="Views"
                         subtitle="Count in Millions"
                         metric={rows.reduce(
-                          (sum, r) => sum + (r.youtube_views || 0),
-                          0
+                          (sum, r) => sum + toNum(r.youtube_views),
+                          0,
                         )}
                         colors={["#22d3ee"]}
                       />,
@@ -631,10 +638,7 @@ useEffect(() => {
                           }))}
                           title={platformLabel}
                           subtitle="Streams (selected period)"
-                          metric={points.reduce(
-                            (s, p) => s + (Number(p.value) || 0),
-                            0,
-                          )}
+                          metric={points.reduce((s, p) => s + toNum(p.value), 0)}
                           colors={[
                             AUDIO_CHART_COLORS[idx % AUDIO_CHART_COLORS.length],
                           ]}
