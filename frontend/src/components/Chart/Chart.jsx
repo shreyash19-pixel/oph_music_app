@@ -97,7 +97,7 @@ export default function Chart({
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
-              type="monotone"
+              type="step"
               dataKey="value"
               stroke={colors[0]}
               strokeWidth={2}
