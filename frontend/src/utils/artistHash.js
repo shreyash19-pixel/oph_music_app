@@ -117,16 +117,21 @@ export const navigateToArtistDetail = async (
   authHeaders = null
 ) => {
   await incrementProfileTraffic(ophId, authHeaders);
+  const toDetail = (search) =>
+    navigate({
+      pathname: "/collaboration-artist-detail",
+      search,
+    });
   try {
     const token = await getArtistHash(ophId);
     if (token) {
-      navigate(`/collaboration-artist-detail?artist=${encodeURIComponent(token)}`);
+      toDetail(`artist=${encodeURIComponent(token)}`);
     } else {
-      navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
+      toDetail(`id=${encodeURIComponent(ophId)}`);
     }
   } catch (error) {
     console.error("Error navigating to artist detail:", error);
-    navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
+    toDetail(`id=${encodeURIComponent(ophId)}`);
   }
 };
 

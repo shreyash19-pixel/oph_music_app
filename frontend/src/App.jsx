@@ -15,35 +15,35 @@ import { shouldRedirectToOrigin, getOriginUrl } from "./utils/domainManager";
 
 const DomainRedirectHandler = () => {
   const location = useLocation();
-  
+
   useEffect(() => {
-    // Check immediately on mount and route change
+    const pathAndSearch = `${location.pathname}${location.search}`;
+
     const checkAndRedirect = () => {
-      if (shouldRedirectToOrigin()) {
-        const originUrl = getOriginUrl();
-        console.log('Redirecting to origin domain:', originUrl);
-        if (originUrl) {
-          // Use replace to avoid adding to history
-          window.location.replace(originUrl);
-          return true; // Indicates redirect is happening
-        }
+      if (!shouldRedirectToOrigin()) return false;
+      // Pass explicit path+search from React Router (not window) so it matches the
+      // navigation intent; include `location.search` in deps so repeat visits with
+      // different ?artist= re-run and the delayed check does not use a stale URL.
+      const originUrl = getOriginUrl(pathAndSearch);
+      console.log("Redirecting to origin domain:", originUrl);
+      if (originUrl) {
+        window.location.replace(originUrl);
+        return true;
       }
       return false;
     };
-    
-    // Check immediately
+
     if (checkAndRedirect()) {
-      return; // Redirect is happening, don't set up timer
+      return undefined;
     }
-    
-    // Also check after a small delay (in case React Router hasn't finished)
+
     const timer = setTimeout(() => {
       checkAndRedirect();
     }, 100);
-    
+
     return () => clearTimeout(timer);
-  }, [location.pathname]);
-  
+  }, [location.pathname, location.search]);
+
   return null;
 };
 

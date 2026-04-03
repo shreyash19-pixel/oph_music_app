@@ -91,7 +91,7 @@ const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
   const esc = raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
   const key = `%${esc}%`;
   // Notes column omitted: legacy DBs use `Notes` vs `notes` and break the whole query.
-  const likeParams = [key, key, key, key, key, key, key, key, key];
+  const likeParams = [key, key, key, key, key, key, key, key];
 
   const fromWhere = `
     FROM user_details ud
@@ -116,7 +116,6 @@ const getTopSearchedArtists = async (searchQuery, page = 1, perPage = 10) => {
         OR LOWER(IFNULL(ud.contact_number, '')) LIKE LOWER(?)
         OR LOWER(IFNULL(ud.artist_type, '')) LIKE LOWER(?)
         OR LOWER(IFNULL(pd.profession, '')) LIKE LOWER(?)
-        OR LOWER(IFNULL(pd.bio, '')) LIKE LOWER(?)
       )
   `;
 
