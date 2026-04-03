@@ -39,6 +39,14 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
 
   const resolveArtistId = (artist) => artist?.oph_id || artist?.OPH_ID || artist?.ophid;
 
+  const formatReach = (views) => {
+    const n = Number(views);
+    if (Number.isNaN(n)) return "—";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K+`;
+    return n.toLocaleString();
+  };
+
   const handleProfileClick = async (artistId) => {
     if (!artistId) return;
     try {
@@ -135,7 +143,9 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
                 {artist.song_count}
               </div>
               <div className="flex-1 text-center text-gray-300">
-                {artist.score}
+                {formatReach(
+                  artist.total_views ?? artist.Total_views ?? artist.totalViews
+                )}
               </div>
               {/* Hidden on small screens */}
               <div className="flex-1 items-center justify-center sm:flex hidden">

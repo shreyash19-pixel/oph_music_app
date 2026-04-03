@@ -4,6 +4,7 @@ import axiosApi from "../../conf/axios";
 import { useSelector } from "react-redux";
 import { useArtist } from "../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
+import { resolveLeaderboardOphId } from "../../utils/artistHash";
 
 function Leaderboard({ leaderboardData, artistId }) {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ function Leaderboard({ leaderboardData, artistId }) {
   
 
   const incrementTraffic = async (artistId) => {
+    if (!artistId) return;
     try {
       const response = await axiosApi.post(
         "/increment-traffic",
@@ -51,8 +53,10 @@ function Leaderboard({ leaderboardData, artistId }) {
           {leaderboardData &&
             leaderboardData.map((artist, index) => (
               <tr
-                onClick={() => incrementTraffic(artist.oph_id)}
-                key={artist.ranks}
+                onClick={() =>
+                  incrementTraffic(resolveLeaderboardOphId(artist))
+                }
+                key={`${resolveLeaderboardOphId(artist) || "row"}-${index}`}
                 className={`rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
                   artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
                 }`}

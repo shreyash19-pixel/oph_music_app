@@ -5,7 +5,10 @@ import { Link, useNavigate } from "react-router-dom";
 import Select from "react-select";
 import axiosApi from "../../../conf/axios";
 import { Helmet } from "react-helmet";
-import { navigateToArtistDetail } from "../../../utils/artistHash";
+import {
+  navigateToArtistDetail,
+  resolveLeaderboardOphId,
+} from "../../../utils/artistHash";
 function Leaderboard() {
   const navigate = useNavigate();
 
@@ -224,7 +227,7 @@ function Leaderboard() {
               <div className="space-y-2">
                 {artists.map((artist, index) => (
                   <div
-                    key={`${title}-${artist.artist_id || artist.OPH_ID || artist.stage_name || index}`}
+                    key={`${title}-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
@@ -285,12 +288,13 @@ function Leaderboard() {
                     <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                       <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                         <button
-                          onClick={() =>
-                            navigateToArtistDetail(
-                              navigate,
-                              artist.oph_id || artist.OPH_ID,
-                            )
-                          }
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const oid = resolveLeaderboardOphId(artist);
+                            if (!oid) return;
+                            void navigateToArtistDetail(navigate, oid);
+                          }}
                           className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
                         >
                           View Profile
@@ -328,25 +332,23 @@ function Leaderboard() {
               <div className="space-y-2">
                 {artists.map((artist, index) => (
                   <div
-                    key={`${title}-mobile-${artist.artist_id || artist.OPH_ID || artist.stage_name || index}`}
+                    key={`${title}-mobile-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
                     role="button"
                     tabIndex={0}
-                    onClick={() =>
-                      navigateToArtistDetail(
-                        navigate,
-                        artist.oph_id || artist.OPH_ID,
-                      )
-                    }
+                    onClick={() => {
+                      const oid = resolveLeaderboardOphId(artist);
+                      if (!oid) return;
+                      void navigateToArtistDetail(navigate, oid);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        navigateToArtistDetail(
-                          navigate,
-                          artist.oph_id || artist.OPH_ID,
-                        );
+                        const oid = resolveLeaderboardOphId(artist);
+                        if (!oid) return;
+                        void navigateToArtistDetail(navigate, oid);
                       }
                     }}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
