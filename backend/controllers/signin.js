@@ -4,6 +4,20 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+/** DB `current_step` can be NULL; never send null/empty step to the client. */
+function coerceLoginStep(step, fallback = "/dashboard") {
+  if (step == null) return fallback;
+  const s = String(step).trim();
+  if (
+    s === "" ||
+    s.toLowerCase() === "null" ||
+    s.toLowerCase() === "undefined"
+  ) {
+    return fallback;
+  }
+  return s.startsWith("/") ? s : `/${s}`;
+}
+
 const signin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -77,6 +91,8 @@ const signin = async (req, res) => {
     } else {
       navTo = dbUser.current_step;
     }
+
+    navTo = coerceLoginStep(navTo, "/dashboard");
 
     console.log(navTo);
 
