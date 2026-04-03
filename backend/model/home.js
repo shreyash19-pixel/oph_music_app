@@ -178,8 +178,10 @@ WHERE overall_status = 'approved';
             song_id: row.song_id,
             song_name: row.song_name,
             primaryArtist: row.primary_artist,
+            primary_artist: row.primary_artist,
             total_song_views: row.total_song_views,
-            duration_in_minutes: row.audio_url,
+            audio_url: row.audio_url,
+            audio_file_url: row.audio_url,
           },
         ],
       };
@@ -188,8 +190,10 @@ WHERE overall_status = 'approved';
         song_id: row.song_id,
         song_name: row.song_name,
         primaryArtist: row.primary_artist,
+        primary_artist: row.primary_artist,
         total_song_views: row.total_song_views,
-        duration_in_minutes: row.audio_url,
+        audio_url: row.audio_url,
+        audio_file_url: row.audio_url,
       });
     }
   });
@@ -258,11 +262,20 @@ LIMIT 1;
 
     let songMap = {};
     if (rows.length !== 0) {
+      const r = rows[0];
+      let image = null;
+      if (r.image_url) {
+        try {
+          image = JSON.parse(r.image_url);
+        } catch {
+          image = r.image_url;
+        }
+      }
       songMap = {
-        song_id: rows[0].songId,
-        dateTime: rows[0].release_date,
-        EventName: rows[0].song_name,
-        image: rows[0].image_url ? JSON.parse(rows[0].image_url) : null,
+        song_id: r.songId,
+        dateTime: r.release_date,
+        EventName: r.song_name,
+        image,
       };
     }
 

@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import SongCard from "../../../../components/SongCard";
-import axiosApi from "../../../../conf/axios";
 import { useArtist } from "../../../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
+import {
+  navigateToArtistDetail,
+  resolveLeaderboardOphId,
+} from "../../../../utils/artistHash";
 
 const LEADERBOARD_HOME_MAX_ROWS = 10;
 
@@ -39,8 +42,6 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
     getCurrentMonth();
   }, []);
 
-  const resolveArtistId = (artist) => artist?.oph_id || artist?.OPH_ID || artist?.ophid;
-
   const formatReach = (views) => {
     const n = Number(views);
     if (Number.isNaN(n)) return "—";
@@ -49,27 +50,14 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
     return n.toLocaleString();
   };
 
-  const handleProfileClick = async (artistId) => {
-    if (!artistId) return;
-    try {
-      const response = await axiosApi.post(
-        "/increment-traffic",
-        { ophid: artistId, traffic_counter: 1 },
-        {
-          headers: {
-            ...(headers?.Authorization ? headers : {}),
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        navigate(`/dashboard/artist-detail?id=${artistId}`);
-      }
-    } catch (err) {
-      console.error(err);
-      navigate(`/dashboard/artist-detail?id=${artistId}`);
-    }
+  const handleProfileClick = (artist) => {
+    const oid = resolveLeaderboardOphId(artist);
+    if (!oid) return;
+    void navigateToArtistDetail(
+      navigate,
+      oid,
+      headers?.Authorization ? headers : null,
+    );
   };
 
   return (
@@ -101,9 +89,9 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
         {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
           leaderboard.slice(0, LEADERBOARD_HOME_MAX_ROWS).map((artist, index) => (
             <div
-              key={resolveArtistId(artist) || index}
+              key={resolveLeaderboardOphId(artist) || index}
               className="flex items-center px-4 py-3 rounded-lg hover:bg-gray-900/30 transition-colors"
-              onClick={() => handleProfileClick(resolveArtistId(artist))}
+              onClick={() => handleProfileClick(artist)}
             >
               <div className="flex-1">
                 {artist.ranks === 1 ? (
@@ -155,7 +143,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
                   className="px-4 py-2 text-sm text-white rounded-full bg-[#6F4FA0] hover:text-black transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleProfileClick(resolveArtistId(artist));
+                    handleProfileClick(artist);
                   }}
                 >
                   View Profile

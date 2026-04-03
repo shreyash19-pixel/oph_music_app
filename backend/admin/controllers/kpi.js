@@ -93,38 +93,69 @@ const insertOrUpdateKpiScore = async (req, res) => {
   }
 };
 
-const getTopSearchedArtistsController = async (req, res) => {
-
+const getArtistSearchFiltersController = async (req, res) => {
   try {
-    const { q } = req.query
-
-    if (!q) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields"
-      })
-    }
-
-    const response = await SongSocialMetrics.getTopSearchedArtists(q)
-
-    if (response) {
-      return res.status(201).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: response
-      })
-    }
-
-  }
-
-  catch (err) {
+    const data = await SongSocialMetrics.getArtistSearchFilterOptions();
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data,
+    });
+  } catch (err) {
     return res.status(500).json({
       success: false,
-      message: err.message
-    })
+      message: err.message,
+    });
   }
+};
 
-}
+const getTopSearchedArtistsController = async (req, res) => {
+  try {
+    const {
+      q,
+      page,
+      per_page: perPageQ,
+      perPage: perPageCamel,
+      profession,
+      location,
+    } = req.query;
+
+    const qTrim = String(q ?? "").trim();
+    const profTrim = String(profession ?? "").trim();
+    const locTrim = String(location ?? "").trim();
+
+    if (!qTrim && !profTrim && !locTrim) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Provide search text (q) and/or profession and/or location filters",
+      });
+    }
+
+    const perRaw = perPageQ ?? perPageCamel;
+    const result = await SongSocialMetrics.getTopSearchedArtists(
+      qTrim,
+      page,
+      perRaw,
+      { profession: profTrim, location: locTrim },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: result.rows,
+      total: result.total,
+      page: result.page,
+      perPage: result.perPage,
+      totalPages: result.totalPages,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 
 const getTopArtistsController = async (req, res) => {
@@ -335,6 +366,7 @@ module.exports = {
   insertOrUpdateKpiScore,
   insertKpiRunMetadata,
   getCollabArtistKpiDetailController,
+  getArtistSearchFiltersController,
   getTopSearchedArtistsController,
   getTopArtistsController,
   getArtistProfile,

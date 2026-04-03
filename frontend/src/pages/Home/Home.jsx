@@ -29,11 +29,17 @@ function Home() {
       });
 
       if (response.data.success) {
-        setUpcomingSong(response.data.data);
+        const d = response.data.data;
+        setUpcomingSong(
+          Array.isArray(d) ? d : d != null && d !== "" ? [d] : [],
+        );
+      } else {
+        setUpcomingSong([]);
       }
     } catch (err) {
       console.log(err);
       setError("Failed to Load Data. Try Again Later");
+      setUpcomingSong([]);
     } finally {
       setIsLoading(false);
     }
@@ -109,12 +115,7 @@ function Home() {
     <div>
       {/* ✅ Navbar placed at the top */}
       <div className="flex justify-end items-center p-4">
-        <NavbarRight
-          profileImage="/images/profile.png" // replace with your image path
-          onDocsClick={() => console.log("Docs clicked")}
-          onBellClick={() => console.log("Notifications clicked")}
-          onProfileClick={() => console.log("Profile clicked")}
-        />
+        <NavbarRight />
       </div>
 
       {/* ✅ Page content */}
@@ -135,10 +136,16 @@ function Home() {
           </button>
         </div>
       )}
-      {!isLoading && !error && upcomingSong && (
+      {!isLoading && !error && (
         <>
           <HeroSection
-            upcomingSong={upcomingSong}
+            upcomingSong={
+              Array.isArray(upcomingSong)
+                ? upcomingSong
+                : upcomingSong != null && upcomingSong !== ""
+                  ? [upcomingSong]
+                  : []
+            }
             upcomingEvent={upcomingEventHero}
             artistBookEvents={artistBookEvents}
           />

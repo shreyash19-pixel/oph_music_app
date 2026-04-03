@@ -12,6 +12,11 @@ import { SongDuration } from "../../ArtistSpotlight/ArtistSpotlight";
 import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
 import { resolveProfessionLabel } from "../../../utils/professionDisplay";
 import { navigateToArtistDetail } from "../../../utils/artistHash";
+import {
+  resolveSongAudioUrl,
+  songKey,
+} from "../../../utils/songAudioUrl";
+
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
   const [isPlaying, setIsPlaying] = useState(false);
@@ -19,7 +24,15 @@ const ArtistDetail = () => {
   const [videoElement, setVideoElement] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
   const audioRef = useRef(null);
+  const lastLoadedSongKeyRef = useRef(null);
+  const isSeekingRef = useRef(false);
+  const progressRafRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
+  const [activeSeekSongId, setActiveSeekSongId] = useState(null);
+  const [audioProgress, setAudioProgress] = useState({
+    current: 0,
+    duration: 0,
+  });
   const [searchParams] = useSearchParams();
   const artistParam =
     searchParams.get("artist") || searchParams.get("token");
@@ -37,24 +50,6 @@ const ArtistDetail = () => {
 
   const handleCloseModal = () => {
     setSelectedImage(null);
-  };
-  const handleDownload = async () => {
-    if (selectedImage) {
-      try {
-        const response = await fetch(selectedImage);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "image.jpg"); // This will open the "Save As" dialog
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Failed to download image:", error);
-      }
-    }
   };
 
   // Assuming `artist` is the current artist whose related artists you want
@@ -151,10 +146,10 @@ const ArtistDetail = () => {
     const video = videoRef.current?.videoElement || videoRef.current;
     if (video) {
       if (video.paused) {
-        // Pause audio when video starts playing
         if (audioRef.current && !audioRef.current.paused) {
           audioRef.current.pause();
           setPlayingSongId(null);
+          setActiveSeekSongId(null);
         }
         video.play();
         setShowButton(false);
@@ -166,43 +161,108 @@ const ArtistDetail = () => {
     }
   };
 
+  const attachAudioProgressListeners = (el, songKey) => {
+    const flushProgress = () => {
+      progressRafRef.current = null;
+      if (isSeekingRef.current) return;
+      const duration = el.duration;
+      setAudioProgress({
+        current: el.currentTime,
+        duration:
+          Number.isFinite(duration) && duration > 0 ? duration : 0,
+      });
+    };
+    const sync = () => {
+      if (isSeekingRef.current) return;
+      if (progressRafRef.current != null) return;
+      progressRafRef.current = requestAnimationFrame(flushProgress);
+    };
+    el.addEventListener("loadedmetadata", flushProgress);
+    el.addEventListener("timeupdate", sync);
+    el.addEventListener("durationchange", flushProgress);
+    el.addEventListener("playing", () => {
+      setActiveSeekSongId(songKey);
+    });
+  };
+
+  const handleSeek = (songKey, value) => {
+    const el = audioRef.current;
+    if (!el || lastLoadedSongKeyRef.current !== songKey) return;
+    const t = Number(value);
+    if (!Number.isFinite(t)) return;
+    el.currentTime = t;
+    setAudioProgress((p) => ({
+      ...p,
+      current: t,
+      duration:
+        Number.isFinite(el.duration) && el.duration > 0 ? el.duration : p.duration,
+    }));
+  };
+
   const handlePlayPause = (song) => {
+    const key = songKey(song);
+    const src = resolveSongAudioUrl(song);
+    if (!key || !src) return;
+
     const current = audioRef.current;
-    if (current && playingSongId === song.song_id) {
-      // Toggle play/pause for the same song
+
+    if (current && lastLoadedSongKeyRef.current === key) {
       if (!current.paused) {
         current.pause();
         setPlayingSongId(null);
       } else {
-        // Pause video when audio starts playing
         if (videoRef.current && !videoRef.current.paused) {
           videoRef.current.pause();
           setShowButton(true);
         }
-        current.play();
-        setPlayingSongId(song.song_id);
+        void current.play();
+        setPlayingSongId(key);
       }
-    } else {
-      // Pause video when audio starts playing
-      if (videoRef.current && !videoRef.current.paused) {
-        videoRef.current.pause();
-        setShowButton(true);
-      }
-      // New song selected
-      if (current) {
-        current.pause();
-      }
-      const newAudio = new Audio(song.audio_file_url);
-      audioRef.current = newAudio;
-      newAudio.play();
-      setPlayingSongId(song.song_id);
-
-      // Handle when the song ends
-      newAudio.onended = () => {
-        setPlayingSongId(null);
-      };
+      return;
     }
+
+    if (videoRef.current && !videoRef.current.paused) {
+      videoRef.current.pause();
+      setShowButton(true);
+    }
+    if (current) {
+      current.pause();
+    }
+
+    setActiveSeekSongId(null);
+    setAudioProgress({ current: 0, duration: 0 });
+
+    const newAudio = new Audio(src);
+    audioRef.current = newAudio;
+    lastLoadedSongKeyRef.current = key;
+    attachAudioProgressListeners(newAudio, key);
+
+    newAudio.onended = () => {
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongKeyRef.current = null;
+      setAudioProgress({ current: 0, duration: 0 });
+    };
+
+    void newAudio.play().catch(() => {
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongKeyRef.current = null;
+    });
+    setPlayingSongId(key);
   };
+
+  useEffect(() => {
+    const endSeek = () => {
+      isSeekingRef.current = false;
+    };
+    window.addEventListener("pointerup", endSeek);
+    window.addEventListener("pointercancel", endSeek);
+    return () => {
+      window.removeEventListener("pointerup", endSeek);
+      window.removeEventListener("pointercancel", endSeek);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -210,6 +270,8 @@ const ArtistDetail = () => {
         audioRef.current.pause();
       }
       setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongKeyRef.current = null;
     };
   }, []);
 
@@ -219,12 +281,13 @@ const ArtistDetail = () => {
       if (audioRef.current && !audioRef.current.paused) {
         audioRef.current.pause();
         setPlayingSongId(null);
+        setActiveSeekSongId(null);
       }
     };
 
-    window.addEventListener('pauseAllAudio', handlePauseAllAudio);
+    window.addEventListener("pauseAllAudio", handlePauseAllAudio);
     return () => {
-      window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
+      window.removeEventListener("pauseAllAudio", handlePauseAllAudio);
     };
   }, []);
 
@@ -329,10 +392,10 @@ const ArtistDetail = () => {
                   pauseOtherVideos={true}
                   onPlay={() => {
                     setShowButton(false);
-                    // Pause audio when video starts playing
                     if (audioRef.current && !audioRef.current.paused) {
                       audioRef.current.pause();
                       setPlayingSongId(null);
+                      setActiveSeekSongId(null);
                     }
                   }}
                   onPause={() => setShowButton(true)}
@@ -475,7 +538,7 @@ const ArtistDetail = () => {
               <tbody>
                 {artist?.songs.map((song, index) => (
                   <tr
-                    key={index}
+                    key={song.song_id ?? index}
                     className="border-b border-gray-800 hover:bg-gray-800/50 text-white"
                   >
                     {/* # */}
@@ -492,7 +555,7 @@ const ArtistDetail = () => {
                           {song.song_name}
                         </span>
                         <span className="text-gray-400 text-[11px] sm:text-xs">
-                          {song.primary_artist}
+                          {song.primaryArtist || song.primary_artist}
                         </span>
                       </div>
                     </td>
@@ -507,23 +570,66 @@ const ArtistDetail = () => {
                     {/* Time */}
                     <td className="py-3 px-1 text-center">
                       <div className="flex justify-center items-center h-full w-full">
-                        <SongDuration url={song.duration_in_minutes} />
+                        <SongDuration
+                          url={resolveSongAudioUrl(song)}
+                          className="tabular-nums"
+                        />
                       </div>
                     </td>
 
-                    {/* Play button */}
-                    <td className="py-3 px-1 text-center">
-                      <div className="flex justify-center items-center h-full w-full">
+                    <td className="py-3 px-1 text-center align-middle">
+                      <div className="flex flex-col items-stretch gap-1.5 min-w-[120px] sm:min-w-[160px] max-w-[240px] mx-auto">
                         <button
-                          className="min-w-[30px] w-[30px] h-[30px] flex items-center justify-center rounded-full bg-[#6F4FA0]"
+                          type="button"
+                          disabled={!resolveSongAudioUrl(song)}
+                          className="min-w-[30px] w-[30px] h-[30px] mx-auto flex items-center justify-center rounded-full bg-[#6F4FA0] disabled:opacity-40 disabled:cursor-not-allowed"
                           onClick={() => handlePlayPause(song)}
+                          aria-label={
+                            playingSongId === songKey(song) &&
+                            !audioRef.current?.paused
+                              ? "Pause"
+                              : "Play"
+                          }
                         >
-                          {playingSongId === song.id && !audioRef?.paused ? (
+                          {playingSongId === songKey(song) &&
+                          !audioRef.current?.paused ? (
                             <FaPause className="text-white" size={13} />
                           ) : (
                             <FaPlay className="text-white ml-1" size={13} />
                           )}
                         </button>
+                        <div className="h-7 w-full flex items-center touch-none px-0.5">
+                          {activeSeekSongId === songKey(song) &&
+                            audioProgress.duration > 0 && (
+                              <input
+                                type="range"
+                                min={0}
+                                max={audioProgress.duration}
+                                step={0.01}
+                                value={Math.min(
+                                  audioProgress.current,
+                                  audioProgress.duration,
+                                )}
+                                onChange={(e) =>
+                                  handleSeek(
+                                    songKey(song),
+                                    e.target.value,
+                                  )
+                                }
+                                onPointerDown={() => {
+                                  isSeekingRef.current = true;
+                                }}
+                                onMouseDown={() => {
+                                  isSeekingRef.current = true;
+                                }}
+                                onTouchStart={() => {
+                                  isSeekingRef.current = true;
+                                }}
+                                aria-label={`Seek ${song.song_name || "track"}`}
+                                className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
+                              />
+                            )}
+                        </div>
                       </div>
                     </td>
 
@@ -573,14 +679,6 @@ const ArtistDetail = () => {
                     alt="Selected"
                     className="max-w-full max-h-[80vh] rounded-md"
                   />
-                  <div className="mt-4 flex justify-center">
-                    <button
-                      onClick={handleDownload}
-                      className="bg-[#5CC8DE] text-black px-4 py-2 rounded-md "
-                    >
-                      Download Image
-                    </button>
-                  </div>
                 </div>
               </div>
             )}

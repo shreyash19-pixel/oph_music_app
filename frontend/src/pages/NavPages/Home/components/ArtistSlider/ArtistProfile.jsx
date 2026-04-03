@@ -267,7 +267,8 @@ const ArtistProfile = ({ id }) => {
                           className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0] ml-4"
                           onClick={() => handlePlayPause(song)}
                         >
-                          {playingSongId === song.song_id && !audioRef?.paused ? (
+                          {playingSongId === song.song_id &&
+                          !audioRef.current?.paused ? (
                             <FaPause className="text-white" size={13} />
                           ) : (
                             <FaPlay className="text-white ml-1" size={13} />

@@ -18,6 +18,14 @@ const isArtistRegistered = (eventId, artistBookEvents = []) =>
       (e.status === "under review" || e.status === "accepted")
   );
 
+/** API / parent may pass a single object or an array of releases; SongCard needs one object. */
+function firstUpcomingRelease(raw) {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return raw[0] ?? null;
+  if (typeof raw === "object") return raw;
+  return null;
+}
+
 const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -127,9 +135,14 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
 
       {/* <SongDetails/> */}
 
-      {Object.values(upcomingSong).length > 0  &&  (<SongCard
-        releaseData = {upcomingSong}
-      />)}
+      {(() => {
+        const row = firstUpcomingRelease(upcomingSong);
+        if (!row || typeof row !== "object") return null;
+        // Match prior visibility: show when API sent any fields (not a lone empty `{}`).
+        // Avoid requiring specific keys — `song_id` can be 0; names may be `EventName` only.
+        if (Object.keys(row).length === 0) return null;
+        return <SongCard releaseData={row} />;
+      })()}
 
       {/* Event Banner */}
       <div

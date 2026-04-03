@@ -1,15 +1,132 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import HeroSection from "./components/HeroSection";
 import MusicPlayerProfile2 from "./components/MusicPlayerProfile2";
 import ArtistSlider from "../Home/components/ArtistSlider/ArtistSlider";
 import axiosApi from "../../../conf/axios";
 import ArtistRankingTable from "./components/ArtistSeacch";
 import { Helmet } from "react-helmet";
+
+const SEARCH_PER_PAGE = 10;
+
 function Artists() {
   const [artists, setArtists] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterProfession, setFilterProfession] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [professionOptions, setProfessionOptions] = useState([]);
+  const [locationOptions, setLocationOptions] = useState([]);
+  const [searchPage, setSearchPage] = useState(1);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchTotalPages, setSearchTotalPages] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const handleSearchQueryChange = useCallback((q) => {
+    setSearchQuery(q);
+    setSearchPage(1);
+  }, []);
+
+  const handleProfessionChange = useCallback((value) => {
+    setFilterProfession(value);
+    setSearchPage(1);
+  }, []);
+
+  const handleLocationChange = useCallback((value) => {
+    setFilterLocation(value);
+    setSearchPage(1);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axiosApi.get("/artist-search-filters");
+        if (cancelled) return;
+        const data = res.data?.data;
+        setProfessionOptions(
+          Array.isArray(data?.professions) ? data.professions : [],
+        );
+        setLocationOptions(
+          Array.isArray(data?.locations) ? data.locations : [],
+        );
+      } catch (err) {
+        console.warn("Artist filter options failed:", err?.response?.data ?? err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const hasSearchOrFilters =
+    Boolean(searchQuery.trim()) ||
+    Boolean(filterProfession) ||
+    Boolean(filterLocation);
+
+  useEffect(() => {
+    if (!hasSearchOrFilters) {
+      setSearchResults([]);
+      setSearchTotal(0);
+      setSearchTotalPages(0);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      setSearchLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery.trim()) {
+          params.set("q", searchQuery.trim());
+        }
+        if (filterProfession) {
+          params.set("profession", filterProfession);
+        }
+        if (filterLocation) {
+          params.set("location", filterLocation);
+        }
+        params.set("page", String(searchPage));
+        params.set("per_page", String(SEARCH_PER_PAGE));
+
+        const res = await axiosApi.get(
+          `/get-top-searched-artist?${params.toString()}`,
+        );
+        if (cancelled) return;
+        const body = res.data;
+        const tp = Number(body.totalPages) || 0;
+        const list = body.data;
+        setSearchResults(Array.isArray(list) ? list : []);
+        setSearchTotal(Number(body.total) || 0);
+        setSearchTotalPages(tp);
+        if (tp > 0 && searchPage > tp) {
+          setSearchPage(tp);
+        }
+      } catch (err) {
+        console.error("Artist search failed:", err?.response?.data ?? err);
+        if (!cancelled) {
+          setSearchResults([]);
+          setSearchTotal(0);
+          setSearchTotalPages(0);
+        }
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    searchQuery,
+    searchPage,
+    filterProfession,
+    filterLocation,
+    hasSearchOrFilters,
+  ]);
 
   // const fetchAllArtists = async () => {
   //   setIsLoading(true);
@@ -52,12 +169,28 @@ function Artists() {
       {!isLoading && !error && (
         <div>
           {/* HeroSection will handle search */}
-          <HeroSection onSearchResults={setSearchResults} />
+          <HeroSection
+            onSearchQueryChange={handleSearchQueryChange}
+            profession={filterProfession}
+            location={filterLocation}
+            professionOptions={professionOptions}
+            locationOptions={locationOptions}
+            onProfessionChange={handleProfessionChange}
+            onLocationChange={handleLocationChange}
+          />
 
-          {/* Display search results table like Leaderboard */}
-          {searchResults.length > 0 && (
-            <ArtistRankingTable title="Search Results" data={searchResults} />
-          )}
+          {hasSearchOrFilters ? (
+            <ArtistRankingTable
+              title="Search Results"
+              data={searchResults}
+              loading={searchLoading}
+              page={searchPage}
+              totalPages={searchTotalPages}
+              total={searchTotal}
+              perPage={SEARCH_PER_PAGE}
+              onPageChange={setSearchPage}
+            />
+          ) : null}
 
           <div className="lg:px-10 px-6 xl:px-16">
             <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>

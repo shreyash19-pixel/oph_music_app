@@ -4,6 +4,20 @@ import toast from "react-hot-toast";
 import { loginUser } from "../../../API/profile";
 import { useArtist } from "../../../API/ArtistContext";
 
+/** Absolute path only — avoids navigate("null") → /auth/login/null when API sends null step. */
+function resolvePostLoginPath(step) {
+  if (step == null) return "/dashboard";
+  const s = String(step).trim();
+  if (
+    s === "" ||
+    s.toLowerCase() === "null" ||
+    s.toLowerCase() === "undefined"
+  ) {
+    return "/dashboard";
+  }
+  return s.startsWith("/") ? s : `/${s}`;
+}
+
 const SignInForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,19 +49,17 @@ const SignInForm = () => {
         // Hydrate auth context immediately (avoids post-login blank screen until refresh)
         login(response.token);
 
-        if (response.step === "/dashboard") {
-          navigate(response.step, { replace: true });
+        const path = resolvePostLoginPath(response.step);
+        if (path === "/dashboard") {
+          navigate(path, { replace: true });
         } else {
-          const path = `${response.step}`;
-          console.log(path);
-          
           navigate(path, {
+            replace: true,
             state: {
               from: "Registration",
               user_type: response.artist_type,
-              backPath : "/auth/login"
+              backPath: "/auth/login",
             },
-            replace: true,
           });
         }
       }

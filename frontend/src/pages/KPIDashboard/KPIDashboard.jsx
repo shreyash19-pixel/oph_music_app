@@ -28,28 +28,59 @@ export default function KPIDashboard() {
       const response = await axiosApi.get(`/kpi_score`);
       const allData = response.data?.data || {};
 
-      // Convert into array
-      const artists = Object.values(allData).map((item) => ({
-        ophid: item.ophid,
-        stageName: item.stageName,
-        personalPhoto: item.personalPhoto,
-        kpiScore: parseFloat(item.kpiScore),
-      }));
+      const currentId = String(ophid ?? "").trim();
 
-      // Sort by kpiScore (descending)
+      const artists = Object.values(allData).map((item) => {
+        const id =
+          item.oph_id ?? item.ophid ?? item.OPH_ID ?? item.ophId ?? "";
+        return {
+          ophId: String(id).trim(),
+          stageName: item.stageName,
+          personalPhoto: item.personalPhoto ?? item.personal_photo,
+          kpiScore: parseFloat(item.kpiScore ?? item.kpi_score ?? 0) || 0,
+        };
+      });
+
       artists.sort((a, b) => b.kpiScore - a.kpiScore);
 
-      // Find current artist
-      const index = artists.findIndex((a) => a.ophid === ophid);
+      const index = artists.findIndex((a) => a.ophId === currentId);
 
       if (index !== -1) {
-        setArtistRank(index + 1); // ranking position (1-based)
-        setArtistImage(artists[index].personalPhoto);
+        setArtistRank(index + 1);
+        const photo = artists[index].personalPhoto;
+        if (photo) setArtistImage(String(photo).trim());
+      } else {
+        setArtistRank(null);
       }
     } catch (error) {
       console.error("Error fetching ranking:", error);
     }
   };
+
+  /** KPI map only includes artists with approved songs; load photo from profile when missing. */
+  useEffect(() => {
+    if (!ophid || !headers?.Authorization || artistImage) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await axiosApi.get("/artist-spotlight/artist-info", {
+          headers,
+          params: { ophid },
+        });
+        if (cancelled) return;
+        const row = response.data?.data?.[0];
+        const photo = row?.personal_photo ?? row?.personalPhoto;
+        if (photo) setArtistImage(String(photo).trim());
+      } catch {
+        /* optional */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ophid, headers, artistImage]);
 
 
  const fetchContent = async () => {
@@ -105,6 +136,11 @@ export default function KPIDashboard() {
  };
 
 
+
+  useEffect(() => {
+    setArtistImage(null);
+    setArtistRank(null);
+  }, [ophid]);
 
   useEffect(() => {
     if (!ophid) return;
