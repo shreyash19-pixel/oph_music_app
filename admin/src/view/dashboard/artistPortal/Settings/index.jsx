@@ -93,18 +93,29 @@ const Settings = () => {
         name: newPlatform.name.trim()
       });
 
-      if (response.data?.success) {
-        // Refresh the audio platforms list
+      const d = response.data;
+      const ok =
+        d?.success === true ||
+        d?.success === 'true' ||
+        (response.status >= 200 &&
+          response.status < 300 &&
+          (d?.data?.id != null || d?.data?.name));
+
+      if (ok) {
         await fetchAudioPlatforms();
         setNewPlatform({ name: '' });
         setShowAddForm(false);
         setError(null);
       } else {
-        setError('Failed to add audio platform');
+        setError(d?.message || 'Failed to add audio platform');
       }
     } catch (err) {
       console.error('Error adding audio platform:', err);
-      setError('Failed to add audio platform');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message;
+      setError(msg || 'Failed to add audio platform');
     }
   };
 

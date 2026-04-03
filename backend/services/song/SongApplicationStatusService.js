@@ -307,6 +307,7 @@ class SongApplicationStatusService {
   async processApprovedSongHandlers(connection, songData) {
     const handlers = [
       this.insertSongSocialMetrics.bind(this),
+      this.insertSongAudioMetricsForApprovedSong.bind(this),
       this.updateSongRelease.bind(this),
       this.insertTvPublishing.bind(this),
     ];
@@ -356,6 +357,41 @@ class SongApplicationStatusService {
     );
 
     console.log(`Song social metrics initialized for song_id: ${song_id}`);
+  }
+
+  /**
+   * Handler: one placeholder row with no platform (audio_platform_name NULL).
+   * Admins assign real platforms later via Audio Metrics — each new platform INSERTs a new row;
+   * the placeholder row stays for cumulative/unassigned tracking if desired.
+   * Idempotent: skips if an unassigned row already exists for this song.
+   */
+  async insertSongAudioMetricsForApprovedSong(connection, songData) {
+    const { oph_id, song_id, song_name } = songData;
+
+    const [existingUnassigned] = await connection.query(
+      `SELECT id FROM song_audio_metrics
+       WHERE song_id = ?
+         AND (audio_platform_name IS NULL OR TRIM(audio_platform_name) = '')
+       LIMIT 1`,
+      [song_id],
+    );
+    if (Array.isArray(existingUnassigned) && existingUnassigned.length > 0) {
+      console.log(
+        `insertSongAudioMetricsForApprovedSong: placeholder already exists for song_id ${song_id}`,
+      );
+      return;
+    }
+
+    await connection.query(
+      `INSERT INTO song_audio_metrics
+        (song_id, OPH_ID, song_name, audio_platform_name, audio_platform_streams, audio_platform_revenue, created_at, updated_at)
+       VALUES (?, ?, ?, NULL, 0, 0.00, NOW(), NOW())`,
+      [song_id, oph_id, song_name || null],
+    );
+
+    console.log(
+      `Song audio metrics placeholder row created for song_id: ${song_id}`,
+    );
   }
 
   async updateSongRelease(

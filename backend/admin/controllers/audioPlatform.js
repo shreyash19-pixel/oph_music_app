@@ -19,10 +19,19 @@ const addAudioPlatform = async (req, res) => {
     }
 
     const newPlatform = await audioPlatform.addAudioPlatform(name.trim());
-    return res.status(201).json({ success: true, data: newPlatform });
+    return res.status(200).json({ success: true, data: newPlatform });
   } catch (err) {
     console.error("addAudioPlatform error", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        success: false,
+        message: "A platform with this name already exists",
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
@@ -34,7 +43,7 @@ const deleteAudioPlatform = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid id" });
     }
 
-    const affectedRows = await AudioModel.deleteAudioPlatformById(id);
+    const affectedRows = await audioPlatform.deleteAudioPlatformById(id);
     if (affectedRows === 0) {
       return res
         .status(404)
