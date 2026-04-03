@@ -13,6 +13,81 @@ const Backendaxios = axios.create({
 
 const S3_KEY = "monthly_kpi/kpi_metrics.json";
 
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function ophKey(record) {
+  const id = record?.oph_id ?? record?.OPH_ID;
+  return id == null ? "" : String(id).trim();
+}
+
+function normalizeKpiRecord(record) {
+  const id = ophKey(record);
+  if (!id) return null;
+  return { ...record, oph_id: id };
+}
+
+/** Previous calendar month bucket in updatedData (for carry-forward). */
+function getPreviousMonthBucket(updatedData, yearStr, monthName) {
+  const yi = parseInt(yearStr, 10);
+  const mi = MONTH_NAMES.indexOf(monthName);
+  if (Number.isNaN(yi) || mi < 0) return null;
+  if (mi === 0) {
+    const py = String(yi - 1);
+    const arr = updatedData[py]?.December;
+    return Array.isArray(arr) && arr.length ? { y: py, m: "December" } : null;
+  }
+  const pm = MONTH_NAMES[mi - 1];
+  const arr = updatedData[yearStr]?.[pm];
+  return Array.isArray(arr) && arr.length ? { y: yearStr, m: pm } : null;
+}
+
+/**
+ * The in-progress month must list every artist in KPI_score (like the old backups).
+ * Previously we only merged rows updated *this* month, so after a month rollover
+ * almost everyone disappeared until they were updated again.
+ */
+function applyCurrentMonthFullSnapshot(updatedData, kpiData, currentYear, currentMonthName) {
+  const y = String(currentYear);
+  if (!updatedData[y]) updatedData[y] = {};
+
+  const prev = getPreviousMonthBucket(updatedData, y, currentMonthName);
+  const byOph = new Map();
+
+  if (prev) {
+    const prevRows = updatedData[prev.y][prev.m];
+    for (const r of prevRows) {
+      const rec = normalizeKpiRecord(r);
+      if (rec) byOph.set(rec.oph_id, rec);
+    }
+    console.log(
+      `📋 Seeded ${currentMonthName} ${y} from ${prev.m} ${prev.y} (${byOph.size} rows)`,
+    );
+  }
+
+  for (const row of kpiData) {
+    const rec = normalizeKpiRecord(row);
+    if (rec) byOph.set(rec.oph_id, rec);
+  }
+
+  updatedData[y][currentMonthName] = Array.from(byOph.values());
+  console.log(
+    `✅ Full snapshot for ${currentMonthName} ${y}: ${updatedData[y][currentMonthName].length} artists (all KPI rows overlaid)`,
+  );
+}
+
 /*
 HOW TO RUN THIS FILE:
 
@@ -186,67 +261,15 @@ async function saveMonthlyKPIMetrics() {
       Object.keys(organizedData[year]).forEach(month => {
         const isCurrentMonth = (parseInt(year) === currentYear && 
                                new Date(Date.parse(year + '-' + month + '-01')).getMonth() === currentMonth);
-        const isPastMonth = (parseInt(year) < currentYear) || 
-                           (parseInt(year) === currentYear && 
-                            new Date(Date.parse(year + '-' + month + '-01')).getMonth() < currentMonth);
-
         if (isFirstRun) {
           // For first run, just use all organized data as-is
           updatedData[year][month] = organizedData[year][month];
           console.log(`FIRST RUN: Set data for ${month} ${year} with ${organizedData[year][month].length} records`);
         } else if (isCurrentMonth) {
-          // For current month, only update records that were actually updated in current month
-          if (!updatedData[year][month]) updatedData[year][month] = [];
-          
-          // Get records that were updated in current month (not just created)
-          const currentMonthUpdatedRecords = organizedData[year][month].filter(record => {
-            const updatedAt = new Date(record.updated_at);
-            const updatedYear = updatedAt.getFullYear();
-            const updatedMonth = updatedAt.getMonth();
-            return updatedYear === currentYear && updatedMonth === currentMonth;
-          });
-          
-          console.log(`Found ${currentMonthUpdatedRecords.length} records updated in current month (${month} ${year})`);
-          
-          // Update only the records that were actually updated in current month
-          currentMonthUpdatedRecords.forEach(updatedRecord => {
-            const existingIndex = updatedData[year][month].findIndex(existingRecord => 
-              existingRecord.oph_id === updatedRecord.oph_id
-            );
-            
-            if (existingIndex !== -1) {
-              updatedData[year][month][existingIndex] = updatedRecord;
-              console.log(`Updated record for OPH_ID: ${updatedRecord.oph_id} in current month (${month} ${year})`);
-            } else {
-              updatedData[year][month].push(updatedRecord);
-              console.log(`Added new record for OPH_ID: ${updatedRecord.oph_id} in current month (${month} ${year})`);
-            }
-          });
-          
-          // Add any new records that were created in current month but not updated
-          const currentMonthCreatedRecords = organizedData[year][month].filter(record => {
-            const createdAt = new Date(record.created_at);
-            const createdYear = createdAt.getFullYear();
-            const createdMonth = createdAt.getMonth();
-            const updatedAt = new Date(record.updated_at);
-            const updatedYear = updatedAt.getFullYear();
-            const updatedMonth = updatedAt.getMonth();
-            
-            // Only include if created in current month AND not updated in current month
-            return (createdYear === currentYear && createdMonth === currentMonth) && 
-                   !(updatedYear === currentYear && updatedMonth === currentMonth);
-          });
-          
-          currentMonthCreatedRecords.forEach(newRecord => {
-            const recordExists = updatedData[year][month].some(existingRecord => 
-              existingRecord.oph_id === newRecord.oph_id
-            );
-            
-            if (!recordExists) {
-              updatedData[year][month].push(newRecord);
-              console.log(`Added new record for OPH_ID: ${newRecord.oph_id} in current month (${month} ${year}) - created but not updated`);
-            }
-          });
+          // Filled by applyCurrentMonthFullSnapshot after this loop (all KPI rows + carry-forward).
+          console.log(
+            `Skipping partial merge for current month ${month} ${year} (full snapshot applied next)`,
+          );
         } else {
           // For future months, append new records without overwriting existing ones
           if (!updatedData[year][month]) updatedData[year][month] = [];
@@ -285,6 +308,13 @@ async function saveMonthlyKPIMetrics() {
       });
     });
 
+    applyCurrentMonthFullSnapshot(
+      updatedData,
+      kpiData,
+      currentYear,
+      currentMonthName,
+    );
+
     // Count final records
     let totalFinalRecords = 0;
     Object.keys(updatedData).forEach(year => {
@@ -305,7 +335,9 @@ async function saveMonthlyKPIMetrics() {
     await saveToS3(S3_KEY, updatedData);
 
     console.log(`Successfully updated KPI metrics file in S3`);
-    console.log(`Historical months are preserved, only current month (${currentMonthName} ${currentYear}) can be updated`);
+    console.log(
+      `Historical months are preserved; ${currentMonthName} ${currentYear} is a full KPI snapshot (seeded from prior month, overlaid with all KPI_score rows)`,
+    );
     console.log(`Local backup available at: ${localBackupPath}`);
   } catch (err) {
     console.error("Error updating KPI metrics:", err.message);

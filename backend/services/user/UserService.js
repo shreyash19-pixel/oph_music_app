@@ -204,6 +204,11 @@ class UserService {
       return "/auth/payment";
     }
 
+    const s = String(stepStatus).trim();
+    if (s.startsWith("/auth/")) {
+      return s;
+    }
+
     const routeMap = {
       personal_details: "/auth/create-profile/personal-details",
       professional_details: "/auth/create-profile/professional-details",
@@ -211,7 +216,7 @@ class UserService {
       payment: "/auth/payment",
     };
 
-    return routeMap[stepStatus] || "/auth/payment";
+    return routeMap[s] || "/auth/payment";
   }
 
   /**
@@ -312,6 +317,22 @@ class UserService {
         "[Navigation] Payment status is rejected, redirecting to /auth/payment",
       );
       return "/auth/payment";
+    }
+
+    // Signup initializes application_status as all "pending" while user_details.step_status
+    // holds the real first screen (default payment). Without this, login always sends users
+    // to personal-details and ignores payment-first signup.
+    if (
+      this.isStatus(user_status, "pending") &&
+      this.isStatus(professional_status, "pending") &&
+      this.isStatus(documentation_status, "pending") &&
+      this.isStatus(payment_status, "pending")
+    ) {
+      console.log(
+        "[Navigation] All application steps still pending, using step_status:",
+        user.step_status,
+      );
+      return this.mapStepStatusToRoute(user.step_status);
     }
 
     if (
