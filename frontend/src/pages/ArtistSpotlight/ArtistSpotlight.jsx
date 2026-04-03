@@ -6,6 +6,14 @@ import { useArtist } from "../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
 import { resolveLeaderboardOphId } from "../../utils/artistHash";
 
+function formatReach(views) {
+  const n = Number(views ?? 0);
+  if (!Number.isFinite(n) || n < 0) return "—";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K+`;
+  return `${n.toLocaleString()}+`;
+}
+
 function Leaderboard({ leaderboardData, artistId }) {
   const navigate = useNavigate();
   const { headers, ophid } = useArtist();
@@ -88,8 +96,13 @@ function Leaderboard({ leaderboardData, artistId }) {
                   {artist.location}
                 </td>
                 <td className="py-2 px-3 lg:px-4">{artist.song_count}</td>
-                {/* <td className="py-2 px-3 lg:px-4">{artist.total_reach}</td> */}
-                <td className="py-2 px-3 lg:px-4">{artist.score}</td>
+                <td className="py-2 px-3 lg:px-4">
+                  {formatReach(
+                    artist.total_views ??
+                      artist.Total_views ??
+                      artist.totalViews,
+                  )}
+                </td>
                 <td className="py-2 hidden lg:block px-3 lg:px-4">
                   <button className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors">
                     View Profile
@@ -411,15 +424,20 @@ export default function ArtistSpotlight() {
   }
 
   const getArtistRank = () => {
-    if (!leaderboard || !artist || !artist.oph_id) return null;
+    if (!leaderboard || !Array.isArray(leaderboard)) return null;
+    const myId = String(artist?.oph_id ?? ophid ?? "").trim();
+    if (!myId) return null;
 
-    const found = leaderboard.find(
-      (entry) =>
-        entry.OPH_ID?.toString() === artist.oph_id?.toString() ||
-        entry.ophid?.toString() === artist.oph_id?.toString(),
-    );
+    const found = leaderboard.find((entry) => {
+      const eid = resolveLeaderboardOphId(entry);
+      return eid === myId;
+    });
 
-    return found ? found.ranks || found.rank || null : null;
+    if (!found) return null;
+    const raw = found.ranks ?? found.rank;
+    if (raw == null || raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
   };
 
   useEffect(() => {
@@ -464,21 +482,25 @@ export default function ArtistSpotlight() {
                 {/* Rank Badge */}
                 {(() => {
                   const rank = getArtistRank();
-
                   const rankBgClass =
                     rank === 1
-                      ? "bg-yellow-400"
+                      ? "bg-yellow-400 text-black"
                       : rank === 2
-                        ? "bg-emerald-400"
+                        ? "bg-emerald-400 text-black"
                         : rank === 3
-                          ? "bg-cyan-400"
-                          : "bg-transparent text-white";
+                          ? "bg-cyan-400 text-black"
+                          : "bg-[#1f2937] text-white ring-2 ring-[#5DC9DE]";
 
                   return (
                     <span
-                      className={`absolute bottom-0 right-0 lg:w-9 w-6 h-6 lg:h-9 transform -rotate-12 flex items-center justify-center text-sm font-bold text-black ${rankBgClass}`}
+                      className={`absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-bold tabular-nums ${rankBgClass}`}
+                      title={
+                        rank != null
+                          ? `Leaderboard rank #${rank}`
+                          : "Not on leaderboard yet"
+                      }
                     >
-                      {rank || "🌟"}
+                      {rank != null ? rank : "NR"}
                     </span>
                   );
                 })()}

@@ -53,7 +53,7 @@ const processArtists = async () => {
 
   const backendURL = "/insert_kpi_score"; // change this if deployed
 
-  for (const artist of artistArray) {
+  const scoredRows = artistArray.map((artist) => {
     const normalized = {
       traffic: (artist.user_traffic / maxValues.user_traffic) * 100 || 0,
       songs: (artist.song_count / maxValues.song_count) * 100 || 0,
@@ -73,6 +73,15 @@ const processArtists = async () => {
       normalized.avgView * AVG_VIEW_WEIGHT
     ).toFixed(2);
 
+    return { artist, score };
+  });
+
+  const maxKpiScore = scoredRows.reduce(
+    (m, row) => Math.max(m, parseFloat(row.score) || 0),
+    0,
+  );
+
+  for (const { artist, score } of scoredRows) {
     try {
       await Backendaxios.post(backendURL, {
         OPH_ID: artist.OPH_ID,
@@ -86,6 +95,24 @@ const processArtists = async () => {
     } catch (err) {
       console.error(`Failed to insert KPI for ${artist.OPH_ID}`, err.message);
     }
+  }
+
+  try {
+    await Backendaxios.post("/insert_kpi_run_metadata", {
+      run_at: new Date().toISOString(),
+      max_user_traffic: maxValues.user_traffic,
+      max_song_count: maxValues.song_count,
+      max_total_views: maxValues.total_views,
+      max_total_accepted_events: maxValues.total_accepted_events,
+      max_avg_view_seconds: maxValues.avgViewInSeconds,
+      max_kpi_score: maxKpiScore,
+      artist_count: artistArray.length,
+    });
+    console.log(
+      `✅ KPI run metadata saved (max score ${maxKpiScore}, ${artistArray.length} artists).`,
+    );
+  } catch (err) {
+    console.error("Failed to save KPI run metadata:", err.message);
   }
 
   console.log("✅ All KPI scores inserted/updated.");

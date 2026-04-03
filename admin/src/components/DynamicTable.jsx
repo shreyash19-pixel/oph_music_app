@@ -323,8 +323,13 @@ const DynamicTable = ({
 
     if (typeof value !== "string") return String(value);
     const lowerVal = value.toLowerCase();
+    const pathForExt = lowerVal.split("?")[0].split("#")[0];
 
-    if (lowerVal.match(/\.(jpeg|jpg|png|gif|svg|webp)$/)) {
+    if (
+      pathForExt.match(
+        /\.(jpeg|jpg|png|gif|svg|webp|jfif|jpe|bmp|avif|heic|heif)$/,
+      )
+    ) {
       return (
         <img
           src={value}
@@ -332,7 +337,7 @@ const DynamicTable = ({
           className="w-16 h-16 object-cover rounded"
         />
       );
-    } else if (lowerVal.match(/\.(mp4|webm|ogg)$/)) {
+    } else if (pathForExt.match(/\.(mp4|webm|ogg)$/)) {
       return <video src={value} controls className="w-32 h-20 rounded" />;
     } else if (lowerVal.startsWith("http")) {
       return (

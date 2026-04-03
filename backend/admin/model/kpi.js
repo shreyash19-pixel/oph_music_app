@@ -282,6 +282,106 @@ const fetchmonthly = async (req, res) => {
   }
 };
 
+const getKpiRunMetadata = async () => {
+  const [rows] = await db.execute(
+    "SELECT * FROM kpi_run_metadata WHERE id = 1 LIMIT 1",
+  );
+  return rows[0] || null;
+};
+
+const getArtistKpiProfileRow = async (ophId) => {
+  const [rows] = await db.execute(
+    `SELECT
+      ud.oph_id AS oph_id,
+      ud.full_name AS full_name,
+      ud.stage_name AS stage_name,
+      ud.personal_photo AS personal_photo,
+      ud.location AS location,
+      k.user_traffic AS kpi_user_traffic,
+      k.song_count AS kpi_song_count,
+      k.total_views AS kpi_total_views,
+      k.avg_view_duration AS kpi_avg_view_duration,
+      k.total_accepted_events AS kpi_total_accepted_events,
+      k.score AS kpi_score
+    FROM user_details ud
+    LEFT JOIN KPI_score k ON ud.oph_id = k.oph_id
+    WHERE ud.oph_id = ?`,
+    [ophId],
+  );
+  return rows[0] || null;
+};
+
+const getArtistSongSocialMetricsAggregated = async (ophId) => {
+  const [rows] = await db.execute(
+    `SELECT
+      sm.song_id AS song_id,
+      MAX(COALESCE(sm.song_name, sr.Song_name)) AS song_name,
+      SUM(COALESCE(sm.youtube_views, 0)) AS youtube_views,
+      SUM(COALESCE(sm.youtube_engagement, 0)) AS youtube_engagement,
+      SEC_TO_TIME(
+        ROUND(
+          SUM(TIME_TO_SEC(COALESCE(sm.youtube_avg_view_duration, '00:00:00')))
+          / NULLIF(COUNT(*), 0)
+        )
+      ) AS youtube_avg_view_duration,
+      SUM(COALESCE(sm.youtube_revenue, 0)) AS youtube_revenue,
+      SUM(COALESCE(sm.insta_engagement, 0)) AS insta_engagement,
+      MAX(sm.updated_at) AS last_updated
+    FROM song_social_metrics sm
+    LEFT JOIN songs_register sr
+      ON sm.song_id = sr.song_id AND sr.oph_id = ?
+    WHERE sm.OPH_ID = ?
+    GROUP BY sm.song_id
+    ORDER BY sm.song_id`,
+    [ophId, ophId],
+  );
+  return rows;
+};
+
+const getCollabArtistKpiDetail = async (ophId) => {
+  const profile = await getArtistKpiProfileRow(ophId);
+  if (!profile) return null;
+  const songMetrics = await getArtistSongSocialMetricsAggregated(ophId);
+  return { profile, songMetrics };
+};
+
+const upsertKpiRunMetadata = async ({
+  run_at,
+  max_user_traffic,
+  max_song_count,
+  max_total_views,
+  max_total_accepted_events,
+  max_avg_view_seconds,
+  max_kpi_score,
+  artist_count,
+}) => {
+  await db.execute(
+    `INSERT INTO kpi_run_metadata (
+      id, run_at, max_user_traffic, max_song_count, max_total_views,
+      max_total_accepted_events, max_avg_view_seconds, max_kpi_score, artist_count
+    ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      run_at = VALUES(run_at),
+      max_user_traffic = VALUES(max_user_traffic),
+      max_song_count = VALUES(max_song_count),
+      max_total_views = VALUES(max_total_views),
+      max_total_accepted_events = VALUES(max_total_accepted_events),
+      max_avg_view_seconds = VALUES(max_avg_view_seconds),
+      max_kpi_score = VALUES(max_kpi_score),
+      artist_count = VALUES(artist_count)`,
+    [
+      run_at,
+      max_user_traffic,
+      max_song_count,
+      max_total_views,
+      max_total_accepted_events,
+      max_avg_view_seconds,
+      max_kpi_score,
+      artist_count,
+    ],
+  );
+};
+
 module.exports = {
   getMetricsSummary,
   getAllKpiScores,
@@ -290,4 +390,7 @@ module.exports = {
   getTopArtists,
   getArtistProfile,
   fetchmonthly,
+  getKpiRunMetadata,
+  upsertKpiRunMetadata,
+  getCollabArtistKpiDetail,
 };

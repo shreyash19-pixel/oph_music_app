@@ -20,6 +20,7 @@ import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import PageMediaUpload from "./view/dashboard/websiteConfig/PageMediaUpload";
 import Collab from "./view/dashboard/websiteConfig/collab";
+import CollabArtistDetail from "./view/dashboard/websiteConfig/collab/CollabArtistDetail";
 import EventAdminForm from "./view/dashboard/websiteConfig/Events";
 import Events from "./view/dashboard/websiteConfig/Events/Events";
 import LeaderBoard from "./view/dashboard/websiteConfig/leaderBoard";
@@ -469,6 +470,20 @@ function App() {
             }
           />
 
+          <Route
+            path="/Collab/:ophid"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <CollabArtistDetail />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/Collab"
             element={
