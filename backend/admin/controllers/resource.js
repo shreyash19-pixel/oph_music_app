@@ -1,6 +1,25 @@
 const Resource = require("../model/resource");
 const bucket = require("../../utils");
 
+const ALLOWED_LEARNING_AUDIENCE = new Set(["ia", "sa", "both"]);
+
+const normalizeLearningAudience = (v) => {
+  const a = String(v ?? "both").toLowerCase().trim();
+  return ALLOWED_LEARNING_AUDIENCE.has(a) ? a : "both";
+};
+
+/** OPH IDs like OPH-CAN-IA-052 use "-IA-"; specialist use "-SA-". */
+const isIndependentArtistOphid = (ophid) => /-IA-/i.test(String(ophid ?? ""));
+const isSpecialistArtistOphid = (ophid) => /-SA-/i.test(String(ophid ?? ""));
+
+const learningVisibleForOphid = (row, ophid) => {
+  const aud = normalizeLearningAudience(row.audience);
+  if (aud === "both") return true;
+  if (aud === "ia") return isIndependentArtistOphid(ophid);
+  if (aud === "sa") return isSpecialistArtistOphid(ophid);
+  return true;
+};
+
 const searchPodcasts = async (req, res) => {
   const { q } = req.query;
 
@@ -600,6 +619,7 @@ const insertLearning = async (req, res) => {
       views,
       credit_name,
       keywords,
+      audience,
     } = req.body;
 
     const videoUrl = await bucket.uploadToS3(videoFile, "Resource/Learning");
@@ -617,6 +637,7 @@ const insertLearning = async (req, res) => {
       views: parseInt(views),
       credit_name,
       keywords,
+      audience: normalizeLearningAudience(audience),
     };
 
     const insertId = await Resource.createLearning(learningData);
@@ -647,6 +668,7 @@ const updateLearningById = async (req, res) => {
       keywords,
       video_url,
       thumbnail_url,
+      audience,
     } = req.body;
 
     const updateData = {};
@@ -658,6 +680,8 @@ const updateLearningById = async (req, res) => {
     if (views) updateData.views = parseInt(views);
     if (credit_name) updateData.credit_name = credit_name;
     if (keywords) updateData.keywords = keywords;
+    if (audience !== undefined && audience !== null && audience !== "")
+      updateData.audience = normalizeLearningAudience(audience);
 
     if (videoFile) {
       updateData.video_url = await bucket.uploadToS3(
@@ -708,6 +732,28 @@ const fetchAllLearning = async (req, res) => {
   }
 };
 
+/** Learning items visible to the logged-in artist based on OPH ID (IA / SA) and row audience. */
+const fetchLearningVisibleForArtist = async (req, res) => {
+  try {
+    const ophid = req.user?.userData?.artist?.id;
+    if (!ophid) {
+      return res.status(403).json({
+        success: false,
+        message: "Artist OPH ID not found on token",
+      });
+    }
+    const videos = await Resource.getAllLearning();
+    const filtered = videos.filter((row) => learningVisibleForOphid(row, ophid));
+    res.status(200).json({ success: true, data: filtered });
+  } catch (err) {
+    console.error("Error fetching filtered Learning:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch Learning",
+    });
+  }
+};
+
 const getLearningById = async (req, res) => {
   try {
     const { learningId } = req.params;
@@ -755,6 +801,7 @@ module.exports = {
   //Learning
   insertLearning,
   fetchAllLearning,
+  fetchLearningVisibleForArtist,
   updateLearningById,
   deleteLearning,
   getLearningById,

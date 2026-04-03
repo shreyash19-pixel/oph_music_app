@@ -5,6 +5,8 @@ import axiosApi from "../../../../conf/axios";
 import { useArtist } from "../../../auth/API/ArtistContext";
 import { useNavigate } from "react-router-dom";
 
+const LEADERBOARD_HOME_MAX_ROWS = 10;
+
 const months = [
   "January",
   "February",
@@ -37,25 +39,36 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
     getCurrentMonth();
   }, []);
 
-  const handleProfileClick = async (artistId) => {
+  const resolveArtistId = (artist) => artist?.oph_id || artist?.OPH_ID || artist?.ophid;
 
-    console.log("in profile click");
-    console.log(artistId);
-    
-    // Add your view profile logic here
-     try {
-      const response = await axiosApi.post("/increment-traffic", {ophid: artistId, traffic_counter : 1} , {
-        headers: {
-          ...headers,
-          "Content-Type": "application/json",
-        },
-      });
+  const formatReach = (views) => {
+    const n = Number(views);
+    if (Number.isNaN(n)) return "—";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K+`;
+    return n.toLocaleString();
+  };
+
+  const handleProfileClick = async (artistId) => {
+    if (!artistId) return;
+    try {
+      const response = await axiosApi.post(
+        "/increment-traffic",
+        { ophid: artistId, traffic_counter: 1 },
+        {
+          headers: {
+            ...(headers?.Authorization ? headers : {}),
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.data.success) {
         navigate(`/dashboard/artist-detail?id=${artistId}`);
       }
     } catch (err) {
       console.error(err);
+      navigate(`/dashboard/artist-detail?id=${artistId}`);
     }
   };
 
@@ -86,11 +99,11 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
       {/* Rows */}
       <div className="space-y-2">
         {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
-          leaderboard.map((artist, index) => (
+          leaderboard.slice(0, LEADERBOARD_HOME_MAX_ROWS).map((artist, index) => (
             <div
-              key={artist.OPH_ID}
+              key={resolveArtistId(artist) || index}
               className="flex items-center px-4 py-3 rounded-lg hover:bg-gray-900/30 transition-colors"
-              onClick={() => handleProfileClick(artist.OPH_ID)} // Make the row clickable
+              onClick={() => handleProfileClick(resolveArtistId(artist))}
             >
               <div className="flex-1">
                 {artist.ranks === 1 ? (
@@ -132,13 +145,18 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
                 {artist.song_count}
               </div>
               <div className="flex-1 text-center text-gray-300">
-                {artist.score}
+                {formatReach(
+                  artist.total_views ?? artist.Total_views ?? artist.totalViews
+                )}
               </div>
               {/* Hidden on small screens */}
               <div className="flex-1 items-center justify-center sm:flex hidden">
                 <button
                   className="px-4 py-2 text-sm text-white rounded-full bg-[#6F4FA0] hover:text-black transition-colors"
-                  onClick={() => handleProfileClick(artist.OPH_ID)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleProfileClick(resolveArtistId(artist));
+                  }}
                 >
                   View Profile
                 </button>

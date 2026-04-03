@@ -180,11 +180,26 @@ const PaymentScreen = () => {
     }
   }, [from, lyrical_services, event_id, location.state?.project_type, location.state?.projectType]);
 
-  // Get cost from costingData by name (case-insensitive contains)
+  const normName = (s) => String(s ?? "").toLowerCase().trim();
+
+  /** Prefer exact name match, then shortest name that still contains `search` (avoids wrong row when multiple names overlap). */
+  const findCostingRowByName = (search) => {
+    const needle = normName(search);
+    if (!needle) return null;
+    const arr = (Array.isArray(costingData) ? costingData : [costingData]).filter(
+      (c) => c?.name,
+    );
+    const exact = arr.find((c) => normName(c.name) === needle);
+    if (exact) return exact;
+    const candidates = arr.filter((c) => normName(c.name).includes(needle));
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => normName(a.name).length - normName(b.name).length);
+    return candidates[0];
+  };
+
   const getCostByName = (search) => {
-    const arr = Array.isArray(costingData) ? costingData : [costingData];
-    const item = arr.find((c) => c?.name && String(c.name).toLowerCase().includes(search));
-    return item ? parseFloat(item.cost) : null;
+    const row = findCostingRowByName(search);
+    return row ? parseFloat(row.cost) : null;
   };
 
   // Function to get the appropriate amount based on the matched costing data or fallback from costing table
@@ -216,14 +231,21 @@ const PaymentScreen = () => {
   // Function to get the QR code image (from costing table)
   const getQRCodeImage = () => {
     if (matchedCosting?.qr_image_path) return matchedCosting.qr_image_path;
-    const arr = Array.isArray(costingData) ? costingData : [costingData];
-    const findByName = (search) => arr.find((c) => c?.name && String(c.name).toLowerCase().includes(search));
     let item = null;
-    if (lyrical_services) item = findByName("lyrics service") || findByName("lyrical video");
-    else if (!from || from === "Registration") item = findByName("registration");
-    else if (from === "Song Repayment" || from === "Song Registration" || from === "Date booking") item = findByName("song registration");
-    else if (from === "Release date change") item = findByName("release date change");
-    else if (from === "Special artist song registration") item = findByName("special artist");
+    if (lyrical_services)
+      item =
+        findCostingRowByName("lyrics service") || findCostingRowByName("lyrical video");
+    else if (!from || from === "Registration") item = findCostingRowByName("registration");
+    else if (
+      from === "Song Repayment" ||
+      from === "Song Registration" ||
+      from === "Date booking"
+    )
+      item = findCostingRowByName("song registration");
+    else if (from === "Release date change")
+      item = findCostingRowByName("release date change");
+    else if (from === "Special artist song registration")
+      item = findCostingRowByName("special artist");
     return item?.qr_image_path || "/qr.png";
   };
 

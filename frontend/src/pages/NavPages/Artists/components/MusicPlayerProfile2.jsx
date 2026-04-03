@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Slider from "react-slick";
 import "./TopPicksSection.css";
-import { useSelector } from "react-redux";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { Image, Shimmer } from "react-shimmer";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +13,15 @@ const MusicPlayerProfile2 = () => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const audioRef = useRef(null); // Ref for audio
-  const [artistData, setArtistData] = useState([])
+  const lastLoadedSongIdRef = useRef(null);
+  /** True while user drags seek — blocks timeupdate → setState and avoids slick re-mount jitter */
+  const isSeekingRef = useRef(false);
+  const progressRafRef = useRef(null);
+  const [artistData, setArtistData] = useState({});
+  const [loadState, setLoadState] = useState("loading"); // loading | ready | error | empty
+  /** Track whose seek UI is shown (set on first `playing` for that load). */
+  const [activeSeekSongId, setActiveSeekSongId] = useState(null);
+  const [audioProgress, setAudioProgress] = useState({ current: 0, duration: 0 });
 
   useEffect(() => {
 
@@ -23,15 +30,19 @@ const MusicPlayerProfile2 = () => {
       try{
         const response = await axiosApi.get("/kpi_score")
 
-        if(response.data.success)
+        if(response.data.success && response.data.data != null)
         {
-          setArtistData(response.data.data)
+          setArtistData(response.data.data);
+          const hasAny = Object.keys(response.data.data || {}).length > 0;
+          setLoadState(hasAny ? "ready" : "empty");
+        } else {
+          setLoadState("empty");
         }
       }
       catch(err)
       {
         console.error(err.message);
-        
+        setLoadState("error");
       }
     }
 
@@ -40,38 +51,105 @@ const MusicPlayerProfile2 = () => {
   },[])
 
   
-  const songsArray = Object.values(artistData).sort(
-    (a, b) => b.kpiScore - a.kpiScore
-  );
+  const songsArray = Object.values(artistData)
+    .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
+    .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0));
 
   const [playingSongId, setPlayingSongId] = useState(null);
+
+  const attachAudioProgressListeners = (el, songId) => {
+    const flushProgress = () => {
+      progressRafRef.current = null;
+      if (isSeekingRef.current) return;
+      const duration = el.duration;
+      setAudioProgress({
+        current: el.currentTime,
+        duration:
+          Number.isFinite(duration) && duration > 0 ? duration : 0,
+      });
+    };
+    const sync = () => {
+      if (isSeekingRef.current) return;
+      if (progressRafRef.current != null) return;
+      progressRafRef.current = requestAnimationFrame(flushProgress);
+    };
+    el.addEventListener("loadedmetadata", flushProgress);
+    el.addEventListener("timeupdate", sync);
+    el.addEventListener("durationchange", flushProgress);
+    el.addEventListener("playing", () => {
+      setActiveSeekSongId(songId);
+    });
+  };
 
   const handlePlayPause = (song) => {
     const current = audioRef.current;
 
-    if (current && playingSongId === song.songId) {
+    if (current && lastLoadedSongIdRef.current === song.songId) {
       if (!current.paused) {
         current.pause();
         setPlayingSongId(null);
       } else {
-        current.play();
+        void current.play();
         setPlayingSongId(song.songId);
       }
-    } else {
-      if (current) {
-        current.pause();
-      }
-
-      const newAudio = new Audio(song.audioUrl);
-      audioRef.current = newAudio;
-      newAudio.play();
-      setPlayingSongId(song.songId);
-
-      newAudio.onended = () => {
-        setPlayingSongId(null);
-      };
+      return;
     }
+
+    if (current) {
+      current.pause();
+    }
+
+    setActiveSeekSongId(null);
+    setAudioProgress({ current: 0, duration: 0 });
+
+    const newAudio = new Audio(song.audioUrl);
+    audioRef.current = newAudio;
+    lastLoadedSongIdRef.current = song.songId;
+    attachAudioProgressListeners(newAudio, song.songId);
+
+    newAudio.play();
+    setPlayingSongId(song.songId);
+
+    newAudio.onended = () => {
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongIdRef.current = null;
+      setAudioProgress({ current: 0, duration: 0 });
+    };
   };
+
+  const handleSeek = (songId, value) => {
+    const el = audioRef.current;
+    if (!el || lastLoadedSongIdRef.current !== songId) return;
+    const t = Number(value);
+    if (!Number.isFinite(t)) return;
+    el.currentTime = t;
+    setAudioProgress((p) => ({
+      ...p,
+      current: t,
+      duration:
+        Number.isFinite(el.duration) && el.duration > 0 ? el.duration : p.duration,
+    }));
+  };
+
+  /** Prevent react-slick from treating seek/play drags as carousel swipe (bubbles to .slick-list). */
+  const stopSlickSwipe = (e) => {
+    e.stopPropagation();
+  };
+
+  useEffect(() => {
+    const endSeek = () => {
+      isSeekingRef.current = false;
+    };
+    window.addEventListener("pointerup", endSeek);
+    window.addEventListener("pointercancel", endSeek);
+    window.addEventListener("touchend", endSeek, true);
+    return () => {
+      window.removeEventListener("pointerup", endSeek);
+      window.removeEventListener("pointercancel", endSeek);
+      window.removeEventListener("touchend", endSeek, true);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -79,6 +157,8 @@ const MusicPlayerProfile2 = () => {
         audioRef.current.pause();
       }
       setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongIdRef.current = null;
     };
   }, []);
 
@@ -88,6 +168,7 @@ const MusicPlayerProfile2 = () => {
       if (audioRef.current && !audioRef.current.paused) {
         audioRef.current.pause();
         setPlayingSongId(null);
+        setActiveSeekSongId(null);
       }
     };
 
@@ -97,26 +178,33 @@ const MusicPlayerProfile2 = () => {
     };
   }, []);
 
+  const canLoop = songsArray.length > 3;
+  const desktopSlides = Math.min(3, Math.max(1, songsArray.length));
+  const tabletSlides = Math.min(2, Math.max(1, songsArray.length));
+
   const settings = {
     dots: true,
-    infinite: true,
+    infinite: canLoop,
     speed: 500,
-    slidesToShow: 3,
+    slidesToShow: desktopSlides,
     slidesToScroll: 1,
     arrows: false,
+    adaptiveHeight: false,
     autoplay: !playingSongId, // Pause autoplay when audio playing
     autoplaySpeed: 3000,
     responsive: [
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: tabletSlides,
+          infinite: songsArray.length > tabletSlides,
         },
       },
       {
         breakpoint: 768,
         settings: {
           slidesToShow: 1,
+          infinite: songsArray.length > 1,
           centerMode: false,
         },
       },
@@ -134,7 +222,47 @@ const MusicPlayerProfile2 = () => {
     return val[(rank % 5) + 1];
   };
 
-  return songsArray.length > 0 ? (
+  const openPublicArtistProfile = (artist) => {
+    const oid = artist?.oph_id ?? artist?.OPH_ID;
+    if (!oid) return;
+    navigateToArtistDetail(navigate, oid);
+  };
+
+  if (loadState === "loading") {
+    return (
+      <div className="bg-black text-white min-h-screen py-14">
+        <div className="container mx-auto">
+          <p className="text-center text-gray-400">Loading Top Picks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <div className="bg-black text-white min-h-screen py-14">
+        <div className="container mx-auto">
+          <p className="text-center text-gray-400">
+            Could not load Top Picks. Please try again later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === "empty" || songsArray.length === 0) {
+    return (
+      <div className="bg-black text-white min-h-screen py-14">
+        <div className="container mx-auto">
+          <p className="text-center text-gray-400">
+            No spotlight tracks yet. Approved songs with audio will appear here.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="toppicks-section xl:px-16 pt-20 pb-14 bg-black z-20 relative text-white lg:px-10 px-6">
       <div className="mx-auto">
         <div className="flex justify-between">
@@ -175,9 +303,16 @@ const MusicPlayerProfile2 = () => {
         </div>
 
         <Slider ref={sliderRef} {...settings} className="gap-6">
-          {songsArray.map((artist, index) => (
+          {songsArray.map((artist, index) => {
+            const fullName = String(artist.fullName || "").trim();
+            const stageName = String(artist.stageName || "").trim();
+            const displayName = fullName || stageName || "Artist";
+            const showStageLine =
+              Boolean(fullName && stageName) && fullName !== stageName;
+
+            return (
             <div
-              key={index}
+              key={artist.oph_id || index}
               className="lg:px-4 px-5 py-5 max-w-full sm:max-w-[95%]"
             >
               <div className="relative overflow-visible rounded-xl">
@@ -191,27 +326,33 @@ const MusicPlayerProfile2 = () => {
                   </span>
                 </div>
 
-                <div
-                  className="relative h-64 hover:cursor-pointer"
-                  onClick={() => navigateToArtistDetail(navigate, artist.oph_id)}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+                <div className="relative h-64 overflow-hidden rounded-t-xl">
                   <Image
                     src={artist.personalPhoto}
-                    fallback={<Shimmer width="100%" height="100%" />}
-                    alt={artist.primaryArtist}
+                    fallback={<Shimmer width={960} height={256} />}
+                    alt={displayName}
                     NativeImgProps={{
-                      className: "w-full h-full object-cover",
+                      className: "w-full h-full object-cover pointer-events-none select-none",
                     }}
                   />
-                  <div className="absolute bottom-0 left-0 p-6 text-white">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+                  {/* Full-area hit target: increments traffic via navigateToArtistDetail, then opens public profile */}
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[1] cursor-pointer bg-transparent border-0 p-0 text-left"
+                    onClick={() => openPublicArtistProfile(artist)}
+                    aria-label={`View profile of ${displayName}`}
+                  />
+                  <div className="absolute bottom-0 left-0 p-6 text-white z-[2] pointer-events-none">
                     <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
-                      {artist.primaryArtist}
+                      {displayName}
                     </h3>
-                    <p className="text-sm text-gray-500">
-                      Stage Name:{" "}
-                      <span className="text-[#5DC9DE]">{artist.stageName}</span>
-                    </p>
+                    {showStageLine && (
+                      <p className="text-sm text-gray-500">
+                        Stage name:{" "}
+                        <span className="text-[#5DC9DE]">{stageName}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -219,7 +360,7 @@ const MusicPlayerProfile2 = () => {
                   {artist.songs.slice(0, 5).map((song, songIndex) => (
                     <div
                       key={song.songId}
-                      className="flex items-center z-40 justify-between py-3 border-b border-gray-800 last:border-0"
+                      className="flex items-start z-40 justify-between py-3 border-b border-gray-800 last:border-0"
                     >
                       <div>
                         <div className="flex items-center gap-4">
@@ -230,40 +371,77 @@ const MusicPlayerProfile2 = () => {
                             <h4 className="font-semibold">{song.songName}</h4>
                             <p className="text-sm text-gray-400">
                               {song.primaryArtist}
-                              {song.secondaryArtist.length > 0 && (
-                                <span>, {song.secondaryArtist.join(", ")}</span>
+                              {(song.secondaryArtist || []).length > 0 && (
+                                <span>, {(song.secondaryArtist || []).join(", ")}</span>
                               )}
                             </p>
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayPause(song);
-                        }}
-                        className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors ml-4"
+                      <div
+                        className="flex flex-col items-center gap-1.5 ml-4 flex-shrink-0 min-w-[104px]"
+                        onPointerDown={stopSlickSwipe}
+                        onMouseDown={stopSlickSwipe}
+                        onTouchStart={stopSlickSwipe}
+                        onTouchMove={stopSlickSwipe}
                       >
-                        {playingSongId === song.songId &&
-                        !audioRef.current?.paused ? (
-                          <FaPause className="text-black" size={11} />
-                        ) : (
-                          <FaPlay className="text-black ml-[0.5px]" size={11} />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayPause(song);
+                          }}
+                          className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors"
+                        >
+                          {playingSongId === song.songId &&
+                          !audioRef.current?.paused ? (
+                            <FaPause className="text-black" size={11} />
+                          ) : (
+                            <FaPlay className="text-black ml-[0.5px]" size={11} />
+                          )}
+                        </button>
+                        {/* Fixed-height rail so showing the seek control does not change slide height / slick position */}
+                        <div className="h-8 w-full flex items-center shrink-0 touch-none">
+                          {activeSeekSongId === song.songId &&
+                            audioProgress.duration > 0 && (
+                              <input
+                                type="range"
+                                min={0}
+                                max={audioProgress.duration}
+                                step={0.01}
+                                value={Math.min(
+                                  audioProgress.current,
+                                  audioProgress.duration,
+                                )}
+                                onChange={(e) =>
+                                  handleSeek(song.songId, e.target.value)
+                                }
+                                onPointerDown={(e) => {
+                                  stopSlickSwipe(e);
+                                  isSeekingRef.current = true;
+                                }}
+                                onMouseDown={(e) => {
+                                  stopSlickSwipe(e);
+                                  isSeekingRef.current = true;
+                                }}
+                                onTouchStart={(e) => {
+                                  stopSlickSwipe(e);
+                                  isSeekingRef.current = true;
+                                }}
+                                aria-label={`Seek ${song.songName || "track"}`}
+                                className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
+                              />
+                            )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </Slider>
-      </div>
-    </div>
-  ) : (
-    <div className="bg-black text-white min-h-screen py-14">
-      <div className="container mx-auto">
-        <p className="text-center text-gray-400">Loading Top Picks...</p>
       </div>
     </div>
   );

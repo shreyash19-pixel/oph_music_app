@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import NavLayout from "../layouts/NavLayout";
 import Home from "../pages/NavPages/Home/Home";
 import Contact from "../pages/NavPages/Contact/Contact";
@@ -22,6 +22,23 @@ import RefundPolicy from "../pages/NavPages/Legals/RefundPolicy";
 import TermsAndConditions from "../pages/NavPages/Legals/TermsAndConditions";
 import ArtistDetail from "../pages/NavPages/ArtistDetail/ArtistDetail";
 
+/** Maps legacy /public-artist-detail?token= → /collaboration-artist-detail?artist= */
+function LegacyPublicArtistDetailRedirect() {
+  const [searchParams] = useSearchParams();
+  const legacyToken = searchParams.get("token");
+  const id = searchParams.get("id");
+  const next = new URLSearchParams();
+  if (legacyToken) next.set("artist", legacyToken);
+  if (id) next.set("id", id);
+  const qs = next.toString();
+  return (
+    <Navigate
+      to={`/collaboration-artist-detail${qs ? `?${qs}` : ""}`}
+      replace
+    />
+  );
+}
+
 const NavRoutes = () => {
   return (
     <Provider store={artistStore}>
@@ -33,7 +50,14 @@ const NavRoutes = () => {
           <Route path="events/:id" element={<IndividualEvent />} />
           <Route path="payment" element={<PaymentScreen />} />
           <Route path="find-your-collaborator" element={<Artists />} />
-          <Route path="/public-artist-detail" element={<ArtistDetail />} />
+          <Route
+            path="/public-artist-detail"
+            element={<LegacyPublicArtistDetailRedirect />}
+          />
+          <Route
+            path="/collaboration-artist-detail"
+            element={<ArtistDetail />}
+          />
           <Route path="artists/:id" element={<MusicPlayerProfile />} />
           <Route
             path="/leaderboard/top-music-networking-platform-for-creators"

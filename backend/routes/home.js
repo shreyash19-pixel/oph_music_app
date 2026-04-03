@@ -11,13 +11,9 @@ const {
 
 router.get("/home/new-releases", authMiddleware, newReleasesController);
 
-//protected pages
-router.get("/get-artist-detail", authMiddleware, getArtistDetailController);
-router.get(
-  "/get-releated-artists",
-  authMiddleware,
-  getReleatedArtistsController
-);
+// Public: artist profile + related artists (works with or without login)
+router.get("/get-artist-detail", getArtistDetailController);
+router.get("/get-releated-artists", getReleatedArtistsController);
 
 //nav pages
 router.get("/get-nav-artist-detail", getArtistDetailController);

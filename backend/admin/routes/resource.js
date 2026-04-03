@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Resource = require("../controllers/resource");
+const authMiddleware = require("../../middleware/authenticate");
 const multer = require("multer");
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -84,6 +85,11 @@ router.post(
   Resource.insertLearning,
 );
 router.get("/allLearning", Resource.fetchAllLearning);
+router.get(
+  "/learning/visible-for-artist",
+  authMiddleware,
+  Resource.fetchLearningVisibleForArtist,
+);
 router.get(`/learning/:learningId`, Resource.getLearningById);
 router.put(
   "/update_learning/:learningId",

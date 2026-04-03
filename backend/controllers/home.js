@@ -24,18 +24,19 @@ const newReleasesController = async (req, res) => {
 const getArtistDetailController = async (req, res) => {
 
     try{
-        const {id, token} = req.query
+        const { id, token, artist } = req.query;
+        const hashToken = token || artist;
 
         let ophId = id;
 
-        // If token is provided, lookup OPH_ID from token
-        if(token) {
-            ophId = await getOphIdFromHash(token);
+        // If hash token (token or artist query) is provided, lookup OPH_ID
+        if (hashToken) {
+            ophId = await getOphIdFromHash(hashToken);
             
             if(!ophId) {
                 return res.status(404).json({
                     success: false,
-                    message: "Invalid or expired token"
+                    message: "Invalid or expired artist link"
                 })
             }
         }
@@ -44,7 +45,7 @@ const getArtistDetailController = async (req, res) => {
         {
             return res.status(400).json({
                 success: false,
-                message: "Missing required field (id or token)"
+                message: "Missing required field (id, token, or artist)"
             })
         }
 
@@ -58,6 +59,11 @@ const getArtistDetailController = async (req, res) => {
                 data: response
             })
         }
+
+        return res.status(404).json({
+            success: false,
+            message: "Artist details not found",
+        })
     }
     catch(err)
     {

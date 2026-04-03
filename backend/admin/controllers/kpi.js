@@ -131,16 +131,18 @@ const getTopArtistsController = async (req, res) => {
 
   try {
 
-    const response = await SongSocialMetrics.getTopArtists()
-    // const specialArtisdt
-    
-    if (response) {
-      return res.status(200).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: response,
-      })
-    }
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page, 10) || 6));
+    const { rows, total } = await SongSocialMetrics.getTopArtists(page, perPage);
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: rows,
+      pagination: totalPages,
+      total,
+    });
 
   }
 
@@ -154,22 +156,105 @@ const getTopArtistsController = async (req, res) => {
 }
 
 
+const getCollabArtistKpiDetailController = async (req, res) => {
+  try {
+    const { ophId } = req.params;
+    if (!ophId || !String(ophId).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "ophId is required",
+      });
+    }
+
+    const detail = await SongSocialMetrics.getCollabArtistKpiDetail(
+      String(ophId).trim(),
+    );
+
+    if (!detail) {
+      return res.status(404).json({
+        success: false,
+        message: "Artist not found",
+      });
+    }
+
+    let lastKpiRun = null;
+    try {
+      lastKpiRun = await SongSocialMetrics.getKpiRunMetadata();
+    } catch (metaErr) {
+      console.warn("KPI run metadata unavailable:", metaErr.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: {
+        profile: detail.profile,
+        songMetrics: detail.songMetrics,
+        lastKpiRun,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching collab artist KPI detail:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
 const fetchAllKpiScores = async (req, res) => {
   try {
-    console.log("before");
-    
     const scores = await SongSocialMetrics.getAllKpiScores();
-
-    console.log(scores);
-    
+    let lastKpiRun = null;
+    try {
+      lastKpiRun = await SongSocialMetrics.getKpiRunMetadata();
+    } catch (metaErr) {
+      console.warn("KPI run metadata unavailable:", metaErr.message);
+    }
 
     res.status(200).json({
       success: true,
       message: "Data fetched successfully",
-      data: scores
+      data: scores,
+      lastKpiRun,
     });
   } catch (error) {
     console.error("Error fetching KPI scores:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const insertKpiRunMetadata = async (req, res) => {
+  try {
+    const {
+      run_at,
+      max_user_traffic,
+      max_song_count,
+      max_total_views,
+      max_total_accepted_events,
+      max_avg_view_seconds,
+      max_kpi_score,
+      artist_count,
+    } = req.body;
+
+    if (run_at == null) {
+      return res.status(400).json({ error: "Missing run_at" });
+    }
+
+    await SongSocialMetrics.upsertKpiRunMetadata({
+      run_at: new Date(run_at),
+      max_user_traffic: Number(max_user_traffic) || 0,
+      max_song_count: Number(max_song_count) || 0,
+      max_total_views: Number(max_total_views) || 0,
+      max_total_accepted_events: Number(max_total_accepted_events) || 0,
+      max_avg_view_seconds: Number(max_avg_view_seconds) || 0,
+      max_kpi_score: Number(max_kpi_score) || 0,
+      artist_count: Number(artist_count) || 0,
+    });
+
+    res.status(200).json({ message: "KPI run metadata saved." });
+  } catch (error) {
+    console.error("Error saving KPI run metadata:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -190,7 +275,6 @@ const getArtistProfile = async (req, res) => {
     }
 
     const response = await SongSocialMetrics.getArtistProfile(id)
-    console.log(response);
     
     if(response)
     {
@@ -200,6 +284,12 @@ const getArtistProfile = async (req, res) => {
         data: response
       })
     }
+
+    return res.status(404).json({
+      success: false,
+      message: "Artist details not found",
+      data: null,
+    })
 
   }
 
@@ -243,6 +333,8 @@ module.exports = {
   getSongMetricsSummary,
   fetchAllKpiScores,
   insertOrUpdateKpiScore,
+  insertKpiRunMetadata,
+  getCollabArtistKpiDetailController,
   getTopSearchedArtistsController,
   getTopArtistsController,
   getArtistProfile,

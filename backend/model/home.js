@@ -47,9 +47,40 @@ const newReleases = async () => {
 };
 
 const getReleatedArtists = async (profession) => {
+  if (
+    profession === undefined ||
+    profession === null ||
+    String(profession).trim() === ""
+  ) {
+    return [];
+  }
+  const q = String(profession).trim();
+  const isNumericId = /^[0-9]+$/.test(q);
+
   const [rows] = await db.execute(
-    "SELECT ud.oph_id, ud.personal_photo, ud.stage_name, kpi.total_views FROM user_details ud LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id WHERE pd.Profession = ?",
-    [profession],
+    `SELECT
+       ud.oph_id AS oph_id,
+       ud.oph_id AS ophid,
+       ud.personal_photo,
+       ud.stage_name,
+       IFNULL(kpi.total_views, 0) AS total_views
+     FROM user_details ud
+     INNER JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
+     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
+     WHERE ${
+       isNumericId
+         ? `(
+             TRIM(CAST(pd.Profession AS CHAR)) = TRIM(?)
+             OR CAST(pd.Profession AS UNSIGNED) = ?
+             OR LOWER(TRIM(CAST(pd.Profession AS CHAR))) = LOWER(
+               (SELECT TRIM(name) FROM professions WHERE id = ? LIMIT 1)
+             )
+           )`
+         : `LOWER(TRIM(CAST(pd.Profession AS CHAR))) = LOWER(TRIM(?))`
+     }
+     ORDER BY IFNULL(kpi.total_views, 0) DESC
+     LIMIT 48`,
+    isNumericId ? [q, Number(q), Number(q)] : [q],
   );
   return rows;
 };
@@ -78,7 +109,7 @@ const getArtistDetail = async (ophid) => {
     sas.overall_status AS overall_status,
     SUM(ssm.youtube_views) AS total_song_views
   FROM user_details ud
-  LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
+  LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
   LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
   LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
   LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
@@ -129,6 +160,7 @@ WHERE overall_status = 'approved';
 
     if (!songMap[ophid]) {
       songMap[ophid] = {
+        oph_id: ophid,
         name: row.name,
         photos: JSON.parse(row.photos),
         personal_photo: row.personal_photo,
@@ -162,7 +194,51 @@ WHERE overall_status = 'approved';
     }
   });
 
-  return songMap[ophid];
+  if (songMap[ophid]) {
+    return songMap[ophid];
+  }
+
+  const [fb] = await db.execute(
+    `SELECT ud.oph_id, ud.full_name AS name, pd.photo_urls AS photos, ud.personal_photo, ud.stage_name,
+            pd.video_url AS video_bio, pd.profession AS profession, ud.location, IFNULL(kpi.total_views, 0) AS total_views,
+            pd.bio AS bio, pd.facebook_link AS facebook_url, pd.instagram_link AS instagram_url
+     FROM user_details ud
+     LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
+     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID
+     WHERE ud.oph_id = ?
+     LIMIT 1`,
+    [ophid],
+  );
+  if (!fb || fb.length === 0) {
+    return null;
+  }
+  const row = fb[0];
+  let photos = [];
+  try {
+    photos = row.photos ? JSON.parse(row.photos) : [];
+  } catch {
+    photos = [];
+  }
+  if (!Array.isArray(photos) || photos.length === 0) {
+    photos = row.personal_photo ? [row.personal_photo] : [];
+  }
+
+  return {
+    oph_id: ophid,
+    name: row.name,
+    photos,
+    personal_photo: row.personal_photo,
+    stage_name: row.stage_name,
+    video_bio: row.video_bio,
+    profession: row.profession,
+    location: row.location,
+    total_views: row.total_views,
+    total_content: parseInt(totalSongs, 10) || 0,
+    bio: row.bio,
+    facebook_url: row.facebook_url,
+    instagram_url: row.instagram_url,
+    songs: [],
+  };
 };
 
 const getUpcomingSong = async (ophid) => {

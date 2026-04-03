@@ -16,6 +16,7 @@
 require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
+const { pathToFileURL } = require("url");
 
 // Ensure logs directory exists
 const logsDir = path.join(__dirname, "../logs");
@@ -145,39 +146,33 @@ function completeTask(success = true, message = '') {
   process.exit(success ? 0 : 1);
 }
 
-try {
-  // Import and run the task
-  // For ES modules (kpi.js, leaderboard.js), we'll need to handle them differently
-  if (taskFileName === 'kpi.js' || taskFileName === 'leaderboard.js') {
-    // These are ES modules, need to use dynamic import
-    // Note: These scripts auto-execute, so we just need to wait for them
-    log(`Loading ES module: ${taskFilePath}`);
-    
-    import(taskFilePath)
-      .then(() => {
-        // ES modules that auto-execute - wait a bit for async operations to complete
-        // The scripts themselves handle their own async operations
-        log(`ES module loaded, waiting for async operations to complete...`);
-        setTimeout(() => {
-          completeTask(true);
-        }, 10000); // Give 10 seconds for async operations
-      })
-      .catch((err) => {
-        completeTask(false, err.message + '\n' + (err.stack || ''));
-      });
-  } else {
-    // These are CommonJS modules that auto-execute
+(async () => {
+  try {
+    if (taskFileName === "kpi.js" || taskFileName === "leaderboard.js") {
+      const fileUrl = pathToFileURL(taskFilePath).href;
+      log(`Loading ES module: ${taskFilePath}`);
+      const mod = await import(fileUrl);
+      if (typeof mod.default !== "function") {
+        completeTask(
+          false,
+          `${taskFileName} must export default async function (got: ${typeof mod.default})`
+        );
+        return;
+      }
+      log("Awaiting ES module default() until all HTTP work finishes...");
+      await mod.default();
+      completeTask(true);
+      return;
+    }
+
     log(`Loading CommonJS module: ${taskFilePath}`);
     require(taskFilePath);
-    
-    // For monthly scripts that auto-run, wait for async operations
-    // They have their own async functions that complete
     log(`CommonJS module loaded, waiting for async operations to complete...`);
     setTimeout(() => {
       completeTask(true);
-    }, 60000); // Give 60 seconds for monthly scripts (they do S3 operations)
+    }, 60000);
+  } catch (err) {
+    completeTask(false, err.message + "\n" + (err.stack || ""));
   }
-} catch (err) {
-  completeTask(false, err.message + '\n' + (err.stack || ''));
-}
+})();
 

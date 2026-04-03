@@ -1,11 +1,54 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import HeroSection from "./components/HeroSection";
-import { useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import axiosApi from "../../../conf/axios";
 import { Helmet } from "react-helmet";
-import { navigateToArtistDetail } from "../../../utils/artistHash";
+import {
+  navigateToArtistDetail,
+  resolveLeaderboardOphId,
+} from "../../../utils/artistHash";
+
+/** Full month names as stored in monthly_kpi/leaderboard.json */
+const MONTH_INDEX = {
+  January: 0,
+  February: 1,
+  March: 2,
+  April: 3,
+  May: 4,
+  June: 5,
+  July: 6,
+  August: 7,
+  September: 8,
+  October: 9,
+  November: 10,
+  December: 11,
+};
+
+function sortMonthEntriesLatestFirst(entries) {
+  return [...entries].sort((a, b) => {
+    const ia = MONTH_INDEX[a[0]];
+    const ib = MONTH_INDEX[b[0]];
+    const va = ia === undefined ? -1 : ia;
+    const vb = ib === undefined ? -1 : ib;
+    return vb - va;
+  });
+}
+
+const LEADERBOARD_TOP_PER_MONTH = 10;
+
+/** Best rank first, then take first N (API order may vary). */
+function getTopArtistsForMonth(artists) {
+  if (!Array.isArray(artists)) return [];
+  return [...artists]
+    .sort((a, b) => {
+      const ra = Number(a?.ranks ?? a?.rank ?? 1e9);
+      const rb = Number(b?.ranks ?? b?.rank ?? 1e9);
+      return ra - rb;
+    })
+    .slice(0, LEADERBOARD_TOP_PER_MONTH);
+}
+
 function Leaderboard() {
   const navigate = useNavigate();
 
@@ -26,6 +69,11 @@ function Leaderboard() {
   const [uniqueRanks, setUniqueRanks] = useState([]);
   // const [uniqueProfessions, setUniqueProfessions] = useState([]);
   const getCurrentYear = new Date().getFullYear();
+
+  const leaderboardMonthEntries = useMemo(
+    () => sortMonthEntriesLatestFirst(Object.entries(artistsData)),
+    [artistsData],
+  );
 
   useEffect(() => {
     const fetchArtist = async () => {
@@ -195,7 +243,9 @@ function Leaderboard() {
           <div className="lg:px-10 px-6 xl:px-16">
             <div className="container w-full mb-8 h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
           </div>
-          {Object.entries(artistsData).map(([title, artists]) => (
+          {leaderboardMonthEntries.map(([title, artists]) => {
+            const topArtists = getTopArtistsForMonth(artists);
+            return (
             <div
               key={title}
               className="bg-black hidden sm:block p-4 md:px-10 xl:px-16 text-white"
@@ -222,9 +272,9 @@ function Leaderboard() {
 
               {/* Artist Rows */}
               <div className="space-y-2">
-                {artists.map((artist, index) => (
+                {topArtists.map((artist, index) => (
                   <div
-                    key={`${title}-${artist.artist_id || artist.OPH_ID || artist.stage_name || index}`}
+                    key={`${title}-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
@@ -285,9 +335,13 @@ function Leaderboard() {
                     <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                       <div className="flex-1 justify-center items-center w-full hidden sm:flex">
                         <button
-                          onClick={() =>
-                            navigateToArtistDetail(navigate, artist.OPH_ID)
-                          }
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const oid = resolveLeaderboardOphId(artist);
+                            if (!oid) return;
+                            void navigateToArtistDetail(navigate, oid);
+                          }}
                           className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
                         >
                           View Profile
@@ -298,14 +352,19 @@ function Leaderboard() {
                 ))}
               </div>
             </div>
-          ))}
-          {Object.entries(artistsData).map(([title, artists]) => (
+            );
+          })}
+          {leaderboardMonthEntries.map(([title, artists]) => {
+            const topArtists = getTopArtistsForMonth(artists);
+            return (
             <div
               key={title}
               className="bg-black block sm:hidden p-4 md:px-10 xl:px-16 text-white"
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[#5DC9DE] text-2xl font-bold">{title}</h2>
+                <h2 className="text-[#5DC9DE] text-2xl font-bold">
+                  {title}
+                </h2>
               </div>
 
               {/* Table Header */}
@@ -323,12 +382,27 @@ function Leaderboard() {
 
               {/* Artist Rows */}
               <div className="space-y-2">
-                {artists.map((artist, index) => (
+                {topArtists.map((artist, index) => (
                   <div
-                    key={`${title}-mobile-${artist.artist_id || artist.OPH_ID || artist.stage_name || index}`}
+                    key={`${title}-mobile-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
                     ref={(el) =>
                       (artistRefs.current[artist.stage_name.toLowerCase()] = el)
                     }
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      const oid = resolveLeaderboardOphId(artist);
+                      if (!oid) return;
+                      void navigateToArtistDetail(navigate, oid);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        const oid = resolveLeaderboardOphId(artist);
+                        if (!oid) return;
+                        void navigateToArtistDetail(navigate, oid);
+                      }
+                    }}
                     className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                       artistExists &&
                       artistExists.some(
@@ -382,7 +456,8 @@ function Leaderboard() {
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

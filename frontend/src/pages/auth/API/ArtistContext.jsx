@@ -95,6 +95,7 @@ export const ArtistProvider = ({ children }) => {
           "/resources/music-learning-education",
           "/find-your-collaborator",
           "/public-artist-detail",
+          "/collaboration-artist-detail",
           "/content",
           "/success",
           "/privacy-policy",
@@ -114,7 +115,8 @@ export const ArtistProvider = ({ children }) => {
         const isOpen = openRoutesNormalized.includes(normalizedPathname) || 
                       normalizedPathname.startsWith("/content/") ||
                       normalizedPathname.startsWith("/artists/") ||
-                      normalizedPathname.startsWith("/events/");
+                      normalizedPathname.startsWith("/events/") ||
+                      normalizedPathname.startsWith("/dashboard/artist-detail");
         console.log("routeIsOpen:", isOpen);
 
         if (!isOpen) {
