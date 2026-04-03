@@ -484,6 +484,17 @@ export default function ArtistSpotlight() {
                 {/* Rank Badge */}
                 {(() => {
                   const rank = getArtistRank();
+                  if (rank == null) {
+                    return (
+                      <span
+                        className="absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums bg-gray-800/90 text-gray-400 ring-1 ring-gray-600"
+                        title="Not on the community leaderboard yet. Rankings are for artists who appear on the public leaderboard."
+                        aria-label="Not on the community leaderboard"
+                      >
+                        –
+                      </span>
+                    );
+                  }
                   const rankBgClass =
                     rank === 1
                       ? "bg-yellow-400 text-black"
@@ -496,13 +507,10 @@ export default function ArtistSpotlight() {
                   return (
                     <span
                       className={`absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-bold tabular-nums ${rankBgClass}`}
-                      title={
-                        rank != null
-                          ? `Leaderboard rank #${rank}`
-                          : "Not on leaderboard yet"
-                      }
+                      title={`Community leaderboard rank #${rank}`}
+                      aria-label={`Leaderboard rank ${rank}`}
                     >
-                      {rank != null ? rank : "NR"}
+                      {rank}
                     </span>
                   );
                 })()}
