@@ -137,14 +137,10 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
 
       {(() => {
         const row = firstUpcomingRelease(upcomingSong);
-        if (!row) return null;
-        const hasAny =
-          row.dateTime ??
-          row.release_date ??
-          row.song_id ??
-          row.EventName ??
-          row.song_name;
-        if (!hasAny) return null;
+        if (!row || typeof row !== "object") return null;
+        // Match prior visibility: show when API sent any fields (not a lone empty `{}`).
+        // Avoid requiring specific keys — `song_id` can be 0; names may be `EventName` only.
+        if (Object.keys(row).length === 0) return null;
         return <SongCard releaseData={row} />;
       })()}
 

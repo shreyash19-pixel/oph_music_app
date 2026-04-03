@@ -13,7 +13,7 @@ if (checkDomainAndRedirect()) {
 } else {
   // Also check if we should redirect to origin domain (for users on .org)
   if (shouldRedirectToOrigin()) {
-    const originUrl = getOriginUrl(window.location.pathname);
+    const originUrl = getOriginUrl();
     if (originUrl) {
       console.log('Redirecting to origin domain on page load:', originUrl);
       window.location.replace(originUrl);

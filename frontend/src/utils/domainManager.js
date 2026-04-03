@@ -36,17 +36,18 @@ export const getOriginDomain = () => {
 };
 
 /**
- * Get the full origin URL
- * If on .org with no origin cookie, defaults to .com
+ * Full path for cross-domain redirect: pathname + query (hash omitted; app uses search params).
+ * Pass `path` only if you intentionally override; otherwise omit so current location keeps ?artist= / ?id=.
  */
 export const getOriginUrl = (path = null) => {
   const hostname = window.location.hostname;
   const originDomain = getOriginDomain();
-  
+  const originPath =
+    path ?? `${window.location.pathname}${window.location.search}`;
+
   // If we're on .org and have an origin cookie, use it
   if (hostname.includes('ophcommunity.org') && originDomain) {
     const protocol = window.location.protocol;
-    const originPath = path || window.location.pathname;
     // Normalize domain (remove www. if present)
     const normalizedDomain = originDomain.replace(/^www\./, '');
     console.log('[DomainManager] Redirecting to origin:', { originDomain, normalizedDomain, path: originPath });
@@ -56,7 +57,6 @@ export const getOriginUrl = (path = null) => {
   // If we're on .org with no origin cookie, default to .com
   if (hostname.includes('ophcommunity.org') && !originDomain) {
     const protocol = window.location.protocol;
-    const originPath = path || window.location.pathname;
     console.log('[DomainManager] No origin cookie, defaulting to .com:', { path: originPath });
     return `${protocol}//ophcommunity.com${originPath}`;
   }

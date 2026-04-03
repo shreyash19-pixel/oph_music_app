@@ -20,7 +20,7 @@ const DomainRedirectHandler = () => {
     // Check immediately on mount and route change
     const checkAndRedirect = () => {
       if (shouldRedirectToOrigin()) {
-        const originUrl = getOriginUrl(location.pathname);
+        const originUrl = getOriginUrl();
         console.log('Redirecting to origin domain:', originUrl);
         if (originUrl) {
           // Use replace to avoid adding to history
