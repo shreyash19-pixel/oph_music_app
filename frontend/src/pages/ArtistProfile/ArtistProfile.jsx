@@ -1,5 +1,4 @@
-import { Play, Pause, Edit3 } from "lucide-react";
-import { Instagram, Facebook, Music, Apple } from "lucide-react";
+import { Play, Pause, Edit3, Eye, EyeOff } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import axiosApi from "../../conf/axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -7,48 +6,64 @@ import { useNavigate } from "react-router-dom";
 import Modal from 'react-modal';
 import { updateProfileImage } from "../auth/API/profile";
 import { useArtist } from "../auth/API/ArtistContext";
+import Face from "../../../public/assets/images/facebook.png";
+import Twitter from "../../../public/assets/images/twitter.png";
+import Linkedin from "../../../public/assets/images/linkedin.png";
+import Insta from "../../../public/assets/images/instagram.png";
+import Spotify from "../../../public/assets/images/spotify.png";
+import AppleMusic from "../../../public/assets/images/apple_music.png";
 
 Modal.setAppElement('#root');
 
 export default function ArtistProfile() {
-  const [profile, setProfile] = useState({});
+  const [artist, setArtist] = useState({});
+  const { ophid, headers } = useArtist();
   const userData = localStorage.getItem("userData");
-  const parsedData = JSON.parse(userData);
-  const id = parsedData.artist.id;
-  const { headers } = useArtist();
+  const parsedData = userData ? JSON.parse(userData) : null;
+  const id = parsedData?.artist?.id || ophid;
   const [audio, setAudio] = useState(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
   const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.id) {
+    if (audio && playingSongId === song.song_id) {
       if (!audio.paused) {
         audio.pause();
         setPlayingSongId(null);
       } else {
         audio.play();
-        setPlayingSongId(song.id);
+        setPlayingSongId(song.song_id);
       }
     } else {
       if (audio) {
         audio.pause();
       }
-      const newAudio = new Audio(song.audio_file_url);
+      const newAudio = new Audio(song.duration_in_minutes);
       newAudio.play();
       setAudio(newAudio);
-      setPlayingSongId(song.id);
+      setPlayingSongId(song.song_id);
       newAudio.onended = () => setPlayingSongId(null);
     }
   };
 
   const fetchProfile = async () => {
+    if (!id) return;
     try {
-      const response = await axiosApi.get(`/artists/${id}`);
-      if (response.status === 200) {
-        setProfile(response.data.data);
+      const response = await axiosApi.get(`/get-artist-detail?id=${encodeURIComponent(id)}`, {
+        ...(headers?.Authorization ? { headers } : {}),
+      });
+      const data = response.data?.data;
+      console.log("Artist Profile Data:", data);
+      if (data) {
+        setArtist(data);
+        
       }
     } catch (err) {
       console.log(err);
@@ -56,26 +71,43 @@ export default function ArtistProfile() {
   };
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (id) {
+      fetchProfile();
+    }
+  }, [id]);
 
-  const handleChangePassword = async () => {
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      return toast.error('Passwords do not match');
+    }
+    if (!newPassword || newPassword.trim() === "") {
+      toast.error("Please enter a new password");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+    const token = parsedData?.token || headers?.Authorization?.replace('Bearer ', '');
+    if (!token) {
+      toast.error("Authentication token not found");
+      return;
+    }
+    setIsLoading(true);
     try {
-      const response = await axiosApi.post(
+      await axiosApi.post(
         "/auth/change-password",
         { new_password: newPassword },
-        { headers: { Authorization: `Bearer ${parsedData.token}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (response.status === 200) {
-        toast.success("Password changed successfully");
-        localStorage.clear();
-        navigate("/auth/login");
-        window.location.reload();
-      } else {
-        toast.error("Failed to change password");
-      }
+      toast.success("Password changed successfully");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (error) {
-      toast.error("Error changing password. Please try again.");
+      toast.error(error.response?.data?.message || "Error changing password. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -96,14 +128,14 @@ export default function ArtistProfile() {
   };
 
   return (
-    profile && (
+    artist && (
       <div className="min-h-[calc(100vh-70px)] text-gray-100 px-4 sm:px-8 py-6 overflow-x-hidden">
         <div className="space-y-8">
           {/* Header */}
           <div className="flex items-start gap-6 flex-wrap">
             <div className="relative">
               <img
-                src={profile.profile_img_url}
+                src={artist.personal_photo}
                 alt="Profile"
                 className="w-28 h-28 rounded-full border-4 border-cyan-600 cursor-pointer"
                 onClick={openModal}
@@ -124,50 +156,109 @@ export default function ArtistProfile() {
             </div>
             <div className="flex-1 min-w-[200px]">
               <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-                {profile.legal_name}
+                {artist.name}
               </h1>
               <p className="text-gray-400">
-                Stage Name: <span className="text-cyan-400">{profile.stage_name}</span>
+                Stage Name:{" "}
+                <span className="text-cyan-400">{artist.stage_name}</span>
               </p>
             </div>
           </div>
 
           <div className="mt-4 space-y-2">
-            <p className="text-gray-400">OPH Artist Code: <span className="text-white">#{profile.oph_id}</span></p>
-            <p className="text-gray-400">Profession: <span className="text-white">{profile.profession}</span></p>
+            <p className="text-gray-400">
+              OPH Artist Code:{" "}
+              <span className="text-white">#{artist.oph_id}</span>
+            </p>
+            <p className="text-gray-400">
+              Profession:{" "}
+              <span className="text-white">
+                {artist.profession ?? artist.Profession}
+              </span>
+            </p>
           </div>
 
           {/* Bio */}
-          <p className="text-gray-400 leading-relaxed">{profile.bio}</p>
+          <p className="text-gray-400 leading-relaxed">{artist.bio}</p>
 
           {/* Social Links */}
           <div className="flex flex-wrap gap-4">
-            {profile.instagram_url && (
-              <a href={profile.instagram_url} target="_blank">
-                <button className="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </button>
+            {artist.facebook_url && (
+              <a
+                href={artist.facebook_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={Face}
+                  alt="Facebook"
+                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                />
               </a>
             )}
-            {profile.facebook_url && (
-              <a href={profile.facebook_url} target="_blank">
-                <button className="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </button>
+            {artist.instagram_url && (
+              <a
+                href={artist.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={Insta}
+                  alt="Instagram"
+                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                />
               </a>
             )}
-            {profile.spotify_url && (
-              <a href={profile.spotify_url} target="_blank">
-                <button className="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
-                  <Music className="w-5 h-5" />
-                </button>
+            {artist.linkedin_url && (
+              <a
+                href={artist.linkedin_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={Linkedin}
+                  alt="LinkedIn"
+                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                />
               </a>
             )}
-            {profile.apple_music_url && (
-              <a href={profile.apple_music_url} target="_blank">
-                <button className="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
-                  <Apple className="w-5 h-5" />
-                </button>
+            {artist.twitter_url && (
+              <a
+                href={artist.twitter_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={Twitter}
+                  alt="Twitter"
+                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                />
+              </a>
+            )}
+            {artist.spotify_url && (
+              <a
+                href={artist.spotify_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={Spotify}
+                  alt="Spotify"
+                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                />
+              </a>
+            )}
+            {artist.apple_music_url && (
+              <a
+                href={artist.apple_music_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={AppleMusic}
+                  alt="Apple Music"
+                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                />
               </a>
             )}
           </div>
@@ -185,25 +276,27 @@ export default function ArtistProfile() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {profile?.songs?.map((song, index) => (
-                  <tr key={song.id} className="group text-center">
+                {artist?.songs?.map((song, index) => (
+                  <tr key={song.song_id} className="group text-center">
                     <td className="py-4">{index + 1}</td>
                     <td className="py-4 text-center">
                       <div className="flex justify-center">
                         <div className="max-w-[120px] truncate">
-                          <div className="font-medium">{song.name}</div>
-                          <div className="text-sm text-gray-400">{song.artist}</div>
+                          <div className="font-medium">{song.song_name}</div>
+                          <div className="text-sm text-gray-400">
+                            {song.primary_artist}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-4">{song.total_views}</td>
+                    <td className="py-4">{song.total_song_views}</td>
                     <td className="py-4">{song.duration_in_minutes}</td>
                     <td className="py-4">
                       <button
                         className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 transition-colors"
                         onClick={() => handlePlayPause(song)}
                       >
-                        {playingSongId === song.id && !audio?.paused ? (
+                        {playingSongId === song.song_id && !audio?.paused ? (
                           <Pause className="w-4 h-4" />
                         ) : (
                           <Play className="w-4 h-4" />
@@ -222,21 +315,63 @@ export default function ArtistProfile() {
           {/* Change Password */}
           <div className="space-y-4">
             <h2 className="text-lg font-medium">Change Password:</h2>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="password"
-                className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-400"
-                placeholder="••••••••••••"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-cyan-400"
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength="8"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-cyan-400"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength="8"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               <button
-                className="px-6 py-3 bg-cyan-400 text-gray-900 rounded-lg font-medium hover:bg-cyan-300 transition-colors"
-                onClick={handleChangePassword}
+                type="submit"
+                disabled={isLoading}
+                className={`w-full sm:w-auto px-6 py-3 ${
+                  isLoading
+                    ? "bg-cyan-500 cursor-not-allowed"
+                    : "bg-cyan-400 hover:bg-cyan-300"
+                } text-gray-900 rounded-lg font-medium transition-colors`}
               >
-                Save Changes
+                {isLoading ? "Saving..." : "Save Changes"}
               </button>
-            </div>
+            </form>
           </div>
         </div>
 
@@ -258,7 +393,7 @@ export default function ArtistProfile() {
               &times;
             </button>
             <video
-              src={profile.artist_story}
+              // src={profile.artist_story}
               controls
               autoPlay
               className="w-full h-auto rounded-lg"

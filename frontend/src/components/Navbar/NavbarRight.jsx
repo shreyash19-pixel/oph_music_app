@@ -56,7 +56,7 @@ const NavbarRight = () => {
 
       {/* Profile Avatar */}
       <button
-        onClick={() => navigate(`/dashboard/artist-detail?id=${ophid}`)}
+        onClick={() => navigate("/dashboard/profile")}
         className="w-10 h-10 rounded-full border-2 border-cyan-400 overflow-hidden"
         title="Profile"
       >

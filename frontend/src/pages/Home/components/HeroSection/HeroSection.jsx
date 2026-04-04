@@ -21,6 +21,9 @@ const isArtistRegistered = (eventId, artistBookEvents = []) =>
 const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const eventID = useSelector((state) => state.event.selectedEvent);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -57,6 +60,21 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
   useEffect(() => {
     fetchPageMedia();
   }, []);
+
+  const slides = [];
+  if (Object.values(upcomingSong).length > 0) slides.push({ type: 'song', data: upcomingSong });
+  if (upcomingEvent) slides.push({ type: 'event', data: upcomingEvent });
+
+  const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const handleTouchEnd = () => {
+    if (touchStart - touchEnd > 50) {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }
+    if (touchStart - touchEnd < -50) {
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    }
+  };
 
   const handleClick = async (e) => {
     dispatch(changeSelectedEvent({ data: e }));
@@ -125,101 +143,111 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
         )}
       </div>
 
-      {/* <SongDetails/> */}
-
-      {Object.values(upcomingSong).length > 0  &&  (<SongCard
-        releaseData = {upcomingSong}
-      />)}
-
-      {/* Event Banner */}
-      <div
-        className="relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
-        style={{
-          backgroundImage: "url('/assets/images/songUploadCardBg.png')",
-        }}
-      >
-        {upcomingEvent && (
-          <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
-            {/* Left Content Section */}
-            <div className="w-full md:w-2/3 space-y-4">
-              {/* Header */}
-              <div>
-                <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
-                  NEW EVENT
-                </p>
-                <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-                  {upcomingEvent.EventName}
-                </h2>
-              </div>
-
-              {/* Details */}
-              <div className="text-slate-300 text-sm sm:text-base space-y-2">
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <span>Competition Date:</span>
-                  <span className="font-medium text-white">
-                    {formatDateAndAdjustMonth(upcomingEvent.dateTime)}
-                  </span>
+      {/* Carousel */}
+      {slides.length > 0 && (
+        <div className="relative">
+          <div 
+            className="overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {slides[currentSlide].type === 'song' ? (
+              <SongCard releaseData={slides[currentSlide].data} />
+            ) : (
+              <div
+                className="bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
+                style={{ backgroundImage: "url('/assets/images/songUploadCardBg.png')" }}
+              >
+                <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
+                  <div className="w-full md:w-2/3 space-y-4">
+                    <div>
+                      <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">NEW EVENT</p>
+                      <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
+                        {slides[currentSlide].data.EventName}
+                      </h2>
+                    </div>
+                    <div className="text-slate-300 text-sm sm:text-base space-y-2">
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span>Competition Date:</span>
+                        <span className="font-medium text-white">
+                          {formatDateAndAdjustMonth(slides[currentSlide].data.dateTime)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span>Registration:</span>
+                        <span className="font-medium text-white">
+                          {formatRegistrationStartDate(slides[currentSlide].data.registrationStart)} to {formatRegistrationEndDate(slides[currentSlide].data.registrationEnd)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span>Registration Fee:</span>
+                        <span className="font-medium text-white">
+                          {slides[currentSlide].data.registrationFee_normal}/-
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      {isArtistRegistered(slides[currentSlide].data.event_id ?? slides[currentSlide].data.id, artistBookEvents) ? (
+                        <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
+                          Registered
+                        </button>
+                      ) : isRegistrationNotStartedYet(slides[currentSlide].data) ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
+                          title={`Registration opens at ${formatRegistrationStartDate(slides[currentSlide].data.registrationStart)}`}
+                        >
+                          Registration opens {formatRegistrationStartDate(slides[currentSlide].data.registrationStart)}
+                        </button>
+                      ) : !isRegistrationOpen(slides[currentSlide].data) ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
+                          title={`Registration closed at ${formatRegistrationEndDate(slides[currentSlide].data.registrationEnd)}`}
+                        >
+                          Closed
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleClick(slides[currentSlide].data)}
+                          className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
+                        >
+                          Register
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-full md:w-[35%]">
+                    <img
+                      src={slides[currentSlide].data.image}
+                      alt="Event thumbnail"
+                      className="w-full h-full max-h-[250px] object-cover rounded-lg"
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <span>Registration:</span>
-                  <span className="font-medium text-white">
-                    {formatRegistrationStartDate(upcomingEvent.registrationStart)} to {formatRegistrationEndDate(upcomingEvent.registrationEnd)}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <span>Registration Fee:</span>
-                  <span className="font-medium text-white">
-                    {upcomingEvent.registrationFee_normal}/-
-                  </span>
-                </div>
               </div>
-
-              {/* Register Button – same logic as Events page: active period only clickable */}
-              <div>
-                {isArtistRegistered(upcomingEvent.event_id ?? upcomingEvent.id, artistBookEvents) ? (
-                  <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
-                    Registered
-                  </button>
-                ) : isRegistrationNotStartedYet(upcomingEvent) ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                    title={`Registration opens at ${formatRegistrationStartDate(upcomingEvent.registrationStart)}`}
-                  >
-                    Registration opens {formatRegistrationStartDate(upcomingEvent.registrationStart)}
-                  </button>
-                ) : !isRegistrationOpen(upcomingEvent) ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                    title={`Registration closed at ${formatRegistrationEndDate(upcomingEvent.registrationEnd)}`}
-                  >
-                    Closed
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleClick(upcomingEvent)}
-                    className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
-                  >
-                    Register
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Right Image Section */}
-            <div className="w-full md:w-[35%]">
-              <img
-                src={upcomingEvent.image}
-                alt="Event thumbnail"
-                className="w-full h-full max-h-[250px] object-cover rounded-lg"
-              />
-            </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Dots */}
+          {slides.length > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === currentSlide ? 'bg-cyan-400 w-6' : 'bg-slate-500'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Registration Modal */}
       {isModalOpen && (
