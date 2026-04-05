@@ -112,7 +112,7 @@ class UserService {
           },
         },
         process.env.SECRET_KEY,
-        { expiresIn: "1h" },
+        { expiresIn: "24h" },
       );
 
       await connection.commit();
@@ -178,7 +178,7 @@ class UserService {
           },
         },
         process.env.SECRET_KEY,
-        { expiresIn: "1h" },
+        { expiresIn: "24h" },
       );
 
       return {

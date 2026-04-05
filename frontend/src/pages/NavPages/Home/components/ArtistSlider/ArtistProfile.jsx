@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Elipse from "../../../../../../public/assets/images/elipse.png";
 import { SongDuration } from "../../../../ArtistSpotlight/ArtistSpotlight";
 import { navigateToArtistDetail } from "../../../../../utils/artistHash";
+import { resolveProfessionLabel } from "../../../../../utils/professionDisplay";
 
 const ArtistProfile = ({ id }) => {
   const navigate = useNavigate();
@@ -129,16 +130,14 @@ const ArtistProfile = ({ id }) => {
     fetchProfessions();
   }, []);
 
-
-  const setProfession = (prof) => {    
-    const profession = professions.find((p) => {
-      if(parseInt(prof) === p.id)
-      {
-        return p
-      }
-    })
-    return profession ? profession.name : "Unknown"
-  }
+  const approvedSongs = useMemo(() => {
+    const list = Array.isArray(artist?.songs) ? artist.songs : [];
+    return list.filter((s) => {
+      const st = s?.overall_status ?? s?.song_application_status;
+      if (st == null || String(st).trim() === "") return true;
+      return String(st).trim().toLowerCase() === "approved";
+    });
+  }, [artist?.songs]);
 
   return (
     <>
@@ -181,7 +180,9 @@ const ArtistProfile = ({ id }) => {
                 </p>
                 <p className="text-gray-400 mb-1">
                   Profession:{" "}
-                  <span className="text-white">{setProfession(artist.profession)}</span>
+                  <span className="text-white">
+                    {resolveProfessionLabel(artist.profession, professions)}
+                  </span>
                 </p>
                 <p className="text-gray-400 mb-4">
                   Location:{" "}
@@ -190,7 +191,7 @@ const ArtistProfile = ({ id }) => {
 
                 <div className="flex items-center gap-2 mb-4">
                   <span style={{ color: "#6F4FA0" }}>
-                    {artist.total_content} songs
+                    {approvedSongs.length} song{approvedSongs.length === 1 ? "" : "s"}
                   </span>
                   <span className="text-gray-600">→</span>
                   <span style={{ color: "#6F4FA0" }}>
@@ -219,10 +220,19 @@ const ArtistProfile = ({ id }) => {
                 </tr>
               </thead>
               <tbody>
-                {artist &&
-                  artist.songs.map((song, index) => (
+                {approvedSongs.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-10 text-center text-gray-400 text-sm"
+                    >
+                      No songs added by this artist yet.
+                    </td>
+                  </tr>
+                ) : (
+                  approvedSongs.map((song, index) => (
                     <tr
-                      key={index}
+                      key={song.song_id ?? index}
                       className="border-b border-gray-800 hover:bg-gray-800/50"
                     >
                       <td className="py-4">
@@ -257,7 +267,9 @@ const ArtistProfile = ({ id }) => {
                         </div>
                       </td>
 
-                      <td className="py-4">{song.total_views}</td>
+                      <td className="py-4">
+                        {song.total_views ?? song.youtube_views ?? "—"}
+                      </td>
                       <td className="py-4 text-center">
                         <SongDuration url={song.audio_file_url} />
                       </td>
@@ -276,7 +288,8 @@ const ArtistProfile = ({ id }) => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
               </tbody>
             </table>
 

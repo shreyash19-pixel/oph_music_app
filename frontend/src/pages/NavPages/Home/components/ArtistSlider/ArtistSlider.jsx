@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Slider from "react-slick";
 import arrowRightIc from "/assets/images/arrowRightIc.svg";
 import arrowLeftIc from "/assets/images/arrowLeftIc.svg";
@@ -11,14 +11,58 @@ import ArtistProfile from "./ArtistProfile";
 /** Max per_page allowed by /get-top-artist (see admin kpi controller). */
 const TOP_ARTIST_PAGE_SIZE = 100;
 
-const ArtistSlider = ({ rows = 1 }) => {
+/** After exclude filter: KPI-scored artists first, then everyone else (stable tie-breakers). */
+function sortArtistsScoredFirst(list) {
+  if (!Array.isArray(list) || list.length <= 1) return list;
+  const scoreOf = (a) => Number(a.kpi_score ?? a.score ?? 0);
+  const viewsOf = (a) => Number(a.total_views ?? 0);
+  const scored = [];
+  const rest = [];
+  for (const row of list) {
+    if (scoreOf(row) > 0) scored.push(row);
+    else rest.push(row);
+  }
+  const byScoreThenViews = (a, b) => {
+    const ds = scoreOf(b) - scoreOf(a);
+    if (ds !== 0) return ds;
+    const dv = viewsOf(b) - viewsOf(a);
+    if (dv !== 0) return dv;
+    return String(a.stage_name ?? "").localeCompare(
+      String(b.stage_name ?? ""),
+      undefined,
+      { sensitivity: "base" },
+    );
+  };
+  const byViewsThenName = (a, b) => {
+    const dv = viewsOf(b) - viewsOf(a);
+    if (dv !== 0) return dv;
+    return String(a.stage_name ?? "").localeCompare(
+      String(b.stage_name ?? ""),
+      undefined,
+      { sensitivity: "base" },
+    );
+  };
+  scored.sort(byScoreThenViews);
+  rest.sort(byViewsThenName);
+  return [...scored, ...rest];
+}
+
+const ArtistSlider = ({
+  rows = 1,
+  onListedProfileOpenChange,
+  excludeOphIds = [],
+}) => {
   const sliderRef = useRef(null);
   const artistProfileRef = useRef(null);
   const [selectedArtist, setSelectedArtist] = useState(null);
-  const [artists, setArtists] = useState([]);
+  const [allArtists, setAllArtists] = useState([]);
   const [autoplay, setAutoplay] = useState(false);
 
   const [currArtist, setCurrentArtist] = useState(null);
+
+  useEffect(() => {
+    onListedProfileOpenChange?.(Boolean(selectedArtist));
+  }, [selectedArtist, onListedProfileOpenChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +103,7 @@ const ArtistSlider = ({ rows = 1 }) => {
         }
 
         if (cancelled) return;
-        setArtists(merged);
+        setAllArtists(merged);
 
         if (import.meta.env.DEV) {
           console.groupCollapsed("[ArtistSlider] get-top-artist (all pages)");
@@ -84,6 +128,19 @@ const ArtistSlider = ({ rows = 1 }) => {
       cancelled = true;
     };
   }, []);
+
+  const excludeSet = useMemo(
+    () => new Set(excludeOphIds.map((id) => String(id).trim()).filter(Boolean)),
+    [excludeOphIds],
+  );
+
+  const artists = useMemo(() => {
+    const filtered = allArtists.filter((row) => {
+      const oid = String(row.oph_id ?? row.OPH_ID ?? "").trim();
+      return oid && !excludeSet.has(oid);
+    });
+    return sortArtistsScoredFirst(filtered);
+  }, [allArtists, excludeSet]);
 
   /** Slick infinite mode clones slides; disable when too few unique slides vs slidesToShow (~6). */
   const useInfiniteCarousel = artists.length >= 12;
