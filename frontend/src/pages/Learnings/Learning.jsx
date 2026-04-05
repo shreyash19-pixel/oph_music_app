@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
+import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const Learnings = () => {
   const [learnings, setLearnings] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const [modalVideo, setModalVideo] = useState(null);
-  const modalRef = useRef(null);
   const { headers, ophid } = useArtist();
 
   const fetchLearnings = async () => {
@@ -88,11 +88,9 @@ const Learnings = () => {
             >
               ✕
             </button>
-            <video
-              ref={modalRef}
+            <CustomVideoPlayer
               src={modalVideo}
-              controls
-              autoPlay
+              autoPlay={true}
               className="w-full h-auto rounded-lg"
             />
           </div>

@@ -235,4 +235,49 @@ const getAllPersonal = async (req, res) => {
   }
 };
 
-module.exports = { mapPersonalDetails, insertPersonalDetails,getAllPersonal };
+const updateProfileImage = async (req, res) => {
+  try {
+    const profile_image = req.file;
+    const ophid = req.user?.userData?.artist?.id;
+
+    if (!ophid) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID not found in token",
+      });
+    }
+
+    if (!profile_image) {
+      return res.status(400).json({
+        success: false,
+        message: "No image file provided",
+      });
+    }
+
+    const imageUrl = await bucket.uploadToS3(
+      profile_image,
+      `allUsers/${ophid}/profile_image`
+    );
+
+    const [result] = await db.execute(
+      "UPDATE user_details SET personal_photo = ? WHERE oph_id = ?",
+      [imageUrl, ophid]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile image updated successfully",
+      data: {
+        personal_photo: imageUrl,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating profile image:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+module.exports = { mapPersonalDetails, insertPersonalDetails, getAllPersonal, updateProfileImage };

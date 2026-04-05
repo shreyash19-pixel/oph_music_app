@@ -17,8 +17,6 @@ export default function KPIDashboard() {
   const [duration, setDuration] = useState(7); // Default to 7 days
 
   const durationOptions = [
-    { value: 7, label: "Last 7 Days" },
-    { value: 10, label: "Last 10 Days" },
     { value: 15, label: "Last 15 Days" },
     { value: 30, label: "Last 30 Days" },
   ];
@@ -31,8 +29,7 @@ export default function KPIDashboard() {
       const currentId = String(ophid ?? "").trim();
 
       const artists = Object.values(allData).map((item) => {
-        const id =
-          item.oph_id ?? item.ophid ?? item.OPH_ID ?? item.ophId ?? "";
+        const id = item.oph_id ?? item.ophid ?? item.OPH_ID ?? item.ophId ?? "";
         return {
           ophId: String(id).trim(),
           stageName: item.stageName,
@@ -84,9 +81,31 @@ export default function KPIDashboard() {
 
   const fetchContent = async () => {
     try {
-      const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}&duration=${duration}`);
+      const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}`);
       const metrics = response.data.s3Metrics || [];
-      console.log("Fetched metrics with duration:", duration, metrics);
+
+      // Filter by date range
+      const currentDate = new Date();
+      const cutoffDate = new Date();
+      cutoffDate.setDate(currentDate.getDate() - duration);
+
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
+      const filteredMetrics = metrics.filter((item) => {
+        const monthIndex = monthNames.indexOf(item.month);
+        // Get first and last day of the month
+        const monthStart = new Date(item.year, monthIndex, 1);
+        const monthEnd = new Date(item.year, monthIndex + 1, 0);
+        // Include month if any part of it overlaps with the duration range
+        return monthEnd >= cutoffDate && monthStart <= currentDate;
+      });
+
+      console.log("Current Date:", currentDate.toDateString());
+      console.log("Cutoff Date:", cutoffDate.toDateString());
+      console.log("Duration (days):", duration);
+      console.log("All metrics:", metrics.map(m => `${m.month} ${m.year}`));
+      console.log("Filtered metrics:", filteredMetrics.map(m => `${m.month} ${m.year}`));
 
       // Merge into chart-friendly arrays
       const performanceData = [];
@@ -96,16 +115,20 @@ export default function KPIDashboard() {
       const eventsData = [];
       const durationData = [];
 
-      metrics.forEach((item) => {
+      filteredMetrics.forEach((item) => {
         const [h, m, s] = item.avg_view_duration.split(":").map(Number);
         const totalSeconds = h * 3600 + m * 60 + s;
         const label = `${item.month} ${item.year}`; // e.g. "August 2025"
+
+        // Calculate weighted performance value (inverse of rank)
+        // Rank 1 gets highest weight, decreasing as rank increases
+        const performanceWeight = artistRank ? Math.round(100 / artistRank) : 0;
 
         performanceData.push({
           name: label,
           Songs: item.song_count,
           Traffic: item.user_traffic,
-          Performance: artistRank || null,
+          Performance: performanceWeight,
         });
 
         trafficData.push({ name: label, value: item.user_traffic });
@@ -150,17 +173,12 @@ export default function KPIDashboard() {
   }, [ophid]);
 
   useEffect(() => {
-    setArtistImage(null);
-    setArtistRank(null);
-  }, [ophid]);
-
-  useEffect(() => {
     if (!ophid) return;
 
     setLoading(true);
     fetchContent();
     fetchRanking();
-  }, [ophid, duration]);
+  }, [ophid, duration, artistRank]);
 
   if (error) return <div>Error: {error}</div>;
 

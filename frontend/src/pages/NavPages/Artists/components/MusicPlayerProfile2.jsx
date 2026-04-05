@@ -53,7 +53,8 @@ const MusicPlayerProfile2 = () => {
   
   const songsArray = Object.values(artistData)
     .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
-    .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0));
+    .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0))
+    .slice(0, 10);
 
   const [playingSongId, setPlayingSongId] = useState(null);
 
@@ -178,7 +179,7 @@ const MusicPlayerProfile2 = () => {
     };
   }, []);
 
-  const canLoop = songsArray.length > 3;
+  const canLoop = false;
   const desktopSlides = Math.min(3, Math.max(1, songsArray.length));
   const tabletSlides = Math.min(2, Math.max(1, songsArray.length));
 

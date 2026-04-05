@@ -12,5 +12,6 @@ const upload = multer({
 router.post('/auth/personal-details', authMiddleware ,upload.single("profile_image"),personalDetails.insertPersonalDetails);
 router.get('/auth/personal-details',  authMiddleware,personalDetails.mapPersonalDetails);
 router.get('/auth/personal',  personalDetails.getAllPersonal);
+router.put('/auth/update-profile-image', authMiddleware, upload.single("profile_image"), personalDetails.updateProfileImage);
 
 module.exports = router;
