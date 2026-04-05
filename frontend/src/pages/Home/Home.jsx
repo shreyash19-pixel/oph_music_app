@@ -69,13 +69,15 @@ function Home() {
             const dateB = new Date(b.dateTime || 0);
             return dateA - dateB; // soonest upcoming first
           });
-        // HeroSection: prefer upcoming with registration open, else soonest upcoming
-        const withActiveReg = upcomingSorted.find(isRegistrationOpen);
-        setUpcomingEventHero(withActiveReg || upcomingSorted[0] || false);
-        // EventsNewReleases: 2nd upcoming by event date when 2+; else same as hero when only one
-        setUpcomingEventNewReleases(
-          upcomingSorted.length >= 2 ? upcomingSorted[1] : upcomingSorted[0] || false
-        );
+        // Only events whose registration window is active (IST day bounds, same as HeroSection buttons)
+        const registrationOpenSorted = upcomingSorted.filter(isRegistrationOpen);
+        const heroEvent = registrationOpenSorted[0] || false;
+        const secondSlotEvent =
+          registrationOpenSorted.length >= 2
+            ? registrationOpenSorted[1]
+            : registrationOpenSorted[0] || false;
+        setUpcomingEventHero(heroEvent);
+        setUpcomingEventNewReleases(secondSlotEvent);
       }
     } catch (err) {
       console.log(err);
