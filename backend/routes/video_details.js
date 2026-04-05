@@ -6,11 +6,11 @@ const multer = require("multer");
 const controller = require("../controllers/video_details");
 
 // store the file in memory; your controller calls uploadToS3
-// Increased limit for large video files (500MB max)
+// Increased limit for large video files (1GB max)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { 
-    fileSize: 500 * 1024 * 1024, // 500MB for videos
+    fileSize: 1024 * 1024 * 1024, // 1GB for videos
     fieldSize: 10 * 1024 * 1024, // 10MB for other fields
   },
   // Note: Multer doesn't provide progress events for memory storage

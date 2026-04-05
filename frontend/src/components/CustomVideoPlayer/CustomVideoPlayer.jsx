@@ -29,6 +29,7 @@ const CustomVideoPlayer = forwardRef(
       onPlayButtonClick,
       pauseOtherVideos = true,
       id,
+      allowFullscreen = true,
     },
     ref,
   ) => {
@@ -502,20 +503,21 @@ const CustomVideoPlayer = forwardRef(
             </div>
 
             {/* Right Controls */}
-            <div className="flex items-center">
-              {/* Fullscreen */}
-              <button
-                onClick={toggleFullscreen}
-                className="text-white hover:text-[#5DC9DE] transition-colors"
-                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              >
-                {isFullscreen ? (
-                  <FaCompress className="text-lg" />
-                ) : (
-                  <FaExpand className="text-lg" />
-                )}
-              </button>
-            </div>
+            {allowFullscreen && (
+              <div className="flex items-center">
+                <button
+                  onClick={toggleFullscreen}
+                  className="text-white hover:text-[#5DC9DE] transition-colors"
+                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  {isFullscreen ? (
+                    <FaCompress className="text-lg" />
+                  ) : (
+                    <FaExpand className="text-lg" />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
