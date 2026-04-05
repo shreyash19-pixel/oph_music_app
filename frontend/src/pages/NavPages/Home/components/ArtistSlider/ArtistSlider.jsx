@@ -47,6 +47,19 @@ function sortArtistsScoredFirst(list) {
   return [...scored, ...rest];
 }
 
+/**
+ * Left-edge slide index so `clickedIndex` sits near the middle of the viewport.
+ * Matches react-slick non-centerMode behavior (clicked slide visible and centered when possible).
+ */
+function alignedSlideIndex(clickedIndex, slideCount, slidesToShow) {
+  if (slideCount <= 0) return 0;
+  const st = Number(slidesToShow) || 1;
+  const maxSlide = Math.max(0, Math.floor(slideCount - st));
+  if (maxSlide <= 0) return 0;
+  const ideal = clickedIndex - Math.floor(st / 2);
+  return Math.max(0, Math.min(ideal, maxSlide));
+}
+
 const ArtistSlider = ({
   rows = 1,
   onListedProfileOpenChange,
@@ -56,7 +69,6 @@ const ArtistSlider = ({
   const artistProfileRef = useRef(null);
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [allArtists, setAllArtists] = useState([]);
-  const [autoplay, setAutoplay] = useState(false);
 
   const [currArtist, setCurrentArtist] = useState(null);
 
@@ -158,12 +170,16 @@ const ArtistSlider = ({
   const handleArtistClick = (id, index) => {
     setCurrentArtist(id);
     setSelectedArtist(id);
-    setAutoplay(false);
+    const root = sliderRef.current;
+    root?.slickPause?.();
 
-    // Move the clicked slide to center
-    if (sliderRef.current) {
-      const centerIndex = Math.floor(artists.length / 2);
-      sliderRef.current.slickGoTo(index - centerIndex);
+    // Align carousel so the clicked artist is near the center (uses live slidesToShow from slick)
+    if (root?.slickGoTo) {
+      const inner = root.innerSlider;
+      const slideCount = inner?.state?.slideCount ?? artists.length;
+      const slidesToShow = Number(inner?.props?.slidesToShow) || 5.6;
+      const target = alignedSlideIndex(index, slideCount, slidesToShow);
+      root.slickGoTo(target);
     }
 
     // Scroll to ArtistProfile section
@@ -244,7 +260,7 @@ const ArtistSlider = ({
             {...{
               dots: false,
               speed: 300,
-              autoplay: artists.length > 0,
+              autoplay: artists.length > 0 && selectedArtist == null,
               autoplaySpeed: 3000,
               pauseOnHover: true,
               infinite: useInfiniteCarousel,
