@@ -102,6 +102,8 @@ const getArtistDetail = async (ophid) => {
     pd.bio AS bio,
     pd.facebook_link AS facebook_url,
     pd.instagram_link AS instagram_url,
+    pd.spotify_link AS spotify_url,
+    pd.apple_music_link AS apple_music_url,
     ad.song_name AS song_name,
     ad.song_id,
     ad.primary_artist AS primary_artist,
@@ -129,6 +131,8 @@ const getArtistDetail = async (ophid) => {
     pd.bio,
     pd.facebook_link,
     pd.instagram_link,
+    pd.spotify_link,
+    pd.apple_music_link,
     ad.song_id,
     ad.song_name,
     ad.primary_artist,
@@ -174,6 +178,8 @@ WHERE overall_status = 'approved';
         bio: row.bio,
         facebook_url: row.facebook_url,
         instagram_url: row.instagram_url,
+        spotify_url: row.spotify_url,
+        apple_music_url: row.apple_music_url,
         songs: [
           {
             song_id: row.song_id,
@@ -206,7 +212,8 @@ WHERE overall_status = 'approved';
   const [fb] = await db.execute(
     `SELECT ud.oph_id, ud.full_name AS name, pd.photo_urls AS photos, ud.personal_photo, ud.stage_name,
             pd.video_url AS video_bio, pd.profession AS profession, ud.location, IFNULL(kpi.total_views, 0) AS total_views,
-            pd.bio AS bio, pd.facebook_link AS facebook_url, pd.instagram_link AS instagram_url
+            pd.bio AS bio, pd.facebook_link AS facebook_url, pd.instagram_link AS instagram_url,
+            pd.spotify_link AS spotify_url, pd.apple_music_link AS apple_music_url
      FROM user_details ud
      LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
      LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID
@@ -242,6 +249,8 @@ WHERE overall_status = 'approved';
     bio: row.bio,
     facebook_url: row.facebook_url,
     instagram_url: row.instagram_url,
+    spotify_url: row.spotify_url,
+    apple_music_url: row.apple_music_url,
     songs: [],
   };
 };

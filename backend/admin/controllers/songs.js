@@ -355,12 +355,12 @@ const updateVideoSection = async (req, res) => {
         });
       }
 
-      // Validate video file size (max 500MB)
-      const maxSize = 500 * 1024 * 1024; // 500MB
+      // Validate video file size (max 1GB)
+      const maxSize = 1024 * 1024 * 1024; // 1GB
       if (videoFile.size > maxSize) {
         return res.status(400).json({
           success: false,
-          message: "Video file too large. Maximum size: 500MB"
+          message: "Video file too large. Maximum size: 1GB"
         });
       }
 

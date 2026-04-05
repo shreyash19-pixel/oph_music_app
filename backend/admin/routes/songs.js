@@ -2,9 +2,14 @@ const express = require('express');
 const router = express.Router();
 const songsController = require('../controllers/songs')
 const multer = require('multer');
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 },
+const memoryStorage = multer.memoryStorage();
+const uploadAudio = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // matches admin updateAudioSection validation
+});
+const uploadVideo = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB; matches updateVideoSection validation
 });
 
 
@@ -15,8 +20,8 @@ router.get('/song-approved/:ophId/:songId', songsController.getSongApproved);
 router.put("/songs/update-status", songsController.updateSongSectionStatus);
 
 // Update routes for audio and video sections
-router.put('/audio/:songId/:ophId', upload.single('audio_file'), songsController.updateAudioSection);
-router.put('/video/:songId', upload.fields([
+router.put('/audio/:songId/:ophId', uploadAudio.single('audio_file'), songsController.updateAudioSection);
+router.put('/video/:songId', uploadVideo.fields([
   { name: "video_file", maxCount: 1 },
   { name: "thumbnails", maxCount: 3 },
 ]), songsController.updateVideoSection);
