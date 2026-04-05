@@ -83,59 +83,93 @@ export default function KPIDashboard() {
   }, [ophid, headers, artistImage]);
 
 
- const fetchContent = async () => {
-   try {
-     const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}`);
-     const metrics = response.data.s3Metrics || [];
-     console.log(metrics);
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await axiosApi.get("/artist-spotlight/artist-info", {
+          headers,
+          params: { ophid },
+        });
+        if (cancelled) return;
+        const row = response.data?.data?.[0];
+        const photo = row?.personal_photo ?? row?.personalPhoto;
+        if (photo) setArtistImage(String(photo).trim());
+      } catch {
+        /* optional */
+      }
+    })();
 
-     // Merge into chart-friendly arrays
-     const performanceData = [];
-     const trafficData = [];
-     const songsData = [];
-     const audienceData = [];
-     const eventsData = [];
-     const durationData = [];
+    return () => {
+      cancelled = true;
+    };
+  }, [ophid, headers, artistImage]);
 
-     metrics.forEach((item) => {
-       const [h, m, s] = item.avg_view_duration.split(":").map(Number);
-       const totalSeconds = h * 3600 + m * 60 + s;
-       const label = `${item.month} ${item.year}`; // e.g. "August 2025"
+  const fetchContent = async () => {
+    try {
+      const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}&duration=${duration}`);
+      const metrics = response.data.s3Metrics || [];
+      console.log("Fetched metrics with duration:", duration, metrics);
 
-       performanceData.push({
-         name: label,
-         Songs: item.song_count,
-         Traffic: item.user_traffic,
-         Performance: artistRank || null,
-       });
+      // Merge into chart-friendly arrays
+      const performanceData = [];
+      const trafficData = [];
+      const songsData = [];
+      const audienceData = [];
+      const eventsData = [];
+      const durationData = [];
 
-       trafficData.push({ name: label, value: item.user_traffic });
-       songsData.push({ name: label, value: item.song_count });
-       audienceData.push({ name: label, value: item.total_views });
-       eventsData.push({ name: label, value: item.total_accepted_events });
-       durationData.push({ name: label, value: totalSeconds });
-     });
+      metrics.forEach((item) => {
+        const [h, m, s] = item.avg_view_duration.split(":").map(Number);
+        const totalSeconds = h * 3600 + m * 60 + s;
+        const label = `${item.month} ${item.year}`; // e.g. "August 2025"
 
-     setKpiData({
-       performanceData,
-       trafficData,
-       songsData,
-       audienceData,
-       eventsData,
-       durationData,
-     });
+        performanceData.push({
+          name: label,
+          Songs: item.song_count,
+          Traffic: item.user_traffic,
+          Performance: artistRank || null,
+        });
 
-     setSelectedContentId(null);
-     setSelectedContent(null);
-     setLoading(false);
-   } catch (error) {
-     console.error("Error fetching content:", error);
-     setError(error.message);
-     setLoading(false);
-   }
- };
+        trafficData.push({ name: label, value: item.user_traffic });
+        songsData.push({ name: label, value: item.song_count });
+        audienceData.push({ name: label, value: item.total_views });
+        eventsData.push({ name: label, value: item.total_accepted_events });
+        durationData.push({ name: label, value: totalSeconds });
+      });
 
+      setKpiData({
+        performanceData,
+        trafficData,
+        songsData,
+        audienceData,
+        eventsData,
+        durationData,
+      });
 
+      console.log("🔍 KPI Data Set:", {
+        performanceData,
+        trafficData,
+        songsData,
+        audienceData,
+        eventsData,
+        durationData,
+        artistRank,
+      });
+
+      setSelectedContentId(null);
+      setSelectedContent(null);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching content:", error);
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setArtistImage(null);
+    setArtistRank(null);
+  }, [ophid]);
 
   useEffect(() => {
     setArtistImage(null);
@@ -145,9 +179,10 @@ export default function KPIDashboard() {
   useEffect(() => {
     if (!ophid) return;
 
+    setLoading(true);
     fetchContent();
     fetchRanking();
-  }, [ophid, duration, artistRank]);
+  }, [ophid, duration]);
 
   if (error) return <div>Error: {error}</div>;
 
@@ -229,13 +264,11 @@ export default function KPIDashboard() {
               type="area"
               data={kpiData?.trafficData || []}
               title="Website Artist page traffic"
-              subtitle="In Millions"
-              metric={`${(
-                kpiData?.trafficData.reduce(
-                  (sum, item) => sum + item.value,
-                  0 
-                ) / 1000000
-              ).toFixed(2)}M`}
+              subtitle="In Numbers"
+              metric={kpiData?.trafficData.reduce(
+                (sum, item) => sum + item.value,
+                0,
+              )}
               colors={["#22c55e"]}
               height={250}
             />
@@ -249,7 +282,7 @@ export default function KPIDashboard() {
                 subtitle="In Numbers"
                 metric={kpiData?.songsData.reduce(
                   (sum, item) => Math.max(sum, parseInt(item.value)),
-                  0
+                  0,
                 )}
                 colors={["#eab308"]}
                 height={200}
@@ -259,13 +292,11 @@ export default function KPIDashboard() {
                 type="bar"
                 data={kpiData?.audienceData || []}
                 title="Total Audience Reached"
-                subtitle="In Millions"
-                metric={`${(
-                  kpiData?.audienceData.reduce(
-                    (sum, item) => sum + item.value,
-                    0
-                  ) / 1000000
-                ).toFixed(2)}M`}
+                subtitle="In Numbers"
+                metric={kpiData?.audienceData.reduce(
+                  (sum, item) => sum + item.value,
+                  0,
+                )}
                 colors={["#a855f7"]}
                 height={200}
               />
@@ -279,7 +310,7 @@ export default function KPIDashboard() {
               subtitle="In Numbers"
               metric={`${kpiData?.eventsData.reduce(
                 (sum, item) => sum + item.value,
-                0
+                0,
               )} Events`}
               colors={["#22d3ee"]}
               height={250}
@@ -294,7 +325,7 @@ export default function KPIDashboard() {
               metric={`${(
                 kpiData?.durationData.reduce(
                   (sum, item) => sum + parseInt(item.value),
-                  0
+                  0,
                 ) / kpiData?.durationData.length
               ).toFixed(0)} Seconds`}
               colors={["#22d3ee"]}
