@@ -306,11 +306,11 @@ useEffect(() => {
             valueInstagram: c.insta_engagement || 0,
           };
           
-          if (!existing || newData.valueEngagement > existing.valueEngagement) {
+          if (!existing || new Date(c.date).getTime() > new Date(existing.date).getTime()) {
             dataMap.set(dateKey, newData);
           }
         });
-        return Array.from(dataMap.values());
+        return Array.from(dataMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       })()
     : selectedContent
     ? [
@@ -383,11 +383,14 @@ useEffect(() => {
   }, 0);
 
   const filterByDuration = (data, dateField) => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - selectedDuration);
+    const currentDate = new Date();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(currentDate.getDate() - selectedDuration);
+    
     return data.filter((d) => {
-      if (!d[dateField]) return true; // Include records with null dates
-      return new Date(d[dateField]) >= cutoff;
+      if (!d[dateField]) return false;
+      const itemDate = new Date(d[dateField]);
+      return itemDate >= cutoffDate && itemDate <= currentDate;
     });
   };
 
@@ -628,7 +631,8 @@ useEffect(() => {
                   </p>
 
                   <p className="text-gray-400 text-sm">
-                    {selectedContent?.[0]?.credits ||
+                    {videoData?.credits ||
+                      selectedContent?.[0]?.credits ||
                       "No description available"}
                   </p>
                 </div>
@@ -699,7 +703,7 @@ useEffect(() => {
                         key="duration"
                         type="area"
                         data={filteredChartData.map((d) => ({
-                          ...d,
+                          name: d.name,
                           value: d.valueDuration,
                         }))}
                         title="Average View Duration"

@@ -262,6 +262,7 @@ const MusicPlayerProfile2 = ({
     };
   }, []);
 
+  const canLoop = songsArray.length > 3;
   const desktopSlides = Math.min(3, Math.max(1, songsArray.length));
   const tabletSlides = Math.min(2, Math.max(1, songsArray.length));
 

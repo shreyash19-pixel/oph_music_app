@@ -46,6 +46,7 @@ export default function ArtistProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -252,10 +253,21 @@ export default function ArtistProfile() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const formData = new FormData();
-      formData.append("profile_image", file);
-      await updateProfileImage(formData, headers);
-      await fetchProfile();
+      setIsUploadingImage(true);
+      try {
+        const formData = new FormData();
+        formData.append("profile_image", file);
+        const response = await updateProfileImage(formData, headers);
+        setArtist(prev => ({
+          ...prev,
+          personal_photo: response.data.personal_photo
+        }));
+        toast.success("Profile image updated successfully");
+      } catch (error) {
+        toast.error("Failed to update profile image");
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -278,12 +290,18 @@ export default function ArtistProfile() {
                 accept="image/*"
                 onChange={handleImageUpload}
                 hidden
+                disabled={isUploadingImage}
               />
               <button
                 onClick={() => inputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                disabled={isUploadingImage}
+                className="absolute bottom-0 right-0 bg-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Edit3 className="w-4 h-4 text-white" />
+                {isUploadingImage ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Edit3 className="w-4 h-4 text-white" />
+                )}
               </button>
             </div>
             <div className="flex-1 min-w-[200px]">
