@@ -13,18 +13,27 @@ const timeToSeconds = (timeStr) => {
   return h * 3600 + m * 60 + s;
 };
 
+/** Independent artists use OPH IDs like OPH-CAN-IA-01 (segment `-IA-`). */
+const isIndependentArtistOphId = (ophId) => {
+  if (ophId == null || ophId === "") return false;
+  return String(ophId).toUpperCase().includes("-IA-");
+};
+
 const fetchKPIData = async () => {
   try {
     const res = await Backendaxios.get("/get_kpi_model");
-    return res.data.map((entry) => ({
-      OPH_ID: entry.OPH_ID,
-      user_traffic: entry.user_traffic || 0,
-      song_count: entry.song_count || 0,
-      total_views: parseInt(entry.total_views, 10) || 0,
-      avg_view_duration: entry.avg_view_duration || "00:00:00",
-      total_accepted_events: entry.total_accepted_events || 0,
-      avgViewInSeconds: timeToSeconds(entry.avg_view_duration || "00:00:00"),
-    }));
+    const rows = Array.isArray(res.data) ? res.data : [];
+    return rows
+      .filter((entry) => isIndependentArtistOphId(entry.OPH_ID ?? entry.oph_id))
+      .map((entry) => ({
+        OPH_ID: entry.OPH_ID ?? entry.oph_id,
+        user_traffic: entry.user_traffic || 0,
+        song_count: entry.song_count || 0,
+        total_views: parseInt(entry.total_views, 10) || 0,
+        avg_view_duration: entry.avg_view_duration || "00:00:00",
+        total_accepted_events: entry.total_accepted_events || 0,
+        avgViewInSeconds: timeToSeconds(entry.avg_view_duration || "00:00:00"),
+      }));
   } catch (err) {
     console.error("Error fetching KPI data:", err);
     return [];

@@ -358,7 +358,24 @@ const fetchmonthly = async (req, res) => {
 
 
 
-}
+};
+
+const getSpecialArtistMonthlyMetrics = async (req, res) => {
+  try {
+    const rows = await SongSocialMetrics.getApprovedSpecialArtistTrafficAndEvents();
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: rows,
+    });
+  } catch (err) {
+    console.error("Error fetching special artist monthly metrics:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Internal server error",
+    });
+  }
+};
 
 module.exports = {
   getSongMetricsSummary,
@@ -372,4 +389,5 @@ module.exports = {
   getArtistProfile,
   fetchmonthly,
   getKPI,
+  getSpecialArtistMonthlyMetrics,
 };

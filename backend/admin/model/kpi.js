@@ -518,6 +518,38 @@ const getCollabArtistKpiDetail = async (ophId) => {
   return { profile, songMetrics };
 };
 
+/**
+ * Approved special (-SA-) artists: profile traffic + accepted event count (for monthly S3 snapshots).
+ */
+const getApprovedSpecialArtistTrafficAndEvents = async () => {
+  const [rows] = await db.execute(
+    `
+    SELECT
+      ud.oph_id,
+      ud.stage_name,
+      IFNULL(ud.traffic, 0) AS traffic,
+      IFNULL(ep.accepted_event_count, 0) AS accepted_event_count,
+      ud.created_at,
+      ud.updated_at
+    FROM user_details ud
+    INNER JOIN application_status app ON ud.oph_id = app.oph_id
+    LEFT JOIN (
+      SELECT
+        oph_id,
+        COUNT(*) AS accepted_event_count
+      FROM event_participants
+      WHERE status = 'accepted'
+      GROUP BY oph_id
+    ) ep ON ud.oph_id = ep.oph_id
+    WHERE UPPER(ud.oph_id) LIKE '%-SA-%'
+      AND LOWER(TRIM(IFNULL(app.overall_status, ''))) IN ('completed', 'approved')
+      AND IFNULL(ud.is_active, 1) = 1
+    ORDER BY ud.oph_id ASC
+    `,
+  );
+  return rows;
+};
+
 const upsertKpiRunMetadata = async ({
   run_at,
   max_user_traffic,
@@ -567,4 +599,5 @@ module.exports = {
   getKpiRunMetadata,
   upsertKpiRunMetadata,
   getCollabArtistKpiDetail,
+  getApprovedSpecialArtistTrafficAndEvents,
 };

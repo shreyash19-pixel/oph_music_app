@@ -11,6 +11,7 @@
  * - monthly-kpi: Save monthly KPI metrics to S3 (monthly)
  * - monthly-leaderboard: Save monthly leaderboard metrics to S3 (monthly)
  * - monthly-song: Save monthly song metrics to S3 (monthly)
+ * - monthly-special-artist-metrics: Save approved SA artist traffic + events to S3 (monthly)
  */
 
 require("dotenv").config();
@@ -76,7 +77,8 @@ const taskMap = {
   'leaderboard': 'leaderboard.js',
   'monthly-kpi': 'monthly_kpi.js',
   'monthly-leaderboard': 'monthly_leaderboard.js',
-  'monthly-song': 'monthly_song.js'
+  'monthly-song': 'monthly_song.js',
+  'monthly-special-artist-metrics': 'monthly_special_artist_metrics.js',
 };
 
 const taskFileName = taskMap[taskName];
