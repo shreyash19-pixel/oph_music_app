@@ -7,6 +7,7 @@ const {
   insertKpiRunMetadata,
   fetchAllKpiScores,
   getCollabArtistKpiDetailController,
+  getArtistSearchFiltersController,
   getTopSearchedArtistsController,
   getTopArtistsController,
   getArtistProfile,
@@ -16,7 +17,8 @@ const {
 router.get('/get_kpi_model', getSongMetricsSummary);
 router.post("/insert_kpi_score", insertOrUpdateKpiScore);
 router.post("/insert_kpi_run_metadata", insertKpiRunMetadata);
-router.get("/get-top-searched-artist", getTopSearchedArtistsController)
+router.get("/artist-search-filters", getArtistSearchFiltersController);
+router.get("/get-top-searched-artist", getTopSearchedArtistsController);
 router.get("/get-top-artist", getTopArtistsController)
 router.get("/get-top-artist-detail", getArtistProfile)
 

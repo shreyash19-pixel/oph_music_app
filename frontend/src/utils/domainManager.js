@@ -36,17 +36,18 @@ export const getOriginDomain = () => {
 };
 
 /**
- * Get the full origin URL
- * If on .org with no origin cookie, defaults to .com
+ * Full path for cross-domain redirect: pathname + query (hash omitted; app uses search params).
+ * Pass `path` only if you intentionally override; otherwise omit so current location keeps ?artist= / ?id=.
  */
 export const getOriginUrl = (path = null) => {
   const hostname = window.location.hostname;
   const originDomain = getOriginDomain();
-  
+  const originPath =
+    path ?? `${window.location.pathname}${window.location.search}`;
+
   // If we're on .org and have an origin cookie, use it
   if (hostname.includes('ophcommunity.org') && originDomain) {
     const protocol = window.location.protocol;
-    const originPath = path || window.location.pathname;
     // Normalize domain (remove www. if present)
     const normalizedDomain = originDomain.replace(/^www\./, '');
     console.log('[DomainManager] Redirecting to origin:', { originDomain, normalizedDomain, path: originPath });
@@ -56,7 +57,6 @@ export const getOriginUrl = (path = null) => {
   // If we're on .org with no origin cookie, default to .com
   if (hostname.includes('ophcommunity.org') && !originDomain) {
     const protocol = window.location.protocol;
-    const originPath = path || window.location.pathname;
     console.log('[DomainManager] No origin cookie, defaulting to .com:', { path: originPath });
     return `${protocol}//ophcommunity.com${originPath}`;
   }
@@ -64,28 +64,36 @@ export const getOriginUrl = (path = null) => {
   return null;
 };
 
+/** Paths nginx proxies on ophcommunity.org — must not client-redirect to .com (drops SPA / query). */
+const ORG_SPA_STAY_PATHS = [
+  "/auth",
+  "/dashboard",
+  "/assets",
+  "/@",
+  "/collaboration-artist-detail",
+  "/public-artist-detail",
+];
+
+function staysOnOrgSpa(pathname) {
+  const p = pathname || "";
+  return ORG_SPA_STAY_PATHS.some((prefix) => p.startsWith(prefix));
+}
+
 /**
  * Check if we're on .org and should redirect to origin (or .com by default)
  */
 export const shouldRedirectToOrigin = () => {
   const hostname = window.location.hostname;
   const pathname = window.location.pathname;
-  
-  // Only redirect if:
-  // 1. We're on .org
-  // 2. We're NOT on an auth route (auth routes should stay on .org)
-  // 3. We're NOT on dashboard routes (dashboard can stay on .org)
-  // 4. We're NOT on assets routes
-  if (
-    hostname.includes('ophcommunity.org') &&
-    !pathname.startsWith('/auth') &&
-    !pathname.startsWith('/dashboard') &&
-    !pathname.startsWith('/assets') &&
-    !pathname.startsWith('/@')
-  ) {
-    return true;
+
+  if (!hostname.includes("ophcommunity.org")) {
+    return false;
   }
-  
-  return false;
+
+  if (staysOnOrgSpa(pathname)) {
+    return false;
+  }
+
+  return true;
 };
 

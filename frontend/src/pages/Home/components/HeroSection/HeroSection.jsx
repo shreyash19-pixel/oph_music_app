@@ -18,6 +18,14 @@ const isArtistRegistered = (eventId, artistBookEvents = []) =>
       (e.status === "under review" || e.status === "accepted")
   );
 
+/** API / parent may pass a single object or an array of releases; SongCard needs one object. */
+function firstUpcomingRelease(raw) {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return raw[0] ?? null;
+  if (typeof raw === "object") return raw;
+  return null;
+}
+
 const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,90 +151,57 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
         )}
       </div>
 
-      {/* Carousel */}
-      {slides.length > 0 && (
-        <div className="relative">
-          <div 
-            className="overflow-hidden"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {slides[currentSlide].type === 'song' ? (
-              <SongCard releaseData={slides[currentSlide].data} />
-            ) : (
-              <div
-                className="bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
-                style={{ backgroundImage: "url('/assets/images/songUploadCardBg.png')" }}
-              >
-                <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
-                  <div className="w-full md:w-2/3 space-y-4">
-                    <div>
-                      <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">NEW EVENT</p>
-                      <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-                        {slides[currentSlide].data.EventName}
-                      </h2>
-                    </div>
-                    <div className="text-slate-300 text-sm sm:text-base space-y-2">
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
-                        <span>Competition Date:</span>
-                        <span className="font-medium text-white">
-                          {formatDateAndAdjustMonth(slides[currentSlide].data.dateTime)}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
-                        <span>Registration:</span>
-                        <span className="font-medium text-white">
-                          {formatRegistrationStartDate(slides[currentSlide].data.registrationStart)} to {formatRegistrationEndDate(slides[currentSlide].data.registrationEnd)}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
-                        <span>Registration Fee:</span>
-                        <span className="font-medium text-white">
-                          {slides[currentSlide].data.registrationFee_normal}/-
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      {isArtistRegistered(slides[currentSlide].data.event_id ?? slides[currentSlide].data.id, artistBookEvents) ? (
-                        <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
-                          Registered
-                        </button>
-                      ) : isRegistrationNotStartedYet(slides[currentSlide].data) ? (
-                        <button
-                          type="button"
-                          disabled
-                          className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                          title={`Registration opens at ${formatRegistrationStartDate(slides[currentSlide].data.registrationStart)}`}
-                        >
-                          Registration opens {formatRegistrationStartDate(slides[currentSlide].data.registrationStart)}
-                        </button>
-                      ) : !isRegistrationOpen(slides[currentSlide].data) ? (
-                        <button
-                          type="button"
-                          disabled
-                          className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                          title={`Registration closed at ${formatRegistrationEndDate(slides[currentSlide].data.registrationEnd)}`}
-                        >
-                          Closed
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleClick(slides[currentSlide].data)}
-                          className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
-                        >
-                          Register
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-full md:w-[35%]">
-                    <img
-                      src={slides[currentSlide].data.image}
-                      alt="Event thumbnail"
-                      className="w-full h-full max-h-[250px] object-cover rounded-lg"
-                    />
-                  </div>
+      {/* <SongDetails/> */}
+
+      {(() => {
+        const row = firstUpcomingRelease(upcomingSong);
+        if (!row || typeof row !== "object") return null;
+        // Match prior visibility: show when API sent any fields (not a lone empty `{}`).
+        // Avoid requiring specific keys — `song_id` can be 0; names may be `EventName` only.
+        if (Object.keys(row).length === 0) return null;
+        return <SongCard releaseData={row} />;
+      })()}
+
+      {/* Event Banner */}
+      <div
+        className="relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
+        style={{
+          backgroundImage: "url('/assets/images/songUploadCardBg.png')",
+        }}
+      >
+        {upcomingEvent && (
+          <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
+            {/* Left Content Section */}
+            <div className="w-full md:w-2/3 space-y-4">
+              {/* Header */}
+              <div>
+                <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
+                  NEW EVENT
+                </p>
+                <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
+                  {upcomingEvent.EventName}
+                </h2>
+              </div>
+
+              {/* Details */}
+              <div className="text-slate-300 text-sm sm:text-base space-y-2">
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <span>Competition Date:</span>
+                  <span className="font-medium text-white">
+                    {formatDateAndAdjustMonth(upcomingEvent.dateTime)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <span>Registration:</span>
+                  <span className="font-medium text-white">
+                    {formatRegistrationStartDate(upcomingEvent.registrationStart)} to {formatRegistrationEndDate(upcomingEvent.registrationEnd)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  <span>Registration Fee:</span>
+                  <span className="font-medium text-white">
+                    {upcomingEvent.registrationFee_normal}/-
+                  </span>
                 </div>
               </div>
             )}

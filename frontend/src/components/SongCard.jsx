@@ -1,37 +1,80 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { differenceInDays } from "date-fns";
-import axiosApi from "../conf/axios";
 import formatDateAndAdjustMonth from "../utils/date";
 
-const SongCard = ({releaseData}) => {
-  
+const DEFAULT_THUMB = "/logo.svg";
+
+function parseReleaseInstant(raw) {
+  if (raw == null || raw === "") return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function pickThumbnailUrl(image) {
+  if (image == null) return DEFAULT_THUMB;
+  if (typeof image === "string") {
+    const s = image.trim();
+    return s === "" || s.toLowerCase() === "null" ? DEFAULT_THUMB : s;
+  }
+  if (Array.isArray(image)) {
+    const first = image[0];
+    if (typeof first === "string") return first || DEFAULT_THUMB;
+    if (first && typeof first === "object") {
+      return first.url || first.src || first.href || DEFAULT_THUMB;
+    }
+    return DEFAULT_THUMB;
+  }
+  if (typeof image === "object") {
+    return image.url || image.src || image.href || DEFAULT_THUMB;
+  }
+  return DEFAULT_THUMB;
+}
+
+const SongCard = ({ releaseData }) => {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  console.log(releaseData?.dateTime);
-  
-  const releaseDate = formatDateAndAdjustMonth(releaseData?.dateTime);
-  const title = releaseData?.EventName;
-  const thumbnailUrl = releaseData?.image; // or from API if available
-  const thumbnailAlt = `${releaseData?.EventName} Thumbnail`;
+  const rawDate =
+    releaseData?.dateTime ??
+    releaseData?.release_date ??
+    releaseData?.releaseDate;
+  const songReleaseDate = parseReleaseInstant(rawDate);
 
-  const currentDate = new Date()
-  const songReleaseDate = new Date(releaseData?.dateTime)
+  const title =
+    releaseData?.EventName ??
+    releaseData?.song_name ??
+    releaseData?.Song_name ??
+    "Upcoming release";
 
-  const getCurrentTime = currentDate.getTime()
-  const getUpcomingSongTime = songReleaseDate.getTime()
+  const thumbnailUrl = pickThumbnailUrl(releaseData?.image);
+  const thumbnailAlt = `${title} thumbnail`;
 
-  const diffInMins = getUpcomingSongTime - getCurrentTime
+  let bannerMessage = "Your upcoming release";
+  if (songReleaseDate) {
+    const diffMs = songReleaseDate.getTime() - Date.now();
+    const daysUntilRelease = Math.max(
+      0,
+      Math.ceil(diffMs / (1000 * 60 * 60 * 24)),
+    );
+    if (daysUntilRelease === 0) {
+      bannerMessage = "Your song releases today";
+    } else if (daysUntilRelease === 1) {
+      bannerMessage = "Your Song Is Gonna Release Tomorrow";
+    } else {
+      bannerMessage = `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
+    }
+  }
 
-  const daysUntilRelease = Math.ceil(diffInMins / (1000 * 60 * 60 * 24))
-
-  const isReleaseTomorrow = daysUntilRelease === 1;
-  const bannerMessage = isReleaseTomorrow
-    ? "Your Song Is Gonna Release Tomorrow"
-    : `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
+  const releaseLabel =
+    formatDateAndAdjustMonth(rawDate) ||
+    (songReleaseDate
+      ? songReleaseDate.toLocaleDateString("en-GB", {
+          timeZone: "Asia/Kolkata",
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "TBA");
 
   return (
     <div
@@ -58,10 +101,7 @@ const SongCard = ({releaseData}) => {
         <div className="space-y-2 text-slate-300">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">Release Date:</span>
-            <span className="font-medium text-white">
-              {/* {new Date(releaseDate).toLocaleDateString('en-GB')}    */}
-              {new Date(releaseData?.dateTime).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })}   
-            </span>
+            <span className="font-medium text-white">{releaseLabel}</span>
           </div>
         </div>
 
@@ -75,8 +115,12 @@ transition-all duration-250 border-0 select-none hover:shadow-[inset_0_-25px_18p
       <div className="w-48 h-48 rounded-lg overflow-hidden">
         <img
           src={thumbnailUrl}
-          // alt={thumbnailAlt}
-          className="w-full h-full object-cover"
+          alt={thumbnailAlt}
+          className="w-full h-full object-cover bg-gray-800"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = DEFAULT_THUMB;
+          }}
         />
       </div>
     </div>

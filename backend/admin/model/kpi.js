@@ -72,15 +72,152 @@ const KpiScore = async (
   ]);
 };
 
-const getTopSearchedArtists = async (searchQuery) => {
-  const key = `%${searchQuery}%`;
+const getArtistSearchFilterOptions = async () => {
+  const visible = `
+    IFNULL(ud.is_active, 1) = 1
+    AND (
+      UPPER(ud.oph_id) LIKE '%-SA-%'
+      OR LOWER(TRIM(IFNULL(app.overall_status, ''))) IN ('completed', 'approved')
+    )
+  `;
 
-  const [rows] = await db.execute(
-    "SELECT kpi.oph_id, ud.personal_photo, ud.stage_name, pd.profession, ud.location, kpi.total_views FROM KPI_score kpi LEFT JOIN user_details ud ON kpi.oph_id = ud.oph_id   LEFT JOIN professional_details pd ON kpi.oph_id = pd.oph_id WHERE ud.stage_name LIKE ? OR ud.location LIKE ? OR pd.profession LIKE ?",
-    [key, key, key],
+  const [profRows] = await db.execute(
+    `
+    SELECT DISTINCT TRIM(pd.profession) AS val
+    FROM user_details ud
+    LEFT JOIN application_status app ON ud.oph_id = app.oph_id
+    LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
+    WHERE ${visible}
+      AND pd.profession IS NOT NULL AND TRIM(pd.profession) <> ''
+    ORDER BY val ASC
+    `,
   );
 
-  return rows;
+  const [locRows] = await db.execute(
+    `
+    SELECT DISTINCT TRIM(ud.location) AS val
+    FROM user_details ud
+    LEFT JOIN application_status app ON ud.oph_id = app.oph_id
+    WHERE ${visible}
+      AND ud.location IS NOT NULL AND TRIM(ud.location) <> ''
+    ORDER BY val ASC
+    `,
+  );
+
+  return {
+    professions: profRows.map((r) => r.val).filter(Boolean),
+    locations: locRows.map((r) => r.val).filter(Boolean),
+  };
+};
+
+const getTopSearchedArtists = async (
+  searchQuery,
+  page = 1,
+  perPage = 10,
+  filterOpts = {},
+) => {
+  const raw = String(searchQuery ?? "").trim();
+  const profession = String(filterOpts.profession ?? "").trim();
+  const location = String(filterOpts.location ?? "").trim();
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const per = Math.min(50, Math.max(1, parseInt(perPage, 10) || 10));
+  const offset = (p - 1) * per;
+
+  if (!raw && !profession && !location) {
+    return {
+      rows: [],
+      total: 0,
+      page: 1,
+      perPage: per,
+      totalPages: 0,
+    };
+  }
+
+  const likeParams = [];
+  let textSearchSql = "";
+  if (raw) {
+    const esc = raw
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_");
+    const key = `%${esc}%`;
+    for (let i = 0; i < 8; i++) likeParams.push(key);
+    textSearchSql = `
+      AND (
+        LOWER(IFNULL(ud.oph_id, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.stage_name, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.full_name, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.location, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.email, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.contact_number, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(ud.artist_type, '')) LIKE LOWER(?)
+        OR LOWER(IFNULL(pd.profession, '')) LIKE LOWER(?)
+      )`;
+  }
+
+  let filterSql = "";
+  const filterParams = [];
+  if (profession) {
+    filterSql += " AND LOWER(TRIM(IFNULL(pd.profession, ''))) = LOWER(?)";
+    filterParams.push(profession);
+  }
+  if (location) {
+    filterSql += " AND LOWER(TRIM(IFNULL(ud.location, ''))) = LOWER(?)";
+    filterParams.push(location);
+  }
+
+  const paramArray = [...likeParams, ...filterParams];
+
+  const fromWhere = `
+    FROM user_details ud
+    LEFT JOIN application_status app
+      ON ud.oph_id = app.oph_id
+    LEFT JOIN professional_details pd
+      ON ud.oph_id = pd.OPH_ID
+    LEFT JOIN KPI_score kpi
+      ON ud.oph_id = kpi.oph_id
+    WHERE
+      IFNULL(ud.is_active, 1) = 1
+      AND (
+        UPPER(ud.oph_id) LIKE '%-SA-%'
+        OR LOWER(TRIM(IFNULL(app.overall_status, ''))) IN ('completed', 'approved')
+      )
+      ${textSearchSql}
+      ${filterSql}
+  `;
+
+  const [countRows] = await db.execute(
+    `SELECT COUNT(DISTINCT ud.oph_id) AS total ${fromWhere}`,
+    paramArray,
+  );
+  const total = Number(countRows[0]?.total) || 0;
+
+  const [rows] = await db.query(
+    `
+    SELECT DISTINCT
+      ud.oph_id,
+      ud.personal_photo,
+      ud.full_name,
+      ud.stage_name,
+      pd.profession,
+      ud.location,
+      IFNULL(kpi.total_views, 0) AS total_views
+    ${fromWhere}
+    ORDER BY IFNULL(kpi.total_views, 0) DESC, ud.stage_name ASC
+    LIMIT ${per} OFFSET ${offset}
+    `,
+    paramArray,
+  );
+
+  const totalPages = total > 0 ? Math.ceil(total / per) : 0;
+
+  return {
+    rows,
+    total,
+    page: p,
+    perPage: per,
+    totalPages,
+  };
 };
 
 const getTopArtists = async (page = 1, perPage = 6) => {
@@ -422,6 +559,7 @@ module.exports = {
   getMetricsSummary,
   getAllKpiScores,
   KpiScore,
+  getArtistSearchFilterOptions,
   getTopSearchedArtists,
   getTopArtists,
   getArtistProfile,

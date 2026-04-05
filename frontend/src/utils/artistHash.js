@@ -106,27 +106,37 @@ export const incrementProfileTraffic = async (ophId, authHeaders = null) => {
 };
 
 /**
- * Navigate to public artist detail; increments traffic for that ophId first.
- * @param {Function} navigate - React Router navigate function
+ * Open public artist detail in the browser. Uses a full navigation (assign) so
+ * `?artist=` / `?id=` are never dropped when leaving `/dashboard/*` (React Router 7
+ * can mishandle search across sibling route trees). `navigate` is kept for
+ * call-site compatibility only.
+ * @param {Function} _navigate - unused (legacy)
  * @param {string} ophId - The OPH ID
  * @param {object|null} authHeaders - optional; pass useArtist().headers when available
  */
 export const navigateToArtistDetail = async (
-  navigate,
+  _navigate,
   ophId,
   authHeaders = null
 ) => {
-  await incrementProfileTraffic(ophId, authHeaders);
+  const oid =
+    typeof ophId === "string" ? ophId.trim() : ophId != null ? String(ophId).trim() : "";
+  if (!oid) return;
+
+  await incrementProfileTraffic(oid, authHeaders);
+
+  let search;
   try {
-    const token = await getArtistHash(ophId);
-    if (token) {
-      navigate(`/collaboration-artist-detail?artist=${encodeURIComponent(token)}`);
-    } else {
-      navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
-    }
+    const token = await getArtistHash(oid);
+    search = token
+      ? `artist=${encodeURIComponent(token)}`
+      : `id=${encodeURIComponent(oid)}`;
   } catch (error) {
     console.error("Error navigating to artist detail:", error);
-    navigate(`/collaboration-artist-detail?id=${encodeURIComponent(ophId)}`);
+    search = `id=${encodeURIComponent(oid)}`;
   }
+
+  const url = `${window.location.origin}/collaboration-artist-detail?${search}`;
+  window.location.assign(url);
 };
 

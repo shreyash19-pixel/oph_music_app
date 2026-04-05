@@ -4,6 +4,30 @@ import { useNavigate } from "react-router-dom";
 import { useArtist } from "../../pages/auth/API/ArtistContext";
 import axiosApi from "../../conf/axios";
 
+/** In-repo asset (public/) — avoid /placeholder.svg which is not shipped. */
+const FALLBACK_AVATAR = "/logo.svg";
+
+/** Gray circle — always loads; used when remote URL 404s or API missing. */
+const FALLBACK_DATA_URI = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#374151"/><circle cx="20" cy="16" r="6" fill="#9ca3af"/></svg>',
+)}`;
+
+function pickPhotoUrl(row) {
+  if (!row) return "";
+  const raw =
+    row.personal_photo ??
+    row.personalPhoto ??
+    row.profile_img_url ??
+    row.PERSONAL_PHOTO;
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") {
+    return "";
+  }
+  /* Do not append ?height= — breaks many S3 / signed URLs */
+  return s;
+}
+
 const NavbarRight = () => {
   const navigate = useNavigate();
   const { ophid, headers, hasNewNotification, setHasNewNotification } = useArtist(); // get ophid + headers + notif flag
@@ -18,7 +42,13 @@ const NavbarRight = () => {
           params: { ophid },
         });
         if (response.data.success) {
-          setArtist(response.data.data[0]); // first artist record
+          const payload = response.data.data;
+          const row = Array.isArray(payload)
+            ? payload[0]
+            : payload && typeof payload === "object"
+              ? payload
+              : null;
+          setArtist(row ?? null);
         }
       } catch (error) {
         console.error("Failed to fetch artist data:", error);
@@ -60,19 +90,17 @@ const NavbarRight = () => {
         className="w-10 h-10 rounded-full border-2 border-cyan-400 overflow-hidden"
         title="Profile"
       >
-        {artist ? (
-          <img
-            src={`${artist.personal_photo}?height=40&width=40`}
-            alt={artist.stage_name}
-            className="w-10 h-10 rounded-full"
-          />
-        ) : (
-          <img
-            src="/placeholder.svg?height=40&width=40"
-            alt="Profile"
-            className="w-8 h-8 rounded-full"
-          />
-        )}
+        <img
+          src={pickPhotoUrl(artist) || FALLBACK_AVATAR}
+          alt={artist?.stage_name || "Profile"}
+          className="w-10 h-10 rounded-full object-cover bg-gray-700"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            if (e.currentTarget.src !== FALLBACK_DATA_URI) {
+              e.currentTarget.src = FALLBACK_DATA_URI;
+            }
+          }}
+        />
       </button>
     </div>
   );

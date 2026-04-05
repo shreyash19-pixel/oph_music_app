@@ -31,7 +31,8 @@ export default function KPIDashboard() {
       const currentId = String(ophid ?? "").trim();
 
       const artists = Object.values(allData).map((item) => {
-        const id = item.oph_id ?? item.ophid ?? item.OPH_ID ?? item.ophId ?? "";
+        const id =
+          item.oph_id ?? item.ophid ?? item.OPH_ID ?? item.ophId ?? "";
         return {
           ophId: String(id).trim(),
           stageName: item.stageName,
@@ -59,6 +60,28 @@ export default function KPIDashboard() {
   /** KPI map only includes artists with approved songs; load photo from profile when missing. */
   useEffect(() => {
     if (!ophid || !headers?.Authorization || artistImage) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await axiosApi.get("/artist-spotlight/artist-info", {
+          headers,
+          params: { ophid },
+        });
+        if (cancelled) return;
+        const row = response.data?.data?.[0];
+        const photo = row?.personal_photo ?? row?.personalPhoto;
+        if (photo) setArtistImage(String(photo).trim());
+      } catch {
+        /* optional */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ophid, headers, artistImage]);
+
 
     let cancelled = false;
     (async () => {
@@ -142,6 +165,11 @@ export default function KPIDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setArtistImage(null);
+    setArtistRank(null);
+  }, [ophid]);
 
   useEffect(() => {
     setArtistImage(null);
