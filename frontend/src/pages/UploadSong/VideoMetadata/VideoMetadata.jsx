@@ -203,6 +203,16 @@ export default function VideoMetadataForm() {
       return;
     }
 
+    const storedToken = localStorage.getItem("token");
+    if (
+      !storedToken ||
+      storedToken === "undefined" ||
+      storedToken === "null"
+    ) {
+      toast.error("Please sign in again to upload your video.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setIsLoading(true);
@@ -287,11 +297,9 @@ export default function VideoMetadataForm() {
         progressCleanupRef.current = () => socket.off("video-upload-progress", handler);
       }
 
+      // Do not set Content-Type — browser/axios must add multipart boundary.
+      // Auth: axios interceptor adds Authorization from localStorage if header missing.
       const response = await axiosApi.post(`/video-details`, formDataToSend, {
-        headers: {
-          ...headers,
-          "Content-Type": "multipart/form-data",
-        },
         onUploadProgress: (progressEvent) => {
           // For video uploads progress comes from socket; only use this for thumbnails-only
           if (formData.video_file) return;
@@ -484,7 +492,15 @@ export default function VideoMetadataForm() {
       }
     } catch (error) {
       console.error("Error uploading video metadata:", error);
-      toast.error("Failed to upload video metadata. Please try again.");
+      const status = error.response?.status;
+      const msg = error.response?.data?.message;
+      if (status === 401) {
+        toast.error(
+          msg || "Session expired or not signed in. Please log in again."
+        );
+      } else {
+        toast.error("Failed to upload video metadata. Please try again.");
+      }
     } finally {
       if (progressCleanupRef.current) {
         progressCleanupRef.current();

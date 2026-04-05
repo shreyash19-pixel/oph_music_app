@@ -11,9 +11,18 @@ import Twitter from "../../../public/assets/images/twitter.png";
 import Linkedin from "../../../public/assets/images/linkedin.png";
 import Insta from "../../../public/assets/images/instagram.png";
 import Spotify from "../../../public/assets/images/spotify.png";
-import AppleMusic from "../../../public/assets/images/apple_music.png";
+import AppleMusic from "../../../public/assets/images/apple.png";
 
 Modal.setAppElement("#root");
+
+/** Non-empty URL string for social icons (API may omit keys or send ""). */
+function socialHref(artist, ...keys) {
+  for (const k of keys) {
+    const v = artist?.[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
 
 function formatTrackLengthSeconds(seconds) {
   if (!Number.isFinite(seconds) || seconds <= 0) return "—";
@@ -276,86 +285,40 @@ export default function ArtistProfile() {
           {/* Bio */}
           <p className="text-gray-400 leading-relaxed">{artist.bio}</p>
 
-          {/* Social Links */}
+          {/* Social links: FB / IG / Spotify / Apple come from professional_details via get-artist-detail */}
           <div className="flex flex-wrap gap-4">
-            {artist.facebook_url && (
-              <a
-                href={artist.facebook_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={Face}
-                  alt="Facebook"
-                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                />
-              </a>
-            )}
-            {artist.instagram_url && (
-              <a
-                href={artist.instagram_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={Insta}
-                  alt="Instagram"
-                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                />
-              </a>
-            )}
-            {artist.linkedin_url && (
-              <a
-                href={artist.linkedin_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={Linkedin}
-                  alt="LinkedIn"
-                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                />
-              </a>
-            )}
-            {artist.twitter_url && (
-              <a
-                href={artist.twitter_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={Twitter}
-                  alt="Twitter"
-                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                />
-              </a>
-            )}
-            {artist.spotify_url && (
-              <a
-                href={artist.spotify_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={Spotify}
-                  alt="Spotify"
-                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                />
-              </a>
-            )}
-            {artist.apple_music_url && (
-              <a
-                href={artist.apple_music_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  src={AppleMusic}
-                  alt="Apple Music"
-                  className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                />
-              </a>
-            )}
+            {(() => {
+              const fb = socialHref(artist, "facebook_url", "facebook_link", "FacebookLink");
+              const ig = socialHref(artist, "instagram_url", "instagram_link", "InstagramLink");
+              const sp = socialHref(artist, "spotify_url", "spotify_link", "SpotifyLink");
+              const am = socialHref(artist, "apple_music_url", "apple_music_link", "AppleMusicLink");
+              const li = socialHref(artist, "linkedin_url", "linkedin_link");
+              const tw = socialHref(artist, "twitter_url", "twitter_link");
+              const items = [
+                { href: fb, src: Face, alt: "Facebook" },
+                { href: ig, src: Insta, alt: "Instagram" },
+                { href: sp, src: Spotify, alt: "Spotify" },
+                { href: am, src: AppleMusic, alt: "Apple Music" },
+                { href: li, src: Linkedin, alt: "LinkedIn" },
+                { href: tw, src: Twitter, alt: "Twitter" },
+              ];
+              return items
+                .filter((x) => x.href)
+                .map(({ href, src, alt }) => (
+                  <a
+                    key={alt}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      src={src}
+                      alt={alt}
+                      className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                    />
+                  </a>
+                ));
+            })()}
           </div>
 
           {/* Songs Table */}

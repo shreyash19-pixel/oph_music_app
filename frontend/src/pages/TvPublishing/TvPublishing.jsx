@@ -69,8 +69,8 @@ export default function TVPublishing() {
       toast.error("Audio file too large. Max 50MB");
       return;
     }
-    if (type === "video" && file.size > 500 * 1024 * 1024) {
-      toast.error("Video file too large. Max 500MB");
+    if (type === "video" && file.size > 1024 * 1024 * 1024) {
+      toast.error("Video file too large. Max 1GB");
       return;
     }
 
