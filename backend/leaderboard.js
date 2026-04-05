@@ -50,6 +50,12 @@ function ophKey(entry) {
   return entry.OPH_ID ?? entry.oph_id;
 }
 
+/** Independent artists use OPH IDs like OPH-CAN-IA-01 (segment `-IA-`). */
+function isIndependentArtistOphId(ophId) {
+  if (ophId == null || ophId === "") return false;
+  return String(ophId).toUpperCase().includes("-IA-");
+}
+
 async function leaderboardGenerate() {
   const res = await Backendaxios.get("/leaderboard_data");
   const metricsThrough =
@@ -64,10 +70,13 @@ async function leaderboardGenerate() {
   console.log(res.data);
 
   const data = Array.isArray(res.data) ? res.data : [];
+  const independentOnly = data.filter((entry) =>
+    isIndependentArtistOphId(ophKey(entry)),
+  );
 
   console.time("Score calculation time");
 
-  const artistScores = data.map((entry) => {
+  const artistScores = independentOnly.map((entry) => {
     const views = entry.total_views;
     const score = calculateScore(views, entry.song_count);
     return { ...entry, score };

@@ -82,28 +82,6 @@ export default function KPIDashboard() {
     };
   }, [ophid, headers, artistImage]);
 
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await axiosApi.get("/artist-spotlight/artist-info", {
-          headers,
-          params: { ophid },
-        });
-        if (cancelled) return;
-        const row = response.data?.data?.[0];
-        const photo = row?.personal_photo ?? row?.personalPhoto;
-        if (photo) setArtistImage(String(photo).trim());
-      } catch {
-        /* optional */
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ophid, headers, artistImage]);
-
   const fetchContent = async () => {
     try {
       const response = await axiosApi.get(`/getKPI?OPH_ID=${ophid}&duration=${duration}`);
