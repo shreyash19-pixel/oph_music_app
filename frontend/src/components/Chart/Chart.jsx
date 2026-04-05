@@ -39,6 +39,7 @@ export default function Chart({
   stacked = false,
   showLegend = false,
   height = 200,
+  legendLabel = "",
   /** Area/line: lock Y axis at 0 so a flat series (e.g. 120) does not show as 108–132 ticks. */
   yFromZero = false,
 }) {
@@ -96,7 +97,7 @@ export default function Chart({
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
-              type="monotone"
+              type="step"
               dataKey="value"
               stroke={colors[0]}
               strokeWidth={2}
@@ -107,7 +108,7 @@ export default function Chart({
 
       case "bar":
         return (
-          <BarChart {...commonProps}>
+          <BarChart {...commonProps} barCategoryGap="20%">
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="#1F2937"
@@ -116,7 +117,7 @@ export default function Chart({
             <XAxis dataKey="name" {...commonAxisProps} />
             <YAxis
               {...commonAxisProps}
-              // domain={[minValue - yAxisPadding, maxValue + yAxisPadding]}
+              domain={[0, 'auto']}
             />
             <Tooltip content={<CustomTooltip />} />
             {stacked ? (
@@ -129,16 +130,18 @@ export default function Chart({
                     dataKey={key}
                     fill={colors[index % colors.length]}
                     stackId="stack"
+                    radius={[4, 4, 0, 0]}
                   />
                 ))
             ) : (
-              <Bar dataKey="value" fill={colors[0]} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill={colors[0]} radius={[4, 4, 0, 0]} maxBarSize={80} />
             )}
-            {showLegend && (
+            {showLegend && legendLabel && (
               <Legend
                 wrapperStyle={{
                   paddingTop: "20px",
                 }}
+                payload={[{ value: legendLabel, type: 'square', color: colors[0] }]}
                 formatter={(value) => (
                   <span className="text-gray-400">{value}</span>
                 )}
@@ -189,6 +192,17 @@ export default function Chart({
     }
   };
 
+  const formatMetric = (value) => {
+    const numValue = Number(value);
+    if (!isNaN(numValue)) {
+      if (numValue >= 1000000) {
+        return `${(numValue / 1000000).toFixed(2)}M+`;
+      }
+      return numValue.toLocaleString();
+    }
+    return value;
+  };
+
   return (
     <div className="bg-gray-900/50 rounded-lg p-4 space-y-4">
       <div className="flex justify-between items-start">
@@ -196,10 +210,10 @@ export default function Chart({
           <h3 className="font-medium text-gray-200">{title}</h3>
           {subtitle && <p className="text-sm text-gray-400">{subtitle}</p>}
         </div>
-        {metric && (
+        {metric !== undefined && metric !== null && (
           <div className="text-right">
             <span className="text-lg font-semibold text-cyan-400">
-              {metric}
+              {formatMetric(metric)}
             </span>
           </div>
         )}

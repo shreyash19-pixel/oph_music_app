@@ -29,6 +29,9 @@ function firstUpcomingRelease(raw) {
 const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const eventID = useSelector((state) => state.event.selectedEvent);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -65,6 +68,21 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
   useEffect(() => {
     fetchPageMedia();
   }, []);
+
+  const slides = [];
+  if (Object.values(upcomingSong).length > 0) slides.push({ type: 'song', data: upcomingSong });
+  if (upcomingEvent) slides.push({ type: 'event', data: upcomingEvent });
+
+  const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const handleTouchEnd = () => {
+    if (touchStart - touchEnd > 50) {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }
+    if (touchStart - touchEnd < -50) {
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    }
+  };
 
   const handleClick = async (e) => {
     dispatch(changeSelectedEvent({ data: e }));
@@ -186,53 +204,25 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
                   </span>
                 </div>
               </div>
-
-              {/* Register Button – same logic as Events page: active period only clickable */}
-              <div>
-                {isArtistRegistered(upcomingEvent.event_id ?? upcomingEvent.id, artistBookEvents) ? (
-                  <button className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1">
-                    Registered
-                  </button>
-                ) : isRegistrationNotStartedYet(upcomingEvent) ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                    title={`Registration opens at ${formatRegistrationStartDate(upcomingEvent.registrationStart)}`}
-                  >
-                    Registration opens {formatRegistrationStartDate(upcomingEvent.registrationStart)}
-                  </button>
-                ) : !isRegistrationOpen(upcomingEvent) ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="bg-slate-600 text-slate-300 rounded-full px-6 py-2 font-semibold cursor-not-allowed"
-                    title={`Registration closed at ${formatRegistrationEndDate(upcomingEvent.registrationEnd)}`}
-                  >
-                    Closed
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleClick(upcomingEvent)}
-                    className="bg-[#5DC9DE] text-black rounded-full px-6 py-2 font-semibold transition-all hover:scale-105 hover:-rotate-1"
-                  >
-                    Register
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Right Image Section */}
-            <div className="w-full md:w-[35%]">
-              <img
-                src={upcomingEvent.image}
-                alt="Event thumbnail"
-                className="w-full h-full max-h-[250px] object-cover rounded-lg"
-              />
-            </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Dots */}
+          {slides.length > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === currentSlide ? 'bg-cyan-400 w-6' : 'bg-slate-500'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Registration Modal */}
       {isModalOpen && (

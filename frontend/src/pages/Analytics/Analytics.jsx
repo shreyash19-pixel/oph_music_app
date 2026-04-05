@@ -137,6 +137,7 @@ export default function AnalyticsDashboard() {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [videoData, setVideoData] = useState(null);
+  const [exchangeRate] = useState(1/92.7); // Fixed conversion rate: 1 USD = 92.7 INR, so 1 INR = 0.01079 USD
   const chartsPerPage = 3;
 
   const [analyticsData, setAnalyticsData] = useState({
@@ -268,7 +269,7 @@ useEffect(() => {
 
   console.log("Combined metrics:", submitMetric);
 
-  const inrToUsd = (inr, rate = 0.011) => inr * rate;
+  const inrToUsd = (inr) => inr * exchangeRate;
 
   const rows = Array.isArray(selectedContent)
     ? selectedContent
@@ -291,23 +292,26 @@ useEffect(() => {
   };
 
   const chartData = Array.isArray(selectedContent)
-    ? selectedContent.map((c) => {
-        console.log("📊 Mapping chartData for:", {
-          date: c.date,
-          youtube_views: c.youtube_views,
-          youtube_engagement: c.youtube_engagement,
-          youtube_avg_view_duration: c.youtube_avg_view_duration,
-          insta_engagement: c.insta_engagement,
+    ? (() => {
+        const dataMap = new Map();
+        selectedContent.forEach((c) => {
+          const dateKey = c.date ? new Date(c.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
+          const existing = dataMap.get(dateKey);
+          const newData = {
+            name: dateKey,
+            date: c.date,
+            value: c.youtube_views || 0,
+            valueEngagement: c.youtube_engagement || 0,
+            valueDuration: parseDuration(c.youtube_avg_view_duration),
+            valueInstagram: c.insta_engagement || 0,
+          };
+          
+          if (!existing || newData.valueEngagement > existing.valueEngagement) {
+            dataMap.set(dateKey, newData);
+          }
         });
-        return {
-          name: c.date ? new Date(c.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }) : "Unknown Date",
-          date: c.date,
-          value: c.youtube_views,
-          valueEngagement: c.youtube_engagement,
-          valueDuration: parseDuration(c.youtube_avg_view_duration),
-          valueInstagram: c.insta_engagement,
-        };
-      })
+        return Array.from(dataMap.values());
+      })()
     : selectedContent
     ? [
         {
@@ -637,14 +641,15 @@ useEffect(() => {
               <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col">
-                    <p className="text-sm text-gray-400">Generated Revenue:</p>
+                    <p className="text-sm text-gray-400">Generated Revenue (USD):</p>
                     <p className="text-xl font-bold text-cyan-400">
                       ${inrToUsd(totalRevenueINR).toFixed(2)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end justify-center">
+                    <p className="text-sm text-gray-400">Generated Revenue (INR):</p>
                     <p className="text-xl font-bold text-cyan-400">
-                      INR {totalRevenueINR.toFixed(0)}
+                      ₹{totalRevenueINR}
                     </p>
                   </div>
                 </div>
@@ -687,6 +692,8 @@ useEffect(() => {
                         subtitle="Count in Millions"
                         metric={engagementMetric}
                         colors={["#8959D3"]}
+                        showLegend={true}
+                        legendLabel={selectedContent?.[0]?.song_name || selectedContent?.[0]?.name || "Song"}
                       />,
                       <Chart
                         key="duration"
