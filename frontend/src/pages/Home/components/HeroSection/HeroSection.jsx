@@ -204,25 +204,25 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
                   </span>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Dots */}
-          {slides.length > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              {slides.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    idx === currentSlide ? 'bg-cyan-400 w-6' : 'bg-slate-500'
-                  }`}
-                />
-              ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* Dots */}
+        {slides.length > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentSlide(idx)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  idx === currentSlide ? "bg-cyan-400 w-6" : "bg-slate-500"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Registration Modal */}
       {isModalOpen && (

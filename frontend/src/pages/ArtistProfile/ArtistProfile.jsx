@@ -13,7 +13,14 @@ import Insta from "../../../public/assets/images/instagram.png";
 import Spotify from "../../../public/assets/images/spotify.png";
 import AppleMusic from "../../../public/assets/images/apple_music.png";
 
-Modal.setAppElement('#root');
+Modal.setAppElement("#root");
+
+function formatTrackLengthSeconds(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 export default function ArtistProfile() {
   const [artist, setArtist] = useState({});
@@ -32,7 +39,85 @@ export default function ArtistProfile() {
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
+  /** song_id -> seconds from audio file metadata; -1 = could not read (e.g. CORS) */
+  const [trackLengthSec, setTrackLengthSec] = useState({});
+
+  const songsLoadKey = React.useMemo(
+    () =>
+      (artist?.songs ?? [])
+        .map((s) => `${s.song_id ?? ""}|${String(s.audio_url || s.audio_file_url || "").trim()}`)
+        .join(";"),
+    [artist?.songs],
+  );
+
+  useEffect(() => {
+    if (!songsLoadKey) return undefined;
+
+    const entries = [];
+    const pendingIds = [];
+    for (const song of artist.songs ?? []) {
+      const url = String(song.audio_url || song.audio_file_url || "").trim();
+      const sid = song.song_id;
+      if (!url || sid == null) continue;
+      pendingIds.push(sid);
+
+      const el = new Audio();
+      el.preload = "metadata";
+
+      const onMeta = () => {
+        const d = el.duration;
+        if (Number.isFinite(d) && d > 0 && d !== Number.POSITIVE_INFINITY) {
+          setTrackLengthSec((prev) =>
+            prev[sid] != null && prev[sid] > 0 ? prev : { ...prev, [sid]: d },
+          );
+        } else {
+          setTrackLengthSec((prev) => (prev[sid] != null ? prev : { ...prev, [sid]: -1 }));
+        }
+      };
+
+      const onErr = () => {
+        setTrackLengthSec((prev) => (prev[sid] != null ? prev : { ...prev, [sid]: -1 }));
+      };
+
+      el.addEventListener("loadedmetadata", onMeta);
+      el.addEventListener("error", onErr);
+      el.src = url;
+      el.load();
+      entries.push({ el, onMeta, onErr });
+    }
+
+    const t = window.setTimeout(() => {
+      setTrackLengthSec((prev) => {
+        let next = prev;
+        for (const sid of pendingIds) {
+          if (next[sid] === undefined) {
+            if (next === prev) next = { ...prev };
+            next[sid] = -1;
+          }
+        }
+        return next;
+      });
+    }, 12000);
+
+    return () => {
+      window.clearTimeout(t);
+      for (const { el, onMeta, onErr } of entries) {
+        el.removeEventListener("loadedmetadata", onMeta);
+        el.removeEventListener("error", onErr);
+        el.pause();
+        el.src = "";
+        el.load();
+      }
+    };
+  }, [songsLoadKey, artist?.songs]);
+
   const handlePlayPause = (song) => {
+    const src = song.audio_url || song.audio_file_url;
+    if (!src || !String(src).trim()) {
+      toast.error("No audio file available for this song.");
+      return;
+    }
+
     if (audio && playingSongId === song.song_id) {
       if (!audio.paused) {
         audio.pause();
@@ -45,8 +130,18 @@ export default function ArtistProfile() {
       if (audio) {
         audio.pause();
       }
-      const newAudio = new Audio(song.duration_in_minutes);
-      newAudio.play();
+      const newAudio = new Audio(String(src).trim());
+      const syncDuration = () => {
+        const d = newAudio.duration;
+        if (Number.isFinite(d) && d > 0 && d !== Number.POSITIVE_INFINITY) {
+          setTrackLengthSec((prev) => ({ ...prev, [song.song_id]: d }));
+        }
+      };
+      newAudio.addEventListener("loadedmetadata", syncDuration);
+      newAudio.play().catch(() => {
+        toast.error("Could not play this track.");
+        setPlayingSongId(null);
+      });
       setAudio(newAudio);
       setPlayingSongId(song.song_id);
       newAudio.onended = () => setPlayingSongId(null);
@@ -271,7 +366,12 @@ export default function ArtistProfile() {
                   <th className="pb-4 font-normal">#</th>
                   <th className="pb-4 font-normal">SONG NAME</th>
                   <th className="pb-4 font-normal">PLAYS</th>
-                  <th className="pb-4 font-normal">TIME</th>
+                  <th
+                    className="pb-4 font-normal"
+                    title="Length of your uploaded audio file"
+                  >
+                    TIME
+                  </th>
                   <th className="pb-4 font-normal">PLAY</th>
                 </tr>
               </thead>
@@ -289,8 +389,24 @@ export default function ArtistProfile() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4">{song.total_song_views}</td>
-                    <td className="py-4">{song.duration_in_minutes}</td>
+                    <td className="py-4">{song.total_song_views ?? "—"}</td>
+                    <td className="py-4 tabular-nums text-gray-200 min-w-[3.5rem]">
+                      {(() => {
+                        const sec = trackLengthSec[song.song_id];
+                        if (sec === undefined) return "…";
+                        if (sec > 0) return formatTrackLengthSeconds(sec);
+                        const mins = song.duration_in_minutes;
+                        if (
+                          mins != null &&
+                          mins !== "" &&
+                          !Number.isNaN(Number(mins)) &&
+                          Number(mins) > 0
+                        ) {
+                          return `${Math.floor(Number(mins))}:00`;
+                        }
+                        return "—";
+                      })()}
+                    </td>
                     <td className="py-4">
                       <button
                         className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 transition-colors"
