@@ -5,9 +5,8 @@ import { getPersonalDetails, updatePersonalDetails } from "../../API/profile";
 import ProfileFormHeader from "../components/ProfileFormHeader";
 import Loading from "../../../../components/Loading";
 import { useArtist } from "../../API/ArtistContext";
-import { fetchVideoForScreen } from "../../../../utils/fetchVideo";
 import axiosApi from "../../../../conf/axios";
-import PlayBtn from "../../../../../public/assets/images/playButton.png";
+import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 import { AiOutlineUser } from "react-icons/ai";
 import MusicBg from "../../../../../public/assets/images/music_bg.png";
 import Elipse from "../../../../../public/assets/images/elipse2.png";
@@ -49,8 +48,6 @@ const PersonalDetailsForm = () => {
   console.log();
   
   const { headers, ophid } = useArtist();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef(null);
   const [video, setVideo] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
   const [rejectReason, setRejectReason] = useState(null);
@@ -71,17 +68,6 @@ const PersonalDetailsForm = () => {
     }
   };
 
-  const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-    }
-  };
   // Only show the blocking loader while actually fetching/submitting.
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -351,34 +337,17 @@ const PersonalDetailsForm = () => {
         <ProfileFormHeader title="PERSONAL DETAILS" />
 
         <div className="min-h-[calc(100vh-70px)] mt-20 bg-opacity-70 text-white p-6 flex flex-col items-center">
-          <div className="relative flex justify-center mb-6">
-            {!isPlaying && thumbnail && (
-              <img
-                src={thumbnail}
-                alt="Personal Details"
-                className="w-[800px] h-[50vh] object-cover rounded-lg"
-              />
-            )}
-            {video && (
-              <video
-                ref={videoRef}
+          {video && (
+            <div className="relative flex justify-center mb-6 w-full max-w-[800px] mx-auto">
+              <CustomVideoPlayer
                 src={video}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onClick={togglePlayPause}
-                className={`w-[800px] h-[50vh] object-cover rounded-lg ${!isPlaying ? 'hidden' : ''}`}
-                controls={false}
+                poster={thumbnail || undefined}
+                className="w-full h-[50vh] rounded-lg overflow-hidden bg-black"
+                pauseOtherVideos={true}
+                allowFullscreen={false}
               />
-            )}
-            {!isPlaying && video && (
-              <button
-                onClick={togglePlayPause}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
-              >
-                <img src={PlayBtn} alt="Play" className="w-32 h-32" />
-              </button>
-            )}
-          </div>
+            </div>
+          )}
           <div className="w-full max-w-md space-y-8">
             {/* Profile Image Upload */}
             <h2 className="text-cyan-400 uppercase text-2xl mt-4 font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">

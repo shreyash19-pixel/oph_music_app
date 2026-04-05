@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
 import { toast } from "react-hot-toast";
 import { AiOutlineDown } from "react-icons/ai";
@@ -10,7 +10,6 @@ import ProfileFormHeader from "../components/ProfileFormHeader";
 import Loading from "../../../../components/Loading";
 import { useArtist } from "../../API/ArtistContext";
 // import { fetchVideoForScreen } from "../../../../utils/fetchVideo";
-import PlayBtn from "../../../../../public/assets/images/playButton.png";
 import MusicBg from "../../../../../public/assets/images/music_bg.png";
 import Elipse from "../../../../../public/assets/images/elipse2.png";
 import axiosApi from "../../../../conf/axios";
@@ -26,8 +25,6 @@ const ProfessionalDetailsForm = () => {
   const [loading, setLoading] = useState(false);
   const [videoBio, setVideoBio] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef(null);
   const [video, setVideo] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
   const [rejectReason, setRejectReason] = useState(null);
@@ -80,19 +77,6 @@ const ProfessionalDetailsForm = () => {
   //     console.log(err);
   //   }
   // };
-  const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
-
-  const togglePlayPause = () => {
-    const video = videoRef.current?.videoElement || videoRef.current;
-    if (video) {
-      if (isPlaying) {
-        video.pause();
-      } else {
-        video.play();
-      }
-    }
-  };
   // useEffect(() => {
   //   fetchVideo();
   // }, []);
@@ -466,34 +450,17 @@ const ProfessionalDetailsForm = () => {
       <div className="min-h-screen z-10  bg-opacity-70 text-white p-6">
         <ProfileFormHeader title="PROFESSIONAL DETAILS" />
         <div className=" mt-20 min-h-[calc(100vh-70px)] text-white p-6 flex flex-col items-center  mx-auto">
-          <div className="relative flex justify-center mb-6">
-            {!isPlaying && thumbnail && (
-              <img
-                src={thumbnail}
-                alt="Professional Details"
-                className="w-[800px] h-[50vh] object-cover rounded-lg"
-              />
-            )}
-            {video && (
-              <video
-                ref={videoRef}
+          {video && (
+            <div className="relative flex justify-center mb-6 w-full max-w-[800px] mx-auto">
+              <CustomVideoPlayer
                 src={video}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onClick={togglePlayPause}
-                className={`w-[800px] h-[50vh] object-cover rounded-lg ${!isPlaying ? "hidden" : ""}`}
-                controls={false}
+                poster={thumbnail || undefined}
+                className="w-full h-[50vh] rounded-lg overflow-hidden bg-black"
+                pauseOtherVideos={true}
+                allowFullscreen={false}
               />
-            )}
-            {!isPlaying && video && (
-              <button
-                onClick={togglePlayPause}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
-              >
-                <img src={PlayBtn} alt="Play" className="w-32 h-32" />
-              </button>
-            )}
-          </div>
+            </div>
+          )}
           <h2 className="text-cyan-400 uppercase text-2xl mt-4 font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
             Professional Details
           </h2>
@@ -579,6 +546,7 @@ const ProfessionalDetailsForm = () => {
                   src={videoUrl}
                   className="w-full rounded-lg"
                   pauseOtherVideos={true}
+                  allowFullscreen={false}
                 />
               )}
             </div>
