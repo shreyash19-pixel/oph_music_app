@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Slider from "react-slick";
 import "./TopPicksSection.css";
 import { FaPlay, FaPause } from "react-icons/fa";
@@ -9,7 +9,10 @@ import arrowRightIc from "/assets/images/arrowRightIc.svg";
 import axiosApi from "../../../../conf/axios";
 import { navigateToArtistDetail } from "../../../../utils/artistHash";
 
-const MusicPlayerProfile2 = () => {
+const MusicPlayerProfile2 = ({
+  spotlightArtistLimit = null,
+  onSpotlightOphOrder,
+}) => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
   const audioRef = useRef(null); // Ref for audio
@@ -50,13 +53,93 @@ const MusicPlayerProfile2 = () => {
 
   },[])
 
-  
-  const songsArray = Object.values(artistData)
-    .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
-    .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0))
-    .slice(0, 10);
+  const rankedArtists = useMemo(
+    () =>
+      Object.values(artistData)
+        .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
+        .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0)),
+    [artistData],
+  );
+
+  const spotlightArtists = useMemo(() => {
+    if (spotlightArtistLimit == null) return rankedArtists;
+    const n = Math.max(0, Number(spotlightArtistLimit) || 0);
+    return rankedArtists.slice(0, n);
+  }, [rankedArtists, spotlightArtistLimit]);
+
+  useEffect(() => {
+    if (typeof onSpotlightOphOrder !== "function") return;
+    const ids = spotlightArtists
+      .map((a) => String(a.oph_id ?? a.OPH_ID ?? "").trim())
+      .filter(Boolean);
+    onSpotlightOphOrder(ids);
+  }, [spotlightArtists, onSpotlightOphOrder]);
+
+  const songsArray = spotlightArtists;
 
   const [playingSongId, setPlayingSongId] = useState(null);
+  /** Spotlight carousel: 1 = toward last slide, -1 = toward first (ping-pong). */
+  const slideDirectionRef = useRef(1);
+
+  useEffect(() => {
+    slideDirectionRef.current = 1;
+  }, [songsArray.length]);
+
+  const getSpotlightSlickMeta = useCallback(() => {
+    const inner = sliderRef.current?.innerSlider;
+    if (!inner?.state) return null;
+    const { currentSlide, slideCount } = inner.state;
+    const slidesToShow = Number(inner.props.slidesToShow) || 1;
+    const slidesToScroll = Number(inner.props.slidesToScroll) || 1;
+    if (slideCount == null || slideCount <= 0) return null;
+    const maxSlide = Math.max(0, Math.floor(slideCount - slidesToShow));
+    return { currentSlide, slideCount, slidesToShow, slidesToScroll, maxSlide };
+  }, []);
+
+  const handleSpotlightAfterChange = useCallback(
+    (index) => {
+      const meta = getSpotlightSlickMeta();
+      if (!meta) return;
+      const { maxSlide } = meta;
+      if (maxSlide <= 0) return;
+      if (index >= maxSlide) slideDirectionRef.current = -1;
+      else if (index <= 0) slideDirectionRef.current = 1;
+    },
+    [getSpotlightSlickMeta],
+  );
+
+  /** Use slickGoTo — non-infinite slickPrev can desync targetSlide vs currentSlide and stick at the end. */
+  const runSpotlightPingPongTick = useCallback(() => {
+    const root = sliderRef.current;
+    if (!root?.slickGoTo) return;
+    const meta = getSpotlightSlickMeta();
+    if (!meta) return;
+    const { currentSlide, slidesToScroll, maxSlide } = meta;
+    if (maxSlide <= 0) return;
+
+    let nextIndex;
+    if (slideDirectionRef.current > 0) {
+      nextIndex = Math.min(maxSlide, currentSlide + slidesToScroll);
+      if (nextIndex === currentSlide) {
+        slideDirectionRef.current = -1;
+        nextIndex = Math.max(0, currentSlide - slidesToScroll);
+      }
+    } else {
+      nextIndex = Math.max(0, currentSlide - slidesToScroll);
+      if (nextIndex === currentSlide) {
+        slideDirectionRef.current = 1;
+        nextIndex = Math.min(maxSlide, currentSlide + slidesToScroll);
+      }
+    }
+    root.slickGoTo(nextIndex);
+  }, [getSpotlightSlickMeta]);
+
+  useEffect(() => {
+    if (playingSongId) return;
+    if (songsArray.length <= 1) return;
+    const id = window.setInterval(runSpotlightPingPongTick, 3000);
+    return () => window.clearInterval(id);
+  }, [playingSongId, songsArray.length, runSpotlightPingPongTick]);
 
   const attachAudioProgressListeners = (el, songId) => {
     const flushProgress = () => {
@@ -179,33 +262,33 @@ const MusicPlayerProfile2 = () => {
     };
   }, []);
 
-  const canLoop = false;
+  const canLoop = songsArray.length > 3;
   const desktopSlides = Math.min(3, Math.max(1, songsArray.length));
   const tabletSlides = Math.min(2, Math.max(1, songsArray.length));
 
   const settings = {
     dots: true,
-    infinite: canLoop,
+    infinite: false,
     speed: 500,
     slidesToShow: desktopSlides,
     slidesToScroll: 1,
     arrows: false,
     adaptiveHeight: false,
-    autoplay: !playingSongId, // Pause autoplay when audio playing
-    autoplaySpeed: 3000,
+    autoplay: false,
+    afterChange: handleSpotlightAfterChange,
     responsive: [
       {
         breakpoint: 1024,
         settings: {
           slidesToShow: tabletSlides,
-          infinite: songsArray.length > tabletSlides,
+          infinite: false,
         },
       },
       {
         breakpoint: 768,
         settings: {
           slidesToShow: 1,
-          infinite: songsArray.length > 1,
+          infinite: false,
           centerMode: false,
         },
       },

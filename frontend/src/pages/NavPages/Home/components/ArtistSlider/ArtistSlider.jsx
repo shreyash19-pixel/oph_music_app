@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Slider from "react-slick";
 import arrowRightIc from "/assets/images/arrowRightIc.svg";
 import arrowLeftIc from "/assets/images/arrowLeftIc.svg";
@@ -11,14 +11,70 @@ import ArtistProfile from "./ArtistProfile";
 /** Max per_page allowed by /get-top-artist (see admin kpi controller). */
 const TOP_ARTIST_PAGE_SIZE = 100;
 
-const ArtistSlider = ({ rows = 1 }) => {
+/** After exclude filter: KPI-scored artists first, then everyone else (stable tie-breakers). */
+function sortArtistsScoredFirst(list) {
+  if (!Array.isArray(list) || list.length <= 1) return list;
+  const scoreOf = (a) => Number(a.kpi_score ?? a.score ?? 0);
+  const viewsOf = (a) => Number(a.total_views ?? 0);
+  const scored = [];
+  const rest = [];
+  for (const row of list) {
+    if (scoreOf(row) > 0) scored.push(row);
+    else rest.push(row);
+  }
+  const byScoreThenViews = (a, b) => {
+    const ds = scoreOf(b) - scoreOf(a);
+    if (ds !== 0) return ds;
+    const dv = viewsOf(b) - viewsOf(a);
+    if (dv !== 0) return dv;
+    return String(a.stage_name ?? "").localeCompare(
+      String(b.stage_name ?? ""),
+      undefined,
+      { sensitivity: "base" },
+    );
+  };
+  const byViewsThenName = (a, b) => {
+    const dv = viewsOf(b) - viewsOf(a);
+    if (dv !== 0) return dv;
+    return String(a.stage_name ?? "").localeCompare(
+      String(b.stage_name ?? ""),
+      undefined,
+      { sensitivity: "base" },
+    );
+  };
+  scored.sort(byScoreThenViews);
+  rest.sort(byViewsThenName);
+  return [...scored, ...rest];
+}
+
+/**
+ * Left-edge slide index so `clickedIndex` sits near the middle of the viewport.
+ * Matches react-slick non-centerMode behavior (clicked slide visible and centered when possible).
+ */
+function alignedSlideIndex(clickedIndex, slideCount, slidesToShow) {
+  if (slideCount <= 0) return 0;
+  const st = Number(slidesToShow) || 1;
+  const maxSlide = Math.max(0, Math.floor(slideCount - st));
+  if (maxSlide <= 0) return 0;
+  const ideal = clickedIndex - Math.floor(st / 2);
+  return Math.max(0, Math.min(ideal, maxSlide));
+}
+
+const ArtistSlider = ({
+  rows = 1,
+  onListedProfileOpenChange,
+  excludeOphIds = [],
+}) => {
   const sliderRef = useRef(null);
   const artistProfileRef = useRef(null);
   const [selectedArtist, setSelectedArtist] = useState(null);
-  const [artists, setArtists] = useState([]);
-  const [autoplay, setAutoplay] = useState(false);
+  const [allArtists, setAllArtists] = useState([]);
 
   const [currArtist, setCurrentArtist] = useState(null);
+
+  useEffect(() => {
+    onListedProfileOpenChange?.(Boolean(selectedArtist));
+  }, [selectedArtist, onListedProfileOpenChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +115,7 @@ const ArtistSlider = ({ rows = 1 }) => {
         }
 
         if (cancelled) return;
-        setArtists(merged);
+        setAllArtists(merged);
 
         if (import.meta.env.DEV) {
           console.groupCollapsed("[ArtistSlider] get-top-artist (all pages)");
@@ -85,6 +141,19 @@ const ArtistSlider = ({ rows = 1 }) => {
     };
   }, []);
 
+  const excludeSet = useMemo(
+    () => new Set(excludeOphIds.map((id) => String(id).trim()).filter(Boolean)),
+    [excludeOphIds],
+  );
+
+  const artists = useMemo(() => {
+    const filtered = allArtists.filter((row) => {
+      const oid = String(row.oph_id ?? row.OPH_ID ?? "").trim();
+      return oid && !excludeSet.has(oid);
+    });
+    return sortArtistsScoredFirst(filtered);
+  }, [allArtists, excludeSet]);
+
   /** Slick infinite mode clones slides; disable when too few unique slides vs slidesToShow (~6). */
   const useInfiniteCarousel = artists.length >= 12;
 
@@ -101,12 +170,16 @@ const ArtistSlider = ({ rows = 1 }) => {
   const handleArtistClick = (id, index) => {
     setCurrentArtist(id);
     setSelectedArtist(id);
-    setAutoplay(false);
+    const root = sliderRef.current;
+    root?.slickPause?.();
 
-    // Move the clicked slide to center
-    if (sliderRef.current) {
-      const centerIndex = Math.floor(artists.length / 2);
-      sliderRef.current.slickGoTo(index - centerIndex);
+    // Align carousel so the clicked artist is near the center (uses live slidesToShow from slick)
+    if (root?.slickGoTo) {
+      const inner = root.innerSlider;
+      const slideCount = inner?.state?.slideCount ?? artists.length;
+      const slidesToShow = Number(inner?.props?.slidesToShow) || 5.6;
+      const target = alignedSlideIndex(index, slideCount, slidesToShow);
+      root.slickGoTo(target);
     }
 
     // Scroll to ArtistProfile section
@@ -187,7 +260,7 @@ const ArtistSlider = ({ rows = 1 }) => {
             {...{
               dots: false,
               speed: 300,
-              autoplay: artists.length > 0,
+              autoplay: artists.length > 0 && selectedArtist == null,
               autoplaySpeed: 3000,
               pauseOnHover: true,
               infinite: useInfiniteCarousel,

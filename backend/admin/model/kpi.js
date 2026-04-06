@@ -242,13 +242,14 @@ const getTopArtists = async (page = 1, perPage = 6) => {
       ud.location,
       ud.personal_photo,
       ud.stage_name,
-      IFNULL(kpi.total_views, 0) AS total_views
+      IFNULL(kpi.total_views, 0) AS total_views,
+      IFNULL(kpi.score, 0) AS kpi_score
     FROM user_details ud
     INNER JOIN application_status app
       ON ud.oph_id = app.oph_id
       AND LOWER(TRIM(app.overall_status)) IN ('completed', 'approved')
     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
-    LEFT JOIN professional_details pf ON ud.oph_id = pf.OPH_ID
+    LEFT JOIN professional_details pf ON ud.oph_id = pf.oph_id
     ORDER BY IFNULL(kpi.score, 0) DESC, IFNULL(kpi.total_views, 0) DESC, ud.stage_name ASC
     LIMIT ${per} OFFSET ${offset}
     `,
@@ -266,12 +267,51 @@ const getSpecialArtist = async () => {
 
 const getArtistProfile = async (ophid) => {
   const [rows] = await db.execute(
-    "WITH CTEArtistProfile AS ( SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, sa.artist_name,ud.location, kpi.total_views, pd.Bio,sr.song_id ,sr.Song_name,ssm.youtube_views,ad.audio_url , sr.`status` song_registeration_status, ad.`status` audio_details_status , vd.`status` video_details_status FROM user_details ud LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID LEFT JOIN songs_register sr ON ud.oph_id = sr.OPH_ID JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id JOIN video_details vd ON sr.song_id = vd.song_id LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID WHERE ud.oph_id = ?) SELECT * FROM CTEArtistProfile WHERE song_registeration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved'",
+    `WITH CTEArtistProfile AS (
+      SELECT
+        ud.oph_id,
+        ud.personal_photo,
+        ud.stage_name,
+        ud.full_name,
+        pd.profession AS Profession,
+        sa.artist_name,
+        ud.location,
+        IFNULL(kpi.total_views, 0) AS total_views,
+        pd.bio AS Bio,
+        sr.song_id,
+        COALESCE(ad.Song_name, sr.Song_name) AS Song_name,
+        IFNULL(ssm.youtube_views, 0) AS youtube_views,
+        ad.audio_url,
+        sas.overall_status AS song_overall_status
+      FROM user_details ud
+      LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
+      LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
+      LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
+      LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
+      LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
+      LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
+      LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
+      WHERE ud.oph_id = ?
+    )
+    SELECT *
+    FROM CTEArtistProfile
+    WHERE LOWER(TRIM(COALESCE(song_overall_status, ''))) = 'approved'
+      AND song_id IS NOT NULL
+      AND audio_url IS NOT NULL
+      AND TRIM(audio_url) <> ''`,
     [ophid],
   );
 
   const [song_count] = await db.execute(
-    "WITH CTEArtistSongCount AS (SELECT sr.oph_id, sr.`status` song_registration_status , ad.`status` audio_details_status, vd.`status` video_details_status FROM songs_register sr LEFT JOIN audio_details ad ON sr.song_id = ad.song_id LEFT JOIN video_details vd ON sr.song_id = vd.song_id WHERE sr.oph_id = ?) SELECT oph_id, COUNT(oph_id) song_count FROM CTEArtistSongCount WHERE song_registration_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' GROUP BY oph_id",
+    `SELECT sr.oph_id AS oph_id, COUNT(sr.song_id) AS song_count
+     FROM songs_register sr
+     INNER JOIN song_application_status sas ON sr.song_id = sas.song_id
+     INNER JOIN audio_details ad ON sr.song_id = ad.song_id
+     WHERE sr.oph_id = ?
+       AND LOWER(TRIM(COALESCE(sas.overall_status, ''))) = 'approved'
+       AND ad.audio_url IS NOT NULL
+       AND TRIM(ad.audio_url) <> ''
+     GROUP BY sr.oph_id`,
     [ophid],
   );
 
@@ -316,6 +356,7 @@ const getArtistProfile = async (ophid) => {
         name: row.Song_name,
         song_id: row.song_id,
         youtube_views: row.youtube_views,
+        total_views: row.youtube_views,
         audio_file_url: row.audio_url,
         featuring_artists: row.artist_name ? [row.artist_name] : [],
       });
@@ -329,13 +370,13 @@ const getArtistProfile = async (ophid) => {
   // /get-top-artist lists all fully registered artists (Independent -IA- and Special -SA-);
   // detail view still returns a profile even if the strict triple-approved song CTE is empty.
   const [fallback] = await db.execute(
-    `SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.Profession, ud.location, pd.Bio,
+    `SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.profession AS Profession, ud.location, pd.bio AS Bio,
             IFNULL(kpi.total_views, 0) AS total_views
      FROM user_details ud
      INNER JOIN application_status app ON ud.oph_id = app.oph_id
        AND LOWER(TRIM(app.overall_status)) IN ('completed', 'approved')
-     LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
-     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.OPH_ID
+     LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
+     LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
      WHERE ud.oph_id = ?
      LIMIT 1`,
     [ophid],

@@ -22,6 +22,8 @@ function Artists() {
   const [searchTotal, setSearchTotal] = useState(0);
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [artistSliderProfileOpen, setArtistSliderProfileOpen] = useState(false);
+  const [spotlightOphIds, setSpotlightOphIds] = useState([]);
 
   const handleSearchQueryChange = useCallback((q) => {
     setSearchQuery(q);
@@ -192,17 +194,29 @@ function Artists() {
             />
           ) : null}
 
-          <div className="lg:px-10 px-6 xl:px-16">
-            <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
-          </div>
+          {!artistSliderProfileOpen ? (
+            <>
+              <div className="lg:px-10 px-6 xl:px-16">
+                <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
+              </div>
+              <MusicPlayerProfile2
+                spotlightArtistLimit={10}
+                onSpotlightOphOrder={setSpotlightOphIds}
+              />
+              <div className="lg:px-10 px-6 xl:px-16">
+                <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
+              </div>
+            </>
+          ) : (
+            <div className="lg:px-10 px-6 xl:px-16">
+              <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
+            </div>
+          )}
 
-          <MusicPlayerProfile2 />
-
-          <div className="lg:px-10 px-6 xl:px-16">
-            <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
-          </div>
-
-          <ArtistSlider />
+          <ArtistSlider
+            onListedProfileOpenChange={setArtistSliderProfileOpen}
+            excludeOphIds={spotlightOphIds}
+          />
         </div>
       )}
     </>

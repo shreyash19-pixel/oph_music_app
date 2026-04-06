@@ -1,5 +1,5 @@
 import { Play, Pause, Edit3, Eye, EyeOff } from "lucide-react";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import axiosApi from "../../conf/axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ import Linkedin from "../../../public/assets/images/linkedin.png";
 import Insta from "../../../public/assets/images/instagram.png";
 import Spotify from "../../../public/assets/images/spotify.png";
 import AppleMusic from "../../../public/assets/images/apple.png";
+import { resolveProfessionLabel } from "../../utils/professionDisplay";
 
 Modal.setAppElement("#root");
 
@@ -51,13 +52,40 @@ export default function ArtistProfile() {
 
   /** song_id -> seconds from audio file metadata; -1 = could not read (e.g. CORS) */
   const [trackLengthSec, setTrackLengthSec] = useState({});
+  const [professions, setProfessions] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await axiosApi.get("/get_professions");
+        if (!cancelled && response.data?.success) {
+          setProfessions(response.data.data || []);
+        }
+      } catch {
+        if (!cancelled) setProfessions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const approvedSongs = useMemo(() => {
+    const list = Array.isArray(artist?.songs) ? artist.songs : [];
+    return list.filter((s) => {
+      const st = s?.overall_status ?? s?.song_application_status;
+      if (st == null || String(st).trim() === "") return true;
+      return String(st).trim().toLowerCase() === "approved";
+    });
+  }, [artist?.songs]);
 
   const songsLoadKey = React.useMemo(
     () =>
-      (artist?.songs ?? [])
+      (approvedSongs ?? [])
         .map((s) => `${s.song_id ?? ""}|${String(s.audio_url || s.audio_file_url || "").trim()}`)
         .join(";"),
-    [artist?.songs],
+    [approvedSongs],
   );
 
   useEffect(() => {
@@ -65,7 +93,7 @@ export default function ArtistProfile() {
 
     const entries = [];
     const pendingIds = [];
-    for (const song of artist.songs ?? []) {
+    for (const song of approvedSongs ?? []) {
       const url = String(song.audio_url || song.audio_file_url || "").trim();
       const sid = song.song_id;
       if (!url || sid == null) continue;
@@ -119,7 +147,7 @@ export default function ArtistProfile() {
         el.load();
       }
     };
-  }, [songsLoadKey, artist?.songs]);
+  }, [songsLoadKey, approvedSongs]);
 
   const handlePlayPause = (song) => {
     const src = song.audio_url || song.audio_file_url;
@@ -295,7 +323,10 @@ export default function ArtistProfile() {
             <p className="text-gray-400">
               Profession:{" "}
               <span className="text-white">
-                {artist.profession ?? artist.Profession}
+                {resolveProfessionLabel(
+                  artist.profession ?? artist.Profession,
+                  professions,
+                )}
               </span>
             </p>
           </div>
@@ -357,7 +388,17 @@ export default function ArtistProfile() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {artist?.songs?.map((song, index) => (
+                {approvedSongs.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-10 text-center text-gray-400 text-sm"
+                    >
+                      No songs added by this artist yet.
+                    </td>
+                  </tr>
+                ) : (
+                  approvedSongs.map((song, index) => (
                   <tr key={song.song_id} className="group text-center">
                     <td className="py-4">{index + 1}</td>
                     <td className="py-4 text-center">
@@ -401,7 +442,8 @@ export default function ArtistProfile() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
