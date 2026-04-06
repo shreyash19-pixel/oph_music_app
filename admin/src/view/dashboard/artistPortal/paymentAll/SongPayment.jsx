@@ -3,8 +3,12 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
 import { formatDateTimeIST } from "../../../../utils/date";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const SongPayment = () => {
+  const { user } = useAuth();
+  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
   const { ophid, song_id } = useParams();
   const songid = song_id;
   const [artist, setArtist] = useState(null);
@@ -339,92 +343,96 @@ const SongPayment = () => {
           )}
         </div>
 
-        <div className="border-t pt-6 space-y-4">
-          <h3 className="text-xl font-semibold text-gray-700">
-            Song Payment Actions
-          </h3>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Enter rejection reason (required for rejection)..."
-            disabled={
-              actionLocked ||
-              (paymentList[0] &&
-                paymentList[0].status &&
-                !["pending", "under review"].includes(
-                  paymentList[0].status?.toLowerCase()
-                ))
-            }
-            className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => setConfirmAction("Reject")}
-              disabled={
-                actionLocked ||
-                !reason.trim() ||
-                (paymentList[0] &&
-                  !["pending", "under review"].includes(paymentList[0].status))
-              }
-              className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
-                actionLocked ||
-                !reason.trim() ||
-                (paymentList[0] &&
-                  !["pending", "under review"].includes(paymentList[0].status))
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            >
-              Reject Payment
-            </button>
-            <button
-              onClick={() => setConfirmAction("Approve")}
+        {canApproveReject ? (
+          <div className="border-t pt-6 space-y-4">
+            <h3 className="text-xl font-semibold text-gray-700">
+              Song Payment Actions
+            </h3>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter rejection reason (required for rejection)..."
               disabled={
                 actionLocked ||
                 (paymentList[0] &&
-                  !["pending", "under review"].includes(paymentList[0].status))
+                  paymentList[0].status &&
+                  !["pending", "under review"].includes(
+                    paymentList[0].status?.toLowerCase()
+                  ))
               }
-              className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
-                actionLocked ||
-                (paymentList[0] &&
-                  !["pending", "under review"].includes(paymentList[0].status))
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-            >
-              Approve Payment
-            </button>
-          </div>
-
-          {/* Show status message when payment is processed */}
-          {paymentList[0] &&
-            paymentList[0].status &&
-            !["pending", "under review"].includes(
-              paymentList[0].status?.toLowerCase()
-            ) && (
-              <div
-                className={`mt-4 p-3 rounded-lg text-center font-medium ${
-                  paymentList[0].status?.toLowerCase() === "approved"
-                    ? "bg-green-100 text-green-800 border border-green-200"
-                    : "bg-red-100 text-red-800 border border-red-200"
+              className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => setConfirmAction("Reject")}
+                disabled={
+                  actionLocked ||
+                  !reason.trim() ||
+                  (paymentList[0] &&
+                    !["pending", "under review"].includes(paymentList[0].status))
+                }
+                className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
+                  actionLocked ||
+                  !reason.trim() ||
+                  (paymentList[0] &&
+                    !["pending", "under review"].includes(paymentList[0].status))
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
-                Payment has been {paymentList[0].status}. No further actions can
-                be taken.
-              </div>
-            )}
-
-          {/* Show message when payment is under review */}
-          {paymentList[0] && 
-           (paymentList[0].status === "under review" || 
-            paymentList[0].status?.toLowerCase() === "under review") && (
-            <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
-              Payment is under review. You can approve or reject this payment.
+                Reject Payment
+              </button>
+              <button
+                onClick={() => setConfirmAction("Approve")}
+                disabled={
+                  actionLocked ||
+                  (paymentList[0] &&
+                    !["pending", "under review"].includes(paymentList[0].status))
+                }
+                className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
+                  actionLocked ||
+                  (paymentList[0] &&
+                    !["pending", "under review"].includes(paymentList[0].status))
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                Approve Payment
+              </button>
             </div>
-          )}
-        </div>
 
-        {confirmAction && (
+            {paymentList[0] &&
+              paymentList[0].status &&
+              !["pending", "under review"].includes(
+                paymentList[0].status?.toLowerCase()
+              ) && (
+                <div
+                  className={`mt-4 p-3 rounded-lg text-center font-medium ${
+                    paymentList[0].status?.toLowerCase() === "approved"
+                      ? "bg-green-100 text-green-800 border border-green-200"
+                      : "bg-red-100 text-red-800 border border-red-200"
+                  }`}
+                >
+                  Payment has been {paymentList[0].status}. No further actions can
+                  be taken.
+                </div>
+              )}
+
+            {paymentList[0] &&
+              (paymentList[0].status === "under review" ||
+                paymentList[0].status?.toLowerCase() === "under review") && (
+                <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                  Payment is under review. You can approve or reject this payment.
+                </div>
+              )}
+          </div>
+        ) : (
+          <p className="border-t pt-6 text-sm text-gray-600">
+            You can review this payment; approving or rejecting is limited to sales head and other authorized roles.
+          </p>
+        )}
+
+        {canApproveReject && confirmAction && (
           <ConfirmBlock
             type={confirmAction}
             reason={reason}

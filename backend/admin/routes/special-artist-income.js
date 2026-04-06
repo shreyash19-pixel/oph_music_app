@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../../middleware/authenticate");
+const forbidSalesMemberApprovals = require("../../middleware/forbidSalesMemberApprovals");
 const {
   checkSpecialArtistIncomeStatusCont,
   setSpecialArtistIncomeStatusCont,
@@ -20,7 +22,9 @@ router.get(
 
 router.post(
   "/set-special-artists-income-status",
-  setSpecialArtistIncomeStatusCont,
+  authMiddleware,
+  forbidSalesMemberApprovals,
+  setSpecialArtistIncomeStatusCont
 );
 
 module.exports = router;

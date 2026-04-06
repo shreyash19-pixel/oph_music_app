@@ -2,8 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const SpIncomeStatIndividual = () => {
+  const { user } = useAuth();
+  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
   const { ophid } = useParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -75,6 +79,7 @@ const SpIncomeStatIndividual = () => {
           confirmAction={confirmAction}
           setConfirmAction={setConfirmAction}
           confirmAndHandle={confirmAndHandle}
+          canApproveReject={canApproveReject}
         />
       </div>
     </div>
@@ -112,6 +117,7 @@ const SectionBlock = ({
   confirmAction,
   setConfirmAction,
   confirmAndHandle,
+  canApproveReject = true,
 }) => {
   return (
     <div className="bg-gray-50 rounded-xl shadow-md p-6 space-y-4">
@@ -123,32 +129,37 @@ const SectionBlock = ({
         Status: {statuses ? statuses : "requested"}
       </div>
 
-      <>
-        <div className="flex gap-4 mt-4">
-          <button
-            onClick={() => handleAction("locked")}
-            disabled={statuses === "unlocked"}
-            className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors disabled:opacity-50"
-          >
-            Reject
-          </button>
-          <button
-            onClick={() => handleAction("unlocked")}
-            disabled={statuses === "unlocked"}
-            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
-            Approve
-          </button>
-        </div>
-      </>
-
-      {confirmAction && (
-        <ConfirmBlock
-          section={section}
-          type={confirmAction}
-          onConfirm={confirmAndHandle}
-          onCancel={() => setConfirmAction(null)}
-        />
+      {canApproveReject ? (
+        <>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => handleAction("locked")}
+              disabled={statuses === "unlocked"}
+              className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              Reject
+            </button>
+            <button
+              onClick={() => handleAction("unlocked")}
+              disabled={statuses === "unlocked"}
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              Approve
+            </button>
+          </div>
+          {confirmAction && (
+            <ConfirmBlock
+              section={section}
+              type={confirmAction}
+              onConfirm={confirmAndHandle}
+              onCancel={() => setConfirmAction(null)}
+            />
+          )}
+        </>
+      ) : (
+        <p className="text-sm text-gray-600">
+          You can review this status; approving or rejecting is limited to sales head and other authorized roles.
+        </p>
       )}
     </div>
   );

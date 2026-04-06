@@ -1,12 +1,29 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const {getAllOphIdsWithRegistration , getSingleUserDetails,getTransactionDetails}= require("../controllers/newSignUp")
+const authMiddleware = require("../../middleware/authenticate");
+const {
+  getAllOphIdsWithRegistration,
+  getSingleUserDetails,
+  getTransactionDetails,
+  getRejectedSignupPayments,
+} = require("../controllers/newSignUp");
 
+const requireSalesHeadOrSuperAdmin = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === "sales head" || role === "super admin") {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: "Forbidden" });
+};
 
-
-router.get('/newsignup', getAllOphIdsWithRegistration );
+router.get("/newsignup", getAllOphIdsWithRegistration);
+router.get(
+  "/newsignup/rejected-signup-payments",
+  authMiddleware,
+  requireSalesHeadOrSuperAdmin,
+  getRejectedSignupPayments
+);
 router.get("/user-details/:ophid", getSingleUserDetails);
 router.get("/transaction-details/:ophid", getTransactionDetails);
 
-
-module.exports = router
+module.exports = router;

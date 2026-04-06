@@ -77,4 +77,25 @@ const getTransactionDetails = async (req, res) => {
 
 
 
-module.exports = { getAllOphIdsWithRegistration ,getSingleUserDetails, getTransactionDetails};
+const getRejectedSignupPayments = async (req, res) => {
+  try {
+    const rows = await newSignUp.getUserDetailsWithLatestRegistrationRejected();
+    res.status(200).json({
+      success: true,
+      userDetails: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching rejected signup payments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+module.exports = {
+  getAllOphIdsWithRegistration,
+  getSingleUserDetails,
+  getTransactionDetails,
+  getRejectedSignupPayments,
+};

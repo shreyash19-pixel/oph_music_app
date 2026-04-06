@@ -3,8 +3,12 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../conf/axios";
 import { toast } from "react-hot-toast";
 import { formatDateTimeIST } from "../../../utils/date";
+import { useAuth } from "../../../auth/AuthProvider";
+import { ROLES } from "../../../utils/roles";
 
 const NewSignupDetails = () => {
+  const { user } = useAuth();
+  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
   const { ophid } = useParams();
   const [artist, setArtist] = useState(null);
   const [txnList, setTxnList] = useState([]);
@@ -177,34 +181,40 @@ const NewSignupDetails = () => {
           )}
         </div>
 
-        <div className="border-t pt-6 space-y-4">
-          <h3 className="text-xl font-semibold text-gray-700">Actions</h3>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Enter rejection reason..."
-            disabled={actionLocked}
-            className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => setConfirmAction("Reject")}
+        {canApproveReject ? (
+          <div className="border-t pt-6 space-y-4">
+            <h3 className="text-xl font-semibold text-gray-700">Actions</h3>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter rejection reason..."
               disabled={actionLocked}
-              className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${actionLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              Reject
-            </button>
-            <button
-              onClick={() => setConfirmAction("Accept")}
-              disabled={actionLocked}
-              className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${actionLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              Accept
-            </button>
+              className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => setConfirmAction("Reject")}
+                disabled={actionLocked}
+                className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${actionLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => setConfirmAction("Accept")}
+                disabled={actionLocked}
+                className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${actionLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Accept
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <p className="border-t pt-6 text-sm text-gray-600">
+            You can review this signup; accepting or rejecting payments is limited to sales head and other authorized roles.
+          </p>
+        )}
 
-        {confirmAction && (
+        {canApproveReject && confirmAction && (
           <ConfirmBlock
             type={confirmAction}
             reason={reason}

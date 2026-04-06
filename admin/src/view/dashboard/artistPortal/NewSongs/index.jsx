@@ -1,8 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const NewSongsIndividual = () => {
+  const { user } = useAuth();
+  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
   const { ophid, songId } = useParams();
   const [content, setContent] = useState({});
   const [loading, setLoading] = useState(true);
@@ -101,7 +105,7 @@ const NewSongsIndividual = () => {
             "proof",
             "audio_url",
           ]}
-          showActions={true}
+          showActions={canApproveReject}
           statuses={data.status}
           reasons={data.reject_reason}
           handleAction={handleAction}
@@ -173,11 +177,9 @@ const SectionBlock = ({
         {section} Details
       </h2>
 
-      {showActions && (
-        <div className="text-sm italic mb-2">
-          Status: {statuses ? statuses : "under review"}
-        </div>
-      )}
+      <div className="text-sm italic mb-2">
+        Status: {statuses ? statuses : "under review"}
+      </div>
 
       {fields
         .filter((field) => data[field] !== null && data[field] !== undefined)
@@ -242,7 +244,7 @@ const SectionBlock = ({
         </>
       )}
 
-      {confirmAction && (
+      {showActions && confirmAction && (
         <ConfirmBlock
           section={section}
           type={confirmAction}
@@ -250,6 +252,12 @@ const SectionBlock = ({
           onConfirm={confirmAndHandle}
           onCancel={() => setConfirmAction(null)}
         />
+      )}
+
+      {!showActions && (
+        <p className="text-sm text-gray-600 mt-4">
+          You can review this submission; approving or rejecting is limited to sales head and other authorized roles.
+        </p>
       )}
     </div>
   );

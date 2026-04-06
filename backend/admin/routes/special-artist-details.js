@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../../middleware/authenticate");
+const forbidSalesMemberApprovals = require("../../middleware/forbidSalesMemberApprovals");
 const {
   getSpecialArtistRequestedDetailsController,
   getIndividualSpecialArtistDetailsController,
@@ -15,6 +17,11 @@ router.get(
   getIndividualSpecialArtistDetailsController
 );
 
-router.post("/set-special-artist-details-decision", setArtistDetailsController);
+router.post(
+  "/set-special-artist-details-decision",
+  authMiddleware,
+  forbidSalesMemberApprovals,
+  setArtistDetailsController
+);
 
 module.exports = router;

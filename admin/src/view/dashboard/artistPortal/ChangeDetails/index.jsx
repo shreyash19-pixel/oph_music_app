@@ -2,8 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const ChangeDetailsIndividual = () => {
+  const { user } = useAuth();
+  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
   const { ophid, field } = useParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -89,6 +93,7 @@ const ChangeDetailsIndividual = () => {
           confirmAction={confirmAction}
           setConfirmAction={setConfirmAction}
           confirmAndHandle={confirmAndHandle}
+          canApproveReject={canApproveReject}
         />
       </div>
     </div>
@@ -145,6 +150,7 @@ const SectionBlock = ({
   confirmAction,
   setConfirmAction,
   confirmAndHandle,
+  canApproveReject = true,
 }) => {
   const [reasonText, setReasonText] = useState(reasons || "");
 
@@ -183,35 +189,41 @@ const SectionBlock = ({
         </Field>
       )}
 
-      <>
-        <textarea
-          readOnly={statuses === "rejected"}
-          value={reasonText}
-          onChange={(e) => {
-            setReasonText(e.target.value);
-          }}
-          placeholder="Enter reason (required if reject)..."
-          className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44]"
-        />
-        <div className="flex gap-4 mt-4">
-          <button
-            onClick={() => handleAction("rejected")}
-            disabled={reasonText === "" || statuses === "rejected"}
-            className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors disabled:opacity-50"
-          >
-            Reject
-          </button>
-          <button
-            onClick={() => handleAction("approved")}
-            disabled={statuses === "rejected"}
-            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
-            Approve
-          </button>
-        </div>
-      </>
+      {canApproveReject ? (
+        <>
+          <textarea
+            readOnly={statuses === "rejected"}
+            value={reasonText}
+            onChange={(e) => {
+              setReasonText(e.target.value);
+            }}
+            placeholder="Enter reason (required if reject)..."
+            className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44]"
+          />
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => handleAction("rejected")}
+              disabled={reasonText === "" || statuses === "rejected"}
+              className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              Reject
+            </button>
+            <button
+              onClick={() => handleAction("approved")}
+              disabled={statuses === "rejected"}
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              Approve
+            </button>
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-gray-600">
+          You can review this request; approving or rejecting is limited to sales head and other authorized roles.
+        </p>
+      )}
 
-      {confirmAction && (
+      {canApproveReject && confirmAction && (
         <ConfirmBlock
           section={section}
           type={confirmAction}
