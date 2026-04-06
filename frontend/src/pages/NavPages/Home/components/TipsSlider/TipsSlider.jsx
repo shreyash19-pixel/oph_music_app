@@ -11,26 +11,30 @@ const TipsSlider = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState("");
   const [isPlaying, setIsPlaying] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [tips, setTips] = useState([]); // ✅ local state instead of Redux
+  const [tips, setTips] = useState([]);
   const videoRef = useRef(null);
+  const sliderRef = useRef(null);
+  const dragStartPos = useRef({ x: 0, y: 0 });
 
   // ✅ Fetch podcasts data
   useEffect(() => {
     const fetchPodcasts = async () => {
       try {
         const res = await axiosApi.get("/allStories");
-        console.log("Podcasts response:", res.data);
+        console.log("📡 Podcasts response:", res.data);
 
         if (Array.isArray(res.data)) {
+          console.log("✅ Setting tips from res.data, count:", res.data.length);
           setTips(res.data);
         } else if (Array.isArray(res.data.data)) {
+          console.log("✅ Setting tips from res.data.data, count:", res.data.data.length);
           setTips(res.data.data);
         } else {
+          console.log("⚠️ No valid data found, setting empty array");
           setTips([]);
         }
       } catch (error) {
-        console.error("Error fetching podcasts:", error);
+        console.error("❌ Error fetching podcasts:", error);
         setTips([]);
       }
     };
@@ -39,22 +43,22 @@ const TipsSlider = () => {
   }, []);
 
   const reelsData = tips;
+  
+  /** Slick infinite mode clones slides; disable when too few unique slides vs slidesToShow. */
+  const useInfiniteCarousel = reelsData.length >= 12;
 
   const settings = {
     dots: false,
-    infinite: reelsData.length >= 3,
-    speed: 500,
+    infinite: useInfiniteCarousel,
+    speed: 300,
     slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length,
     slidesToScroll: 1,
     arrows: false,
-    autoplay: reelsData.length >= 3,
+    autoplay: reelsData.length > 0 && useInfiniteCarousel,
     autoplaySpeed: 3000,
     pauseOnHover: true,
     swipeToSlide: true,
     touchThreshold: 10,
-    cssEase: "linear",
-    beforeChange: () => setIsDragging(true),
-    afterChange: () => setIsDragging(false),
     responsive: [
       {
         breakpoint: 1024,
@@ -83,7 +87,9 @@ const TipsSlider = () => {
     setIsPlaying(true);
     setTimeout(() => {
       if (modalVideoRef.current && modalVideoRef.current.play) {
-        modalVideoRef.current.play().catch(err => console.error("Play error:", err));
+        modalVideoRef.current
+          .play()
+          .catch((err) => console.error("Play error:", err));
       }
     }, 100);
   };
@@ -95,7 +101,6 @@ const TipsSlider = () => {
   };
 
   const modalVideoRef = useRef(null);
-
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -133,12 +138,35 @@ const TipsSlider = () => {
 
         {/* Slider */}
         <div className="relative px-4 mb-16">
-          <Slider {...settings} className="tips-slider">
+          <Slider ref={sliderRef} {...settings} className="tips-slider">
             {tips.map((tip) => (
               <div key={tip.id} className="px-2">
                 <div
                   className="relative rounded-lg overflow-hidden aspect-[3/4.5] cursor-pointer"
-                  onClick={() => !isDragging && openModal(tip.video_url)}
+                  onMouseDown={(e) => {
+                    dragStartPos.current = { x: e.clientX, y: e.clientY };
+                  }}
+                  onMouseUp={(e) => {
+                    const deltaX = Math.abs(e.clientX - dragStartPos.current.x);
+                    const deltaY = Math.abs(e.clientY - dragStartPos.current.y);
+                    if (deltaX < 10 && deltaY < 10) {
+                      openModal(tip.video_url);
+                    }
+                  }}
+                  onTouchStart={(e) => {
+                    dragStartPos.current = {
+                      x: e.touches[0].clientX,
+                      y: e.touches[0].clientY,
+                    };
+                  }}
+                  onTouchEnd={(e) => {
+                    const touch = e.changedTouches[0];
+                    const deltaX = Math.abs(touch.clientX - dragStartPos.current.x);
+                    const deltaY = Math.abs(touch.clientY - dragStartPos.current.y);
+                    if (deltaX < 10 && deltaY < 10) {
+                      openModal(tip.video_url);
+                    }
+                  }}
                 >
                   <Image
                     src={

@@ -167,9 +167,11 @@ const TopPicksSection = () => {
                     {/* Artist Profile */}
                     <div
                       className="relative h-80 hover:cursor-pointer"
-                      onClick={() =>
-                        navigateToArtistDetail(navigate, artist.OPH_ID)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Clicked artist:", artist.oph_id);
+                        navigateToArtistDetail(navigate, artist.oph_id);
+                      }}
                     >
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />
                       <Image
