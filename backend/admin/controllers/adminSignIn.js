@@ -29,14 +29,16 @@ const signin = async (req, res) => {
     // const token = jwt.sign({ email }, process.env.SECRET_KEY, {
     //   expiresIn: "1h",
     // });
+    const authVersion = Number(dbUser.auth_version ?? 1);
     const token = jwt.sign(
       {
         email: email,
-        role: dbUser.Role
-        
+        role: dbUser.Role,
+        av: authVersion,
       },
       process.env.SECRET_KEY,
-      { expiresIn: "24h" });
+      { expiresIn: "24h" }
+    );
     
 
     

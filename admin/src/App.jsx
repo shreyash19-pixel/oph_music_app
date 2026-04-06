@@ -1,7 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { ROLES } from "./utils/roles";
+import {
+  ROLES,
+  ANALYTICS_PORTAL_ROLES,
+  EVENT_PAYMENTS_SIDEBAR_ROLES,
+  CONTENT_PORTAL_ROLES,
+} from "./utils/roles";
 // import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
 
@@ -37,6 +42,7 @@ import Content_Analysis from "./view/dashboard/artistPortal/contentAnalysis";
 
 import Notifications from "./view/dashboard/artistPortal/notifications";
 import PaymentAll from "./view/dashboard/artistPortal/paymentAll";
+import EventPayments from "./view/dashboard/artistPortal/paymentAll/EventPayments";
 import PaymentWithdraw from "./view/dashboard/artistPortal/paymentsWithdrawals/Payment";
 import ArtistSettings from "./view/dashboard/artistPortal/Settings";
 import Tickets from "./view/dashboard/artistPortal/Tickets";
@@ -113,8 +119,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/AddNote/:ophid" element={<AddNote />} />
-          <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
+          <Route
+            path="/AddNote/:ophid"
+            element={
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
+                <AddNote />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ContentNew/:ophid/:songId"
+            element={
+              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
+                <ContentNew />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/special-artist-songs/:ophid/:songId"
             element={<NewSongsIndividual />}
@@ -131,12 +151,20 @@ function App() {
           />
           <Route
             path="/ContentRelease/:ophid/:songId"
-            element={<ContentReleaseInd />}
+            element={
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
+                <ContentReleaseInd />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/ContentManage/:ophid/:songId"
-            element={<ContentManage />}
+            element={
+              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
+                <ContentManage />
+              </ProtectedRoute>
+            }
           />
           <Route path="/artistPortal" element={<ArtistPortal />} />
           <Route
@@ -176,11 +204,19 @@ function App() {
           />
           <Route
             path="/Content_Analysis/:ophid/:songId"
-            element={<ContentAnalysis />}
+            element={
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
+                <ContentAnalysis />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/Audio_metrics/:songId"
-            element={<Audio_Metrics />} // Adjusted to match the new export
+            element={
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
+                <Audio_Metrics />
+              </ProtectedRoute>
+            }
           />
           <Route path="/AllEvents" element={<Events />} />
           <Route
@@ -237,8 +273,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/content/tv" element={<Tvpublishing />} />
-          <Route path="/TvIndex/:oph_id/:song_id" element={<TvIndex />} />
+          <Route
+            path="/content/tv"
+            element={
+              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
+                <Tvpublishing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/TvIndex/:oph_id/:song_id"
+            element={
+              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
+                <TvIndex />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/ResolvedTickets/:ophid/:ticketNumber"
             element={<ResolveIndex />}
@@ -630,17 +680,7 @@ function App() {
           <Route
             path="/ContentNew"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.CREATIVE_HEAD,
-                  ROLES.CREATIVE_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
                 <Content_New />
               </ProtectedRoute>
             }
@@ -648,17 +688,7 @@ function App() {
           <Route
             path="/ContentManage"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.CREATIVE_HEAD,
-                  ROLES.CREATIVE_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
                 <Content_Manage />
               </ProtectedRoute>
             }
@@ -692,13 +722,7 @@ function App() {
           <Route
             path="/ArtistKPI"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.OPERATION_HEAD,
-                  ROLES.OPERATION_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
                 <Artist_Kpi />
               </ProtectedRoute>
             }
@@ -742,7 +766,7 @@ function App() {
           <Route
             path="/ContentAnalysis"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
                 <Content_Analysis />
               </ProtectedRoute>
             }
@@ -750,7 +774,7 @@ function App() {
           <Route
             path="/ContentRelease"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
                 <ContentRelease />
               </ProtectedRoute>
             }
@@ -758,7 +782,7 @@ function App() {
           <Route
             path="/platform"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={ANALYTICS_PORTAL_ROLES}>
                 <AudioPlatform />
               </ProtectedRoute>
             }
@@ -782,6 +806,14 @@ function App() {
                 ]}
               >
                 <PaymentAll />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/EventPayments"
+            element={
+              <ProtectedRoute allowedRoles={EVENT_PAYMENTS_SIDEBAR_ROLES}>
+                <EventPayments />
               </ProtectedRoute>
             }
           />

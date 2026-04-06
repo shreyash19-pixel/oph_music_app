@@ -25,6 +25,16 @@
             excludeColumns={"audio_url,video_url,created_at,updated_at"}
             pageSize={10}
             detailsUrl="/TvIndex"
+            leadColumns={[
+              "OPH_ID",
+              "oph_id",
+              "song_id",
+              "song_name",
+              "status",
+              "reason",
+              "lock",
+              "Lock",
+            ]}
           />
         </ArtistSidebar>
       </div>

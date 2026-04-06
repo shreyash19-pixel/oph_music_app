@@ -18,4 +18,16 @@ axiosApi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+axiosApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const code = error.response?.data?.code;
+    if (error.response?.status === 401 && code === "SESSION_STALE") {
+      localStorage.removeItem("token");
+      window.location.assign("/");
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default axiosApi;
