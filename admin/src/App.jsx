@@ -97,7 +97,22 @@ function App() {
 
           <Route path="/home" element={<Dashboard />} />
           <Route path="/ArtistNew/:ophid" element={<ArtistNew />} />
-          <Route path="/ArtistAll/:ophid" element={<ArtistAll />} />
+          <Route
+            path="/ArtistAll/:ophid"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                ]}
+              >
+                <ArtistAll />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/AddNote/:ophid" element={<AddNote />} />
           <Route path="/ContentNew/:ophid/:songId" element={<ContentNew />} />
           <Route
@@ -124,9 +139,37 @@ function App() {
             element={<ContentManage />}
           />
           <Route path="/artistPortal" element={<ArtistPortal />} />
-          <Route path="/newsignup/:ophid" element={<NewSignupDetails />} />
+          <Route
+            path="/newsignup/:ophid"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                ]}
+              >
+                <NewSignupDetails />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/New_SignUp" element={<Home />} />
+          <Route
+            path="/New_SignUp"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.SALES_HEAD,
+                  ROLES.SALES_MEMBER,
+                ]}
+              >
+                <Home />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/Withdraw/:ophid/:withdrawal_id"
             element={<Withdraw />}

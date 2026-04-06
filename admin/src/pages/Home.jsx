@@ -24,6 +24,7 @@ const NewSignup = () => {
   const [tableData, setTableData] = useState([]);
   const [rejectedData, setRejectedData] = useState([]);
 
+  /** Administrative head: under-review table only (no rejected list). Rejected payments: sales head + super admin. */
   const showRejectedSignupPayments =
     user?.role === ROLES.SALES_HEAD || user?.role === ROLES.SUPER_ADMIN;
 

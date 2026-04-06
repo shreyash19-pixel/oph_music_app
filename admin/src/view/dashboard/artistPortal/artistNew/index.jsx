@@ -8,7 +8,10 @@ import { ROLES } from "../../../../utils/roles";
 const ArtistNew = () => {
   const { user } = useAuth();
   const isSalesMember = user?.role === ROLES.SALES_MEMBER;
-  const canApproveReject = !isSalesMember;
+  const canApproveReject =
+    user?.role === ROLES.SUPER_ADMIN ||
+    user?.role === ROLES.ADMINISTRATIVE_HEAD ||
+    user?.role === ROLES.ADMINISTRATIVE_MEMBER;
   const { ophid } = useParams();
   const [artist, setArtist] = useState({});
   const [photos, setPhotos] = useState([]);
@@ -476,8 +479,8 @@ const ArtistNew = () => {
 
         {!canApproveReject && salesMemberHasRejected && (
           <p className="pt-6 text-sm text-gray-600 border-t">
-            Accepting or rejecting sections is limited to sales head and other
-            authorized roles.
+            Accepting or rejecting onboarding sections is limited to super admin
+            and administrative head/member.
           </p>
         )}
       </div>

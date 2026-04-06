@@ -1,9 +1,7 @@
-import React,{useState,useEffect} from 'react'
-import axiosApi from '../../../../conf/axios';
-import SearchableDynamicTable from '../../../../components/SearchableDynamicTable';
-import ArtistSidebar from '../../../../components/ArtistSidebar';
-import { all } from 'axios';
-
+import React, { useState, useEffect } from "react";
+import axiosApi from "../../../../conf/axios";
+import SearchableDynamicTable from "../../../../components/SearchableDynamicTable";
+import ArtistSidebar from "../../../../components/ArtistSidebar";
 
 const Artist_All = () => {
    const [tableData, setTableData] = useState([]);

@@ -1,12 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../../middleware/authenticate");
-const forbidSalesMemberApprovals = require("../../middleware/forbidSalesMemberApprovals");
+const requireArtistOnboardingApprover = require("../../middleware/requireArtistOnboardingApprover");
 const userDetailsController = require("../controllers/newArtist");
 
-const requireSalesHeadOrSalesMember = (req, res, next) => {
+/** Who may read the rejected-onboarding queue (JWT). */
+const REJECTED_ONBOARDING_LIST_ROLES = new Set([
+  "super admin",
+  "administrative head",
+  "administrative member",
+  "sales head",
+  "sales member",
+]);
+
+const requireRejectedOnboardingListAccess = (req, res, next) => {
   const role = req.user?.role;
-  if (role === "sales head" || role === "sales member") {
+  if (role && REJECTED_ONBOARDING_LIST_ROLES.has(role)) {
     return next();
   }
   return res.status(403).json({ success: false, message: "Forbidden" });
@@ -18,13 +27,13 @@ router.get("/any-under-review", userDetailsController.getAllUserDetailsIfAnyStep
 router.get(
   "/any-rejected-onboarding",
   authMiddleware,
-  requireSalesHeadOrSalesMember,
+  requireRejectedOnboardingListAccess,
   userDetailsController.getAllUserDetailsIfAnyOnboardingStepRejected
 );
 router.post(
   "/update-status",
   authMiddleware,
-  forbidSalesMemberApprovals,
+  requireArtistOnboardingApprover,
   userDetailsController.updateStatus
 );
 router.get("/getAllSales", userDetailsController.getAllSales);
