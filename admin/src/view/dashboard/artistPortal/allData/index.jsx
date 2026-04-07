@@ -93,9 +93,9 @@ const AllData = () => {
       color: 'bg-blue-500 hover:bg-blue-600'
     },
     {
-      id: 'User Details',
-      label: 'Download User Details',
-      description: 'All registered user details',
+      id: 'Personal Details',
+      label: 'Download Personal Details',
+      description: 'All registered personal details',
       endpoint: '/user-details',
       icon: '',
       color: 'bg-green-500 hover:bg-green-600'
@@ -119,7 +119,8 @@ const AllData = () => {
     {
       id: 'All Payments',
       label: 'Download All Payments',
-      description: 'User membership information',
+      description:
+        'All rows from payments: songs, calendar/date booking, events, SA, EPK-related, with amounts and reject reasons',
       endpoint: '/All-payments',
       icon: '',
       color: 'bg-indigo-500 hover:bg-indigo-600'
