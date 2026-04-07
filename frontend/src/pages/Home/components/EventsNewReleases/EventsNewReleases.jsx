@@ -1,10 +1,11 @@
 import { FaPlay, FaPause } from "react-icons/fa";
 import { formatDateTime } from "../../../../utils/date";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import { useDispatch, useSelector } from "react-redux";
 import { useArtist } from "../../../auth/API/ArtistContext";
 import { changeSelectedEvent } from "../../../../slice/events";
+import { fetchNewRelease } from "../../../../slice/newRelease";
 import { useLocation, useNavigate } from "react-router-dom";
 import getToken from "../../../../utils/getToken";
 import axiosApi from "../../../../conf/axios";
@@ -17,15 +18,16 @@ const isArtistRegistered = (eventId, artistBookEvents = []) =>
       (e.status === "under review" || e.status === "accepted")
   );
 
+const POLL_MS = 45_000;
+
 const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
-  const { ophid } = useArtist();
+  const { ophid, headers } = useArtist();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [audio, setAudio] = useState(null); // State for audio object
   const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
-  const [visibleSongs, setVisibleSongs] = useState(5); // State for the number of visible songs
-  const [showAllSongs, setShowAllSongs] = useState(false); // State to toggle between showing more and fewer songs
   const eventID = useSelector((state) => state.event.selectedEvent);
   const location = useLocation();
+  const dispatch = useDispatch();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -36,9 +38,22 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
 
   const newReleases = useSelector((state) => state.newRelease.newRelease);
 
-  const songsArray = Object.values(newReleases).sort(
-    (a, b) => b.youtubeViews - a.youtubeViews
-  );
+  const songsArray = useMemo(() => {
+    const list =
+      newReleases && typeof newReleases === "object" && !Array.isArray(newReleases)
+        ? Object.values(newReleases)
+        : [];
+    return [...list].sort(
+      (a, b) => (b.youtubeViews || 0) - (a.youtubeViews || 0),
+    );
+  }, [newReleases]);
+
+  useEffect(() => {
+    if (!headers?.Authorization) return;
+    const tick = () => dispatch(fetchNewRelease(headers));
+    const id = setInterval(tick, POLL_MS);
+    return () => clearInterval(id);
+  }, [dispatch, headers]);
 
   const handlePlayPause = (song) => {
     if (audio && playingSongId === song.songId) {
@@ -67,7 +82,6 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
     }
   };
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleClick = async (data) => {
@@ -115,24 +129,11 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
     createEventReg();
   }, [location.state]);
 
-  const truncateText = (text, wordLimit) => {
-    const words = text.split(" ");
-    if (words.length > wordLimit) {
-      return words.slice(0, wordLimit).join(" ") + "...";
-    }
-    return text;
-  };
-
-  const toggleShowAllSongs = () => {
-    setShowAllSongs(!showAllSongs);
-    setVisibleSongs(showAllSongs ? 5 : newReleases.length);
-  };
-
   return (
     <div className=" text-white overflow-hidden px-8 py-6 sm:my-10">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Events Section */}
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <h2 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             EVENTS
           </h2>
@@ -182,7 +183,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
         </div>
 
         {/* New Releases Section */}
-        <div className="flex relative flex-col">
+        <div className="flex relative flex-col min-h-0 min-w-0">
           <h2 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             NEW RELEASES
           </h2>
@@ -194,90 +195,66 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
             alt=""
           />
 
-          <div className="space-y-4 z-30 flex-grow">
-            <div className="flex items-end text-sm text-gray-400 justify-end">
+          <div className="z-30 flex flex-col flex-grow min-h-0">
+            <div className="flex shrink-0 items-end text-sm text-gray-400 justify-end pb-2">
               <span className="w-8">#</span>
               <span className="flex-grow ms-4">SONG</span>
               <span className="w-24 text-right">PLAY</span>
               <span className="w-24 text-right">LISTEN</span>
             </div>
-            {songsArray.length > 0 &&
-              songsArray.slice(0, visibleSongs).map((song, index) => (
-                <div
-                  key={song.songId}
-                  onClick={() =>
-                    window.open(
-                      import.meta.env.VITE_WEBSITE_URL +
-                        "artists" +
-                        `/${song.ophid}`,
-                      "_blank"
-                    )
-                  }
-                  className="flex hover:cursor-pointer items-center py-2 border-b border-gray-800"
-                >
-                  <img
-                    src={song.imageUrl[0]}
-                    className="w-10 h-10 rounded-md"
-                    alt=""
-                  />
-                  <div className="flex-grow ms-4 truncate">
-                    <div className="font-medium">
-                      {/* <span className="block sm:hidden">
-                    {song.secondaryArtist?.length > 5 ? song.secondaryArtist.slice(0, 5) + "..." : song.secondaryArtist}
-                    </span>
-                    
-                    <span className="hidden sm:block">
-                    {song.secondaryArtist}
-                    </span> */}
-
-                      <span className="hidden sm:block">{song.songName}</span>
-                      <div className="text-sm text-gray-400 truncate max-w-full overflow-hidden whitespace-nowrap">
-                        {song.primaryArtist}
-                        {song.secondaryArtist.length > 0 && !song.secondaryArtist.includes(null) && (
-                          <span>, {song.secondaryArtist.join(", ")}</span>
-                        )}
+            <div className="max-h-[300px] overflow-y-auto overflow-x-hidden space-y-4 pr-1 [scrollbar-color:rgba(107,70,160,0.6)_transparent] [scrollbar-width:thin]">
+              {songsArray.length > 0 &&
+                songsArray.map((song) => (
+                  <div
+                    key={song.songId}
+                    onClick={() =>
+                      window.open(
+                        import.meta.env.VITE_WEBSITE_URL +
+                          "artists" +
+                          `/${song.ophid}`,
+                        "_blank"
+                      )
+                    }
+                    className="flex hover:cursor-pointer items-center py-2 border-b border-gray-800"
+                  >
+                    <img
+                      src={song.imageUrl?.[0] || ReleaseBlur}
+                      className="w-10 h-10 rounded-md shrink-0"
+                      alt=""
+                    />
+                    <div className="flex-grow ms-4 truncate min-w-0">
+                      <div className="font-medium">
+                        <span className="hidden sm:block">{song.songName}</span>
+                        <div className="text-sm text-gray-400 truncate max-w-full overflow-hidden whitespace-nowrap">
+                          {song.primaryArtist}
+                          {song.secondaryArtist.length > 0 &&
+                            !song.secondaryArtist.includes(null) && (
+                              <span>, {song.secondaryArtist.join(", ")}</span>
+                            )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <span className="w-24 text-right text-gray-400">
-                    {/* {song.total_views} */}
-                    {song.youtubeViews}
-                  </span>
-                  <span className="w-24 flex items-center justify-end ml-auto">
-                    <button
-                      className="p-2 bg-[#6F4FA0] rounded-full hover:bg-purple-500 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering the parent onClick
-                        handlePlayPause(song);
-                      }}
-                    >
-                      {playingSongId === song.songId && !audio?.paused ? (
-                        <FaPause className="w-3 h-3" />
-                      ) : (
-                        <FaPlay className="w-3 h-3" />
-                      )}
-                    </button>
-                  </span>
-                </div>
-              ))}
-            <div className="text-center">
-              {visibleSongs < newReleases.length && (
-                <button
-                  className="text-cyan-400 underline"
-                  onClick={toggleShowAllSongs}
-                >
-                  See more...
-                </button>
-              )}
-              {showAllSongs && (
-                <button
-                  className="text-cyan-400 underline"
-                  onClick={toggleShowAllSongs}
-                >
-                  See less
-                </button>
-              )}
+                    <span className="w-24 text-right text-gray-400 shrink-0">
+                      {song.youtubeViews}
+                    </span>
+                    <span className="w-24 flex items-center justify-end ml-auto shrink-0">
+                      <button
+                        className="p-2 bg-[#6F4FA0] rounded-full hover:bg-purple-500 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlayPause(song);
+                        }}
+                      >
+                        {playingSongId === song.songId && !audio?.paused ? (
+                          <FaPause className="w-3 h-3" />
+                        ) : (
+                          <FaPlay className="w-3 h-3" />
+                        )}
+                      </button>
+                    </span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>

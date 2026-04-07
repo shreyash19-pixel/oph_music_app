@@ -47,7 +47,7 @@ class SongRegistrationService {
              (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
                AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id)
              OR (p2.from_source = 'Date booking' OR p2.from_source = 'Date Booking')
-               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.old_release_date = sr.release_date OR DATE(p2.old_release_date) = DATE(sr.release_date) OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
            )
            AND p2.status = 'rejected'
            ORDER BY p2.created_at DESC LIMIT 1) as payment_reject_reason,
@@ -57,7 +57,7 @@ class SongRegistrationService {
              (p2.from_source = 'Song Registration' OR p2.from_source = 'Song Repayment')
                AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id)
              OR (p2.from_source = 'Date booking' OR p2.from_source = 'Date Booking')
-               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
+               AND (p2.song_id = sr.song_id OR p2.reject_for = sr.song_id OR p2.reject_for = sr.release_date OR p2.old_release_date = sr.release_date OR DATE(p2.old_release_date) = DATE(sr.release_date) OR p2.release_date = sr.release_date OR DATE(p2.release_date) = DATE(sr.release_date))
            )
            AND p2.status = 'rejected'
            ORDER BY p2.created_at DESC LIMIT 1) as payment_from_source
@@ -70,7 +70,7 @@ class SongRegistrationService {
 
       // Get rejected payments for paid-in-advance + lyrical pricing (lyrical = amount < songReg)
       const [rejectedPaymentsRows] = await connection.query(
-        `SELECT song_id, reject_for, release_date, from_source, amount
+        `SELECT song_id, reject_for, release_date, old_release_date, from_source, amount
          FROM payments
          WHERE oph_id = ? AND status = 'rejected'
          AND (
@@ -140,8 +140,9 @@ class SongRegistrationService {
               let matches = false;
               if (isDateBooking && !seen.date_booking) {
                 const rDate = toDateStr(rp.release_date);
-                // reject_for may hold song_id (new) or release_date (legacy)
-                matches = rp.song_id === songId || rp.reject_for === songId || rp.reject_for === dateStr || rDate === dateStr;
+                // reject_for may hold song_id (rejection) or legacy release_date; old_release_date holds prior slot after date change
+                const oldR = toDateStr(rp.old_release_date);
+                matches = rp.song_id === songId || rp.reject_for === songId || rp.reject_for === dateStr || oldR === dateStr || rDate === dateStr;
                 if (matches) {
                   seen.date_booking = true;
                   const amt = Number(rp.amount) || songRegCost;

@@ -8,6 +8,16 @@ const costingModel = require('../../admin/model/costing');
 // Lazy load EventBookingService to avoid potential circular dependencies
 // const EventBookingService = require('../../admin/services/EventBookingService');
 
+/** Store date-only (YYYY-MM-DD); strips time from ISO strings and Date objects */
+function toDateOnlyString(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "string") return value.trim().slice(0, 10);
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  return null;
+}
+
 class PaymentService {
   /**
    * Insert payment and update application status
@@ -46,14 +56,15 @@ class PaymentService {
         throw new Error('Only one of song_id or event_id should be provided.');
       }
 
-      // Handle release date change logic
-      if (from_source === "Release date change" && old_release_date) {
-        // Move old release_date to reject_for and clear release_date for old payment
+      // Handle release date change logic (old_release_date is DATE-only, no time)
+      const oldReleaseDateOnly = toDateOnlyString(old_release_date);
+      if (from_source === "Release date change" && oldReleaseDateOnly) {
+        // Record previous slot on the old payment row; do not use reject_for (reserved for rejections)
         await connection.execute(
-          "UPDATE payments SET reject_for = ?, release_date = NULL, updated_at = NOW() WHERE release_date = ? AND oph_id = ? AND (from_source = ? OR from_source = ?)",
+          "UPDATE payments SET old_release_date = ?, release_date = NULL, updated_at = NOW() WHERE release_date = ? AND oph_id = ? AND (from_source = ? OR from_source = ?)",
           [
-            old_release_date,
-            old_release_date,
+            oldReleaseDateOnly,
+            oldReleaseDateOnly,
             oph_id,
             "Date booking",
             "Release date change",

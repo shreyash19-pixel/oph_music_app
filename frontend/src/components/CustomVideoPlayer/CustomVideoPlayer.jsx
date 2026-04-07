@@ -26,6 +26,8 @@ const CustomVideoPlayer = forwardRef(
       onPlay,
       onPause,
       showPlayButtonOverlay = false,
+      /** When overlay is shown: "default" uses image asset; "purple" uses branded circular play (signup profile videos). */
+      playOverlayVariant = "default",
       onPlayButtonClick,
       pauseOtherVideos = true,
       id,
@@ -391,26 +393,37 @@ const CustomVideoPlayer = forwardRef(
 
         {/* Play Button Overlay (when video is paused) */}
         {showPlayButtonOverlay && !isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              const video = videoRef.current;
-              if (video && video.paused) {
-                togglePlayPause(e);
-              }
-            }}
-            className="z-30 pointer-events-auto hover:opacity-80 transition-opacity"
-          >
-            <img
-              src="/assets/images/play_button.png"
-              className="w-[100px] sm:w-[150px]"
-              alt="Play Button"
-            />
-          </button>
-        </div>
-      )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onPlayButtonClick?.();
+                const video = videoRef.current;
+                if (video && video.paused) {
+                  togglePlayPause(e);
+                }
+              }}
+              className={`z-30 pointer-events-auto transition-opacity ${
+                playOverlayVariant === "purple"
+                  ? "rounded-full bg-[#6F4FA0] p-5 sm:p-6 shadow-lg hover:bg-purple-500 hover:opacity-95"
+                  : "hover:opacity-80"
+              }`}
+              aria-label="Play video"
+            >
+              {playOverlayVariant === "purple" ? (
+                <FaPlay className="w-8 h-8 sm:w-10 sm:h-10 text-white translate-x-0.5" />
+              ) : (
+                <img
+                  src="/assets/images/play_button.png"
+                  className="w-[100px] sm:w-[150px]"
+                  alt=""
+                />
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Custom Controls */}
         <div

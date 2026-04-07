@@ -38,6 +38,17 @@ const determineNextStepAfterDocumentation = (applicationStatus) => {
   return "/auth/membership-form";
 };
 
+/** FormData sends checkbox as strings "true"/"false"; MySQL INT + JS || mishandles both. */
+function agreementAcceptedToInt(raw) {
+  if (raw === true || raw === 1) return 1;
+  if (raw === false || raw === 0) return 0;
+  const s = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (s === "true" || s === "1" || s === "on" || s === "yes") return 1;
+  return 0;
+}
+
 const insertDocumentationController = async (req, res) => {
   try {
     const {
@@ -97,7 +108,7 @@ const insertDocumentationController = async (req, res) => {
         AccountHolderName || null, // accountHolderName
         AccountNumber || null, // accountNumber
         IFSCCode || null, // ifscCode
-        AgreementAccepted || 0, // agreementAccepted
+        agreementAcceptedToInt(AgreementAccepted), // agreement_accepted 0|1
         connection // Pass connection for transaction
       );
 

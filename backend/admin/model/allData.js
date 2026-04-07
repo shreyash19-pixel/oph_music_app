@@ -12,22 +12,23 @@ const getAllUserDetails = async () => {
 
 
 
- const getAllProfessionalDetails = async () => {
-  // Only select allowed fields (excluding VideoURL, PhotoURLs, step_status, reject_reason)
+const getAllProfessionalDetails = async () => {
+  // Matches professional_details schema (snake_case; see model/professional_details.js)
   const [rows] = await db.execute(`
-    SELECT 
-      OPH_ID,
-      Profession,
-      Bio,
-      SpotifyLink,
-      InstagramLink,
-      FacebookLink,
-      AppleMusicLink,
-      ExperienceYearly,
-      ExperienceMonthly,
-      SongsPlanningCount,
-      SongsPlanningType,
-      CreatedAt
+    SELECT
+      oph_id,
+      profession,
+      bio,
+      spotify_link,
+      instagram_link,
+      facebook_link,
+      apple_music_link,
+      experience_yearly,
+      experience_monthly,
+      songs_planning_count,
+      songs_planning_type,
+      created_at,
+      updated_at
     FROM professional_details
   `);
   return rows;
@@ -41,15 +42,16 @@ const getDocumentationDetails = async () => {
   return rows;
 };
 
+/**
+ * All portal payments: song registration, date booking / calendar, events, SA, EPK-related, etc.
+ * (single `payments` table — replaces legacy sign_up_payment-only export.)
+ */
 const paymentDetails = async () => {
   try {
-    const result = await db.execute("SELECT * FROM sign_up_payment");
-    // mysql2 execute returns [rows, fields] tuple
-    if (Array.isArray(result) && result.length > 0) {
-      const [rows] = result;
-      return Array.isArray(rows) ? rows : [];
-    }
-    return [];
+    const [rows] = await db.execute(
+      `SELECT * FROM payments ORDER BY id DESC`
+    );
+    return Array.isArray(rows) ? rows : [];
   } catch (error) {
     console.error("Error fetching payment details:", error);
     console.error("Error details:", {
@@ -66,13 +68,10 @@ const paymentDetails = async () => {
 
 const bookingsDetails = async () => {
   try {
-    console.log("Function called");
-
-    const [rows] = await db.execute("SELECT * FROM calender");
-
-    console.log("Rows fetched:", rows);
+    const [rows] = await db.execute(
+      `SELECT * FROM calender ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
+    );
     return rows;
-
   } catch (err) {
     console.error("DB ERROR:", err);
     throw err;
