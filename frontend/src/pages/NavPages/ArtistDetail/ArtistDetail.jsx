@@ -408,7 +408,7 @@ const ArtistDetail = () => {
                   <span className="font-bold text-white">
                     {resolveProfessionLabel(
                       artist.profession ?? artist.Profession,
-                      professions
+                      professions,
                     )}
                   </span>
                 </p>
@@ -527,7 +527,7 @@ const ArtistDetail = () => {
               <thead>
                 <tr className="text-gray-400 border-b border-gray-800">
                   <th className="pb-3 px-1 text-center">#</th>
-                  <th className="pb-3 px-1 text-center">SONG'S NAME</th>
+                  <th className="pb-3 px-1 text-center">SONG'S NAMEE</th>
                   <th className="pb-3 px-1 text-center">PLAYS</th>
                   <th className="pb-3 px-1 text-center">TIME</th>
                   <th className="pb-3 px-1 text-center">PLAY</th>
@@ -556,6 +556,9 @@ const ArtistDetail = () => {
                         </span>
                         <span className="text-gray-400 text-[11px] sm:text-xs">
                           {song.primaryArtist || song.primary_artist}
+                        </span>
+                        <span className="text-gray-400 text-[11px] sm:text-xs">
+                          {song.secondary_artist || song.primary_artist}
                         </span>
                       </div>
                     </td>
@@ -611,10 +614,7 @@ const ArtistDetail = () => {
                                   audioProgress.duration,
                                 )}
                                 onChange={(e) =>
-                                  handleSeek(
-                                    songKey(song),
-                                    e.target.value,
-                                  )
+                                  handleSeek(songKey(song), e.target.value)
                                 }
                                 onPointerDown={() => {
                                   isSeekingRef.current = true;

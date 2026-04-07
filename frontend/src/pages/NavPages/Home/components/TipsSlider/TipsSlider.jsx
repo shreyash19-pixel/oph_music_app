@@ -44,38 +44,49 @@ const TipsSlider = () => {
 
   const reelsData = tips;
   
-  /** Slick infinite mode clones slides; disable when too few unique slides vs slidesToShow. */
-  const useInfiniteCarousel = reelsData.length >= 12;
+  /** Disable infinite mode and prevent sliding beyond available content */
+  const canSlide = reelsData.length > 3;
 
   const settings = {
     dots: false,
-    infinite: useInfiniteCarousel,
+    infinite: false,
     speed: 300,
     slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length,
     slidesToScroll: 1,
     arrows: false,
-    autoplay: reelsData.length > 0 && useInfiniteCarousel,
-    autoplaySpeed: 3000,
+    autoplay: false,
     pauseOnHover: true,
-    swipeToSlide: true,
+    swipe: canSlide,
+    swipeToSlide: canSlide,
+    draggable: canSlide,
+    touchMove: canSlide,
     touchThreshold: 10,
     responsive: [
       {
         breakpoint: 1024,
         settings: {
           slidesToShow: reelsData.length >= 3 ? 3 : reelsData.length,
+          swipe: reelsData.length > 3,
+          draggable: reelsData.length > 3,
+          infinite: false,
         },
       },
       {
         breakpoint: 768,
         settings: {
-          slidesToShow: reelsData.length >= 3 ? 2 : reelsData.length,
+          slidesToShow: reelsData.length >= 2 ? 2 : reelsData.length,
+          swipe: reelsData.length > 2,
+          draggable: reelsData.length > 2,
+          infinite: false,
         },
       },
       {
         breakpoint: 480,
         settings: {
-          slidesToShow: reelsData.length >= 3 ? 1 : reelsData.length,
+          slidesToShow: 1,
+          swipe: reelsData.length > 1,
+          draggable: reelsData.length > 1,
+          infinite: false,
         },
       },
     ],
