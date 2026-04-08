@@ -73,28 +73,47 @@ export default function VideoMetadataForm() {
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
   const [videoMetadataLoaded, setVideoMetadataLoaded] = useState(false);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const [showPayNowAfterSubmit, setShowPayNowAfterSubmit] = useState(false);
   const progressCleanupRef = useRef(null);
 
+  const rejectedSectionsNav = location.state?.rejectedSections;
+  const paymentOnlyRejectedFromNav =
+    Array.isArray(rejectedSectionsNav) &&
+    rejectedSectionsNav.some((s) => s.section === "payment") &&
+    !rejectedSectionsNav.some(
+      (s) => s.section === "video" || s.section === "audio"
+    );
+
   // Video is in rejected list (from status page) = user must submit video changes first
-  const isVideoRejected = location.state?.rejectedSections?.some(
+  const isVideoRejected = rejectedSectionsNav?.some(
     (s) => s.section === "video"
   );
   // Paid in advance without lyrical: never show Pay now (no payment needed)
   const isPaidInAdvanceNoLyricalCheck = isPaidInAdvance && !lyricalServices;
-  // Only payment rejected = payment needed AND video was already submitted (so show read-only + Pay now)
+  const paymentStillNeedsCompletion =
+    nextPage === "repayment" || nextPage === "payment";
+  // Only payment rejected = pay again; video/audio not in rejected list from dashboard (or stale video reject_reason in DB)
   const onlyPaymentRejected =
     !isPaidInAdvanceNoLyricalCheck &&
     videoMetadataLoaded &&
-    (nextPage === "repayment" || nextPage === "payment") &&
-    formData.reject_reason === null &&
-    !isVideoRejected &&
-    !!formData.existing_video_url; // must have submitted video before showing read-only
+    paymentCheckDone &&
+    paymentStillNeedsCompletion &&
+    !!formData.existing_video_url &&
+    (paymentOnlyRejectedFromNav ||
+      (!isVideoRejected && formData.reject_reason == null));
   // After audio resubmit when both audio and payment were rejected: land here with read-only + Pay now
-  const showPayNowOnVideoFromState = location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
+  const showPayNowOnVideoFromState =
+    location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
   // Show read-only + Pay now when: (1) video already submitted and only payment left, (2) user just submitted on this page, or (3) came from audio resubmit (audio+payment rejected)
   // Never show for paid in advance without lyrical
-  const showReadOnlyAndPayNow = !isPaidInAdvanceNoLyricalCheck && (onlyPaymentRejected || showPayNowAfterSubmit || showPayNowOnVideoFromState);
+  const showReadOnlyAndPayNow =
+    !isPaidInAdvanceNoLyricalCheck &&
+    (onlyPaymentRejected ||
+      showPayNowAfterSubmit ||
+      (showPayNowOnVideoFromState &&
+        videoMetadataLoaded &&
+        !!formData.existing_video_url));
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
@@ -177,6 +196,8 @@ export default function VideoMetadataForm() {
       }
     } catch (err) {
       console.error("Error checking payment status:", err);
+    } finally {
+      setPaymentCheckDone(true);
     }
   };
 
@@ -184,6 +205,11 @@ export default function VideoMetadataForm() {
     e.preventDefault();
 
     if (isSubmitting) return;
+
+    if (showReadOnlyAndPayNow) {
+      toast.info("Use Pay now to complete payment. No need to resubmit video.");
+      return;
+    }
 
     if (
       formData.thumbnails.length === 0 &&
@@ -409,6 +435,12 @@ export default function VideoMetadataForm() {
             console.warn("Refetch video metadata after submit:", e);
           }
         };
+
+        if (response.data.paymentOnlyRepay === true) {
+          await refetchForReadOnly();
+          setShowPayNowAfterSubmit(true);
+          return;
+        }
 
         // Paid in advance + lyrical: only show Pay now when PAYMENT is rejected, not when only video was rejected
         const isPaidInAdvanceWithLyrical = isPaidInAdvance && lyricalServices;
@@ -675,6 +707,7 @@ export default function VideoMetadataForm() {
         }
       }).catch(() => {});
     }
+    setPaymentCheckDone(false);
     checkAlreadyBookedDate();
     fetchVideoMetadata();
     checkPaymentStaus();
@@ -701,6 +734,20 @@ export default function VideoMetadataForm() {
       },
     });
     return null;
+  }
+
+  const holdForPaymentResumeUi =
+    !!contentId &&
+    !isPaidInAdvanceNoLyricalCheck &&
+    (paymentOnlyRejectedFromNav || location.state?.showPayNowOnVideo === true) &&
+    (!videoMetadataLoaded || !paymentCheckDone);
+
+  if (holdForPaymentResumeUi) {
+    return (
+      <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
+        <Loading />
+      </div>
+    );
   }
 
   return (

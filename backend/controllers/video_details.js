@@ -179,6 +179,39 @@ exports.createVideoDetails = async (req, res) => {
       return;
     }
 
+    const hasNewVideoUpload = !!(req.files?.video_file?.[0]);
+    const hasNewThumbnailUpload = !!(req.files?.thumbnails?.length > 0);
+    if (!hasNewVideoUpload && !hasNewThumbnailUpload) {
+      const existingRows = await videoDetails.getVideoDetails(song_id);
+      const existing = existingRows?.[0];
+      if (existing && existing.status !== "rejected") {
+        const payState = await videoDetails.checkPaymentStatus(song_id, ophid);
+        const needPay =
+          payState.nextPagePath === "repayment" ||
+          payState.nextPagePath === "payment";
+        if (needPay) {
+          const creditsMatch =
+            String(credits ?? "").trim() ===
+            String(existing.credits ?? "").trim();
+          const rr = existing.reject_reason;
+          const noVideoRejectReason =
+            rr == null || String(rr).trim() === "";
+          const videoStandingGood =
+            existing.status === "approved" ||
+            (existing.status === "under review" && noVideoRejectReason);
+          if (creditsMatch && videoStandingGood) {
+            return res.status(200).json({
+              success: true,
+              message:
+                "Video is already approved or in review. Complete payment to continue.",
+              paymentOnlyRepay: true,
+              redirectPath: null,
+            });
+          }
+        }
+      }
+    }
+
     // 3️⃣  Insert into the child table
     const response = await videoDetails.insertVideoDetails(
       song_id,
