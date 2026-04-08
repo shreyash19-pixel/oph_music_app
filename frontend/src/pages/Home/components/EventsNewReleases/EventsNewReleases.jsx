@@ -15,7 +15,7 @@ const isArtistRegistered = (eventId, artistBookEvents = []) =>
   artistBookEvents.some(
     (e) =>
       Number(e.event_id) === Number(eventId) &&
-      (e.status === "under review" || e.status === "accepted")
+      (e.status === "under review" || e.status === "accepted"),
   );
 
 const POLL_MS = 45_000;
@@ -28,25 +28,29 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
   const eventID = useSelector((state) => state.event.selectedEvent);
   const location = useLocation();
   const dispatch = useDispatch();
+  const [showAll, setShowAll] = useState(false);
 
   const openModal = () => {
     setIsModalOpen(true);
   };
 
   console.log(upcomingEvent);
-  
 
   const newReleases = useSelector((state) => state.newRelease.newRelease);
 
   const songsArray = useMemo(() => {
     const list =
-      newReleases && typeof newReleases === "object" && !Array.isArray(newReleases)
+      newReleases &&
+      typeof newReleases === "object" &&
+      !Array.isArray(newReleases)
         ? Object.values(newReleases)
         : [];
     return [...list].sort(
       (a, b) => (b.youtubeViews || 0) - (a.youtubeViews || 0),
     );
   }, [newReleases]);
+
+  const visibleSongs = showAll ? songsArray : songsArray.slice(0, 5);
 
   useEffect(() => {
     if (!headers?.Authorization) return;
@@ -117,7 +121,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       if (response.status == 200) {
         console.log("Booking Successful");
@@ -162,7 +166,10 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
                 <h3 className="text-2xl font-bold mb-2">
                   {upcomingEvent.EventName}
                 </h3>
-                {isArtistRegistered(upcomingEvent.event_id ?? upcomingEvent.id, artistBookEvents) ? (
+                {isArtistRegistered(
+                  upcomingEvent.event_id ?? upcomingEvent.id,
+                  artistBookEvents,
+                ) ? (
                   <button
                     disabled={true}
                     className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm"
@@ -188,6 +195,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
             NEW RELEASES
           </h2>
 
+          {/* Background blur images */}
           <img src={ReleaseBlur} className="absolute -left-48" alt="" />
           <img
             src={ReleaseBlur}
@@ -196,48 +204,65 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
           />
 
           <div className="z-30 flex flex-col flex-grow min-h-0">
+            {/* Header */}
             <div className="flex shrink-0 items-end text-sm text-gray-400 justify-end pb-2">
               <span className="w-8">#</span>
               <span className="flex-grow ms-4">SONG</span>
               <span className="w-24 text-right">PLAY</span>
               <span className="w-24 text-right">LISTEN</span>
             </div>
-            <div className="max-h-[300px] overflow-y-auto overflow-x-hidden space-y-4 pr-1 [scrollbar-color:rgba(107,70,160,0.6)_transparent] [scrollbar-width:thin]">
-              {songsArray.length > 0 &&
-                songsArray.map((song) => (
+
+            {/* Songs List */}
+            <div
+              className={`space-y-4 pr-1 no-scrollbar ${
+                showAll ? "h-[300px] overflow-y-auto" : "h-auto overflow-hidden"
+              }`}
+            >
+              {visibleSongs.length > 0 &&
+                visibleSongs.map((song, index) => (
                   <div
                     key={song.songId}
                     onClick={() =>
                       window.open(
                         import.meta.env.VITE_WEBSITE_URL +
-                          "artists" +
-                          `/${song.ophid}`,
-                        "_blank"
+                          "artists/" +
+                          song.ophid,
+                        "_blank",
                       )
                     }
                     className="flex hover:cursor-pointer items-center py-2 border-b border-gray-800"
                   >
+                    {/* Index */}
+                    <span className="w-8 text-gray-400">{index + 1}</span>
+
+                    {/* Image */}
                     <img
                       src={song.imageUrl?.[0] || ReleaseBlur}
                       className="w-10 h-10 rounded-md shrink-0"
                       alt=""
                     />
+
+                    {/* Song Info */}
                     <div className="flex-grow ms-4 truncate min-w-0">
-                      <div className="font-medium">
-                        <span className="hidden sm:block">{song.songName}</span>
-                        <div className="text-sm text-gray-400 truncate max-w-full overflow-hidden whitespace-nowrap">
-                          {song.primaryArtist}
-                          {song.secondaryArtist.length > 0 &&
-                            !song.secondaryArtist.includes(null) && (
-                              <span>, {song.secondaryArtist.join(", ")}</span>
-                            )}
-                        </div>
+                      <div className="font-medium truncate">
+                        {song.songName}
+                      </div>
+
+                      <div className="text-sm text-gray-400 truncate">
+                        {song.primaryArtist}
+                        {song.secondaryArtist?.length > 0 &&
+                          !song.secondaryArtist.includes(null) && (
+                            <span>, {song.secondaryArtist.join(", ")}</span>
+                          )}
                       </div>
                     </div>
 
+                    {/* Views */}
                     <span className="w-24 text-right text-gray-400 shrink-0">
                       {song.youtubeViews}
                     </span>
+
+                    {/* Play Button */}
                     <span className="w-24 flex items-center justify-end ml-auto shrink-0">
                       <button
                         className="p-2 bg-[#6F4FA0] rounded-full hover:bg-purple-500 transition-colors"
@@ -256,6 +281,18 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
                   </div>
                 ))}
             </div>
+
+            {/* See More / Less */}
+            {songsArray.length > 5 && (
+              <div className="mt-3">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-cyan-400 hover:underline text-sm"
+                >
+                  {showAll ? "See Less..." : "See More..."}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

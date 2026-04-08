@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../../middleware/authenticate');
-const forbidProjectMemberAssignWinner = require('../../middleware/forbidProjectMemberAssignWinner');
+const forbidProjectMemberAssignWinner = require('../middleware/forbidSalesMemberArtistEdits');
 const eventWinnerController = require('../controllers/eventWinner');
+// const eventWinnerController = require('../controllers/eventWinner');
 
 // Get all events with winner info
 router.get('/events-with-winners', eventWinnerController.getEventsWithWinnerInfo);
