@@ -533,14 +533,14 @@ export default function ArtistSpotlight() {
             )}
 
             {/* Note Section */}
-            <div className="space-y-4 lg:px-0 px-6">
+            {/* <div className="space-y-4 lg:px-0 px-6">
               <h3 className="text-xl font-semibold text-cyan-400">
                 Note (How to improve ranking):
               </h3>
               <p className="text-gray-500 whitespace-pre-line">
                 {notes}
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
       )}
