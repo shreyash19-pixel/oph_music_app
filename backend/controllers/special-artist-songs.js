@@ -8,7 +8,7 @@ const { uploadToS3 } = require("../utils.js");
 
 const getSpeicalArtistSongStatusController = async (req, res) => {
   try {
-    const { ophid } = req.query;
+    const { ophid, excludeSongId } = req.query;
 
     // console.log(ophid, "ophid");
 
@@ -20,7 +20,13 @@ const getSpeicalArtistSongStatusController = async (req, res) => {
     }
 
     const response = await getSpeicalArtistSongStatus(ophid);
-    const isSongFree = await getIsSongFree(ophid);
+    const exclude =
+      excludeSongId !== undefined &&
+      excludeSongId !== null &&
+      String(excludeSongId).trim() !== ""
+        ? excludeSongId
+        : null;
+    const isSongFree = await getIsSongFree(ophid, exclude);
 
     if (response) {
       return res.status(200).json({
@@ -79,6 +85,31 @@ const insertSpecialArtistSongsController = async (req, res) => {
       });
     }
 
+    const normalizedType =
+      songType === "free" || songType === "paid" ? songType : null;
+    if (!normalizedType) {
+      return res.status(400).json({
+        success: false,
+        message: "songType must be 'free' or 'paid'",
+      });
+    }
+
+    const excludeId =
+      songID !== undefined && songID !== null && String(songID).trim() !== ""
+        ? songID
+        : null;
+
+    if (normalizedType === "free") {
+      const allowed = await getIsSongFree(ophid, excludeId);
+      if (!allowed) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Free song limit reached or another free submission is in progress; use paid registration.",
+        });
+      }
+    }
+
     let audioURL = "";
 
     if (req.file) {
@@ -100,7 +131,7 @@ const insertSpecialArtistSongsController = async (req, res) => {
       credits,
       time,
       proof,
-      songType,
+      normalizedType,
       audioURL || audioFile
     );
 

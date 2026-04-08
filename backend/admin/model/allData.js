@@ -115,6 +115,25 @@ const eventParticipantsDetails = async () => {
      ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
   );
 
+  const professionIds = [
+    ...new Set(
+      (outsideRows || [])
+        .map((r) => r.profession_id)
+        .filter((id) => id != null && id !== ""),
+    ),
+  ];
+  const professionById = new Map();
+  if (professionIds.length > 0) {
+    const ph = professionIds.map(() => "?").join(",");
+    const [profRows] = await db.execute(
+      `SELECT id, name FROM professions WHERE id IN (${ph})`,
+      professionIds,
+    );
+    for (const p of profRows || []) {
+      professionById.set(Number(p.id), p.name ?? "");
+    }
+  }
+
   const portal = (portalRows || []).map((r) => ({
     user_type: "internal",
     source_table: "event_participants",
@@ -123,6 +142,10 @@ const eventParticipantsDetails = async () => {
     oph_id: r.oph_id ?? r.OPH_ID ?? "",
     first_name: r.first_name ?? "",
     last_name: r.last_name ?? "",
+    email: "",
+    phone: "",
+    profession: "",
+    instagram_link: "",
     created_at: r.created_at,
     updated_at: r.updated_at,
   }));
@@ -135,6 +158,13 @@ const eventParticipantsDetails = async () => {
     oph_id: r.oph_id ?? r.OPH_ID ?? "",
     first_name: r.first_name ?? "",
     last_name: r.last_name ?? "",
+    email: r.email ?? "",
+    phone: r.phone ?? "",
+    profession:
+      r.profession_id != null && r.profession_id !== ""
+        ? professionById.get(Number(r.profession_id)) ?? ""
+        : "",
+    instagram_link: r.instagram_handle ?? "",
     created_at: r.created_at,
     updated_at: r.updated_at,
   }));
@@ -196,6 +226,30 @@ const epkDetails = async () => {
   return rows;
 };
 
+/** Specialist / special artist songs only (matches public isSpecialArtistProfile rules). */
+const specialistArtistSongsExport = async () => {
+  const [rows] = await db.execute(
+    `SELECT
+      sas.song_id,
+      sas.oph_id,
+      sas.song_name,
+      sas.song_type,
+      sas.status,
+      sas.views,
+      sas.credits,
+      sas.duration,
+      sas.proof,
+      sas.reject_reason,
+      sas.created_at,
+      sas.updated_at
+    FROM special_artist_songs sas
+    INNER JOIN user_details ud ON ud.oph_id = sas.oph_id
+    WHERE UPPER(COALESCE(ud.oph_id, '')) LIKE '%-SA-%'
+       OR LOWER(TRIM(COALESCE(ud.artist_type, ''))) LIKE '%special%'
+    ORDER BY sas.updated_at DESC, sas.song_id DESC`,
+  );
+  return rows;
+};
 
 const SongRegistrationDetails = async () => {
   const [rows] = await db.execute("SELECT * FROM songs_register");
@@ -230,6 +284,7 @@ module.exports = {
   eventParticipantsDetails,
   contactDetails, 
   epkDetails,
+  specialistArtistSongsExport,
   SongRegistrationDetails,
   getAllAudioDetails,
   getAllVideoDetails
