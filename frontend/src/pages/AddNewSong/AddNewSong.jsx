@@ -165,7 +165,7 @@ const AddNewSong = () => {
       console.log(getSongStatus);
 
       try {
-        // setLoading(true);
+        setLoading(true);
         const response = await axiosApi.post(
           "/insert-special-artist-song",
           sendFormData,
