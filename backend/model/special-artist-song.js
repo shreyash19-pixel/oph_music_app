@@ -207,6 +207,13 @@ const getIsSongFree = async (ophid) => {
     ) {
       return false;
     }
+    else if (
+      rows[0].approved_count > 0 &&
+      rows[0].rejected_count === 0 &&
+      rows[0].pending_count >= 1
+    ) {
+      return false;
+    }
   }
 
   return isFree;
