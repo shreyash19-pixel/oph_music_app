@@ -105,7 +105,10 @@ const AddNewSong = () => {
     try {
       const response = await axiosApi.get("/get-special-artist-song-status", {
         headers: headers,
-        params: { ophid },
+        params: {
+          ophid,
+          ...(songId ? { excludeSongId: songId } : {}),
+        },
       });
 
       if (response.data.success) {

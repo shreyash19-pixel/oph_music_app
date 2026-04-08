@@ -52,26 +52,30 @@ const setSongStatus = async (ophid, songId, type, reason) => {
     stat = songPaymentStat[0].status;
   }
 
-  // If empty OR status is not rejected
-  if (!stat || stat !== "rejected") {
-    if (type === "rejected") {
-      await db.execute(
-        `INSERT INTO special_artist_free_songs 
+  const [songMeta] = await db.execute(
+    "SELECT song_type FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
+    [ophid, songId],
+  );
+  const isFreeSong = songMeta[0]?.song_type === "free";
+
+  // If empty OR status is not rejected — only free songs affect free-quota rejection tally
+  if ((!stat || stat !== "rejected") && type === "rejected" && isFreeSong) {
+    await db.execute(
+      `INSERT INTO special_artist_free_songs 
        (oph_id, rejected_count) 
        VALUES (?, ?)
        ON DUPLICATE KEY UPDATE
          rejected_count = VALUES(rejected_count)`,
-        [ophid, rejectCount + 1],
-      );
+      [ophid, rejectCount + 1],
+    );
 
-      return [rows];
-    }
+    return [rows];
   }
 
   const [records] = await db.execute(
     `SELECT 
-         COUNT(CASE WHEN status = 'approved' THEN 1 END) AS approved_count,
-         COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_count
+         COUNT(CASE WHEN status = 'approved' AND song_type = 'free' THEN 1 END) AS approved_count,
+         COUNT(CASE WHEN status = 'pending' AND song_type = 'free' THEN 1 END) AS pending_count
        FROM special_artist_songs
        WHERE oph_id = ?`,
     [ophid],
