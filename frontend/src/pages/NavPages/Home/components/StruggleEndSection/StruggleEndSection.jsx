@@ -15,6 +15,7 @@ const StruggleEndsSection = () => {
         const response = await axiosApi.get("/about-us");
         setAboutUs(response.data.data);
         console.log("about us data", response.data.data);
+        console.log("thumbnail URL:", response.data.data?.about_us_thumbnail);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -47,6 +48,7 @@ const StruggleEndsSection = () => {
             <div className="relative group">
               <CustomVideoPlayer
                 src={aboutUs.about_us_video}
+                poster={aboutUs.about_us_thumbnail}
                 className="w-full h-[300px] sm:h-[400px] rounded-xl aspect-[4/3]"
                 showPlayButtonOverlay={true}
                 pauseOtherVideos={true}

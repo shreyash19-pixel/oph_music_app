@@ -1,26 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Slider from "react-slick";
 import "./TopPicksSection.css";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { Image, Shimmer } from "react-shimmer";
 import { useNavigate } from "react-router-dom";
-import axiosApi from "../../../../../conf/axios"; // ✅ adjust path if needed
+import axiosApi from "../../../../../conf/axios";
 import { navigateToArtistDetail } from "../../../../../utils/artistHash";
 
 const TopPicksSection = () => {
   const navigate = useNavigate();
-  const [artistData, setArtistData] = useState([]); // ✅ always an array
-  const [audio, setAudio] = useState(null);
+  const [artistData, setArtistData] = useState([]);
+  const audioRef = useRef(null);
+  const lastLoadedSongIdRef = useRef(null);
+  const isSeekingRef = useRef(false);
+  const progressRafRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
+  const [activeSeekSongId, setActiveSeekSongId] = useState(null);
+  const [audioProgress, setAudioProgress] = useState({ current: 0, duration: 0 });
 
-  // ✅ Fetch KPI data
   useEffect(() => {
     const fetchKPI = async () => {
       try {
         const res = await axiosApi.get("/kpi_score");
         console.log("KPI response:", res.data);
 
-        // ✅ Convert object to array and filter artists with songs
         if (res.data.success && res.data.data != null) {
           const artistsArray = Object.values(res.data.data)
             .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
@@ -40,66 +43,136 @@ const TopPicksSection = () => {
   }, []);
 
   const settings = {
-    dots: true,
-    infinite: true,
+    dots: false,
+    infinite: false,
     speed: 500,
     slidesToShow: 3,
     slidesToScroll: 1,
     arrows: false,
     autoplay: false,
+    swipe: false,
+    draggable: false,
+    touchMove: false,
     responsive: [
       {
         breakpoint: 1024,
-        settings: { slidesToShow: 2, slidesToScroll: 1 },
+        settings: { slidesToShow: 2, slidesToScroll: 1, swipe: false, draggable: false },
       },
       {
         breakpoint: 768,
-        settings: { slidesToShow: 1, slidesToScroll: 1, centerMode: false },
+        settings: { slidesToShow: 1, slidesToScroll: 1, centerMode: false, swipe: false, draggable: false },
       },
     ],
   };
 
-  // ✅ Audio handler
-  const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.songId) {
-      if (!audio.paused) {
-        audio.pause();
-        setPlayingSongId(null);
-      } else {
-        audio.play();
-        setPlayingSongId(song.songId);
-      }
-    } else {
-      if (audio) {
-        audio.pause();
-      }
-      const newAudio = new Audio(song.audioUrl);
-      newAudio.play();
-      setAudio(newAudio);
-      setPlayingSongId(song.songId);
-
-      newAudio.onended = () => {
-        setPlayingSongId(null);
-      };
-    }
+  const attachAudioProgressListeners = (el, songId) => {
+    const flushProgress = () => {
+      progressRafRef.current = null;
+      if (isSeekingRef.current) return;
+      const duration = el.duration;
+      setAudioProgress({
+        current: el.currentTime,
+        duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
+      });
+    };
+    const sync = () => {
+      if (isSeekingRef.current) return;
+      if (progressRafRef.current != null) return;
+      progressRafRef.current = requestAnimationFrame(flushProgress);
+    };
+    el.addEventListener("loadedmetadata", flushProgress);
+    el.addEventListener("timeupdate", sync);
+    el.addEventListener("durationchange", flushProgress);
+    el.addEventListener("playing", () => {
+      setActiveSeekSongId(songId);
+    });
   };
 
-  // ✅ Cleanup audio on unmount
+  const handlePlayPause = (song) => {
+    const current = audioRef.current;
+
+    if (current && lastLoadedSongIdRef.current === song.songId) {
+      if (!current.paused) {
+        current.pause();
+        setPlayingSongId(null);
+      } else {
+        void current.play();
+        setPlayingSongId(song.songId);
+      }
+      return;
+    }
+
+    if (current) {
+      current.pause();
+    }
+
+    setActiveSeekSongId(null);
+    setAudioProgress({ current: 0, duration: 0 });
+
+    const newAudio = new Audio(song.audioUrl);
+    audioRef.current = newAudio;
+    lastLoadedSongIdRef.current = song.songId;
+    attachAudioProgressListeners(newAudio, song.songId);
+
+    newAudio.play();
+    setPlayingSongId(song.songId);
+
+    newAudio.onended = () => {
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongIdRef.current = null;
+      setAudioProgress({ current: 0, duration: 0 });
+    };
+  };
+
+  const handleSeek = (songId, value) => {
+    const el = audioRef.current;
+    if (!el || lastLoadedSongIdRef.current !== songId) return;
+    const t = Number(value);
+    if (!Number.isFinite(t)) return;
+    el.currentTime = t;
+    setAudioProgress((p) => ({
+      ...p,
+      current: t,
+      duration: Number.isFinite(el.duration) && el.duration > 0 ? el.duration : p.duration,
+    }));
+  };
+
+  const stopSlickSwipe = (e) => {
+    e.stopPropagation();
+  };
+
+  useEffect(() => {
+    const endSeek = () => {
+      isSeekingRef.current = false;
+    };
+    window.addEventListener("pointerup", endSeek);
+    window.addEventListener("pointercancel", endSeek);
+    window.addEventListener("touchend", endSeek, true);
+    return () => {
+      window.removeEventListener("pointerup", endSeek);
+      window.removeEventListener("pointercancel", endSeek);
+      window.removeEventListener("touchend", endSeek, true);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
-      if (audio) {
-        audio.pause();
-        setPlayingSongId(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
       }
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongIdRef.current = null;
     };
-  }, [audio]);
+  }, []);
 
-  // Listen for pauseAllAudio event to pause audio when video plays
   useEffect(() => {
     const handlePauseAllAudio = () => {
-      if (audio && !audio.paused) {
-        audio.pause();
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
         setPlayingSongId(null);
+        setActiveSeekSongId(null);
       }
     };
 
@@ -107,7 +180,7 @@ const TopPicksSection = () => {
     return () => {
       window.removeEventListener('pauseAllAudio', handlePauseAllAudio);
     };
-  }, [audio]);
+  }, []);
 
   function rankToColor(rank) {
     const val = {
@@ -130,11 +203,10 @@ const TopPicksSection = () => {
           <p className="text-gray-400 text-center mb-1">
             The artists are grabing every opportunity and rising as the stars of
             tomorrow. What are you waiting for? Waiting for things to happen
-            won’t make your dreams a reality—take the step and join today!
+            won't make your dreams a reality—take the step and join today!
           </p>
         </div>
 
-        {/* ✅ Render only if artistData is an array */}
         <Slider {...settings} className="gap-6">
           {Array.isArray(artistData) &&
             artistData.map((artist, index) => {
@@ -150,7 +222,6 @@ const TopPicksSection = () => {
                   className="lg:px-4 px-10 py-5 max-w-full sm:max-w-[95%]"
                 >
                   <div className="relative overflow-visible rounded-xl">
-                    {/* Rank Badge */}
                     <div
                       className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
                         index + 1
@@ -161,7 +232,6 @@ const TopPicksSection = () => {
                       </span>
                     </div>
 
-                    {/* Artist Profile */}
                     <div
                       className="relative h-64 hover:cursor-pointer overflow-hidden rounded-t-xl"
                       onClick={(e) => {
@@ -192,13 +262,12 @@ const TopPicksSection = () => {
                       </div>
                     </div>
 
-                    {/* Songs */}
                     <div className="xl:p-6 p-4 bg-black">
                       {artist.songs && artist.songs.length > 0 ? (
                         artist.songs.slice(0, 5).map((song, songIndex) => (
                           <div
                             key={song.songId}
-                            className="flex items-center z-40 justify-between py-3 border-b border-gray-800 last:border-0"
+                            className="flex items-start z-40 justify-between py-3 border-b border-gray-800 last:border-0"
                           >
                             <div>
                               <div className="flex items-center gap-4">
@@ -218,22 +287,54 @@ const TopPicksSection = () => {
                                 </div>
                               </div>
                             </div>
-                            <button
-                              className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors ml-4"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePlayPause(song);
-                              }}
+                            <div
+                              className="flex flex-col items-center gap-1.5 ml-4 flex-shrink-0 min-w-[104px]"
+                              onPointerDown={stopSlickSwipe}
+                              onMouseDown={stopSlickSwipe}
+                              onTouchStart={stopSlickSwipe}
+                              onTouchMove={stopSlickSwipe}
                             >
-                              {playingSongId === song.songId && !audio?.paused ? (
-                                <FaPause className="text-black " size={11} />
-                              ) : (
-                                <FaPlay
-                                  className="text-black ml-[0.5px]"
-                                  size={11}
-                                />
-                              )}
-                            </button>
+                              <button
+                                type="button"
+                                className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePlayPause(song);
+                                }}
+                              >
+                                {playingSongId === song.songId && !audioRef.current?.paused ? (
+                                  <FaPause className="text-black" size={11} />
+                                ) : (
+                                  <FaPlay className="text-black ml-[0.5px]" size={11} />
+                                )}
+                              </button>
+                              <div className="h-8 w-full flex items-center shrink-0 touch-none">
+                                {activeSeekSongId === song.songId && audioProgress.duration > 0 && (
+                                  <input
+                                    type="range"
+                                    min={0}
+                                    max={audioProgress.duration}
+                                    step={0.01}
+                                    value={Math.min(audioProgress.current, audioProgress.duration)}
+                                    onChange={(e) => handleSeek(song.songId, e.target.value)}
+                                    onPointerDown={(e) => {
+                                      stopSlickSwipe(e);
+                                      isSeekingRef.current = true;
+                                    }}
+                                    onMouseDown={(e) => {
+                                      stopSlickSwipe(e);
+                                      isSeekingRef.current = true;
+                                    }}
+                                    onTouchStart={(e) => {
+                                      stopSlickSwipe(e);
+                                      isSeekingRef.current = true;
+                                    }}
+                                    aria-label={`Seek ${song.songName || "track"}`}
+                                    className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
+                                  />
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ))
                       ) : (
