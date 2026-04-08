@@ -33,6 +33,10 @@ const IndividualPodcast = () => {
     fetchPodcast();
   }, [fetchPodcast]);
 
+  const descriptionText =
+    (typeof content.bio === "string" && content.bio.trim()) ||
+    content.description;
+
   return (
     <div className="text-white py-40 min-h-screen xl:px-16 lg:px-10 px-6 container mx-auto">
       {/* Video */}
@@ -86,8 +90,11 @@ const IndividualPodcast = () => {
         ))}*/}
       </div>
 
-      {/* Description */}
-      <p className="text-gray-400 mb-8">{content.description}</p>
+      {descriptionText ? (
+        <div className="text-gray-400 mb-8 whitespace-pre-wrap text-base leading-relaxed max-w-3xl">
+          {descriptionText}
+        </div>
+      ) : null}
 
       {/* CTA */}
       <button

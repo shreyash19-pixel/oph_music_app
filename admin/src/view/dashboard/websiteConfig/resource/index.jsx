@@ -10,6 +10,7 @@ const CreateResource = () => {
 
   const [formData, setFormData] = useState({
     title: "",
+    bio: "",
     thumbnail_url: null,
     video_url: null,
     artist_name: "",
@@ -78,6 +79,7 @@ const CreateResource = () => {
 
       setFormData({
         title: "",
+        bio: "",
         thumbnail_url: null,
         video_url: null,
         artist_name: "",
@@ -138,6 +140,24 @@ const CreateResource = () => {
             className="w-full border border-gray-300 px-4 py-2 rounded-xl"
             required
           />
+
+          <div className="space-y-2">
+            <label
+              htmlFor="podcast-bio"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Bio
+            </label>
+            <textarea
+              id="podcast-bio"
+              name="bio"
+              placeholder="Long-form description (optional)"
+              value={formData.bio}
+              onChange={handleChange}
+              rows={6}
+              className="w-full border border-gray-300 px-4 py-2 rounded-xl resize-y min-h-[120px] text-sm"
+            />
+          </div>
 
           {/* Video Upload + Preview */}
           <div className="space-y-3">

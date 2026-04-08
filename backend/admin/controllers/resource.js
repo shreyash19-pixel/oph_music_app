@@ -79,6 +79,7 @@ const insertPodcast = async (req, res) => {
       views,
       credit_name,
       keywords,
+      bio,
     } = req.body;
 
     console.log(req.body, "body from podcast");
@@ -100,6 +101,7 @@ const insertPodcast = async (req, res) => {
       views: parseInt(views),
       credit_name,
       keywords,
+      bio: bio != null && String(bio).trim() !== "" ? String(bio) : null,
     });
 
     res.status(201).json({
@@ -161,6 +163,7 @@ const updatePodcastById = async (req, res) => {
       views,
       credit_name,
       keywords,
+      bio,
       video_url,
       thumbnail_url,
     } = req.body;
@@ -174,6 +177,9 @@ const updatePodcastById = async (req, res) => {
     if (views) updateData.views = parseInt(views);
     if (credit_name) updateData.credit_name = credit_name;
     if (keywords) updateData.keywords = keywords;
+    if (bio !== undefined)
+      updateData.bio =
+        bio != null && String(bio).trim() !== "" ? String(bio) : null;
 
     if (videoFile) {
       updateData.video_url = await bucket.uploadToS3(

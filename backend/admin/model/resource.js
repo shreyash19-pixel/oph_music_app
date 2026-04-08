@@ -61,7 +61,7 @@ const Resource = {
 
   getPodcastById: async (podcastId) => {
     const [rows] = await db.query(
-      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords, bio
          FROM resource_podcast
          WHERE id = ?`,
       [podcastId],
@@ -98,12 +98,13 @@ const Resource = {
         views,
         credit_name,
         keywords,
+        bio,
       } = videoData;
 
       const [result] = await db.query(
         `INSERT INTO resource_podcast
-         ( title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords)
-         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ( title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords, bio)
+         VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           title,
           video_url,
@@ -113,6 +114,7 @@ const Resource = {
           views,
           credit_name,
           keywords,
+          bio == null || bio === "" ? null : String(bio),
         ],
       );
 
