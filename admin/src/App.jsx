@@ -67,6 +67,7 @@ import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
 import EventParticipation from "./view/dashboard/websiteConfig/Events/EventParticipation";
+import EventParticipantDetail from "./view/dashboard/websiteConfig/Events/EventParticipantDetail";
 import EventManagement from "./view/dashboard/websiteConfig/Events/EventManagement";
 import EventWinning from "./view/dashboard/websiteConfig/Events/EventWinning";
 import EventWinnerAssign from "./view/dashboard/websiteConfig/Events/EventWinnerAssign";
@@ -256,6 +257,16 @@ function App() {
                 allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}
               >
                 <EventParticipation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event_participants/participant/:source/:recordId"
+            element={
+              <ProtectedRoute
+                allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}
+              >
+                <EventParticipantDetail />
               </ProtectedRoute>
             }
           />

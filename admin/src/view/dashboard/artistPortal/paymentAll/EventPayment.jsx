@@ -26,8 +26,36 @@ const EventPayment = () => {
 
   const isInternalUser = (id) => id && String(id).trim().match(/^OPH-/);
 
+  const displayNameFromOph = () =>
+    decodeURIComponent(ophid || "").trim() || "External Participant";
+
+  /** External event bookings: details live in event_bookings, joined on payment transaction_id. */
+  const buildExternalArtist = (payment) => {
+    const p = payment || {};
+    const fullFromBooking = [p.booking_first_name, p.booking_last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    const profession = (p.booking_profession || "").trim();
+    return {
+      full_name: fullFromBooking || displayNameFromOph(),
+      // Bookings have no stage name; do not put Instagram here (shown separately).
+      stage_name: "",
+      instagram_handle: (p.booking_instagram_handle || "").trim(),
+      email: (p.booking_email || "").trim() || "—",
+      contact_num: (p.booking_phone || "").trim() || "—",
+      artist_type: profession
+        ? `External Participant — ${profession}`
+        : "External Participant",
+      location: "—",
+      personal_photo: null,
+    };
+  };
+
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
+      setPaymentList([]);
       try {
         let userDetails = null;
         if (isInternalUser(ophid)) {
@@ -40,22 +68,14 @@ const EventPayment = () => {
         }
         if (userDetails) {
           setArtist(userDetails);
-        } else if (!isInternalUser(ophid)) {
-          const displayName = decodeURIComponent(ophid || "").trim() || "External Participant";
-          setArtist({
-            full_name: displayName,
-            stage_name: "—",
-            email: "—",
-            contact_num: "—",
-            artist_type: "External Participant",
-            location: "—",
-            personal_photo: null,
-          });
-        } else {
+        } else if (isInternalUser(ophid)) {
           setArtist(null);
         }
+        // External participant: artist row filled after payments load (see below)
 
-        const paymentRes = await axiosApi.get(`/payment-for-events-by-ophid/${ophid}`);
+        const paymentRes = await axiosApi.get(
+          `/payment-for-events-by-ophid/${encodeURIComponent(ophid || "")}`,
+        );
         console.log(paymentRes.data);
         let paymentArray = paymentRes.data.data || [];
         
@@ -80,7 +100,13 @@ const EventPayment = () => {
             amount: eventId ? `Event ID: ${eventId}` : 'N/A',
             eventId: eventId, // Store event_id directly for easier access
             description: `Event Registration Payment - ${payment.from_source || payment.From || 'Event Registration'}`,
-            ophId: payment.oph_id || payment.OPH_ID
+            ophId: payment.oph_id || payment.OPH_ID,
+            booking_first_name: payment.booking_first_name,
+            booking_last_name: payment.booking_last_name,
+            booking_email: payment.booking_email,
+            booking_phone: payment.booking_phone,
+            booking_instagram_handle: payment.booking_instagram_handle,
+            booking_profession: payment.booking_profession,
           };
         });
         
@@ -123,6 +149,17 @@ const EventPayment = () => {
 
     fetchData();
   }, [ophid, eventIdFromUrl, transactionIdFromUrl]);
+
+  useEffect(() => {
+    if (loading || !ophid || isInternalUser(ophid)) return;
+    if (!paymentList.length) {
+      setArtist(buildExternalArtist(null));
+      return;
+    }
+    const p =
+      paymentList.find((x) => x.paymentId === selectedPaymentId) || paymentList[0];
+    setArtist(buildExternalArtist(p));
+  }, [loading, selectedPaymentId, paymentList, ophid]);
 
   const handleFinalAction = async (type) => {
     const targetPayment =
@@ -313,6 +350,13 @@ const EventPayment = () => {
     (paymentList.length > 0 ? paymentList[0] : null);
   const isActionEnabled = canTakeAction(selectedPayment);
 
+  const isExternalParticipant = !isInternalUser(ophid);
+  const stageNameStr =
+    artist.stage_name != null ? String(artist.stage_name).trim() : "";
+  const showStageName =
+    !isExternalParticipant ||
+    (stageNameStr !== "" && stageNameStr !== "—");
+
   return (
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
@@ -320,7 +364,16 @@ const EventPayment = () => {
           <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">Artist Payment Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Detail label="Full Name" value={artist.full_name} />
-            <Detail label="Stage Name" value={artist.stage_name} />
+            {showStageName && (
+              <Detail label="Stage Name" value={artist.stage_name} />
+            )}
+            {isExternalParticipant && artist.instagram_handle && (
+              <Detail
+                label="Instagram"
+                value={artist.instagram_handle}
+                isLink={/^https?:\/\//i.test(artist.instagram_handle)}
+              />
+            )}
             <Detail label="Email" value={artist.email} />
             <Detail label="Contact Number" value={artist.contact_num} />
             <Detail label="Artist Type" value={artist.artist_type} />
@@ -513,10 +566,23 @@ const EventPayment = () => {
   );
 };
 
-const Detail = ({ label, value }) => (
+const Detail = ({ label, value, isLink }) => (
   <div>
     <label className="block text-gray-700 text-sm font-semibold mb-1">{label}</label>
-    <div className="text-gray-900">{value}</div>
+    <div className="text-gray-900 break-words">
+      {isLink && value && /^https?:\/\//i.test(String(value)) ? (
+        <a
+          href={String(value)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-700 underline"
+        >
+          {value}
+        </a>
+      ) : (
+        value
+      )}
+    </div>
   </div>
 );
 

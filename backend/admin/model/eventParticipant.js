@@ -113,6 +113,91 @@ const updateParticipantStatus = async (id, status) => {
   );
 };
 
+/**
+ * Admin detail view: internal = event_participants row + user + professional + event.
+ * external = event_bookings row + profession name + event.
+ */
+const getParticipantAdminDetail = async (source, recordId) => {
+  const idNum = Number(recordId);
+  if (!Number.isFinite(idNum) || idNum < 1) return null;
+
+  if (source === "internal") {
+    const [rows] = await db.execute(
+      `SELECT
+         ep.id AS participant_row_id,
+         ep.oph_id,
+         ep.event_id,
+         ep.status AS participation_status,
+         ep.created_at AS participant_created_at,
+         ep.updated_at AS participant_updated_at,
+         ud.full_name,
+         ud.stage_name,
+         ud.email,
+         ud.contact_number,
+         ud.artist_type,
+         ud.location,
+         ud.personal_photo,
+         pd.profession,
+         pd.bio,
+         pd.instagram_link,
+         pd.spotify_link,
+         pd.facebook_link,
+         pd.apple_music_link,
+         ev.EventName AS event_name,
+         ev.dateTime AS event_date_time,
+         ev.location AS event_location,
+         ev.registrationFee_normal AS event_registration_fee,
+         ev.winnerReward AS event_winner_reward,
+         ev.registrationStart AS event_registration_start,
+         ev.registrationEnd AS event_registration_end
+       FROM event_participants ep
+       LEFT JOIN user_details ud ON ud.oph_id = ep.oph_id
+       LEFT JOIN professional_details pd ON pd.oph_id = ep.oph_id
+       LEFT JOIN events ev ON ev.id = ep.event_id
+       WHERE ep.id = ?
+       LIMIT 1`,
+      [idNum],
+    );
+    return rows?.[0] ?? null;
+  }
+
+  if (source === "external") {
+    const [rows] = await db.execute(
+      `SELECT
+         eb.id AS booking_id,
+         eb.event_id,
+         eb.first_name,
+         eb.last_name,
+         eb.email,
+         eb.phone,
+         eb.instagram_handle,
+         eb.booking_reference,
+         eb.status AS booking_status,
+         eb.payment_transaction_id,
+         eb.oph_id AS linked_oph_id,
+         eb.created_at AS booking_created_at,
+         eb.updated_at AS booking_updated_at,
+         pr.name AS profession,
+         ev.EventName AS event_name,
+         ev.dateTime AS event_date_time,
+         ev.location AS event_location,
+         ev.registrationFee_normal AS event_registration_fee,
+         ev.winnerReward AS event_winner_reward,
+         ev.registrationStart AS event_registration_start,
+         ev.registrationEnd AS event_registration_end
+       FROM event_bookings eb
+       LEFT JOIN professions pr ON pr.id = eb.profession_id
+       LEFT JOIN events ev ON ev.id = eb.event_id
+       WHERE eb.id = ?
+       LIMIT 1`,
+      [idNum],
+    );
+    return rows?.[0] ?? null;
+  }
+
+  return null;
+};
+
 module.exports = {
   getParticipantByOphAndEvent,
   getParticipantsByOphId,
@@ -122,4 +207,5 @@ module.exports = {
   updateParticipantStatus,
   getParticipant,
   getParticipantUnified,
+  getParticipantAdminDetail,
 };

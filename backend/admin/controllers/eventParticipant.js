@@ -60,6 +60,37 @@ const getParticipant = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+const getParticipantAdminDetail = async (req, res) => {
+  try {
+    const { source, recordId } = req.params;
+    const normalizedSource = String(source || "").toLowerCase().trim();
+    if (normalizedSource !== "internal" && normalizedSource !== "external") {
+      return res.status(400).json({
+        success: false,
+        message: "source must be internal or external",
+      });
+    }
+    const row = await EventParticipant.getParticipantAdminDetail(
+      normalizedSource,
+      recordId,
+    );
+    if (!row) {
+      return res.status(404).json({
+        success: false,
+        message: "Participant not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      source: normalizedSource,
+      data: row,
+    });
+  } catch (error) {
+    console.error("Error fetching participant detail:", error.message);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
 // PATCH /participants/:id
 const updateParticipantStatus = async (req, res) => {
   const { id } = req.params;
@@ -83,4 +114,5 @@ module.exports = {
   getParticipantByOphAndEvent,
   updateParticipantStatus,
   getParticipant,
+  getParticipantAdminDetail,
 };
