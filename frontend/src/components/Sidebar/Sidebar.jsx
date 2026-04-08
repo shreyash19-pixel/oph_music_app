@@ -177,7 +177,7 @@ const SidebarNav = ({ onClose }) => {
       icon: <img src={Key} className="w-[24px] h-[24px]" />,
       label: "Key Performance Indicators",
       to: "/dashboard/key-performance-indicators",
-      type: "Independent artist",
+      type: "Independent artist, Special artist",
     },
   ];
 

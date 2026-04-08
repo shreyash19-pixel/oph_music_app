@@ -21,6 +21,12 @@ const isIndependentArtistOphId = (ophId) => {
   return String(ophId).toUpperCase().includes("-IA-");
 };
 
+/** Special artists use OPH IDs like OPH-CAN-SA-99 (segment `-SA-`). */
+const isSpecialArtistOphId = (ophId) => {
+  if (ophId == null || ophId === "") return false;
+  return String(ophId).toUpperCase().includes("-SA-");
+};
+
 const wrapFilterPlainArrayJson = (handler) => async (req, res, next) => {
   const origJson = res.json.bind(res);
   res.json = (body) => {
@@ -86,7 +92,8 @@ const iaOnlyGetKpiS3Body = (body, req) => {
   if (
     oph != null &&
     String(oph).trim() !== "" &&
-    !isIndependentArtistOphId(oph)
+    !isIndependentArtistOphId(oph) &&
+    !isSpecialArtistOphId(oph)
   ) {
     return { success: true, s3Metrics: [] };
   }
