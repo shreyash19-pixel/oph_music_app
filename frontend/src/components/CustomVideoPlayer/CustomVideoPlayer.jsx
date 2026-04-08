@@ -434,7 +434,7 @@ const CustomVideoPlayer = forwardRef(
           {/* Progress Bar */}
           <div
             ref={progressRef}
-            className="w-full h-3 bg-gray-600 cursor-pointer group/progress relative"
+            className="w-full h-3 bg-gray-600 cursor-pointer group/progress relative overflow-hidden"
             onMouseDown={handleProgressMouseDown}
           >
             <div
@@ -442,7 +442,7 @@ const CustomVideoPlayer = forwardRef(
               style={{ width: `${progressPercent}%` }}
             >
               {/* Draggable thumb */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing" />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing" />
             </div>
           </div>
 

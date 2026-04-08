@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 
 const UploadVideo = () => {
   const [videoFile, setVideoFile] = useState(null);
+  const [thumbnail, setThumbnail] = useState(null);
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -17,16 +18,26 @@ const UploadVideo = () => {
     }
   };
 
+  const handleThumbnailChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      setThumbnail(file);
+    } else {
+      toast.error("Please select a valid image file");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!videoFile && !description.trim()) {
-      toast.error("Please provide either a video file or a description");
+    if (!videoFile && !thumbnail && !description.trim()) {
+      toast.error("Please provide at least a video, thumbnail, or description");
       return;
     }
 
     const formData = new FormData();
     if (videoFile) formData.append("video", videoFile);
+    if (thumbnail) formData.append("thumbnail", thumbnail);
     if (description.trim()) formData.append("description", description);
 
     setUploading(true);
@@ -44,8 +55,9 @@ const UploadVideo = () => {
       });
 
       if (response.data.success) {
-        toast.success("Video uploaded successfully!");
+        toast.success("Data uploaded successfully!");
         setVideoFile(null);
+        setThumbnail(null);
         setDescription("");
         setProgress(0);
         e.target.reset();
@@ -87,6 +99,32 @@ const UploadVideo = () => {
                   <p className="font-medium">{videoFile.name}</p>
                   <p className="text-xs text-gray-600">
                     Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Thumbnail Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailChange}
+              disabled={uploading}
+              className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 transition file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            {thumbnail && (
+              <div className="mt-3 flex items-center text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="font-medium">{thumbnail.name}</p>
+                  <p className="text-xs text-gray-600">
+                    Size: {(thumbnail.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                 </div>
               </div>
