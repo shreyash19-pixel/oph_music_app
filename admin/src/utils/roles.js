@@ -39,6 +39,15 @@ export const EVENT_PAYMENTS_SIDEBAR_ROLES = [
   ROLES.ACCOUNTS_MEMBER,
 ];
 
+/** Artist Portal Payments → `/PaymentAll`, `/PaymentWithdraw` (matches Sidebar "Payments"). */
+export const PAYMENTS_PORTAL_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
+];
+
 /**
  * Website Config → Event Management (sidebar + event admin routes).
  * Sales see only Participants / Winning in the sidebar; other roles here see all sub-links.
@@ -71,6 +80,43 @@ export const TV_PUBLISHING_PORTAL_ROLES = [
   ROLES.ADMINISTRATIVE_MEMBER,
   ROLES.CREATIVE_HEAD,
 ];
+
+/** TV Publishing detail: page unlock, A/V lock toggles, save files — not administrative member. */
+export const TV_PUBLISHING_LOCK_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+];
+
+/** TV Publishing: approve / reject status (includes administrative member). */
+export const TV_PUBLISHING_APPROVE_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+];
+
+/** @deprecated Use TV_PUBLISHING_LOCK_ROLES */
+export const TV_PUBLISHING_MANAGE_ROLES = TV_PUBLISHING_LOCK_ROLES;
+
+export const canLockUnlockTvPublishing = (role) =>
+  Boolean(role && TV_PUBLISHING_LOCK_ROLES.includes(role));
+
+export const canApproveTvPublishing = (role) =>
+  Boolean(role && TV_PUBLISHING_APPROVE_ROLES.includes(role));
+
+/** @deprecated Use canLockUnlockTvPublishing */
+export const canManageTvPublishing = canLockUnlockTvPublishing;
+
+/**
+ * Time Calendar → /verify-booking-dates: approve/reject date booking & release date change payments.
+ * Administrative members may view only.
+ */
+export const BOOKING_VERIFICATION_MANAGE_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+];
+
+export const canManageBookingVerification = (role) =>
+  Boolean(role && BOOKING_VERIFICATION_MANAGE_ROLES.includes(role));
 
 /** Artist Portal Tickets (Submitted / Resolved) + ticket detail routes. */
 export const TICKETS_PORTAL_ROLES = [

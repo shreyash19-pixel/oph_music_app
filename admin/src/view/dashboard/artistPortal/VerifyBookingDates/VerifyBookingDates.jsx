@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import { useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
 import { useState } from "react";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { canManageBookingVerification } from "../../../../utils/roles";
 
 const TransactionBlock = ({
   tx,
@@ -16,6 +18,7 @@ const TransactionBlock = ({
   onDecision,
   rejectingForTxId,
   onRejectClick,
+  canAct = true,
 }) => {
   const txId = tx.Transaction_ID ?? tx.transaction_id ?? "";
   const fromSource = tx.From ?? tx.from_source ?? tx.from ?? "";
@@ -52,7 +55,13 @@ const TransactionBlock = ({
       )}
       {displayReason && <p><strong>Reason : </strong>{displayReason}</p>}
 
-      {isActionable && (
+      {isActionable && !canAct && (
+        <p className="text-sm text-gray-600 mt-2 border-t border-gray-200 pt-3">
+          View only. Only a super admin or administrative head can approve or reject.
+        </p>
+      )}
+
+      {isActionable && canAct && (
         <>
           {showRejectFlow ? (
             <div>
@@ -84,6 +93,8 @@ const TransactionBlock = ({
 };
 
 const VerifyBookingDates = () => {
+  const { user } = useAuth();
+  const canAct = canManageBookingVerification(user?.role);
   const location = useLocation();
   const release_date = location.state?.selectedDate;
   const [transactions, setTransactions] = useState(null);
@@ -158,6 +169,12 @@ const VerifyBookingDates = () => {
     <div>
       <ArtistSidebar>
         <div className="flex flex-col gap-6">
+          {!canAct && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+              You can review booking details here. Approving or rejecting is limited to super admin and
+              administrative head.
+            </div>
+          )}
           {list.length > 0 ? (
             list.map((tx) => (
               <TransactionBlock
@@ -171,6 +188,7 @@ const VerifyBookingDates = () => {
                 onDecision={handleDecision}
                 rejectingForTxId={rejectingForTxId}
                 onRejectClick={(txId) => { setRejectingForTxId(txId); setConfirmReject(true); setReason(""); }}
+                canAct={canAct}
               />
             ))
           ) : (

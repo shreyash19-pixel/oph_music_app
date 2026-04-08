@@ -264,15 +264,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
                 songsArray.map((song) => (
                   <div
                     key={song.songId}
-                    onClick={() =>
-                      window.open(
-                        import.meta.env.VITE_WEBSITE_URL +
-                          "artists" +
-                          `/${song.ophid}`,
-                        "_blank"
-                      )
-                    }
-                    className="hover:cursor-pointer border-b border-gray-800 py-2"
+                    className="border-b border-gray-800 py-2"
                   >
                     <div className="flex flex-col gap-2">
                       <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem_2.75rem] gap-x-3 items-center">

@@ -110,9 +110,10 @@ const WebsiteConfig = () => {
       label: "Setting",
       route: "/websiteConfig_Setting",
       roles: [
-        ROLES.ADMINISTRATIVE_HEAD,
-        ROLES.ADMINISTRATIVE_MEMBER,
         ROLES.SUPER_ADMIN,
+        ROLES.ADMINISTRATIVE_HEAD,
+        ROLES.SALES_HEAD,
+        ROLES.SALES_MEMBER,
       ],
     },
   ];

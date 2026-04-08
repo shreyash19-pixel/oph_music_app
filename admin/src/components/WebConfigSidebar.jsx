@@ -1,18 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Menu, X } from "lucide-react";
+import React from "react";
 import Sidebar from "./Sidebar";
 import { ROLES, EVENT_MANAGEMENT_WEB_CONFIG_ROLES } from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
-// WebsiteConfig page – independent component
-// Tailwind‑only styling – brand colour #0d3c44
+// Website Config hub — layout matches ArtistSidebar (h-screen, sidebar + scrollable main).
 
 const WebConfigSidebar = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [docHeight, setDocHeight] = useState("100vh");
-  const containerRef = useRef(null);
-
   const links = [
     {
       label: "Contact Management",
@@ -27,7 +21,6 @@ const WebConfigSidebar = ({ children }) => {
     },
     {
       label: "Resource Management",
-
       roles: [
         ROLES.SUPER_ADMIN,
         ROLES.ADMINISTRATIVE_HEAD,
@@ -108,15 +101,15 @@ const WebConfigSidebar = ({ children }) => {
       label: "Setting",
       route: "/websiteConfig_Setting",
       roles: [
-        ROLES.ADMINISTRATIVE_HEAD,
-        ROLES.ADMINISTRATIVE_MEMBER,
         ROLES.SUPER_ADMIN,
+        ROLES.ADMINISTRATIVE_HEAD,
+        ROLES.SALES_HEAD,
+        ROLES.SALES_MEMBER,
       ],
     },
   ];
 
   const { user, loading } = useAuth();
-
   const navigate = useNavigate();
   const handleTitleClick = () => {
     navigate("/home");
@@ -124,19 +117,6 @@ const WebConfigSidebar = ({ children }) => {
   const handleGoHome = () => {
     navigate("/");
   };
-
-  useEffect(() => {
-    const updateHeight = () => {
-      setDocHeight(`${document.documentElement.scrollHeight}px`);
-    };
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-    window.addEventListener("scroll", updateHeight);
-    return () => {
-      window.removeEventListener("resize", updateHeight);
-      window.removeEventListener("scroll", updateHeight);
-    };
-  }, []);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -153,6 +133,7 @@ const WebConfigSidebar = ({ children }) => {
             Please login again to continue accessing your dashboard.
           </p>
           <button
+            type="button"
             onClick={handleGoHome}
             className="px-6 py-3 bg-[#0C3C44] text-white rounded-lg shadow hover:bg-[#0b353c] transition duration-300"
           >
@@ -164,30 +145,17 @@ const WebConfigSidebar = ({ children }) => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      style={{ height: docHeight }}
-      className={`h-screen flex overflow-y-auto relative bg-gray-50 ${
-        sidebarOpen ? "w-64" : "w-128"
-      }`}
-    >
+    <div className="h-screen flex overflow-hidden bg-gray-50 relative">
       <Sidebar
         title={
-          <button
-            onClick={handleTitleClick}
-            // className="text-blue-600 hover:underline focus:outline-none"
-          >
+          <button type="button" onClick={handleTitleClick}>
             Website Config
           </button>
         }
         links={links}
         userRole={user.role}
-        collapsed={!sidebarOpen}
-        toggleCollapse={() => setSidebarOpen(!sidebarOpen)}
       />
-      <div className="flex-1 ml-10">
-        {children}
-      </div>
+      <main className="flex-1 p-10 overflow-y-auto">{children}</main>
     </div>
   );
 };
