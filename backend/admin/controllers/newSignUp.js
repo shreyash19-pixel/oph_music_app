@@ -93,9 +93,26 @@ const getRejectedSignupPayments = async (req, res) => {
   }
 };
 
+const getUnifiedNewSignup = async (req, res) => {
+  try {
+    const userDetails = await newSignUp.getUnifiedNewSignupUserDetails();
+    res.status(200).json({
+      success: true,
+      userDetails: userDetails || [],
+    });
+  } catch (error) {
+    console.error("Error fetching unified new signup:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   getAllOphIdsWithRegistration,
   getSingleUserDetails,
   getTransactionDetails,
   getRejectedSignupPayments,
+  getUnifiedNewSignup,
 };

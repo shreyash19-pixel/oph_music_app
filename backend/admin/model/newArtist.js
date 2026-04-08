@@ -30,13 +30,33 @@ const getDocumentationDetailsByOphId = async (ophid) => {
   return rows[0] || null;
 };
 
+/** Latest Registration payment row per artist (rejected / under review / approved / etc.). */
+const latestRegistrationPaymentJoin = `
+  LEFT JOIN (
+    SELECT p.oph_id,
+           p.status AS registration_payment_status,
+           p.reject_reason AS registration_payment_reject_reason
+    FROM payments p
+    INNER JOIN (
+      SELECT oph_id, MAX(created_at) AS max_created
+      FROM payments
+      WHERE from_source = 'Registration'
+      GROUP BY oph_id
+    ) latest ON p.oph_id = latest.oph_id AND p.created_at = latest.max_created
+    WHERE p.from_source = 'Registration'
+  ) regpay ON ud.oph_id = regpay.oph_id
+`;
+
 const getAllUserDetailsWithAnyStepUnderReview = async () => {
   const [rows] = await db.execute(
     `
-    SELECT DISTINCT ud.*
+    SELECT DISTINCT
+      ud.*,
+      regpay.registration_payment_status,
+      regpay.registration_payment_reject_reason
     FROM user_details ud
+    ${latestRegistrationPaymentJoin}
     WHERE ud.oph_id IN (
-        -- Get all OPH_IDs that have 'under review' in any of the 3 tables
         SELECT oph_id FROM user_details WHERE step_status = 'under review'
         UNION
         SELECT oph_id FROM professional_details WHERE step_status = 'under review'
@@ -44,6 +64,43 @@ const getAllUserDetailsWithAnyStepUnderReview = async () => {
         SELECT oph_id FROM documentation_details WHERE step_status = 'under review'
     )
     ORDER BY ud.created_at DESC;
+    `,
+  );
+  return rows;
+};
+
+/**
+ * Single queue: artists with any onboarding step "under review" OR any step rejected,
+ * with latest Registration payment fields. (Super admin / admin head / admin member.)
+ * Sales head & sales member should use getAllUserDetailsWithAnyRejectedOnboardingStep only.
+ */
+const getAllUserDetailsNewArtistUnifiedQueue = async () => {
+  const [rows] = await db.execute(
+    `
+    SELECT DISTINCT
+      ud.*,
+      pd.step_status AS professional_step_status,
+      pd.reject_reason AS professional_reject_reason,
+      dd.step_status AS documentation_step_status,
+      dd.reject_reason AS documentation_reject_reason,
+      regpay.registration_payment_status,
+      regpay.registration_payment_reject_reason
+    FROM user_details ud
+    LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
+    LEFT JOIN documentation_details dd ON ud.oph_id = dd.oph_id
+    ${latestRegistrationPaymentJoin}
+    WHERE
+      ud.oph_id IN (
+        SELECT oph_id FROM user_details WHERE step_status = 'under review'
+        UNION
+        SELECT oph_id FROM professional_details WHERE step_status = 'under review'
+        UNION
+        SELECT oph_id FROM documentation_details WHERE step_status = 'under review'
+      )
+      OR LOWER(TRIM(COALESCE(ud.step_status, ''))) = 'rejected'
+      OR LOWER(TRIM(COALESCE(pd.step_status, ''))) = 'rejected'
+      OR LOWER(TRIM(COALESCE(dd.step_status, ''))) = 'rejected'
+    ORDER BY ud.updated_at DESC, ud.created_at DESC
     `,
   );
   return rows;
@@ -58,10 +115,13 @@ const getAllUserDetailsWithAnyRejectedOnboardingStep = async () => {
       pd.step_status AS professional_step_status,
       pd.reject_reason AS professional_reject_reason,
       dd.step_status AS documentation_step_status,
-      dd.reject_reason AS documentation_reject_reason
+      dd.reject_reason AS documentation_reject_reason,
+      regpay.registration_payment_status,
+      regpay.registration_payment_reject_reason
     FROM user_details ud
     LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
     LEFT JOIN documentation_details dd ON ud.oph_id = dd.oph_id
+    ${latestRegistrationPaymentJoin}
     WHERE LOWER(TRIM(COALESCE(ud.step_status, ''))) = 'rejected'
        OR LOWER(TRIM(COALESCE(pd.step_status, ''))) = 'rejected'
        OR LOWER(TRIM(COALESCE(dd.step_status, ''))) = 'rejected'
@@ -168,6 +228,7 @@ module.exports = {
   getProfessionalDetailsByOphId,
   getDocumentationDetailsByOphId,
   getAllUserDetailsWithAnyStepUnderReview,
+  getAllUserDetailsNewArtistUnifiedQueue,
   getAllUserDetailsWithAnyRejectedOnboardingStep,
   updateUserDetailsStatus,
   updateProfessionalStatus,

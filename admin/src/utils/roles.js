@@ -48,9 +48,25 @@ export const PAYMENTS_PORTAL_ROLES = [
   ROLES.ACCOUNTS_MEMBER,
 ];
 
+/** MY EPK → Change Details & New Songs (not accounts head/member). */
+export const MY_EPK_CHANGE_AND_SONGS_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.SALES_MEMBER,
+  ROLES.SALES_HEAD,
+];
+
+/** MY EPK → Income (includes accounts). */
+export const MY_EPK_INCOME_ROLES = [
+  ...MY_EPK_CHANGE_AND_SONGS_ROLES,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
+];
+
 /**
- * Website Config → Event Management (sidebar + event admin routes).
- * Sales see only Participants / Winning in the sidebar; other roles here see all sub-links.
+ * Website Config → Event Management (sidebar + participants / winning routes).
+ * Sales and accounts head/member see only Participants / Winning in the sidebar (see Sidebar).
  */
 export const EVENT_MANAGEMENT_WEB_CONFIG_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -60,6 +76,23 @@ export const EVENT_MANAGEMENT_WEB_CONFIG_ROLES = [
   ROLES.PROJECT_MEMBER,
   ROLES.ACCOUNTS_HEAD,
   ROLES.ACCOUNTS_MEMBER,
+];
+
+/** Event Creation, Events list, `/event_management/:id` — not accounts head/member. */
+export const EVENT_CREATION_AND_LIST_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.SALES_HEAD,
+  ROLES.SALES_MEMBER,
+  ROLES.PROJECT_HEAD,
+  ROLES.PROJECT_MEMBER,
+];
+
+/** Assign winner on Event Winning — not project member or accounts (view-only for those). */
+export const EVENT_WINNER_ASSIGN_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.SALES_HEAD,
+  ROLES.SALES_MEMBER,
+  ROLES.PROJECT_HEAD,
 ];
 
 /** Artist Portal Content section (New / Manage; TV Publishing sub-item uses TV_PUBLISHING_PORTAL_ROLES). */
@@ -118,13 +151,11 @@ export const BOOKING_VERIFICATION_MANAGE_ROLES = [
 export const canManageBookingVerification = (role) =>
   Boolean(role && BOOKING_VERIFICATION_MANAGE_ROLES.includes(role));
 
-/** Artist Portal Tickets (Submitted / Resolved) + ticket detail routes. */
+/** Artist Portal Tickets (Submitted / Resolved) + ticket detail routes — not accounts head/member. */
 export const TICKETS_PORTAL_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.ADMINISTRATIVE_HEAD,
   ROLES.ADMINISTRATIVE_MEMBER,
-  ROLES.ACCOUNTS_HEAD,
-  ROLES.ACCOUNTS_MEMBER,
 ];
 
 /** Dashboard "Website Config" hub + sidebar — not for creative head / creative member. */

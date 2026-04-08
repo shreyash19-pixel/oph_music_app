@@ -27,12 +27,28 @@ const getDocumentationDetailsByOphId = async (ophid) => {
 const getAllUserDetails = async () => {
   const [rows] = await db.execute(
     `
-    SELECT *
-    FROM user_details
-    WHERE oph_id IN (
+    SELECT
+      ud.*,
+      regpay.registration_payment_status,
+      regpay.registration_payment_reject_reason
+    FROM user_details ud
+    LEFT JOIN (
+      SELECT p.oph_id,
+             p.status AS registration_payment_status,
+             p.reject_reason AS registration_payment_reject_reason
+      FROM payments p
+      INNER JOIN (
+        SELECT oph_id, MAX(created_at) AS max_created
+        FROM payments
+        WHERE from_source = 'Registration'
+        GROUP BY oph_id
+      ) latest ON p.oph_id = latest.oph_id AND p.created_at = latest.max_created
+      WHERE p.from_source = 'Registration'
+    ) regpay ON ud.oph_id = regpay.oph_id
+    WHERE ud.oph_id IN (
       SELECT oph_id FROM application_status WHERE overall_status = 'completed'
     )
-    ` 
+    `
   );
   return rows;
 };

@@ -13,9 +13,19 @@ const REJECTED_ONBOARDING_LIST_ROLES = new Set([
   "sales member",
 ]);
 
+const NEW_ARTIST_UNIFIED_QUEUE_ROLES = REJECTED_ONBOARDING_LIST_ROLES;
+
 const requireRejectedOnboardingListAccess = (req, res, next) => {
   const role = req.user?.role;
   if (role && REJECTED_ONBOARDING_LIST_ROLES.has(role)) {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: "Forbidden" });
+};
+
+const requireNewArtistUnifiedQueueAccess = (req, res, next) => {
+  const role = req.user?.role;
+  if (role && NEW_ARTIST_UNIFIED_QUEUE_ROLES.has(role)) {
     return next();
   }
   return res.status(403).json({ success: false, message: "Forbidden" });
@@ -29,6 +39,13 @@ router.get(
   authMiddleware,
   requireRejectedOnboardingListAccess,
   userDetailsController.getAllUserDetailsIfAnyOnboardingStepRejected
+);
+/** Single table: under-review ∪ rejected onboarding + registration payment columns (JWT). */
+router.get(
+  "/new-artist-unified-queue",
+  authMiddleware,
+  requireNewArtistUnifiedQueueAccess,
+  userDetailsController.getNewArtistUnifiedQueue
 );
 router.post(
   "/update-status",

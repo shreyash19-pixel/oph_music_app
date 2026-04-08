@@ -7,7 +7,7 @@ import { ROLES } from "../../../../utils/roles";
 
 const PaymentAll = () => {
   const [tableData, setTableData] = useState([]);
-  const [eventdata, setEventData] = useState([]);
+  // const [eventdata, setEventData] = useState([]);
   const [bookingdata, setBookingData] = useState([]);
   const { user } = useAuth();
 
@@ -52,15 +52,15 @@ const PaymentAll = () => {
       }
     };
 
-    const fetchDataEvents = async () => {
-      try {
-        const res = await axiosApi.get("/payment-for-all-events");
-        setEventData(res.data.data);
-        console.log(res.data.data);
-      } catch (err) {
-        console.error("Failed to fetch Event Payments", err);
-      }
-    };
+    // const fetchDataEvents = async () => {
+    //   try {
+    //     const res = await axiosApi.get("/payment-for-all-events");
+    //     setEventData(res.data.data);
+    //     console.log(res.data.data);
+    //   } catch (err) {
+    //     console.error("Failed to fetch Event Payments", err);
+    //   }
+    // };
 
     const fetchDataBooking = async () => {
       try {
@@ -73,7 +73,7 @@ const PaymentAll = () => {
     };
 
     // Fetch data based on user role
-    if (canView.events) fetchDataEvents();
+    // if (canView.events) fetchDataEvents();
     if (canView.song) fetchDataSong();
     if (canView.booking) fetchDataBooking();
   }, [user?.role]);
@@ -86,7 +86,7 @@ const PaymentAll = () => {
           <div>Loading user...</div>
         ) : (
           <>
-            {canView.events && (
+            {/* {canView.events && (
               <>
                 <SearchableDynamicTable
                   title="Events"
@@ -100,7 +100,7 @@ const PaymentAll = () => {
                 />
                 <br />
               </>
-            )}
+            )} */}
 
             {canView.song && (
               <>
@@ -109,7 +109,9 @@ const PaymentAll = () => {
                   data={tableData}
                   showStatusIndicator={false}
                   pageSize={10}
-                  excludeColumns={"Status,event_id,Review,From,reject_reason,CreatedAt,UpdatedAt,reject_for,release_date"}
+                  excludeColumns={
+                    "event_id,Review,From,reject_reason,CreatedAt,UpdatedAt,reject_for,release_date"
+                  }
                   detailsUrl="/SongPayment"
                 />
                 <br />

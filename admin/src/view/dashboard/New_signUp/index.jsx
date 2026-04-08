@@ -8,7 +8,9 @@ import { ROLES } from "../../../utils/roles";
 
 const NewSignupDetails = () => {
   const { user } = useAuth();
-  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
+  const canApproveReject =
+    user?.role !== ROLES.SALES_MEMBER &&
+    user?.role !== ROLES.ACCOUNTS_MEMBER;
   const { ophid } = useParams();
   const [artist, setArtist] = useState(null);
   const [txnList, setTxnList] = useState([]);
@@ -210,7 +212,7 @@ const NewSignupDetails = () => {
           </div>
         ) : (
           <p className="border-t pt-6 text-sm text-gray-600">
-            You can review this signup; accepting or rejecting payments is limited to sales head and other authorized roles.
+            You can review this signup; accepting or rejecting is not available for your role.
           </p>
         )}
 

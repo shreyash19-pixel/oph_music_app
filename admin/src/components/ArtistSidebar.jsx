@@ -8,6 +8,7 @@ import {
   TV_PUBLISHING_PORTAL_ROLES,
   TICKETS_PORTAL_ROLES,
   PAYMENTS_PORTAL_ROLES,
+  MY_EPK_CHANGE_AND_SONGS_ROLES,
 } from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -94,12 +95,13 @@ const artistLinks = [
       {
         label: "Change Details",
         route: "/change-details",
+        roles: MY_EPK_CHANGE_AND_SONGS_ROLES,
       },
       {
         label: "New Songs",
         route: "/special-artist-songs",
+        roles: MY_EPK_CHANGE_AND_SONGS_ROLES,
       },
-
       {
         label: "Income",
         route: "/special-artist-income-status",
