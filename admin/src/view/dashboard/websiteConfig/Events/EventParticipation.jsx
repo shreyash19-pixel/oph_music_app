@@ -182,7 +182,8 @@ const EventParticipation = () => {
           data={filteredData}
           showStatusIndicator={false}
           pageSize={10}
-          includeColumns={["Participant", "eventName", "eventLocation", "eventDateTime", "status", "registrationFee", "winnerReward", "createdAt"]}
+          includeColumns={["Participant", "eventName", "eventLocation", "eventDateTime", "status", "registrationFee", "winnerReward", "created_at"]}
+          detailsUrl="/event_participants/participant"
         />
       </div>
     </div>

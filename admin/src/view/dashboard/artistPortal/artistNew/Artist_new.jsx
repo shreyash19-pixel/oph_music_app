@@ -23,6 +23,8 @@ const artistNewExcludeColumns = [
   "artist_story",
   "artist_story_video",
   "Notes",
+  "registration_payment_status",
+  "registration_payment_reject_reason",
 ];
 
 const sortByFormFill = (rows) =>
@@ -59,12 +61,7 @@ const Artist_new = () => {
             excludeColumns={artistNewExcludeColumns}
             pageSize={10}
             detailsUrl="/ArtistNew"
-            leadColumns={[
-              "oph_id",
-              "OPH_ID",
-              "registration_payment_status",
-              "registration_payment_reject_reason",
-            ]}
+            leadColumns={["oph_id", "OPH_ID"]}
           />
         </div>
       </ArtistSidebar>
