@@ -13,28 +13,30 @@ const TopPicksSection = () => {
   const [audio, setAudio] = useState(null);
   const [playingSongId, setPlayingSongId] = useState(null);
 
-  // ✅ Fetch leaderboard data
+  // ✅ Fetch KPI data
   useEffect(() => {
-    const fetchLeaderboard = async () => {
+    const fetchKPI = async () => {
       try {
-        const res = await axiosApi.get("/leaderboard");
-        console.log("Leaderboard response:", res.data);
+        const res = await axiosApi.get("/kpi_score");
+        console.log("KPI response:", res.data);
 
-        // ✅ Ensure array
-        if (Array.isArray(res.data)) {
-          setArtistData(res.data);
-        } else if (Array.isArray(res.data.data)) {
-          setArtistData(res.data.data);
+        // ✅ Convert object to array and filter artists with songs
+        if (res.data.success && res.data.data != null) {
+          const artistsArray = Object.values(res.data.data)
+            .filter((a) => a && Array.isArray(a.songs) && a.songs.length > 0)
+            .sort((a, b) => (Number(b.kpiScore) || 0) - (Number(a.kpiScore) || 0))
+            .slice(0, 3);
+          setArtistData(artistsArray);
         } else {
-          setArtistData([]); // fallback
+          setArtistData([]);
         }
       } catch (error) {
-        console.error("Error fetching leaderboard:", error);
-        setArtistData([]); // fallback
+        console.error("Error fetching KPI:", error);
+        setArtistData([]);
       }
     };
 
-    fetchLeaderboard();
+    fetchKPI();
   }, []);
 
   const settings = {
@@ -44,8 +46,7 @@ const TopPicksSection = () => {
     slidesToShow: 3,
     slidesToScroll: 1,
     arrows: false,
-    autoplay: true,
-    autoplaySpeed: 3000,
+    autoplay: false,
     responsive: [
       {
         breakpoint: 1024,
@@ -60,22 +61,22 @@ const TopPicksSection = () => {
 
   // ✅ Audio handler
   const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.id) {
+    if (audio && playingSongId === song.songId) {
       if (!audio.paused) {
         audio.pause();
         setPlayingSongId(null);
       } else {
         audio.play();
-        setPlayingSongId(song.id);
+        setPlayingSongId(song.songId);
       }
     } else {
       if (audio) {
         audio.pause();
       }
-      const newAudio = new Audio(song.audio_file_url);
+      const newAudio = new Audio(song.audioUrl);
       newAudio.play();
       setAudio(newAudio);
-      setPlayingSongId(song.id);
+      setPlayingSongId(song.songId);
 
       newAudio.onended = () => {
         setPlayingSongId(null);
@@ -136,16 +137,12 @@ const TopPicksSection = () => {
         {/* ✅ Render only if artistData is an array */}
         <Slider {...settings} className="gap-6">
           {Array.isArray(artistData) &&
-            artistData
-              .slice() // make a safe copy
-              .sort((a, b) => a.ranks - b.ranks)
-              .slice(0, 3)
-              .map((artist, index) => {
-                const legal = String(artist.name || "").trim();
-                const stage = String(artist.stage_name || "").trim();
-                const headline = legal || stage || "Artist";
+            artistData.map((artist, index) => {
+                const fullName = String(artist.fullName || "").trim();
+                const stageName = String(artist.stageName || "").trim();
+                const headline = fullName || stageName || "Artist";
                 const showStage =
-                  Boolean(legal && stage) && legal.toLowerCase() !== stage.toLowerCase();
+                  Boolean(fullName && stageName) && fullName.toLowerCase() !== stageName.toLowerCase();
 
                 return (
                 <div
@@ -156,17 +153,17 @@ const TopPicksSection = () => {
                     {/* Rank Badge */}
                     <div
                       className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
-                        artist.ranks
+                        index + 1
                       )} w-16 h-16 flex items-center justify-center rounded-lg -rotate-12`}
                     >
                       <span className="text-black text-4xl font-bold">
-                        {artist.ranks}
+                        {index + 1}
                       </span>
                     </div>
 
                     {/* Artist Profile */}
                     <div
-                      className="relative h-80 hover:cursor-pointer"
+                      className="relative h-64 hover:cursor-pointer overflow-hidden rounded-t-xl"
                       onClick={(e) => {
                         e.stopPropagation();
                         console.log("Clicked artist:", artist.oph_id);
@@ -175,7 +172,7 @@ const TopPicksSection = () => {
                     >
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />
                       <Image
-                        src={artist.personal_photo || "/default-avatar.png"}
+                        src={artist.personalPhoto || "/default-avatar.png"}
                         fallback={<Shimmer width={400} height={300} />}
                         alt={headline}
                         NativeImgProps={{
@@ -189,49 +186,59 @@ const TopPicksSection = () => {
                         {showStage && (
                           <p className="text-sm text-gray-300">
                             Stage name:{" "}
-                            <span className="text-[#5DC9DE]">{stage}</span>
+                            <span className="text-[#5DC9DE]">{stageName}</span>
                           </p>
                         )}
                       </div>
                     </div>
 
                     {/* Songs */}
-                    <div className="xl:p-6">
-                      {artist.songs?.slice(0, 5).map((song, songIndex) => (
-                        <div
-                          key={song.id}
-                          className="flex items-center z-40 justify-between py-3 border-b border-gray-800 last:border-0"
-                        >
-                          <div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-gray-500">
-                                {songIndex < 10
-                                  ? "0" + (songIndex + 1)
-                                  : songIndex}
-                              </span>
-                              <div>
-                                <h4 className="font-semibold">{song.name}</h4>
-                                <p className="text-sm text-gray-400">
-                                  {song.featuring_artists?.join(", ")}
-                                </p>
+                    <div className="xl:p-6 p-4 bg-black">
+                      {artist.songs && artist.songs.length > 0 ? (
+                        artist.songs.slice(0, 5).map((song, songIndex) => (
+                          <div
+                            key={song.songId}
+                            className="flex items-center z-40 justify-between py-3 border-b border-gray-800 last:border-0"
+                          >
+                            <div>
+                              <div className="flex items-center gap-4">
+                                <span className="text-gray-500">
+                                  {songIndex < 10
+                                    ? "0" + (songIndex + 1)
+                                    : songIndex + 1}
+                                </span>
+                                <div>
+                                  <h4 className="font-semibold">{song.songName}</h4>
+                                  <p className="text-sm text-gray-400">
+                                    {song.primaryArtist}
+                                    {(song.secondaryArtist || []).length > 0 && (
+                                      <span>, {(song.secondaryArtist || []).join(", ")}</span>
+                                    )}
+                                  </p>
+                                </div>
                               </div>
                             </div>
+                            <button
+                              className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors ml-4"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePlayPause(song);
+                              }}
+                            >
+                              {playingSongId === song.songId && !audio?.paused ? (
+                                <FaPause className="text-black " size={11} />
+                              ) : (
+                                <FaPlay
+                                  className="text-black ml-[0.5px]"
+                                  size={11}
+                                />
+                              )}
+                            </button>
                           </div>
-                          <button
-                            className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors ml-4"
-                            onClick={() => handlePlayPause(song)}
-                          >
-                            {playingSongId === song.id && !audio?.paused ? (
-                              <FaPause className="text-black " size={11} />
-                            ) : (
-                              <FaPlay
-                                className="text-black ml-[0.5px]"
-                                size={11}
-                              />
-                            )}
-                          </button>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-center py-4">No songs available</p>
+                      )}
                     </div>
                   </div>
                 </div>
