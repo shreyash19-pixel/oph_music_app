@@ -32,6 +32,7 @@ import Contact from "./view/dashboard/websiteConfig/contact";
 import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import PageMediaUpload from "./view/dashboard/websiteConfig/PageMediaUpload";
+import UploadVideo from "./view/dashboard/websiteConfig/UploadVideo";
 import Collab from "./view/dashboard/websiteConfig/collab";
 import CollabArtistDetail from "./view/dashboard/websiteConfig/collab/CollabArtistDetail";
 import EventAdminForm from "./view/dashboard/websiteConfig/Events";
@@ -571,6 +572,21 @@ function App() {
                 ]}
               >
                 <PageMediaUpload />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/UploadVideo"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <UploadVideo />
               </ProtectedRoute>
             }
           />

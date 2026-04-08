@@ -36,6 +36,7 @@ const MusicPlayerProfile2 = ({
         if(response.data.success && response.data.data != null)
         {
           setArtistData(response.data.data);
+          console.log("TEST" + JSON.stringify(response.data.data));
           const hasAny = Object.keys(response.data.data || {}).length > 0;
           setLoadState(hasAny ? "ready" : "empty");
         } else {
