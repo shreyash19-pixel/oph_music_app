@@ -182,13 +182,23 @@ const ArtistSlider = ({
       root.slickGoTo(target);
     }
 
-    // Scroll to ArtistProfile section
-    if (artistProfileRef.current) {
-      artistProfileRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
+    // Nudge scroll only slightly toward the profile (capped — full scrollIntoView felt excessive)
+    const scrollProfileNudge = () => {
+      const el = artistProfileRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const marginFromTop = 72;
+      if (rect.top >= marginFromTop) return;
+      const neededDown = marginFromTop - rect.top;
+      const maxPx = 100;
+      const delta = Math.min(neededDown, maxPx);
+      if (delta > 0) {
+        window.scrollBy({ top: delta, behavior: "smooth" });
+      }
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollProfileNudge);
+    });
   };
 
   return (

@@ -114,6 +114,7 @@ export const ArtistProvider = ({ children }) => {
         // Check if route is open (including dynamic routes)
         const isOpen = openRoutesNormalized.includes(normalizedPathname) || 
                       normalizedPathname.startsWith("/content/") ||
+                      normalizedPathname.startsWith("/resources/") ||
                       normalizedPathname.startsWith("/artists/") ||
                       normalizedPathname.startsWith("/events/") ||
                       normalizedPathname.startsWith("/dashboard/artist-detail");

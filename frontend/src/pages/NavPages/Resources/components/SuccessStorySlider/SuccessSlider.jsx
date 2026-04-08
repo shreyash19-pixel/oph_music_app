@@ -6,6 +6,7 @@ import axiosApi from "../../../../../conf/axios";
 import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Image, Shimmer } from "react-shimmer";
 import { Link } from "react-router-dom";
+import { buildResourcePath } from "../../../../../utils/resourceSlug";
 import toast from "react-hot-toast";
 import CustomVideoPlayer from "../../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
@@ -230,9 +231,12 @@ function SuccessSlider({ searchText, title }) {
                   </div>
                 </div>
                 <div className="p-4 sm:p-6 text-center">
-                  <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
+                  <Link
+                    to={buildResourcePath("story", success.id, success.title)}
+                    className="block text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer"
+                  >
                     {success.title}
-                  </h3>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -268,9 +272,12 @@ function SuccessSlider({ searchText, title }) {
                 </div>
 
                 <div className="p-4 sm:p-6 text-center">
-                  <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
+                  <Link
+                    to={buildResourcePath("story", success.id, success.title)}
+                    className="block text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer"
+                  >
                     {success.title}
-                  </h3>
+                  </Link>
                 </div>
               </div>
             ))}

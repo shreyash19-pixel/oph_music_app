@@ -1,4 +1,5 @@
 const db = require("../../DB/connect");
+const { slugifyTitle } = require("../../utils/resourceSlug");
 
 const Resource = {
   search: async (q) => {
@@ -67,6 +68,20 @@ const Resource = {
       [podcastId],
     );
     return rows[0] || null;
+  },
+
+  getPodcastBySlug: async (slug) => {
+    const want = slugifyTitle(slug);
+    if (!want || want === "item") return null;
+    const [rows] = await db.query(
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords, bio
+         FROM resource_podcast
+         ORDER BY id DESC`,
+    );
+    for (const row of rows) {
+      if (slugifyTitle(row.title) === want) return row;
+    }
+    return null;
   },
 
   updatePodcastById: async (podcastId, data) => {
@@ -160,6 +175,20 @@ const Resource = {
     return rows[0] || null;
   },
 
+  getReelBySlug: async (slug) => {
+    const want = slugifyTitle(slug);
+    if (!want || want === "item") return null;
+    const [rows] = await db.query(
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords
+         FROM resource_reels
+         ORDER BY id DESC`,
+    );
+    for (const row of rows) {
+      if (slugifyTitle(row.title) === want) return row;
+    }
+    return null;
+  },
+
   // Insert a new music video
   createReel: async (videoData) => {
     try {
@@ -251,6 +280,20 @@ const Resource = {
       [storyId],
     );
     return rows[0] || null;
+  },
+
+  getStoryBySlug: async (slug) => {
+    const want = slugifyTitle(slug);
+    if (!want || want === "item") return null;
+    const [rows] = await db.query(
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords
+           FROM resource_story
+           ORDER BY id DESC`,
+    );
+    for (const row of rows) {
+      if (slugifyTitle(row.title) === want) return row;
+    }
+    return null;
   },
   // Insert a new music video
   createStories: async (videoData) => {
@@ -385,6 +428,20 @@ const Resource = {
       [learningId],
     );
     return rows[0] || null;
+  },
+
+  getLearningBySlug: async (slug) => {
+    const want = slugifyTitle(slug);
+    if (!want || want === "item") return null;
+    const [rows] = await db.query(
+      `SELECT id, title, video_url, thumbnail_url, artist_name, duration_in_minutes, views, credit_name, keywords, audience
+         FROM resource_learning
+         ORDER BY id DESC`,
+    );
+    for (const row of rows) {
+      if (slugifyTitle(row.title) === want) return row;
+    }
+    return null;
   },
 
   updateLearningById: async (learningId, data) => {

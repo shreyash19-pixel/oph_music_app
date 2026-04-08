@@ -58,6 +58,21 @@ const iaOnlyTopArtistsBody = (body) => {
   };
 };
 
+/** Home ArtistSlider / get-top-artist: show both -IA- and -SA- (matches getTopArtists query). */
+const iaAndSaTopArtistsBody = (body) => {
+  if (!body || typeof body !== "object" || !Array.isArray(body.data)) {
+    return body;
+  }
+  return {
+    ...body,
+    data: body.data.filter(
+      (row) =>
+        isIndependentArtistOphId(row.oph_id) ||
+        isSpecialArtistOphId(row.oph_id),
+    ),
+  };
+};
+
 const iaOnlyKpiScoresBody = (body) => {
   if (
     !body ||
@@ -121,7 +136,7 @@ router.get("/artist-search-filters", getArtistSearchFiltersController);
 router.get("/get-top-searched-artist", getTopSearchedArtistsController);
 router.get(
   "/get-top-artist",
-  wrapFilterJsonBody(getTopArtistsController, iaOnlyTopArtistsBody),
+  wrapFilterJsonBody(getTopArtistsController, iaAndSaTopArtistsBody),
 );
 router.get("/get-top-artist-detail", getArtistProfile);
 

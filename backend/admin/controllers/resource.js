@@ -150,6 +150,33 @@ const getPodcastById = async (req, res) => {
   }
 };
 
+const getPodcastBySlug = async (req, res) => {
+  try {
+    const raw = req.params.slug;
+    if (raw == null || String(raw).trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Missing slug",
+      });
+    }
+    const slug = decodeURIComponent(String(raw));
+    const podcast = await Resource.getPodcastBySlug(slug);
+    if (!podcast) {
+      return res.status(404).json({
+        success: false,
+        message: "Podcast not found",
+      });
+    }
+    res.status(200).json({ success: true, data: podcast });
+  } catch (err) {
+    console.error("Error fetching podcast by slug:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 const updatePodcastById = async (req, res) => {
   try {
     const { podcastId } = req.params;
@@ -418,6 +445,33 @@ const getStroyById = async (req, res) => {
   }
 };
 
+const getStoryBySlug = async (req, res) => {
+  try {
+    const raw = req.params.slug;
+    if (raw == null || String(raw).trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Missing slug",
+      });
+    }
+    const slug = decodeURIComponent(String(raw));
+    const story = await Resource.getStoryBySlug(slug);
+    if (!story) {
+      return res.status(404).json({
+        success: false,
+        message: "Story not found",
+      });
+    }
+    res.status(200).json({ success: true, data: story });
+  } catch (err) {
+    console.error("Error fetching story by slug:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // Reels
 const fetchAllReels = async (req, res) => {
   try {
@@ -604,6 +658,33 @@ const getReelById = async (req, res) => {
   }
 };
 
+const getReelBySlug = async (req, res) => {
+  try {
+    const raw = req.params.slug;
+    if (raw == null || String(raw).trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Missing slug",
+      });
+    }
+    const slug = decodeURIComponent(String(raw));
+    const reel = await Resource.getReelBySlug(slug);
+    if (!reel) {
+      return res.status(404).json({
+        success: false,
+        message: "Reel not found",
+      });
+    }
+    res.status(200).json({ success: true, data: reel });
+  } catch (err) {
+    console.error("Error fetching reel by slug:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // Learning
 
 const insertLearning = async (req, res) => {
@@ -771,6 +852,33 @@ const getLearningById = async (req, res) => {
   }
 };
 
+const getLearningBySlug = async (req, res) => {
+  try {
+    const raw = req.params.slug;
+    if (raw == null || String(raw).trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Missing slug",
+      });
+    }
+    const slug = decodeURIComponent(String(raw));
+    const learning = await Resource.getLearningBySlug(slug);
+    if (!learning) {
+      return res.status(404).json({
+        success: false,
+        message: "Learning not found",
+      });
+    }
+    res.status(200).json({ success: true, data: learning });
+  } catch (err) {
+    console.error("Error fetching learning by slug:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 const deleteLearning = async (req, res) => {
   const { id } = req.params;
   try {
@@ -788,6 +896,7 @@ const deleteLearning = async (req, res) => {
 module.exports = {
   searchPodcasts,
   getPodcastById,
+  getPodcastBySlug,
   insertPodcast,
   fetchAllPodcast,
   updatePodcastById,
@@ -796,6 +905,7 @@ module.exports = {
   insertReels,
   fetchAllReels,
   getReelById,
+  getReelBySlug,
   updateReelById,
   deleteReel,
   //Stories
@@ -803,6 +913,7 @@ module.exports = {
   fetchAllStories,
   updateStroyById,
   getStroyById,
+  getStoryBySlug,
   deleteStory,
   //Learning
   insertLearning,
@@ -811,4 +922,5 @@ module.exports = {
   updateLearningById,
   deleteLearning,
   getLearningById,
+  getLearningBySlug,
 };

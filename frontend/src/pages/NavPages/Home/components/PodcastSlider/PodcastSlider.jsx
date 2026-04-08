@@ -5,6 +5,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { FaPlayCircle, FaPauseCircle } from "react-icons/fa";
 import axiosApi from "../../../../../conf/axios";
+import { buildResourcePath } from "../../../../../utils/resourceSlug";
 import PlayButton from "../../../../../../public/assets/images/play_button.png";
 import { Link, useNavigate } from "react-router-dom";
 import { Image, Shimmer } from "react-shimmer";
@@ -273,7 +274,9 @@ function PodcastSlider({ searchText, title }) {
                 </div>
 
                 <div className="p-4 sm:p-6 text-center">
-                  <Link to={`/content/${podcast.id}`}>
+                  <Link
+                    to={buildResourcePath("podcast", podcast.id, podcast.title)}
+                  >
                     <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
                       {podcast.title}
                     </h3>
@@ -365,7 +368,9 @@ function PodcastSlider({ searchText, title }) {
                 </div>
 
                 <div className="p-4 sm:p-6 text-center">
-                  <Link to={`/content/${podcast.id}`}>
+                  <Link
+                    to={buildResourcePath("podcast", podcast.id, podcast.title)}
+                  >
                     <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
                       {podcast.title}
                     </h3>
