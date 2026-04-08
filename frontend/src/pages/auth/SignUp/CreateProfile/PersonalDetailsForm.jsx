@@ -345,6 +345,8 @@ const PersonalDetailsForm = () => {
                 className="w-full h-[50vh] rounded-lg overflow-hidden bg-black"
                 pauseOtherVideos={true}
                 allowFullscreen={false}
+                showPlayButtonOverlay
+                playOverlayVariant="purple"
               />
             </div>
           )}

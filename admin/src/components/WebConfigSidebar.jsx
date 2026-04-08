@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
-import { ROLES } from "../utils/roles";
+import { ROLES, EVENT_MANAGEMENT_WEB_CONFIG_ROLES } from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -75,15 +75,7 @@ const WebConfigSidebar = ({ children }) => {
     },
     {
       label: "Event Management",
-      roles: [
-        ROLES.SUPER_ADMIN,
-        ROLES.SALES_HEAD,
-        ROLES.SALES_MEMBER,
-        ROLES.PROJECT_HEAD,
-        ROLES.PROJECT_MEMBER,
-        ROLES.ACCOUNTS_HEAD,
-        ROLES.ACCOUNTS_MEMBER,
-      ],
+      roles: EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
       children: [
         {
           label: "Event Creation",

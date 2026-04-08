@@ -2,9 +2,17 @@ const {newReleases, getArtistDetail, getReleatedArtists, getUpcomingSong} = requ
 const {getOphIdFromHash} = require("../model/artist_hash_mapping")
 
 
+const getLoggedInArtistOphId = (req) => {
+    const id =
+        req.user?.userData?.artist?.id ?? req.user?.userData?.artist?.OPH_ID;
+    if (id === undefined || id === null || id === "") return null;
+    return String(id);
+};
+
 const newReleasesController = async (req, res) => {
     try {
-        const response = await newReleases();
+        const excludeOphId = getLoggedInArtistOphId(req);
+        const response = await newReleases(excludeOphId);
         
         // Always return a response, even if empty
         return res.status(200).json({

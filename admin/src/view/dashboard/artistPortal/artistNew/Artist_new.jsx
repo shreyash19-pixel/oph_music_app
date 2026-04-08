@@ -5,12 +5,17 @@ import ArtistSidebar from "../../../../components/ArtistSidebar";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
 
-const artistTableExcludeColumns = [
+/** Columns hidden on /artist/new for both under-review and rejected-onboarding lists */
+const artistNewExcludeColumns = [
   "createdAt",
   "updatedAt",
   "user_pass",
   "step_status",
   "reject_reason",
+  "professional_step_status",
+  "professional_reject_reason",
+  "documentation_step_status",
+  "documentation_reject_reason",
   "personal_photo",
   "location",
   "current_step",
@@ -21,11 +26,6 @@ const artistTableExcludeColumns = [
   "Notes",
 ];
 
-/** Same as new-artist list but keep profile step / reason visible for rejections */
-const rejectedOnboardingExcludeColumns = artistTableExcludeColumns.filter(
-  (c) => c !== "step_status" && c !== "reject_reason"
-);
-
 const sortByFormFill = (rows) =>
   [...(rows || [])].sort((a, b) => (b.form_fill_count || 0) - (a.form_fill_count || 0));
 
@@ -35,16 +35,18 @@ const Artist_new = () => {
   const { user } = useAuth();
 
   const isSalesMember = user?.role === ROLES.SALES_MEMBER;
-  /** Second table: sales head (and super admin) see rejected queue in addition to under-review list */
-  const showRejectedSecondTable =
-    user?.role === ROLES.SALES_HEAD || user?.role === ROLES.SUPER_ADMIN;
+  const isSalesHead = user?.role === ROLES.SALES_HEAD;
+  /** Sales head / member: only artists with personal, professional, or documentation rejected */
+  const useRejectedOnboardingOnly = isSalesMember || isSalesHead;
+  /** Super admin: under-review list plus optional second table of rejected onboarding */
+  const showRejectedSecondTable = user?.role === ROLES.SUPER_ADMIN;
 
   useEffect(() => {
     if (!user?.role) return;
 
     const fetchData = async () => {
       try {
-        const url = isSalesMember
+        const url = useRejectedOnboardingOnly
           ? "/any-rejected-onboarding"
           : "/any-under-review";
         const res = await axiosApi.get(url);
@@ -60,7 +62,7 @@ const Artist_new = () => {
     };
 
     fetchData();
-  }, [user?.role, isSalesMember]);
+  }, [user?.role, useRejectedOnboardingOnly]);
 
   useEffect(() => {
     if (!showRejectedSecondTable) {
@@ -88,11 +90,7 @@ const Artist_new = () => {
             title="New Artist"
             data={tableData}
             showStatusIndicator={false}
-            excludeColumns={
-              isSalesMember
-                ? rejectedOnboardingExcludeColumns
-                : artistTableExcludeColumns
-            }
+            excludeColumns={artistNewExcludeColumns}
             pageSize={10}
             detailsUrl="/ArtistNew"
           />
@@ -102,7 +100,7 @@ const Artist_new = () => {
               showSearch={false}
               data={rejectedData}
               showStatusIndicator={false}
-              excludeColumns={rejectedOnboardingExcludeColumns}
+              excludeColumns={artistNewExcludeColumns}
               pageSize={10}
               detailsUrl="/ArtistNew"
             />

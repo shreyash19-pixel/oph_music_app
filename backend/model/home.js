@@ -1,11 +1,66 @@
 const db = require("../DB/connect");
 
-const newReleases = async () => {
+const parseVideoImageUrl = (raw) => {
+  if (raw == null || raw === "") return null;
+  if (typeof raw === "object") return raw;
+  const s = String(raw).trim();
+  if (!s) return null;
   try {
-    // Since song tables were removed in Phase 2, return empty object
-    // This prevents SQL errors when tables don't exist
+    return JSON.parse(s);
+  } catch {
+    return [s];
+  }
+};
+
+/**
+ * Top approved platform songs by YouTube views (from song_social_metrics).
+ * @param {string|null|undefined} excludeOphId — logged-in artist; their songs are omitted
+ */
+const newReleases = async (excludeOphId = null) => {
+  try {
+    const exclude =
+      excludeOphId != null && String(excludeOphId).trim() !== ""
+        ? String(excludeOphId).trim()
+        : null;
+    const excludeClause = exclude ? "AND sr.oph_id <> ?" : "";
+    const params = exclude ? [exclude] : [];
+
     const [rows] = await db.execute(
-      "WITH CTESongRankings AS (SELECT sr.song_id, vd.image_url, ad.Song_name, sa.artist_name, ssm.youtube_views, ad.audio_url, ad.primary_artist, sr.`status` song_register_status, ad.`status` audio_details_status, vd.`status` video_details_status FROM song_social_metrics ssm LEFT JOIN songs_register sr ON ssm.song_id = sr.song_id LEFT JOIN audio_details ad ON ssm.song_id = ad.song_id LEFT JOIN video_details vd ON ssm.song_id = vd.song_id LEFT JOIN secondary_artist sa ON ssm.song_id = sa.song_id ORDER BY ssm.youtube_views DESC LIMIT 5) SELECT * FROM CTESongRankings WHERE song_register_status = 'Approved' AND audio_details_status = 'approved' AND video_details_status = 'approved' ",
+      `SELECT
+        b.song_id,
+        b.oph_id,
+        b.image_url,
+        b.Song_name,
+        b.audio_url,
+        b.primary_artist,
+        b.youtube_views,
+        sa.artist_name
+      FROM (
+        SELECT
+          sr.song_id,
+          sr.oph_id,
+          vd.image_url,
+          ad.Song_name AS Song_name,
+          ad.audio_url,
+          ad.primary_artist,
+          COALESCE(ssm.youtube_views, 0) AS youtube_views
+        FROM songs_register sr
+        INNER JOIN song_application_status sas ON sr.song_id = sas.song_id
+        INNER JOIN audio_details ad ON sr.song_id = ad.song_id
+        INNER JOIN video_details vd ON sr.song_id = vd.song_id
+        LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
+        WHERE LOWER(TRIM(COALESCE(sas.overall_status, ''))) = 'approved'
+          AND ad.status = 'approved'
+          AND vd.status = 'approved'
+          AND ad.audio_url IS NOT NULL
+          AND TRIM(ad.audio_url) <> ''
+          ${excludeClause}
+        ORDER BY COALESCE(ssm.youtube_views, 0) DESC, sr.song_id ASC
+        LIMIT 60
+      ) b
+      LEFT JOIN secondary_artist sa ON b.song_id = sa.song_id
+      ORDER BY b.youtube_views DESC, b.song_id ASC`,
+      params,
     );
 
     const songMap = {};
@@ -19,28 +74,25 @@ const newReleases = async () => {
           songName: row.Song_name,
           primaryArtist: row.primary_artist,
           songId: row.song_id,
-          imageUrl: row.image_url ? JSON.parse(row.image_url) : null,
+          imageUrl: parseVideoImageUrl(row.image_url),
           audioUrl: row.audio_url,
-          youtubeViews: row.youtube_views,
+          youtubeViews: Number(row.youtube_views) || 0,
           secondaryArtist: [],
         };
       }
 
       if (row.artist_name) {
         songMap[songId].secondaryArtist.push(row.artist_name);
-      } else {
-        if (songMap[songId].secondaryArtist.length === 0) {
-          songMap[songId].secondaryArtist.push(null);
-        }
+      } else if (songMap[songId].secondaryArtist.length === 0) {
+        songMap[songId].secondaryArtist.push(null);
       }
     });
 
     return songMap;
   } catch (error) {
-    // If tables don't exist (removed in Phase 2), return empty object
-    // This prevents frontend crashes
     console.log(
       "Song tables not available (Phase 2), returning empty new releases",
+      error?.message || error,
     );
     return {};
   }

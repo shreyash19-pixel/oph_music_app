@@ -216,14 +216,16 @@ const getAllSongPayments = async (req, res) => {
 
 const getAllEventsPayments = async (req, res) => {
   try {
-    const payments = await payment_details.getPaymentDetailsForAllEvents();
+    const viewerRole = req.user?.role ?? null;
+    const payments =
+      await payment_details.getPaymentDetailsForAllEvents(viewerRole);
 
     return res.status(200).json({
       success: true,
       message:
         payments && payments.length > 0
           ? "Event payments fetched successfully"
-          : "No event payments under review found",
+          : "No event payments found for your role",
       data: payments || [],
     });
   } catch (error) {

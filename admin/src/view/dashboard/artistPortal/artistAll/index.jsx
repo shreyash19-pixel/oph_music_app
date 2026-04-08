@@ -6,17 +6,19 @@ import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
 
-/** Same as /Artist/All — start with fields unlocked so sales & admin staff can edit immediately */
+/** Roles that land with every field unlocked for editing. Sales members are view-only (see `isSalesMemberViewOnly`). */
 const ARTIST_ALL_DETAIL_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.ADMINISTRATIVE_HEAD,
   ROLES.ADMINISTRATIVE_MEMBER,
   ROLES.SALES_HEAD,
-  ROLES.SALES_MEMBER,
 ];
+
+const isSalesMemberViewOnly = (role) => role === ROLES.SALES_MEMBER;
 
 const ArtistAll = () => {
   const { user } = useAuth();
+  const viewOnlyNoEdit = isSalesMemberViewOnly(user?.role);
   const { ophid } = useParams();
   const [personal, setPersonal] = useState({});
   const [professional, setProfessional] = useState({});
@@ -216,6 +218,7 @@ const ArtistAll = () => {
   };
 
   const toggleLock = (lockKey) => {
+    if (viewOnlyNoEdit) return;
     setLocks((prev) => ({ ...prev, [lockKey]: !prev[lockKey] }));
   };
 
@@ -248,6 +251,10 @@ const ArtistAll = () => {
   };
 
   const handleSaveSection = async (sectionName, currentData) => {
+    if (viewOnlyNoEdit) {
+      toast.error("You have view-only access. You cannot save changes.");
+      return;
+    }
     showConfirmationToast(async () => {
       try {
         if (sectionName === "Personal Details") {
@@ -605,6 +612,8 @@ const ArtistAll = () => {
   };
 
   const renderInput = (key, value, onChange, allData, lockKey, sectionIdx) => {
+    const fieldLocked = (k) => viewOnlyNoEdit || locks[k];
+
     const lower = key.toLowerCase();
     const isPhoto =
       lower.includes("photo") ||
@@ -621,12 +630,12 @@ const ArtistAll = () => {
         <div className="flex flex-wrap gap-4">
           {value.map((photoUrl, index) => {
             const photoKey = `${sectionIdx}_${key}_${index}`;
-            const locked = locks[photoKey];
+            const locked = fieldLocked(photoKey);
 
             return (
               <div key={index} className="relative">
                 <div
-                  className={`cursor-pointer ${locked ? "opacity-50 pointer-events-none" : ""}`}
+                  className={locked ? "" : "cursor-pointer"}
                   onClick={() => {
                     if (!locked) fileInputRefs.current[photoKey]?.click();
                   }}
@@ -636,9 +645,11 @@ const ArtistAll = () => {
                     alt={`photo-${index}`}
                     className="w-32 h-32 rounded object-cover border mb-2"
                   />
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                    Click to replace
-                  </div>
+                  {!locked && (
+                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
+                      Click to replace
+                    </div>
+                  )}
                 </div>
                 <input
                   ref={(ref) => (fileInputRefs.current[photoKey] = ref)}
@@ -656,37 +667,40 @@ const ArtistAll = () => {
                   }
                   className="hidden"
                 />
-                <div className="absolute top-1 right-1 flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onChange(
-                        "photos",
-                        allData.photos.filter((_, idx) => idx !== index),
-                      );
-                    }}
-                    className="p-1 bg-red-500 text-white rounded-full border shadow hover:bg-red-600 transition"
-                    title="Delete photo"
-                  >
-                    ×
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLock(photoKey)}
-                    className="p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
-                  >
-                    {locks[photoKey] ? (
-                      <Lock size={16} className="text-gray-600" />
-                    ) : (
-                      <Unlock size={16} className="text-green-600" />
-                    )}
-                  </button>
-                </div>
+                {!viewOnlyNoEdit && (
+                  <div className="absolute top-1 right-1 flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange(
+                          "photos",
+                          allData.photos.filter((_, idx) => idx !== index),
+                        );
+                      }}
+                      className="p-1 bg-red-500 text-white rounded-full border shadow hover:bg-red-600 transition"
+                      title="Delete photo"
+                    >
+                      ×
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLock(photoKey)}
+                      className="p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
+                    >
+                      {locks[photoKey] ? (
+                        <Lock size={16} className="text-gray-600" />
+                      ) : (
+                        <Unlock size={16} className="text-green-600" />
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
 
           {/* Add new photo button */}
+          {!viewOnlyNoEdit && (
           <div className="w-full">
             <button
               type="button"
@@ -736,11 +750,12 @@ const ArtistAll = () => {
               className="hidden"
             />
           </div>
+          )}
         </div>
       );
     }
 
-    const locked = locks[lockKey];
+    const locked = fieldLocked(lockKey);
 
     // Special handling for signature field
     if (key === "signature") {
@@ -759,7 +774,7 @@ const ArtistAll = () => {
             </div>
           )}
 
-          {!locked && (
+          {!locked && !viewOnlyNoEdit && (
             <div className="border rounded-lg p-4 bg-gray-50">
               <h4 className="text-sm font-medium mb-2">Draw your signature:</h4>
               <div className="w-full max-w-md mx-auto">
@@ -798,9 +813,14 @@ const ArtistAll = () => {
             </div>
           )}
 
-          {locked && !value && (
+          {locked && !value && !viewOnlyNoEdit && (
             <div className="text-gray-400 border border-dashed p-4 rounded text-center">
               Click the unlock button to add a signature
+            </div>
+          )}
+          {viewOnlyNoEdit && !value && (
+            <div className="text-gray-400 border border-dashed p-4 rounded text-center text-sm">
+              No signature on file
             </div>
           )}
 
@@ -819,7 +839,7 @@ const ArtistAll = () => {
       return (
         <div className="relative">
           <div
-            className={`cursor-pointer ${locked ? "opacity-50 pointer-events-none" : ""}`}
+            className={`${locked ? "" : "cursor-pointer"}`}
             onClick={() => {
               if (!locked) fileInputRefs.current[lockKey]?.click();
             }}
@@ -831,9 +851,11 @@ const ArtistAll = () => {
                   alt={key}
                   className="w-40 h-40 rounded object-cover border mb-2"
                 />
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                  Click to replace
-                </div>
+                {!locked && (
+                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
+                    Click to replace
+                  </div>
+                )}
               </>
             )}
             {isVideo && value && (
@@ -843,14 +865,16 @@ const ArtistAll = () => {
                   controls
                   src={typeof value === "object" ? value.url : value}
                 />
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                  Click to replace
-                </div>
+                {!locked && (
+                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
+                    Click to replace
+                  </div>
+                )}
               </>
             )}
             {!value && (
               <div className="text-gray-400 border border-dashed p-4 rounded">
-                Click to upload
+                {viewOnlyNoEdit ? "—" : "Click to upload"}
               </div>
             )}
           </div>
@@ -914,6 +938,13 @@ const ArtistAll = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <Toaster />
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
+        {viewOnlyNoEdit && (
+          <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            View-only access: you can review this artist&apos;s details and
+            download the membership PDF, but you cannot edit fields or save
+            changes.
+          </p>
+        )}
         <Section
           title="Personal Details"
           data={personal}
@@ -926,6 +957,7 @@ const ArtistAll = () => {
           onDownloadPDF={downloadPDF}
           showDownloadButton={true}
           isBrowser={isBrowser}
+          viewOnlyNoEdit={viewOnlyNoEdit}
         />
 
         <Section
@@ -937,6 +969,7 @@ const ArtistAll = () => {
           sectionIdx={1}
           locks={locks}
           toggleLock={toggleLock}
+          viewOnlyNoEdit={viewOnlyNoEdit}
         />
 
         <Section
@@ -948,6 +981,7 @@ const ArtistAll = () => {
           sectionIdx={2}
           locks={locks}
           toggleLock={toggleLock}
+          viewOnlyNoEdit={viewOnlyNoEdit}
         />
       </div>
     </div>
@@ -966,6 +1000,7 @@ const Section = ({
   onDownloadPDF,
   showDownloadButton = false,
   isBrowser = false,
+  viewOnlyNoEdit = false,
 }) => (
   <div>
     <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">
@@ -983,7 +1018,7 @@ const Section = ({
               </label>
               <div className="relative">
                 {renderInput(key, value, onChange, data, lockKey, sectionIdx)}
-                {key !== "photos" && (
+                {key !== "photos" && !viewOnlyNoEdit && (
                   <button
                     type="button"
                     onClick={() => toggleLock(lockKey)}
@@ -1021,12 +1056,15 @@ const Section = ({
           Download PDF
         </button>
       )}
-      <button
-        onClick={onSave}
-        className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
-      >
-        Save {title}
-      </button>
+      {!viewOnlyNoEdit && (
+        <button
+          type="button"
+          onClick={onSave}
+          className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
+        >
+          Save {title}
+        </button>
+      )}
     </div>
   </div>
 );

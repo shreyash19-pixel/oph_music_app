@@ -1,15 +1,18 @@
-import React, { useState } from "react";
-import { Menu, X } from "lucide-react";
-import {useNavigate } from "react-router-dom";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import DashBoardSidebar from "../../../components/DashBoardSidebar";
+import { useAuth } from "../../../auth/AuthProvider";
+import { WEBSITE_CONFIG_HUB_ROLES } from "../../../utils/roles";
 // Dashboard with two views: Home & Artist Portal
 // Tailwind‑only styling – brand colour #0d3c44
 
 
 // Main Dashboard component
 const Dashboard = () => {
-  
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const showWebsiteConfig =
+    user?.role && WEBSITE_CONFIG_HUB_ROLES.includes(user.role);
 
 
   // Sidebar link sets
@@ -41,13 +44,15 @@ const Dashboard = () => {
               Artist Portal
             </button>
 
-            {/* Website Config placeholder */}
-            <button
-              onClick={() => navigate("/websiteConfig")}
-              className="px-8 py-6 text-xl rounded-2xl font-semibold border-2 border-[#0d3c44] text-[#0d3c44] shadow-lg hover:bg-[#e6f2f4] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0d3c44] transition-transform hover:scale-105"
-            >
-              Website Config
-            </button>
+            {showWebsiteConfig && (
+              <button
+                type="button"
+                onClick={() => navigate("/WebsiteConfig")}
+                className="px-8 py-6 text-xl rounded-2xl font-semibold border-2 border-[#0d3c44] text-[#0d3c44] shadow-lg hover:bg-[#e6f2f4] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0d3c44] transition-transform hover:scale-105"
+              >
+                Website Config
+              </button>
+            )}
           </div>
         ) 
         }

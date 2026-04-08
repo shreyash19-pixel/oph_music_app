@@ -5,6 +5,8 @@ import {
   ANALYTICS_PORTAL_ROLES,
   EVENT_PAYMENTS_SIDEBAR_ROLES,
   CONTENT_PORTAL_ROLES,
+  TV_PUBLISHING_PORTAL_ROLES,
+  TICKETS_PORTAL_ROLES,
 } from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +47,7 @@ const artistLinks = [
       {
         label: "Tv Publishing",
         route: "/content/tv",
+        roles: TV_PUBLISHING_PORTAL_ROLES,
       },
     ],
   },
@@ -120,13 +123,7 @@ const artistLinks = [
   },
   {
     label: "Tickets",
-    roles: [
-      ROLES.SUPER_ADMIN,
-      ROLES.ADMINISTRATIVE_HEAD,
-      ROLES.ADMINISTRATIVE_MEMBER,
-      ROLES.ACCOUNTS_HEAD,
-      ROLES.ACCOUNTS_MEMBER,
-    ],
+    roles: TICKETS_PORTAL_ROLES,
     children: [
       {
         label: "Submitted",

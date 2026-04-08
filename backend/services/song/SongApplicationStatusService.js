@@ -157,8 +157,9 @@ class SongApplicationStatusService {
 
     const [dateBookingRej] = await connection.execute(
       `SELECT 1 FROM payments WHERE oph_id = ? AND (from_source = 'Date booking' OR from_source = 'Date Booking')
-       AND (song_id = ? OR reject_for = ? OR reject_for = ? OR release_date = ?) AND status = 'rejected' LIMIT 1`,
-      [ophId, songId, songId, dateStr, dateStr]
+       AND (song_id = ? OR reject_for = ? OR reject_for = ? OR release_date = ?
+            OR (old_release_date IS NOT NULL AND DATE(old_release_date) = DATE(?))) AND status = 'rejected' LIMIT 1`,
+      [ophId, songId, songId, dateStr, dateStr, dateStr]
     );
     const [lyricalRej] = await connection.execute(
       `SELECT 1 FROM payments WHERE oph_id = ? AND (from_source = 'Song Registration' OR from_source = 'Song Repayment')

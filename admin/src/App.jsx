@@ -6,6 +6,10 @@ import {
   ANALYTICS_PORTAL_ROLES,
   EVENT_PAYMENTS_SIDEBAR_ROLES,
   CONTENT_PORTAL_ROLES,
+  TV_PUBLISHING_PORTAL_ROLES,
+  WEBSITE_CONFIG_HUB_ROLES,
+  TICKETS_PORTAL_ROLES,
+  EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
 } from "./utils/roles";
 // import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
@@ -99,8 +103,6 @@ function App() {
           {/* ---------- PUBLIC ---------- */}
           <Route path="/" element={<AdminSignInForm />} />
           <Route path="/signup" element={<AdminSignUpForm />} />
-          <Route path="/WebsiteConfig" element={<WebsiteConfig />} />
-
           <Route path="/home" element={<Dashboard />} />
           <Route path="/ArtistNew/:ophid" element={<ArtistNew />} />
           <Route
@@ -176,6 +178,8 @@ function App() {
                   ROLES.ADMINISTRATIVE_HEAD,
                   ROLES.SALES_HEAD,
                   ROLES.SALES_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
                 <NewSignupDetails />
@@ -192,6 +196,8 @@ function App() {
                   ROLES.ADMINISTRATIVE_HEAD,
                   ROLES.SALES_HEAD,
                   ROLES.SALES_MEMBER,
+                  ROLES.ACCOUNTS_HEAD,
+                  ROLES.ACCOUNTS_MEMBER,
                 ]}
               >
                 <Home />
@@ -218,20 +224,19 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/AllEvents" element={<Events />} />
+          <Route
+            path="/AllEvents"
+            element={
+              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
+                <Events />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/event_participants"
             element={
               <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.SALES_HEAD,
-                  ROLES.SALES_MEMBER,
-                  ROLES.PROJECT_HEAD,
-                  ROLES.PROJECT_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
+                allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}
               >
                 <EventParticipation />
               </ProtectedRoute>
@@ -240,17 +245,7 @@ function App() {
           <Route
             path="/event-winning"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.SALES_HEAD,
-                  ROLES.SALES_MEMBER,
-                  ROLES.PROJECT_HEAD,
-                  ROLES.PROJECT_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
                 <EventWinning />
               </ProtectedRoute>
             }
@@ -258,17 +253,7 @@ function App() {
           <Route
             path="/event-winner-assign/:event_id"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.SALES_HEAD,
-                  ROLES.SALES_MEMBER,
-                  ROLES.PROJECT_HEAD,
-                  ROLES.PROJECT_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
                 <EventWinnerAssign />
               </ProtectedRoute>
             }
@@ -276,7 +261,7 @@ function App() {
           <Route
             path="/content/tv"
             element={
-              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
+              <ProtectedRoute allowedRoles={TV_PUBLISHING_PORTAL_ROLES}>
                 <Tvpublishing />
               </ProtectedRoute>
             }
@@ -284,16 +269,27 @@ function App() {
           <Route
             path="/TvIndex/:oph_id/:song_id"
             element={
-              <ProtectedRoute allowedRoles={CONTENT_PORTAL_ROLES}>
+              <ProtectedRoute allowedRoles={TV_PUBLISHING_PORTAL_ROLES}>
                 <TvIndex />
               </ProtectedRoute>
             }
           />
           <Route
             path="/ResolvedTickets/:ophid/:ticketNumber"
-            element={<ResolveIndex />}
+            element={
+              <ProtectedRoute allowedRoles={TICKETS_PORTAL_ROLES}>
+                <ResolveIndex />
+              </ProtectedRoute>
+            }
           />
-          <Route path="/Tickets/:ophid/:ticketNumber" element={<Tickets />} />
+          <Route
+            path="/Tickets/:ophid/:ticketNumber"
+            element={
+              <ProtectedRoute allowedRoles={TICKETS_PORTAL_ROLES}>
+                <Tickets />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/EventPayment/:ophid/:eventId/:transactionId" element={<EventPayment />} />
           <Route path="/EventPayment/:ophid/:eventId" element={<EventPayment />} />
           <Route path="/EventPayment/:ophid" element={<EventPayment />} />
@@ -307,7 +303,7 @@ function App() {
           <Route
             path="/WebsiteConfig"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={WEBSITE_CONFIG_HUB_ROLES}>
                 <WebsiteConfig />
               </ProtectedRoute>
             }
@@ -594,17 +590,7 @@ function App() {
           <Route
             path="/Events"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.SALES_HEAD,
-                  ROLES.SALES_MEMBER,
-                  ROLES.PROJECT_HEAD,
-                  ROLES.PROJECT_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
                 <EventAdminForm />
               </ProtectedRoute>
             }
@@ -613,17 +599,7 @@ function App() {
           <Route
             path="/event_management/:event_id"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.SALES_HEAD,
-                  ROLES.SALES_MEMBER,
-                  ROLES.PROJECT_HEAD,
-                  ROLES.PROJECT_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
                 <EventManagement />
               </ProtectedRoute>
             }
@@ -842,15 +818,7 @@ function App() {
           <Route
             path="/tickets"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={TICKETS_PORTAL_ROLES}>
                 <TicketMain />
               </ProtectedRoute>
             }
@@ -858,15 +826,7 @@ function App() {
           <Route
             path="/ResolveTickets"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={TICKETS_PORTAL_ROLES}>
                 <ResolveTickets />
               </ProtectedRoute>
             }
