@@ -1,6 +1,11 @@
 import React from "react";
 import Sidebar from "./Sidebar"; // adjust path if needed
-import { ROLES } from "../utils/roles";
+import {
+  ROLES,
+  ANALYTICS_PORTAL_ROLES,
+  EVENT_PAYMENTS_SIDEBAR_ROLES,
+  CONTENT_PORTAL_ROLES,
+} from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -27,15 +32,7 @@ const artistLinks = [
   },
   {
     label: "Content",
-    roles: [
-      ROLES.SUPER_ADMIN,
-      ROLES.ADMINISTRATIVE_HEAD,
-      ROLES.ADMINISTRATIVE_MEMBER,
-      ROLES.CREATIVE_HEAD,
-      ROLES.CREATIVE_MEMBER,
-      ROLES.ACCOUNTS_HEAD,
-      ROLES.ACCOUNTS_MEMBER,
-    ],
+    roles: CONTENT_PORTAL_ROLES,
     children: [
       {
         label: "New",
@@ -53,7 +50,7 @@ const artistLinks = [
   },
   {
     label: "Analytics",
-    roles: [ROLES.SUPER_ADMIN, ROLES.OPERATION_HEAD, ROLES.OPERATION_MEMBER],
+    roles: ANALYTICS_PORTAL_ROLES,
     children: [
       { label: "Artist KPI", route: "/ArtistKPI" },
       { label: "Content Analysis", route: "/ContentAnalysis" },
@@ -80,6 +77,11 @@ const artistLinks = [
         route: "/PaymentWithdraw",
       },
     ],
+  },
+  {
+    label: "Event payments",
+    route: "/EventPayments",
+    roles: EVENT_PAYMENTS_SIDEBAR_ROLES,
   },
   {
     label: "MY EPK",

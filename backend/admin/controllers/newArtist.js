@@ -59,6 +59,17 @@ const getAllUserDetailsIfAnyStepUnderReview = async (req, res) => {
   }
 };
 
+const getAllUserDetailsIfAnyOnboardingStepRejected = async (req, res) => {
+  try {
+    const userDetails =
+      await userDetailsModel.getAllUserDetailsWithAnyRejectedOnboardingStep();
+    res.status(200).json({ userDetails: userDetails || [] });
+  } catch (error) {
+    console.error("Error fetching rejected onboarding artists:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const getAllSales = async (req, res) => {
   try {
     const userDetails = await userDetailsModel.getAllSales();
@@ -281,6 +292,7 @@ const getApplicationStatus = async (req, res) => {
 module.exports = {
   getAllDetailsUnderReview,
   getAllUserDetailsIfAnyStepUnderReview,
+  getAllUserDetailsIfAnyOnboardingStepRejected,
   updateStatus,
   getAllSales,
   getUserDetailsStepStatus,

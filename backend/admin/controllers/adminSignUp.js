@@ -46,18 +46,16 @@ const signup = async (req, res) => {
 
 
     // const token = jwt.sign({ email }, process.env.SECRET_KEY, { expiresIn: "1h" });
+    const authVersion = Number(dbUser.auth_version ?? 1);
     const token = jwt.sign(
-  {
-    email: Email,
-    role: dbUser.Role
-    
-    
-  },
-  process.env.SECRET_KEY,
-  { expiresIn: "24h" }
-
-  
-);
+      {
+        email: Email,
+        role: dbUser.Role,
+        av: authVersion,
+      },
+      process.env.SECRET_KEY,
+      { expiresIn: "24h" }
+    );
     if (dbResponse) {
 
       return res.status(201).json({ success: true, message: "Signup success", token: token});

@@ -21,3 +21,26 @@ export const ROLES = {
 
   NOT_ASSIGNED: "not assigned",
 };
+
+/** Artist Portal "Analytics" sidebar + KPI / content analytics / release / audio platform routes */
+export const ANALYTICS_PORTAL_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.OPERATION_HEAD,
+  ROLES.OPERATION_MEMBER,
+];
+
+/** Event payments nav + `/EventPayments` route (Artist Portal). */
+export const EVENT_PAYMENTS_SIDEBAR_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.PROJECT_HEAD,
+  ROLES.PROJECT_MEMBER,
+];
+
+/** Artist Portal Content section (New / Manage / TV Publishing). */
+export const CONTENT_PORTAL_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.CREATIVE_HEAD,
+  ROLES.CREATIVE_MEMBER,
+];

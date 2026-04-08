@@ -49,6 +49,28 @@ const getAllUserDetailsWithAnyStepUnderReview = async () => {
   return rows;
 };
 
+/** Profile (user_details), professional, or documentation step is rejected */
+const getAllUserDetailsWithAnyRejectedOnboardingStep = async () => {
+  const [rows] = await db.execute(
+    `
+    SELECT DISTINCT
+      ud.*,
+      pd.step_status AS professional_step_status,
+      pd.reject_reason AS professional_reject_reason,
+      dd.step_status AS documentation_step_status,
+      dd.reject_reason AS documentation_reject_reason
+    FROM user_details ud
+    LEFT JOIN professional_details pd ON ud.oph_id = pd.oph_id
+    LEFT JOIN documentation_details dd ON ud.oph_id = dd.oph_id
+    WHERE LOWER(TRIM(COALESCE(ud.step_status, ''))) = 'rejected'
+       OR LOWER(TRIM(COALESCE(pd.step_status, ''))) = 'rejected'
+       OR LOWER(TRIM(COALESCE(dd.step_status, ''))) = 'rejected'
+    ORDER BY ud.updated_at DESC, ud.created_at DESC
+    `,
+  );
+  return rows;
+};
+
 const checkIncomeOfSpecialArtistMod = async (ophid) => {
   await db.execute(
     "INSERT IGNORE INTO special_artist_income_status (oph_id,status) VALUES (?,?)",
@@ -114,7 +136,7 @@ const updateProfessionalStatus = async (ophid, status, reason) => {
 const getUserDetailsStepStatus = async (ophid) => {
   const [rows] = await db.execute(
     `
-    SELECT step_status FROM user_details WHERE oph_id = ?
+    SELECT step_status, reject_reason FROM user_details WHERE oph_id = ?
     `,
     [ophid],
   );
@@ -124,7 +146,7 @@ const getUserDetailsStepStatus = async (ophid) => {
 const getProfessionalDetailsStepStatus = async (ophid) => {
   const [rows] = await db.execute(
     `
-    SELECT step_status FROM professional_details WHERE oph_id = ?
+    SELECT step_status, reject_reason FROM professional_details WHERE oph_id = ?
     `,
     [ophid],
   );
@@ -134,7 +156,7 @@ const getProfessionalDetailsStepStatus = async (ophid) => {
 const getDocumentationDetailsStepStatus = async (ophid) => {
   const [rows] = await db.execute(
     `
-    SELECT step_status FROM documentation_details WHERE oph_id = ?
+    SELECT step_status, reject_reason FROM documentation_details WHERE oph_id = ?
     `,
     [ophid],
   );
@@ -146,6 +168,7 @@ module.exports = {
   getProfessionalDetailsByOphId,
   getDocumentationDetailsByOphId,
   getAllUserDetailsWithAnyStepUnderReview,
+  getAllUserDetailsWithAnyRejectedOnboardingStep,
   updateUserDetailsStatus,
   updateProfessionalStatus,
   updateDocumentationStatus,

@@ -63,4 +63,38 @@ const getTransactionsByOphId = async (ophid) => {
   return rows;
 };
 
-module.exports = {getUniqueOphIdsWithRegistration,getUserDetailsByOphIds,getUserDetailsByOphId, getTransactionsByOphId};
+/**
+ * Users whose most recent Registration payment is rejected (same “current signup” rule as the under-review list).
+ */
+const getUserDetailsWithLatestRegistrationRejected = async () => {
+  const [rows] = await db.execute(
+    `SELECT ud.*,
+            p.transaction_id AS signup_transaction_id,
+            p.reject_reason AS signup_payment_reject_reason,
+            p.updated_at AS signup_payment_updated_at,
+            p.created_at AS signup_payment_created_at
+     FROM user_details ud
+     INNER JOIN payments p ON ud.oph_id = p.oph_id
+     INNER JOIN (
+       SELECT oph_id, MAX(created_at) AS max_created
+       FROM payments
+       WHERE from_source = 'Registration'
+         AND oph_id IS NOT NULL
+         AND oph_id != ''
+       GROUP BY oph_id
+     ) latest
+       ON p.oph_id = latest.oph_id
+      AND p.created_at = latest.max_created
+     WHERE p.from_source = 'Registration'
+       AND LOWER(TRIM(COALESCE(p.status, ''))) = 'rejected'`
+  );
+  return rows;
+};
+
+module.exports = {
+  getUniqueOphIdsWithRegistration,
+  getUserDetailsByOphIds,
+  getUserDetailsByOphId,
+  getTransactionsByOphId,
+  getUserDetailsWithLatestRegistrationRejected,
+};

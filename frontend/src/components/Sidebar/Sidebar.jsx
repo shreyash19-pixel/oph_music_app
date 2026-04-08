@@ -102,6 +102,16 @@ const SidebarNav = ({ onClose }) => {
     onClose?.();
   };
 
+  /** DB may use "Independent Artist"; menu CSV uses "Independent artist" — match case-insensitively. */
+  function menuItemMatchesArtistType(menuTypeCsv, userArtistType) {
+    const u = (userArtistType || "").trim().toLowerCase();
+    if (!u) return false;
+    return menuTypeCsv
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .some((t) => t === u);
+  }
+
   const menuItems = [
     {
       icon: <TiHome />,
@@ -203,7 +213,9 @@ const SidebarNav = ({ onClose }) => {
         <ul className="space-y-1 w-full">
           {artistType !== "" &&
             menuItems
-              .filter((item) => item.type.includes(artistType))
+              .filter((item) =>
+                menuItemMatchesArtistType(item.type, artistType),
+              )
               .map((item, index) => (
                 <li key={index}>
                   <button

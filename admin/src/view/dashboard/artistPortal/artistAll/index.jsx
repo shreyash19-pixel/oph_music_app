@@ -3,8 +3,20 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { Lock, Unlock, Download } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
+
+/** Same as /Artist/All — start with fields unlocked so sales & admin staff can edit immediately */
+const ARTIST_ALL_DETAIL_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.SALES_HEAD,
+  ROLES.SALES_MEMBER,
+];
 
 const ArtistAll = () => {
+  const { user } = useAuth();
   const { ophid } = useParams();
   const [personal, setPersonal] = useState({});
   const [professional, setProfessional] = useState({});
@@ -100,17 +112,20 @@ const ArtistAll = () => {
           ifsc_code: documentationDetails.ifsc_code || "",
         };
 
-        // Initialize locks
+        // Initialize locks (locked=true). Roles that use this page start unlocked for usability.
         const newLocks = {};
+        const initiallyLocked = !ARTIST_ALL_DETAIL_ROLES.includes(
+          user?.role || "",
+        );
         [personalData, professionalData, documentData].forEach(
           (sectionData, sectionIdx) => {
             Object.keys(sectionData).forEach((key) => {
               if (key === "photos" && Array.isArray(sectionData[key])) {
                 sectionData[key].forEach((_, idx) => {
-                  newLocks[`${sectionIdx}_${key}_${idx}`] = true;
+                  newLocks[`${sectionIdx}_${key}_${idx}`] = initiallyLocked;
                 });
               } else {
-                newLocks[`${sectionIdx}_${key}`] = true;
+                newLocks[`${sectionIdx}_${key}`] = initiallyLocked;
               }
             });
           },
@@ -127,7 +142,7 @@ const ArtistAll = () => {
     };
 
     fetchData();
-  }, [ophid]);
+  }, [ophid, user?.role]);
 
   const handleChange = (sectionSetter) => (field, value) => {
     sectionSetter((prev) => ({ ...prev, [field]: value }));

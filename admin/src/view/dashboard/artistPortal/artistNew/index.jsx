@@ -2,12 +2,26 @@ import React, { useState, useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
 import { useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const ArtistNew = () => {
+  const { user } = useAuth();
+  const isSalesMember = user?.role === ROLES.SALES_MEMBER;
+  const canApproveReject =
+    user?.role === ROLES.SUPER_ADMIN ||
+    user?.role === ROLES.ADMINISTRATIVE_HEAD ||
+    user?.role === ROLES.ADMINISTRATIVE_MEMBER;
   const { ophid } = useParams();
   const [artist, setArtist] = useState({});
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusesLoaded, setStatusesLoaded] = useState(false);
+  const [dbRejectReasons, setDbRejectReasons] = useState({
+    Personal: "",
+    Professional: "",
+    Documentation: "",
+  });
 
   const [personalReason, setPersonalReason] = useState("");
   const [professionalReason, setProfessionalReason] = useState("");
@@ -187,6 +201,7 @@ const ArtistNew = () => {
 
     const fetchStatuses = async () => {
       if (!ophid) return;
+      setStatusesLoaded(false);
       try {
         const [
           personalRes,
@@ -232,8 +247,15 @@ const ArtistNew = () => {
           Professional: mapStepToUiStatus(professionalStep),
           Documentation: mapStepToUiStatus(documentationStep),
         });
+        setDbRejectReasons({
+          Personal: personalRows[0]?.reject_reason ?? "",
+          Professional: professionalRows[0]?.reject_reason ?? "",
+          Documentation: documentationRows[0]?.reject_reason ?? "",
+        });
       } catch (error) {
         console.error("Error fetching section statuses:", error);
+      } finally {
+        setStatusesLoaded(true);
       }
     };
 
@@ -320,7 +342,7 @@ const ArtistNew = () => {
     }
   };
 
-  if (loading) {
+  if (loading || (isSalesMember && !statusesLoaded)) {
     return (
       <div className="min-h-screen flex items-center justify-center text-xl text-gray-700">
         Loading artist data...
@@ -328,9 +350,25 @@ const ArtistNew = () => {
     );
   }
 
+  const showPersonal = !isSalesMember || statuses.Personal === "Rejected";
+  const showProfessional =
+    !isSalesMember || statuses.Professional === "Rejected";
+  const showDocumentation =
+    !isSalesMember || statuses.Documentation === "Rejected";
+  const salesMemberHasRejected =
+    showPersonal || showProfessional || showDocumentation;
+
   return (
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
+        {isSalesMember && salesMemberHasRejected && (
+          <p className="text-sm text-gray-600 -mt-2 mb-2">
+            Showing only sections that are currently <strong>rejected</strong>{" "}
+            (for follow-up with the artist).
+          </p>
+        )}
+
+        {showPersonal && (
         <div className="bg-gray-50 rounded-xl shadow-md p-6">
           <SectionBlock
             section="Personal"
@@ -349,9 +387,13 @@ const ArtistNew = () => {
             confirmAndHandle={confirmAndHandle}
             status={statuses.Personal}
             setConfirmAction={setConfirmAction}
+            canApproveReject={canApproveReject}
+            adminRejectReason={dbRejectReasons.Personal}
           />
         </div>
+        )}
 
+        {showProfessional && (
         <div className="bg-gray-50 rounded-xl shadow-md p-6">
           <SectionBlock
             section="Professional"
@@ -376,9 +418,13 @@ const ArtistNew = () => {
             confirmAndHandle={confirmAndHandle}
             status={statuses.Professional}
             setConfirmAction={setConfirmAction}
+            canApproveReject={canApproveReject}
+            adminRejectReason={dbRejectReasons.Professional}
           />
         </div>
+        )}
 
+        {showDocumentation && (
         <div className="bg-gray-50 rounded-xl shadow-md p-6">
           <SectionBlock
             section="Documentation"
@@ -399,24 +445,29 @@ const ArtistNew = () => {
             confirmAndHandle={confirmAndHandle}
             status={statuses.Documentation}
             setConfirmAction={setConfirmAction}
+            canApproveReject={canApproveReject}
+            adminRejectReason={dbRejectReasons.Documentation}
           />
         </div>
+        )}
 
-        <div className="pt-8">
-          <button
-            disabled={!allSectionsDone}
-            onClick={submitFinalDecision}
-            className={`w-full py-4 text-lg font-bold rounded-xl shadow ${
-              allSectionsDone
-                ? "bg-[#0d3c44] text-white hover:bg-[#14565f]"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            Submit Final Decision
-          </button>
-        </div>
+        {canApproveReject && (
+          <div className="pt-8">
+            <button
+              disabled={!allSectionsDone}
+              onClick={submitFinalDecision}
+              className={`w-full py-4 text-lg font-bold rounded-xl shadow ${
+                allSectionsDone
+                  ? "bg-[#0d3c44] text-white hover:bg-[#14565f]"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              Submit Final Decision
+            </button>
+          </div>
+        )}
 
-        {confirmSubmit && (
+        {canApproveReject && confirmSubmit && (
           <ConfirmBlock
             section="Final Decision"
             type="Submit"
@@ -424,6 +475,13 @@ const ArtistNew = () => {
             onConfirm={confirmFinalSubmit}
             onCancel={() => setConfirmSubmit(false)}
           />
+        )}
+
+        {!canApproveReject && salesMemberHasRejected && (
+          <p className="pt-6 text-sm text-gray-600 border-t">
+            Accepting or rejecting onboarding sections is limited to super admin
+            and administrative head/member.
+          </p>
         )}
       </div>
     </div>
@@ -440,6 +498,8 @@ const SectionBlock = ({
   confirmAndHandle,
   status,
   setConfirmAction,
+  canApproveReject = true,
+  adminRejectReason = "",
 }) => {
   const isProfessional = section === "Professional";
   const isDocumentation = section === "Documentation";
@@ -459,6 +519,19 @@ const SectionBlock = ({
         {section} Details
       </h2>
       <div className="text-sm italic mb-2">Status: {status || "Pending"}</div>
+
+      {!canApproveReject &&
+        status === "Rejected" &&
+        (adminRejectReason?.trim() ? (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-gray-800">
+            <strong>Rejection reason: </strong>
+            {adminRejectReason}
+          </div>
+        ) : (
+          <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+            No rejection reason was recorded for this section.
+          </div>
+        ))}
 
       <div className="border p-4 rounded-xl mb-4 space-y-2">
         {isPersonal && artist.personal_photo && (
@@ -539,30 +612,34 @@ const SectionBlock = ({
         </div>
       </div>
 
-      <textarea
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder="Enter reason (required if reject)..."
-        className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44]"
-      />
-      <div className="flex gap-4 mt-4">
-        <button
-          onClick={() => handleAction(section, "Reject")}
-          disabled={status !== null}
-          className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors disabled:opacity-50"
-        >
-          Reject
-        </button>
-        <button
-          onClick={() => handleAction(section, "Accept")}
-          disabled={status !== null}
-          className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors disabled:opacity-50"
-        >
-          Accept
-        </button>
-      </div>
+      {canApproveReject && (
+        <>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Enter reason (required if reject)..."
+            className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44]"
+          />
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => handleAction(section, "Reject")}
+              disabled={status !== null}
+              className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              Reject
+            </button>
+            <button
+              onClick={() => handleAction(section, "Accept")}
+              disabled={status !== null}
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              Accept
+            </button>
+          </div>
+        </>
+      )}
 
-      {confirmAction && confirmAction.section === section && (
+      {canApproveReject && confirmAction && confirmAction.section === section && (
         <ConfirmBlock
           section={section}
           type={confirmAction.type}

@@ -3,8 +3,12 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
 import { formatDateTimeIST } from "../../../../utils/date";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const EventPayment = () => {
+  const { user } = useAuth();
+  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
   const { ophid, eventId: eventIdFromUrl, transactionId: transactionIdFromUrl } = useParams();
   const [artist, setArtist] = useState(null);
   const [paymentList, setPaymentList] = useState([]);
@@ -423,70 +427,74 @@ const EventPayment = () => {
           )}
         </div>
 
-        <div className="border-t pt-6 space-y-4">
-          <h3 className="text-xl font-semibold text-gray-700">Payment Actions</h3>
-          {selectedPayment && (
-            <div className="text-sm text-gray-600">
-              Acting on: <span className="font-semibold">{selectedPayment.paymentId}</span>{" "}
-              (Event ID: <span className="font-semibold">{selectedPayment.eventId ?? "N/A"}</span>)
-            </div>
-          )}
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Enter rejection reason (required for rejection)..."
-            disabled={!isActionEnabled}
-            className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => {
-                setConfirmAction("Reject");
-                setConfirmTargetPaymentId(selectedPayment?.paymentId || null);
-              }}
-              disabled={!isActionEnabled || !reason.trim()}
-              className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
-                !isActionEnabled || !reason.trim() ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              Reject Payment
-            </button>
-            <button
-              onClick={() => {
-                setConfirmAction("Approve");
-                setConfirmTargetPaymentId(selectedPayment?.paymentId || null);
-              }}
+        {canApproveReject ? (
+          <div className="border-t pt-6 space-y-4">
+            <h3 className="text-xl font-semibold text-gray-700">Payment Actions</h3>
+            {selectedPayment && (
+              <div className="text-sm text-gray-600">
+                Acting on: <span className="font-semibold">{selectedPayment.paymentId}</span>{" "}
+                (Event ID: <span className="font-semibold">{selectedPayment.eventId ?? "N/A"}</span>)
+              </div>
+            )}
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter rejection reason (required for rejection)..."
               disabled={!isActionEnabled}
-              className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
-                !isActionEnabled ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              Approve Payment
-            </button>
-          </div>
-          
-          {/* Show status message when payment is processed */}
-          {selectedPayment && !canTakeAction(selectedPayment) && (
-            <div className={`mt-4 p-3 rounded-lg text-center font-medium ${
-              selectedPayment.status === 'approved' 
-                ? 'bg-green-100 text-green-800 border border-green-200' 
-                : selectedPayment.status === 'rejected'
-                ? 'bg-red-100 text-red-800 border border-red-200'
-                : 'bg-gray-100 text-gray-800 border border-gray-200'
-            }`}>
-              Payment has been {selectedPayment.status || 'processed'}. No further actions can be taken.
+              className="w-full h-24 text-black p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3c44] disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => {
+                  setConfirmAction("Reject");
+                  setConfirmTargetPaymentId(selectedPayment?.paymentId || null);
+                }}
+                disabled={!isActionEnabled || !reason.trim()}
+                className={`px-6 py-3 bg-red-600 text-white font-semibold rounded-xl shadow hover:bg-red-700 transition-colors ${
+                  !isActionEnabled || !reason.trim() ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                Reject Payment
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmAction("Approve");
+                  setConfirmTargetPaymentId(selectedPayment?.paymentId || null);
+                }}
+                disabled={!isActionEnabled}
+                className={`px-6 py-3 bg-green-600 text-white font-semibold rounded-xl shadow hover:bg-green-700 transition-colors ${
+                  !isActionEnabled ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                Approve Payment
+              </button>
             </div>
-          )}
-          
-          {/* Show message when payment can be acted upon */}
-          {selectedPayment && canTakeAction(selectedPayment) && (
-            <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
-              Payment is {selectedPayment.status || 'pending review'}. You can approve or reject this payment.
-            </div>
-          )}
-        </div>
 
-        {confirmAction && (
+            {selectedPayment && !canTakeAction(selectedPayment) && (
+              <div className={`mt-4 p-3 rounded-lg text-center font-medium ${
+                selectedPayment.status === 'approved'
+                  ? 'bg-green-100 text-green-800 border border-green-200'
+                  : selectedPayment.status === 'rejected'
+                  ? 'bg-red-100 text-red-800 border border-red-200'
+                  : 'bg-gray-100 text-gray-800 border border-gray-200'
+              }`}>
+                Payment has been {selectedPayment.status || 'processed'}. No further actions can be taken.
+              </div>
+            )}
+
+            {selectedPayment && canTakeAction(selectedPayment) && (
+              <div className="mt-4 p-3 rounded-lg text-center font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                Payment is {selectedPayment.status || 'pending review'}. You can approve or reject this payment.
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="border-t pt-6 text-sm text-gray-600">
+            You can review this payment; approving or rejecting is limited to sales head and other authorized roles.
+          </p>
+        )}
+
+        {canApproveReject && confirmAction && (
           <ConfirmBlock
             type={confirmAction}
             reason={reason}

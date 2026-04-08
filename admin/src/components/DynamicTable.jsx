@@ -13,6 +13,8 @@ const DynamicTable = ({
   statusData = [],
   detailsPrefer = null, // NEW prop: "ophid" | "song" | null
   hideIdColumns = ["id"], // NEW prop: array of ID column names to hide
+  /** Pin these columns to the start (case-insensitive key match). Timestamps stay last. */
+  leadColumns = null,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumns, setSortColumns] = useState([]);
@@ -35,19 +37,18 @@ const DynamicTable = ({
     columns = columns.filter((col) => !hideIdColumns.includes(col));
   }
 
-  // Reorder columns to ensure createdat and updatedat appear at the end
-  const reorderColumns = (cols) => {
-    const timestampFields = [
-      "createdat",
-      "created_at",
-      "updatedat",
-      "updated_at",
-      "modified_at",
-      "modifiedat",
-    ];
+  const timestampFields = [
+    "createdat",
+    "created_at",
+    "updatedat",
+    "updated_at",
+    "modified_at",
+    "modifiedat",
+  ];
+
+  const splitTimestampColumns = (cols) => {
     const timestampCols = [];
     const regularCols = [];
-
     cols.forEach((col) => {
       if (timestampFields.includes(col.toLowerCase())) {
         timestampCols.push(col);
@@ -55,11 +56,27 @@ const DynamicTable = ({
         regularCols.push(col);
       }
     });
-
-    return [...regularCols, ...timestampCols];
+    return { regularCols, timestampCols };
   };
 
-  columns = reorderColumns(columns);
+  const applyLeadColumns = (regularCols, leads) => {
+    if (!leads || leads.length === 0) return regularCols;
+    const used = new Set();
+    const front = [];
+    const byLower = new Map(regularCols.map((c) => [c.toLowerCase(), c]));
+    for (const want of leads) {
+      const actual = byLower.get(String(want).toLowerCase());
+      if (actual != null && !used.has(actual)) {
+        front.push(actual);
+        used.add(actual);
+      }
+    }
+    return [...front, ...regularCols.filter((c) => !used.has(c))];
+  };
+
+  const { regularCols, timestampCols } = splitTimestampColumns(columns);
+  const orderedRegular = applyLeadColumns(regularCols, leadColumns);
+  columns = [...orderedRegular, ...timestampCols];
 
   const handleSort = (col) => {
     setCurrentPage(1); // Reset page
