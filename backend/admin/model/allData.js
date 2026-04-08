@@ -83,8 +83,11 @@ const songRegistrationDetails = async () => {
   return rows;
 };
 
+/** TV Publishing rows that are unlocked for editing (`lock` = 1; 0 = page locked). */
 const tvpublishingDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM tvPublishing");
+  const [rows] = await db.execute(
+    "SELECT * FROM tvPublishing WHERE `lock` = 1"
+  );
   return rows;
 };
 
@@ -99,9 +102,48 @@ const ticketsDetails = async () => {
   return rows;
 };
 
+/**
+ * Internal portal signups (`event_participants`) + outside/public registrations (`event_bookings`).
+ * Outside participants (no portal account, or not yet linked) live only in `event_bookings`.
+ */
 const eventParticipantsDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM event_participants");
-  return rows;
+  const [portalRows] = await db.execute(
+    `SELECT id, oph_id, event_id, status, created_at, updated_at
+     FROM event_participants
+     ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
+  );
+  const [outsideRows] = await db.execute(
+    `SELECT * FROM event_bookings
+     ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
+  );
+
+  const portal = (portalRows || []).map((r) => ({
+    source: "portal",
+    record_id: r.id,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    event_id: r.event_id,
+    status: r.status,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    booking_reference: "",
+    participant_name: "",
+    email: "",
+  }));
+
+  const outside = (outsideRows || []).map((r) => ({
+    source: "outside",
+    record_id: r.id != null ? `eb-${r.id}` : "",
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    event_id: r.event_id,
+    status: r.status,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    booking_reference: r.booking_reference ?? "",
+    participant_name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim(),
+    email: r.email ?? "",
+  }));
+
+  return [...portal, ...outside];
 };
 
 
@@ -121,6 +163,20 @@ const SongRegistrationDetails = async () => {
   return rows;
 };
 
+const getAllAudioDetails = async () => {
+  const [rows] = await db.execute(
+    "SELECT * FROM audio_details ORDER BY song_id ASC"
+  );
+  return rows;
+};
+
+const getAllVideoDetails = async () => {
+  const [rows] = await db.execute(
+    "SELECT * FROM video_details ORDER BY song_id ASC"
+  );
+  return rows;
+};
+
 module.exports = {
   getAllApplicationStatus,
   getAllUserDetails,
@@ -135,5 +191,7 @@ module.exports = {
   eventParticipantsDetails,
   contactDetails, 
   epkDetails,
-  SongRegistrationDetails
+  SongRegistrationDetails,
+  getAllAudioDetails,
+  getAllVideoDetails
 };

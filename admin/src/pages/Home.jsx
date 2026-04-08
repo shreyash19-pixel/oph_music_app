@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import SearchableDynamicTable from "../components/SearchableDynamicTable";
 import DashBoardSidebar from "../components/DashBoardSidebar";
 import axiosApi from "../conf/axios";
-import { useAuth } from "../auth/AuthProvider";
-import { ROLES } from "../utils/roles";
 
 const signupExcludeColumns = [
   "createdAt",
@@ -17,43 +15,28 @@ const signupExcludeColumns = [
   "rejected_step",
   "traffic",
   "form_fill_count",
+  "signup_transaction_id",
+  "signup_payment_reject_reason",
+  "signup_payment_updated_at",
+  "signup_payment_created_at",
 ];
 
 const NewSignup = () => {
-  const { user } = useAuth();
   const [tableData, setTableData] = useState([]);
-  const [rejectedData, setRejectedData] = useState([]);
-
-  /** Administrative head: under-review table only (no rejected list). Rejected payments: sales head + super admin. */
-  const showRejectedSignupPayments =
-    user?.role === ROLES.SALES_HEAD || user?.role === ROLES.SUPER_ADMIN;
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await axiosApi.get("/newsignup");
-      setTableData(res.data.userDetails || []);
+      try {
+        const res = await axiosApi.get("/newsignup/unified");
+        setTableData(res.data.userDetails || []);
+      } catch (e) {
+        console.error("Error fetching new signup list:", e);
+        setTableData([]);
+      }
     };
 
     fetchData();
   }, []);
-
-  useEffect(() => {
-    if (!showRejectedSignupPayments) {
-      setRejectedData([]);
-      return;
-    }
-
-    const fetchRejected = async () => {
-      try {
-        const res = await axiosApi.get("/newsignup/rejected-signup-payments");
-        setRejectedData(res.data.userDetails || []);
-      } catch (e) {
-        setRejectedData([]);
-      }
-    };
-
-    fetchRejected();
-  }, [showRejectedSignupPayments]);
 
   return (
     <div>
@@ -66,17 +49,12 @@ const NewSignup = () => {
             excludeColumns={signupExcludeColumns}
             pageSize={8}
             detailsUrl="/newsignup"
+            leadColumns={[
+              "oph_id",
+              "OPH_ID",
+              "signup_payment_status",
+            ]}
           />
-          {showRejectedSignupPayments && (
-            <SearchableDynamicTable
-              title="Rejected signup payments"
-              data={rejectedData}
-              showStatusIndicator={false}
-              excludeColumns={signupExcludeColumns}
-              pageSize={8}
-              detailsUrl="/newsignup"
-            />
-          )}
         </div>
       </DashBoardSidebar>
     </div>

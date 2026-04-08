@@ -10,7 +10,10 @@ import {
   WEBSITE_CONFIG_HUB_ROLES,
   TICKETS_PORTAL_ROLES,
   EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
+  EVENT_CREATION_AND_LIST_ROLES,
   PAYMENTS_PORTAL_ROLES,
+  MY_EPK_CHANGE_AND_SONGS_ROLES,
+  MY_EPK_INCOME_ROLES,
 } from "./utils/roles";
 // import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
@@ -140,17 +143,29 @@ function App() {
           />
           <Route
             path="/special-artist-songs/:ophid/:songId"
-            element={<NewSongsIndividual />}
+            element={
+              <ProtectedRoute allowedRoles={MY_EPK_CHANGE_AND_SONGS_ROLES}>
+                <NewSongsIndividual />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/special-artist-income-status/:ophid"
-            element={<SpIncomeStatIndividual />}
+            element={
+              <ProtectedRoute allowedRoles={MY_EPK_INCOME_ROLES}>
+                <SpIncomeStatIndividual />
+              </ProtectedRoute>
+            }
           />
-          
+
           <Route
             path="/change-details/:ophid/:field"
-            element={<ChangeDetailsIndividual />}
+            element={
+              <ProtectedRoute allowedRoles={MY_EPK_CHANGE_AND_SONGS_ROLES}>
+                <ChangeDetailsIndividual />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/ContentRelease/:ophid/:songId"
@@ -228,7 +243,7 @@ function App() {
           <Route
             path="/AllEvents"
             element={
-              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
+              <ProtectedRoute allowedRoles={EVENT_CREATION_AND_LIST_ROLES}>
                 <Events />
               </ProtectedRoute>
             }
@@ -591,7 +606,7 @@ function App() {
           <Route
             path="/Events"
             element={
-              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
+              <ProtectedRoute allowedRoles={EVENT_CREATION_AND_LIST_ROLES}>
                 <EventAdminForm />
               </ProtectedRoute>
             }
@@ -600,7 +615,7 @@ function App() {
           <Route
             path="/event_management/:event_id"
             element={
-              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
+              <ProtectedRoute allowedRoles={EVENT_CREATION_AND_LIST_ROLES}>
                 <EventManagement />
               </ProtectedRoute>
             }
@@ -823,15 +838,7 @@ function App() {
           <Route
             path="/change-details"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.SALES_MEMBER,
-                  ROLES.SALES_HEAD,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={MY_EPK_CHANGE_AND_SONGS_ROLES}>
                 <ChangeDetails />
               </ProtectedRoute>
             }
@@ -839,15 +846,7 @@ function App() {
           <Route
             path="/special-artist-songs"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.SALES_MEMBER,
-                  ROLES.SALES_HEAD,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={MY_EPK_CHANGE_AND_SONGS_ROLES}>
                 <NewSongs />
               </ProtectedRoute>
             }
@@ -856,15 +855,7 @@ function App() {
           <Route
             path="/special-artist-income-status"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                  ROLES.SALES_MEMBER,
-                  ROLES.SALES_HEAD,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={MY_EPK_INCOME_ROLES}>
                 <SpIncomeStat />
               </ProtectedRoute>
             }

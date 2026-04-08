@@ -10,7 +10,8 @@ const SongPayment = () => {
   const { user } = useAuth();
   const canApproveReject =
     user?.role !== ROLES.SALES_MEMBER &&
-    user?.role !== ROLES.ADMINISTRATIVE_MEMBER;
+    user?.role !== ROLES.ADMINISTRATIVE_MEMBER &&
+    user?.role !== ROLES.ACCOUNTS_MEMBER;
   const { ophid, song_id } = useParams();
   const songid = song_id;
   const [artist, setArtist] = useState(null);
