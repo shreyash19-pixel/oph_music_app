@@ -103,13 +103,11 @@ const ticketsDetails = async () => {
 };
 
 /**
- * Internal portal signups (`event_participants`) + outside/public registrations (`event_bookings`).
- * Outside participants (no portal account, or not yet linked) live only in `event_bookings`.
+ * Internal (`event_participants`) + outside (`event_bookings`) — unified shape for Excel export.
  */
 const eventParticipantsDetails = async () => {
   const [portalRows] = await db.execute(
-    `SELECT id, oph_id, event_id, status, created_at, updated_at
-     FROM event_participants
+    `SELECT * FROM event_participants
      ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
   );
   const [outsideRows] = await db.execute(
@@ -118,32 +116,73 @@ const eventParticipantsDetails = async () => {
   );
 
   const portal = (portalRows || []).map((r) => ({
-    source: "portal",
-    record_id: r.id,
-    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    user_type: "internal",
+    source_table: "event_participants",
+    source_row_id: r.id,
     event_id: r.event_id,
-    status: r.status,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    first_name: r.first_name ?? "",
+    last_name: r.last_name ?? "",
     created_at: r.created_at,
     updated_at: r.updated_at,
-    booking_reference: "",
-    participant_name: "",
-    email: "",
   }));
 
   const outside = (outsideRows || []).map((r) => ({
-    source: "outside",
-    record_id: r.id != null ? `eb-${r.id}` : "",
-    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    user_type: "outside",
+    source_table: "event_bookings",
+    source_row_id: r.id,
     event_id: r.event_id,
-    status: r.status,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    first_name: r.first_name ?? "",
+    last_name: r.last_name ?? "",
     created_at: r.created_at,
     updated_at: r.updated_at,
-    booking_reference: r.booking_reference ?? "",
-    participant_name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim(),
-    email: r.email ?? "",
   }));
 
-  return [...portal, ...outside];
+  const combined = [...portal, ...outside];
+  const ophKeys = [
+    ...new Set(
+      combined
+        .map((r) => String(r.oph_id ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  const emptyNames = { artist_full_name: "", artist_stage_name: "" };
+  if (ophKeys.length === 0) {
+    return combined.map((r) => ({ ...r, ...emptyNames }));
+  }
+
+  const artistByOph = new Map();
+  const chunkSize = 200;
+  for (let i = 0; i < ophKeys.length; i += chunkSize) {
+    const chunk = ophKeys.slice(i, i + chunkSize);
+    const ph = chunk.map(() => "?").join(",");
+    const [artistRows] = await db.execute(
+      `SELECT
+         ud.oph_id AS oph_key,
+         ud.full_name AS artist_full_name,
+         ud.stage_name AS artist_stage_name
+       FROM user_details ud
+       WHERE ud.oph_id IN (${ph})`,
+      chunk,
+    );
+    for (const row of artistRows || []) {
+      const k = String(row.oph_key ?? "").trim();
+      if (k) artistByOph.set(k, row);
+    }
+  }
+
+  return combined.map((r) => {
+    const k = String(r.oph_id ?? "").trim();
+    const a = k ? artistByOph.get(k) : null;
+    if (!a) return { ...r, ...emptyNames };
+    return {
+      ...r,
+      artist_full_name: a.artist_full_name ?? "",
+      artist_stage_name: a.artist_stage_name ?? "",
+    };
+  });
 };
 
 
