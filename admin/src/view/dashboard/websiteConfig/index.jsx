@@ -63,6 +63,15 @@ const WebsiteConfig = () => {
       ],
     },
     {
+       label: "Upload Video",
+       route: "/UploadVideo",
+       roles: [
+       ROLES.SUPER_ADMIN,
+       ROLES.ADMINISTRATIVE_HEAD,
+       ROLES.ADMINISTRATIVE_MEMBER,
+      ],
+    },
+    {
       label: "Collab",
       route: "/Collab",
       roles: [
