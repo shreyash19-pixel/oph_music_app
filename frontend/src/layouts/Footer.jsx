@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FaFacebook, FaLinkedin } from "react-icons/fa";
+import { FaFacebook, FaLinkedin, FaSpotify, FaApple } from "react-icons/fa";
 import { AiFillInstagram } from "react-icons/ai";
 import { BsTwitterX } from "react-icons/bs";
 
@@ -118,10 +118,16 @@ const Footer = ({ userData }) => {
               <FaLinkedin size={22} />
             </a>
             <a
-              href="/twitter"
+              href="/spotify"
               className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
             >
-              <BsTwitterX size={22} />
+              <FaSpotify size={22} />
+            </a>
+            <a
+              href="/apple-music"
+              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
+            >
+              <FaApple size={22} />
             </a>
           </div>
         </div>
