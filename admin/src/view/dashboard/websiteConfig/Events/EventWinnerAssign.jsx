@@ -4,10 +4,13 @@ import axiosApi from '../../../../conf/axios';
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import toast from 'react-hot-toast';
 import { useAuth } from "../../../../auth/AuthProvider";
-import { ROLES } from "../../../../utils/roles";
+import { EVENT_WINNER_ASSIGN_ROLES } from "../../../../utils/roles";
 
 const EventWinnerAssign = () => {
   const { user, loading: authLoading } = useAuth();
+  const canAssignWinner = Boolean(
+    user?.role && EVENT_WINNER_ASSIGN_ROLES.includes(user.role)
+  );
   const { event_id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
@@ -19,15 +22,15 @@ const EventWinnerAssign = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (user?.role === ROLES.PROJECT_MEMBER) {
+    if (user?.role && !canAssignWinner) {
       setLoading(false);
       toast.error("You do not have permission to assign winners");
       navigate("/event-winning", { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, canAssignWinner]);
 
   useEffect(() => {
-    if (authLoading || user?.role === ROLES.PROJECT_MEMBER) return;
+    if (authLoading || !canAssignWinner) return;
 
     const fetchData = async () => {
       try {

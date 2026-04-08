@@ -9,7 +9,8 @@ const SpIncomeStatIndividual = () => {
   const { user } = useAuth();
   const canApproveReject =
     user?.role !== ROLES.SALES_MEMBER &&
-    user?.role !== ROLES.ADMINISTRATIVE_MEMBER;
+    user?.role !== ROLES.ADMINISTRATIVE_MEMBER &&
+    user?.role !== ROLES.ACCOUNTS_MEMBER;
   const { ophid } = useParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);

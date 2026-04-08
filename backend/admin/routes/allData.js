@@ -18,6 +18,7 @@ router.get("/event-participants-excel", allDataCont.downloadEventParticipants);
 router.get("/contact-us-excel", allDataCont.downloadContactUs);
 router.get("/special-artist-details-excel", allDataCont.downloadSpecialArtistDetails);
 router.get("/songs-register-excel", allDataCont.downloadSongsRegister);
-
+router.get("/audio-details-excel", allDataCont.downloadAudioDetailsExcel);
+router.get("/video-details-excel", allDataCont.downloadVideoDetailsExcel);
 
 module.exports = router;

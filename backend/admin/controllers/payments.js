@@ -36,6 +36,32 @@ const updateStatus = async (req, res) => {
       });
     }
 
+    if (req.user?.role === "accounts member") {
+      const rows = await payment_details.getPaymentDetailsByTransactionId(
+        transactionIdValue,
+      );
+      const fromSource = rows?.[0]?.from_source ?? rows?.[0]?.From;
+      const fs = String(fromSource || "").trim().toLowerCase();
+      if (fromSource === "Registration") {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Your role cannot approve or reject signup registration payments.",
+        });
+      }
+      const isSongRelatedPayment =
+        fs === "song registration" ||
+        fs === "song repayment" ||
+        fs.includes("special artist song");
+      if (isSongRelatedPayment) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Your role cannot approve or reject song registration payments.",
+        });
+      }
+    }
+
     // Use AdminPaymentService to handle all admin application logic
     const result = await AdminPaymentService.updatePaymentStatus({
       ophId: ophIdValue,
@@ -202,7 +228,7 @@ const getAllSongPayments = async (req, res) => {
       message:
         payments && payments.length > 0
           ? "Song payments fetched successfully"
-          : "No song payments under review found",
+          : "No song payments found",
       data: payments || [],
     });
   } catch (error) {
@@ -216,16 +242,14 @@ const getAllSongPayments = async (req, res) => {
 
 const getAllEventsPayments = async (req, res) => {
   try {
-    const viewerRole = req.user?.role ?? null;
-    const payments =
-      await payment_details.getPaymentDetailsForAllEvents(viewerRole);
+    const payments = await payment_details.getPaymentDetailsForAllEvents();
 
     return res.status(200).json({
       success: true,
       message:
         payments && payments.length > 0
           ? "Event payments fetched successfully"
-          : "No event payments found for your role",
+          : "No event payments found",
       data: payments || [],
     });
   } catch (error) {
@@ -314,6 +338,14 @@ const updateEventPaymentSp = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "ophId, transactionId, status and eventId are required",
+      });
+    }
+
+    if (req.user?.role === "accounts member") {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Your role cannot approve or reject event registration payments.",
       });
     }
 

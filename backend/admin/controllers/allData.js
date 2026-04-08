@@ -89,7 +89,7 @@ const downloadApplicationStatus = async (req, res) => {
 
 const downloadEventParticipants = async (req, res) => {
   try {
-    const rows = await allDataCont.eventParticipantsDetails(); // your DB fetch function
+    const rows = await allDataCont.eventParticipantsDetails();
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "No event participants found" });
@@ -99,45 +99,45 @@ const downloadEventParticipants = async (req, res) => {
     const worksheet = workbook.addWorksheet("Event Participants");
 
     worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
-      { header: "OPH_ID", key: "OPH_ID", width: 20 },
-      { header: "Event ID", key: "event_id", width: 15 },
-      { header: "Status", key: "status", width: 20 },
-      { header: "Created At", key: "createdAt", width: 25 },
-      { header: "Updated At", key: "updatedAt", width: 25 },
+      { header: "Source", key: "source", width: 12 },
+      { header: "Record ID", key: "record_id", width: 14 },
+      { header: "OPH ID", key: "oph_id", width: 22 },
+      { header: "Event ID", key: "event_id", width: 12 },
+      { header: "Status", key: "status", width: 18 },
+      { header: "Created At", key: "created_at", width: 14 },
+      { header: "Updated At", key: "updated_at", width: 14 },
+      { header: "Booking ref", key: "booking_reference", width: 22 },
+      { header: "Name (outside only)", key: "participant_name", width: 28 },
+      { header: "Email (outside only)", key: "email", width: 32 },
     ];
 
-    // Format date in a readable way
-    const formatDate = (date) => {
-      if (!date) return "";
-      return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "Asia/Kolkata",
-      }).format(new Date(date));
-    };
-
-    // Add data rows and apply conditional styling
     rows.forEach((row) => {
       const newRow = worksheet.addRow({
-        ...row,
-        createdAt: formatDate(row.createdAt),
-        updatedAt: formatDate(row.updatedAt),
+        source: row.source,
+        record_id: row.record_id,
+        oph_id: row.oph_id,
+        event_id: row.event_id,
+        status: row.status,
+        created_at: row.created_at ? formatDateOnlyIST(row.created_at) : "",
+        updated_at: row.updated_at ? formatDateOnlyIST(row.updated_at) : "",
+        booking_reference: row.booking_reference ?? "",
+        participant_name: row.participant_name ?? "",
+        email: row.email ?? "",
       });
 
       const statusCell = newRow.getCell("status");
-      if (row.status === "rejected") {
-        statusCell.font = { color: { argb: "FF0000" }, bold: true }; // red
-      } else if (row.status === "accepted") {
-        statusCell.font = { color: { argb: "228B22" }, bold: true }; // green
-      } else if (row.status === "under review") {
-        statusCell.font = { color: { argb: "FF8C00" }, bold: true }; // orange
+      const s = String(row.status || "").toLowerCase();
+      if (s === "rejected") {
+        statusCell.font = { color: { argb: "FF0000" }, bold: true };
+      } else if (s === "accepted" || s === "approved") {
+        statusCell.font = { color: { argb: "228B22" }, bold: true };
+      } else if (s === "under review" || s === "pending") {
+        statusCell.font = { color: { argb: "FF8C00" }, bold: true };
       }
     });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
 
     // Set headers for download
     res.setHeader(
@@ -306,36 +306,47 @@ const downloadSongsRegister = async (req, res) => {
 
     worksheet.columns = [
       { header: "Song ID", key: "song_id", width: 10 },
-      { header: "OPH_ID", key: "OPH_ID", width: 20 },
+      { header: "Oph ID", key: "oph_id", width: 22 },
       { header: "Project Type", key: "project_type", width: 25 },
       { header: "Song Name", key: "Song_name", width: 40 },
-      { header: "Release Date", key: "release_date", width: 20 },
+      { header: "Release Date", key: "release_date", width: 14 },
       { header: "Lyrics Services", key: "Lyrics_services", width: 20 },
       { header: "Available on Music Platform", key: "availability_on_music_platform", width: 25 },
       { header: "Status", key: "status", width: 20 },
+      { header: "Created At", key: "created_at", width: 14 },
+      { header: "Updated At", key: "updated_at", width: 14 },
     ];
 
-    // Date formatter
-    const formatDate = (date) => {
+    /** Date only (no time), IST — for release / created / updated in the sheet */
+    const formatDateOnly = (date) => {
       if (!date) return "";
       return new Intl.DateTimeFormat("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric",
+        timeZone: "Asia/Kolkata",
       }).format(new Date(date));
     };
 
     // Add rows and apply conditional formatting
     rows.forEach((row) => {
+      const oph =
+        row.oph_id != null && row.oph_id !== ""
+          ? row.oph_id
+          : row.OPH_ID != null && row.OPH_ID !== ""
+            ? row.OPH_ID
+            : "";
       const newRow = worksheet.addRow({
         song_id: row.song_id,
-        OPH_ID: row.OPH_ID,
+        oph_id: oph,
         project_type: row.project_type,
         Song_name: row.Song_name,
-        release_date: formatDate(row.release_date),
+        release_date: formatDateOnly(row.release_date),
         Lyrics_services: row.Lyrics_services ? "Yes" : "No",
         availability_on_music_platform: row.availability_on_music_platform ? "Yes" : "No",
         status: row.status,
+        created_at: formatDateOnly(row.created_at ?? row.createdAt),
+        updated_at: formatDateOnly(row.updated_at ?? row.updatedAt),
       });
 
       // Apply color coding based on status
@@ -378,6 +389,199 @@ const downloadSongsRegister = async (req, res) => {
   }
 };
 
+const formatDateOnlyIST = (date) => {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(date));
+};
+
+const isDateColumnKey = (key) => {
+  const k = String(key).toLowerCase();
+  return k === "created_at" || k === "updated_at" || k.endsWith("_at");
+};
+
+/** Columns excluded from Audio Details export (matches app language/genre UI). */
+const OMIT_AUDIO_DETAIL_KEYS = new Set([
+  "lyrics",
+  "audio_url",
+  "reject_reason",
+]);
+
+const AUDIO_LANGUAGE_ID_TO_LABEL = {
+  1: "English",
+  2: "Hindi",
+  3: "Marathi",
+};
+
+function audioLanguageToDisplay(val) {
+  if (val == null || val === "") return "";
+  const n = Number(String(val).trim());
+  if (Number.isFinite(n) && AUDIO_LANGUAGE_ID_TO_LABEL[n]) {
+    return AUDIO_LANGUAGE_ID_TO_LABEL[n];
+  }
+  const s = String(val).trim();
+  const lower = s.toLowerCase();
+  if (["english", "hindi", "marathi"].includes(lower)) {
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }
+  return s;
+}
+
+function columnHeaderLabel(key) {
+  const k = String(key);
+  if (k.toLowerCase() === "language") return "Language";
+  return k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function addAudioDetailsSheet(workbook, rows) {
+  const first = rows[0];
+  const rawKeys = Object.keys(first).filter(
+    (k) => !OMIT_AUDIO_DETAIL_KEYS.has(String(k).toLowerCase())
+  );
+  const preferredOrder = [
+    "song_id",
+    "OPH_ID",
+    "oph_id",
+    "Song_name",
+    "language",
+    "genre",
+    "sub_genre",
+    "mood",
+    "primary_artist",
+    "status",
+    "created_at",
+    "updated_at",
+  ];
+  const orderedKeys = [
+    ...preferredOrder.filter((k) => rawKeys.includes(k)),
+    ...rawKeys.filter((k) => !preferredOrder.includes(k)),
+  ];
+
+  const worksheet = workbook.addWorksheet("Audio Details");
+  worksheet.columns = orderedKeys.map((k) => ({
+    header: columnHeaderLabel(k),
+    key: k,
+    width: Math.min(48, Math.max(14, String(k).length + 6)),
+  }));
+
+  rows.forEach((row) => {
+    const obj = {};
+    orderedKeys.forEach((k) => {
+      let v = row[k];
+      if (String(k).toLowerCase() === "language") {
+        obj[k] = audioLanguageToDisplay(v);
+      } else if (v != null && v !== "" && isDateColumnKey(k)) {
+        try {
+          obj[k] = formatDateOnlyIST(v);
+        } catch {
+          obj[k] = v;
+        }
+      } else {
+        obj[k] = v;
+      }
+    });
+    worksheet.addRow(obj);
+  });
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).alignment = { horizontal: "center" };
+}
+
+/** Columns omitted from Video Details Excel export. */
+const VIDEO_DETAILS_SHEET_OMIT_KEYS = [
+  "image_url",
+  "video_url",
+  "reject_reason",
+];
+
+function addGenericSheetFromRows(workbook, sheetName, rows, omitKeyList = []) {
+  const omit = new Set(omitKeyList.map((k) => String(k).toLowerCase()));
+  const keys = Object.keys(rows[0]).filter(
+    (k) => !omit.has(String(k).toLowerCase())
+  );
+  const worksheet = workbook.addWorksheet(sheetName);
+  worksheet.columns = keys.map((k) => ({
+    header: k
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
+    key: k,
+    width: Math.min(48, Math.max(14, k.length + 6)),
+  }));
+  rows.forEach((row) => {
+    const obj = {};
+    keys.forEach((k) => {
+      const v = row[k];
+      if (v != null && v !== "" && isDateColumnKey(k)) {
+        try {
+          obj[k] = formatDateOnlyIST(v);
+        } catch {
+          obj[k] = v;
+        }
+      } else {
+        obj[k] = v;
+      }
+    });
+    worksheet.addRow(obj);
+  });
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).alignment = { horizontal: "center" };
+}
+
+const downloadAudioDetailsExcel = async (req, res) => {
+  try {
+    const rows = await allDataCont.getAllAudioDetails();
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No audio details found" });
+    }
+    const workbook = new ExcelJS.Workbook();
+    addAudioDetailsSheet(workbook, rows);
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=audio_details.xlsx"
+    );
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Audio Details Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
+
+const downloadVideoDetailsExcel = async (req, res) => {
+  try {
+    const rows = await allDataCont.getAllVideoDetails();
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No video details found" });
+    }
+    const workbook = new ExcelJS.Workbook();
+    addGenericSheetFromRows(
+      workbook,
+      "Video Details",
+      rows,
+      VIDEO_DETAILS_SHEET_OMIT_KEYS
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=video_details.xlsx"
+    );
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Video Details Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
 
 const downloadUserDetails = async (req, res) => {
   try {
@@ -395,26 +599,15 @@ const downloadUserDetails = async (req, res) => {
       { header: "Artist Type", key: "artist_type", width: 20 },
       { header: "Personal Photo", key: "personal_photo", width: 30 },
       { header: "Location", key: "location", width: 20 },
-      { header: "Created At", key: "createdAt", width: 25 },
-      { header: "Updated At", key: "updatedAt", width: 25 },
+      { header: "Created At", key: "createdAt", width: 14 },
+      { header: "Updated At", key: "updatedAt", width: 14 },
     ];
 
-    // Date formatter
-    const formatDate = (date) => {
-      if (!date) return "";
-      return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "Asia/Kolkata",
-      }).format(new Date(date));
-    };
-
     rows.forEach((row) => {
-      // user_details uses oph_id, contact_number, created_at, updated_at (snake_case)
+      // user_details: oph_id, created_at, updated_at (snake_case from MySQL)
+      const createdRaw = row.created_at ?? row.createdAt;
+      const updatedRaw =
+        row.updated_at ?? row.updatedAt ?? row.Updated_at ?? row.UpdatedAt;
       worksheet.addRow({
         OPH_ID: row.OPH_ID ?? row.oph_id ?? row.ophid ?? "",
         full_name: row.full_name ?? row.Full_name ?? "",
@@ -425,8 +618,8 @@ const downloadUserDetails = async (req, res) => {
         artist_type: row.artist_type ?? row.Artist_type ?? "",
         personal_photo: row.personal_photo ?? "",
         location: row.location ?? row.Location ?? "",
-        createdAt: formatDate(row.createdAt ?? row.created_at),
-        updatedAt: formatDate(row.updatedAt ?? row.updated_at),
+        createdAt: createdRaw ? formatDateOnlyIST(createdRaw) : "",
+        updatedAt: updatedRaw ? formatDateOnlyIST(updatedRaw) : "",
       });
     });
 
@@ -469,7 +662,8 @@ const downloadProfessionalDetails = async (req, res) => {
         { header: "Experience (Months)", key: "ExperienceMonths", width: 20 },
         { header: "Songs Planning Count", key: "SongsPlanningCount", width: 20 },
         { header: "Songs Planning Type", key: "SongsPlanningType", width: 20 },
-        { header: "Created At", key: "CreatedAt", width: 20 },
+        { header: "Created At", key: "CreatedAt", width: 14 },
+        { header: "Updated At", key: "UpdatedAt", width: 14 },
       ];
   
       rows.forEach((row) => {
@@ -498,16 +692,11 @@ const downloadProfessionalDetails = async (req, res) => {
             row.songs_planning_type ?? row.SongsPlanningType ?? "",
           CreatedAt: (() => {
             const raw = row.created_at ?? row.CreatedAt;
-            return raw
-              ? new Date(raw).toLocaleString("en-IN", {
-                  timeZone: "Asia/Kolkata",
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "";
+            return raw ? formatDateOnlyIST(raw) : "";
+          })(),
+          UpdatedAt: (() => {
+            const raw = row.updated_at ?? row.UpdatedAt ?? row.Updated_at;
+            return raw ? formatDateOnlyIST(raw) : "";
           })(),
         });
       });
@@ -547,7 +736,8 @@ const getDocumentationDetails = async (req, res) => {
       { header: "Account Number", key: "AccountNumber", width: 20 },
       { header: "IFSC Code", key: "IFSCCode", width: 15 },
       { header: "Agreement", key: "AgreementAccepted", width: 18 },
-      { header: "Created At", key: "CreatedAt", width: 25 },
+      { header: "Created At", key: "CreatedAt", width: 14 },
+      { header: "Updated At", key: "UpdatedAt", width: 14 },
     ];
 
     const isAgreementTicked = (raw) => {
@@ -581,20 +771,8 @@ const getDocumentationDetails = async (req, res) => {
         ? "TICKED"
         : "NOT TICKED";
       const createdRaw = row.created_at ?? row.CreatedAt;
-      let createdStr = "";
-      if (createdRaw) {
-        const d = new Date(createdRaw);
-        if (!Number.isNaN(d.getTime())) {
-          createdStr = d.toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Asia/Kolkata",
-          });
-        }
-      }
+      const updatedRaw =
+        row.updated_at ?? row.UpdatedAt ?? row.Updated_at ?? row.updatedAt;
 
       worksheet.addRow({
         OPH_ID: oph,
@@ -603,7 +781,8 @@ const getDocumentationDetails = async (req, res) => {
         AccountNumber: acct,
         IFSCCode: ifsc,
         AgreementAccepted: agreedStr,
-        CreatedAt: createdStr,
+        CreatedAt: createdRaw ? formatDateOnlyIST(createdRaw) : "",
+        UpdatedAt: updatedRaw ? formatDateOnlyIST(updatedRaw) : "",
       });
     });
 
@@ -887,52 +1066,46 @@ const getTvPublishing = async (req, res) => {
   try {
     const rows = await allDataCont.tvpublishingDetails();
 
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        message: "No unlocked TV publishing rows found",
+      });
+    }
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("TV Publishing");
 
-    // Define columns (audio_url & video_url removed)
+    // Unlocked entries only (`lock` = 1). Oph ID from OPH_ID / oph_id.
     worksheet.columns = [
-      { header: "OPH ID", key: "oph_id", width: 20 },
+      { header: "Oph ID", key: "oph_id", width: 22 },
       { header: "Song ID", key: "song_id", width: 10 },
       { header: "Song Name", key: "song_name", width: 30 },
-      { header: "Lock", key: "lock", width: 15 },
       { header: "Status", key: "status", width: 20 },
       { header: "Reason", key: "reason", width: 40 },
-      { header: "Created At", key: "created_at", width: 20 },
-      { header: "Updated At", key: "updated_at", width: 20 },
+      { header: "Created At", key: "created_at", width: 14 },
+      { header: "Updated At", key: "updated_at", width: 14 },
     ];
 
-    // Add rows
     rows.forEach((row) => {
+      const oph =
+        row.OPH_ID != null && row.OPH_ID !== ""
+          ? row.OPH_ID
+          : row.oph_id != null && row.oph_id !== ""
+            ? row.oph_id
+            : "";
       worksheet.addRow({
-        oph_id: row.oph_id,
+        oph_id: oph,
         song_id: row.song_id,
-        song_name: row.song_name,
-        lock: row.lock === 1 ? "Locked" : "Unlocked",
+        song_name: row.song_name ?? "",
         status: row.status,
         reason: row.reason,
-        created_at: row.created_at
-          ? new Date(row.created_at).toLocaleString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata",
-            })
-          : null,
-        updated_at: row.updated_at
-          ? new Date(row.updated_at).toLocaleString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata",
-            })
-          : null,
+        created_at: row.created_at ? formatDateOnlyIST(row.created_at) : "",
+        updated_at: row.updated_at ? formatDateOnlyIST(row.updated_at) : "",
       });
     });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
 
     // Set headers for Excel download
     res.setHeader(
@@ -952,7 +1125,6 @@ const getTvPublishing = async (req, res) => {
   }
 };
 
-
 const getWithdrawals = async (req, res) => {
   try {
     const rows = await allDataCont.withdrawalsDetails();
@@ -960,34 +1132,34 @@ const getWithdrawals = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Withdrawals");
 
-    // Define columns (reason & modified_at removed, created_at at the end)
     worksheet.columns = [
       { header: "Withdrawal ID", key: "withdrawal_id", width: 15 },
-      { header: "OPH ID", key: "ophID", width: 20 },
-      { header: "Withdraw Amount", key: "withdraw_amount", width: 20 },
-      { header: "Status", key: "status", width: 20 },
-      { header: "Created At", key: "created_at", width: 25 },
+      { header: "OPH ID", key: "oph_id", width: 22 },
+      { header: "Withdraw Amount", key: "withdraw_amount", width: 18 },
+      { header: "Status", key: "status", width: 18 },
+      { header: "Created At", key: "created_at", width: 14 },
     ];
 
-    // Add data
     rows.forEach((row) => {
+      const oph =
+        row.OPH_ID != null && row.OPH_ID !== ""
+          ? row.OPH_ID
+          : row.oph_id != null && row.oph_id !== ""
+            ? row.oph_id
+            : row.ophID != null && row.ophID !== ""
+              ? row.ophID
+              : "";
       worksheet.addRow({
         withdrawal_id: row.withdrawal_id,
-        ophID: row.ophID,
+        oph_id: oph,
         withdraw_amount: row.withdraw_amount,
         status: row.status,
-        created_at: row.created_at
-          ? new Date(row.created_at).toLocaleString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata",
-            })
-          : null,
+        created_at: row.created_at ? formatDateOnlyIST(row.created_at) : "",
       });
     });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
 
     // Download headers
     res.setHeader(
@@ -1014,10 +1186,10 @@ const getTickets = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Tickets");
 
-    // Define columns (imageURL removed, created_at at end)
+    // imageURL omitted. DB column is `createdAt` (see tickets table).
     worksheet.columns = [
-      { header: "Ticket Number", key: "ticketNumber", width: 15 },
-      { header: "OPH ID", key: "ophID", width: 20 },
+      { header: "Ticket Number", key: "ticketNumber", width: 16 },
+      { header: "OPH ID", key: "oph_id", width: 22 },
       { header: "Name", key: "name", width: 25 },
       { header: "Email", key: "email", width: 30 },
       { header: "Subject", key: "subject", width: 30 },
@@ -1025,14 +1197,22 @@ const getTickets = async (req, res) => {
       { header: "Category", key: "category", width: 20 },
       { header: "Status", key: "status", width: 15 },
       { header: "Notes", key: "notes", width: 30 },
-      { header: "Created At", key: "created_at", width: 25 },
+      { header: "Created At", key: "created_at", width: 14 },
     ];
 
-    // Add data
     rows.forEach((row) => {
+      const oph =
+        row.ophID != null && row.ophID !== ""
+          ? row.ophID
+          : row.OPH_ID != null && row.OPH_ID !== ""
+            ? row.OPH_ID
+            : row.oph_id != null && row.oph_id !== ""
+              ? row.oph_id
+              : "";
+      const createdRaw = row.createdAt ?? row.created_at;
       worksheet.addRow({
         ticketNumber: row.ticketNumber,
-        ophID: row.ophID,
+        oph_id: oph,
         name: row.name,
         email: row.email,
         subject: row.subject,
@@ -1040,18 +1220,12 @@ const getTickets = async (req, res) => {
         category: row.category,
         status: row.status,
         notes: row.notes,
-        created_at: row.created_at
-          ? new Date(row.created_at).toLocaleString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata",
-            })
-          : null,
+        created_at: createdRaw ? formatDateOnlyIST(createdRaw) : "",
       });
     });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
 
     // Headers for Excel download
     res.setHeader(
@@ -1085,5 +1259,7 @@ module.exports = {
   downloadEventParticipants,
   downloadContactUs,
   downloadSpecialArtistDetails,
-  downloadSongsRegister
+  downloadSongsRegister,
+  downloadAudioDetailsExcel,
+  downloadVideoDetailsExcel
 };
