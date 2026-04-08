@@ -99,41 +99,33 @@ const downloadEventParticipants = async (req, res) => {
     const worksheet = workbook.addWorksheet("Event Participants");
 
     worksheet.columns = [
-      { header: "Source", key: "source", width: 12 },
-      { header: "Record ID", key: "record_id", width: 14 },
-      { header: "OPH ID", key: "oph_id", width: 22 },
-      { header: "Event ID", key: "event_id", width: 12 },
-      { header: "Status", key: "status", width: 18 },
+      { header: "User type", key: "user_type", width: 12 },
+      { header: "Source table", key: "source_table", width: 18 },
+      { header: "Source row ID", key: "source_row_id", width: 14 },
+      { header: "Event ID", key: "event_id", width: 10 },
+      { header: "OPH ID", key: "oph_id", width: 20 },
+      { header: "First name", key: "first_name", width: 16 },
+      { header: "Last name", key: "last_name", width: 16 },
       { header: "Created At", key: "created_at", width: 14 },
       { header: "Updated At", key: "updated_at", width: 14 },
-      { header: "Booking ref", key: "booking_reference", width: 22 },
-      { header: "Name (outside only)", key: "participant_name", width: 28 },
-      { header: "Email (outside only)", key: "email", width: 32 },
+      { header: "Artist full name (account)", key: "artist_full_name", width: 22 },
+      { header: "Artist stage name", key: "artist_stage_name", width: 18 },
     ];
 
     rows.forEach((row) => {
-      const newRow = worksheet.addRow({
-        source: row.source,
-        record_id: row.record_id,
-        oph_id: row.oph_id,
+      worksheet.addRow({
+        user_type: row.user_type,
+        source_table: row.source_table,
+        source_row_id: row.source_row_id,
         event_id: row.event_id,
-        status: row.status,
+        oph_id: row.oph_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
         created_at: row.created_at ? formatDateOnlyIST(row.created_at) : "",
         updated_at: row.updated_at ? formatDateOnlyIST(row.updated_at) : "",
-        booking_reference: row.booking_reference ?? "",
-        participant_name: row.participant_name ?? "",
-        email: row.email ?? "",
+        artist_full_name: row.artist_full_name ?? "",
+        artist_stage_name: row.artist_stage_name ?? "",
       });
-
-      const statusCell = newRow.getCell("status");
-      const s = String(row.status || "").toLowerCase();
-      if (s === "rejected") {
-        statusCell.font = { color: { argb: "FF0000" }, bold: true };
-      } else if (s === "accepted" || s === "approved") {
-        statusCell.font = { color: { argb: "228B22" }, bold: true };
-      } else if (s === "under review" || s === "pending") {
-        statusCell.font = { color: { argb: "FF8C00" }, bold: true };
-      }
     });
 
     worksheet.getRow(1).font = { bold: true };
@@ -169,7 +161,7 @@ const downloadContactUs = async (req, res) => {
     const worksheet = workbook.addWorksheet("Contact Us");
 
     worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
+      { header: "SR. NO.", key: "sr_no", width: 10 },
       { header: "Name", key: "name", width: 25 },
       { header: "Email", key: "email", width: 30 },
       { header: "Phone", key: "phone", width: 15 },
@@ -192,11 +184,11 @@ const downloadContactUs = async (req, res) => {
       }).format(new Date(date));
     };
 
-    // Add rows
-    rows.forEach((row) => {
+    rows.forEach((row, index) => {
       worksheet.addRow({
         ...row,
         created_at: formatDate(row.created_at),
+        sr_no: index + 1,
       });
     });
 
@@ -234,12 +226,12 @@ const downloadSpecialArtistDetails = async (req, res) => {
     const worksheet = workbook.addWorksheet("Special Artist Details");
 
     worksheet.columns = [
+      { header: "Date", key: "date", width: 20 },
       { header: "OPH_ID", key: "ophid", width: 20 },
       { header: "Field", key: "field", width: 40 },
+      { header: "Content", key: "content", width: 50 },
       { header: "Status", key: "status", width: 20 },
       { header: "Reason", key: "reason", width: 40 },
-      { header: "Content", key: "content", width: 50 },
-      { header: "Date", key: "date", width: 20 },
     ];
 
     // Date formatter
