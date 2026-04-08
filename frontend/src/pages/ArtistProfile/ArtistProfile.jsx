@@ -13,31 +13,12 @@ import Insta from "../../../public/assets/images/instagram.png";
 import Spotify from "../../../public/assets/images/spotify.png";
 import AppleMusic from "../../../public/assets/images/apple.png";
 import { resolveProfessionLabel } from "../../utils/professionDisplay";
+import {
+  normalizeExternalHref,
+  socialHref,
+} from "../../utils/socialLinks";
 
 Modal.setAppElement("#root");
-
-/** Non-empty URL string for social icons (API may omit keys or send ""). */
-function socialHref(artist, ...keys) {
-  for (const k of keys) {
-    const v = artist?.[k];
-    if (typeof v === "string" && v.trim()) return v.trim();
-  }
-  return null;
-}
-
-/**
- * API often stores host-only URLs without scheme; relative hrefs would open on the app origin.
- * Force absolute external URLs (https) for social links.
- */
-function normalizeExternalHref(raw) {
-  const s = String(raw ?? "").trim();
-  if (!s) return null;
-  const lower = s.toLowerCase();
-  if (lower.startsWith("mailto:") || lower.startsWith("tel:")) return s;
-  if (/^https?:\/\//i.test(s)) return s;
-  if (s.startsWith("//")) return `https:${s}`;
-  return `https://${s.replace(/^\/+/, "")}`;
-}
 
 function formatTrackLengthSeconds(seconds) {
   if (!Number.isFinite(seconds) || seconds <= 0) return "—";

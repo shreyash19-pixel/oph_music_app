@@ -3,9 +3,9 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import axiosApi from "../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Face from "../../../public/assets/images/facebook.png";
-import Twitter from "../../../public/assets/images/twitter.png";
-import Linkedin from "../../../public/assets/images/linkedin.png";
 import Insta from "../../../public/assets/images/instagram.png";
+import Spotify from "../../../public/assets/images/spotify.png";
+import AppleMusic from "../../../public/assets/images/apple.png";
 import Story from "../../../public/assets/images/story.png";
 import { useArtist } from "../../pages/auth/API/ArtistContext";
 import { useSelector } from "react-redux";
@@ -14,6 +14,10 @@ import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPla
 import { resolveProfessionLabel } from "../../utils/professionDisplay";
 import { navigateToArtistDetail } from "../../utils/artistHash";
 import { resolveSongAudioUrl, songKey } from "../../utils/songAudioUrl";
+import {
+  normalizeExternalHref,
+  socialHref,
+} from "../../utils/socialLinks";
 
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
@@ -435,47 +439,73 @@ const ArtistDetail = () => {
                 </p>
                 <p className="text-gray-400 mb-6">{artist.bio}</p>
 
-                <div className="flex justify-center sm:justify-normal gap-4">
-                  <a
-                    href={artist.facebook_url}
-                    className="text-white hover:text-white"
-                  >
-                    <img
-                      src={Face}
-                      alt="Social"
-                      className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                    />
-                  </a>
-                  <a
-                    href={artist.instagram_url}
-                    className="text-white w-10 h-10 object-cover hover:text-white"
-                  >
-                    <img
-                      src={Insta}
-                      alt="Social"
-                      className="opacity-70 hover:opacity-100"
-                    />
-                  </a>
-                  <a
-                    href={artist.linkedin_url || ""}
-                    className="text-white w-10 h-10 object-cover hover:text-white"
-                  >
-                    <img
-                      src={Linkedin}
-                      alt="Social"
-                      className="opacity-70 hover:opacity-100"
-                    />
-                  </a>
-                  <a
-                    href={artist.twitter_url || ""}
-                    className="text-white hover:text-white"
-                  >
-                    <img
-                      src={Twitter}
-                      alt="Social"
-                      className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                    />
-                  </a>
+                <div className="flex flex-wrap justify-center sm:justify-normal gap-4 items-center">
+                  {(() => {
+                    const fb = socialHref(
+                      artist,
+                      "facebook_url",
+                      "facebook_link",
+                      "FacebookLink",
+                    );
+                    const ig = socialHref(
+                      artist,
+                      "instagram_url",
+                      "instagram_link",
+                      "InstagramLink",
+                    );
+                    const sp = socialHref(
+                      artist,
+                      "spotify_url",
+                      "spotify_link",
+                      "SpotifyLink",
+                    );
+                    const am = socialHref(
+                      artist,
+                      "apple_music_url",
+                      "apple_music_link",
+                      "AppleMusicLink",
+                      "apple_url",
+                    );
+                    const items = [
+                      { href: fb, src: Face, alt: "Facebook" },
+                      { href: ig, src: Insta, alt: "Instagram" },
+                      { href: sp, src: Spotify, alt: "Spotify" },
+                      { href: am, src: AppleMusic, alt: "Apple Music" },
+                    ];
+                    return items.map(({ href, src, alt }) => {
+                      const safeHref = href ? normalizeExternalHref(href) : null;
+                      const imgClass = safeHref
+                        ? "opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                        : "opacity-35 w-10 h-10 object-cover grayscale cursor-not-allowed";
+                      const img = (
+                        <img src={src} alt="" className={imgClass} aria-hidden />
+                      );
+                      if (safeHref) {
+                        return (
+                          <a
+                            key={alt}
+                            href={safeHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={alt}
+                            className="text-white hover:text-white"
+                          >
+                            {img}
+                          </a>
+                        );
+                      }
+                      return (
+                        <span
+                          key={alt}
+                          className="inline-flex select-none text-white"
+                          aria-label={`${alt}: not available`}
+                          title="Not available"
+                        >
+                          {img}
+                        </span>
+                      );
+                    });
+                  })()}
 
                   <div>
                     {artist?.video_bio ? (
@@ -519,13 +549,18 @@ const ArtistDetail = () => {
                         )}
                       </>
                     ) : (
-                      <button className=" opacity-50 ">
+                      <span
+                        className="inline-flex opacity-50 cursor-not-allowed"
+                        title="Not available"
+                        aria-label="Artist story: not available"
+                      >
                         <img
                           src={Story}
-                          alt="Social"
-                          className="opacity-70 w-10 h-10 object-cover hover:opacity-50"
+                          alt=""
+                          className="opacity-70 w-10 h-10 object-cover grayscale"
+                          aria-hidden
                         />
-                      </button>
+                      </span>
                     )}
                   </div>
                 </div>
