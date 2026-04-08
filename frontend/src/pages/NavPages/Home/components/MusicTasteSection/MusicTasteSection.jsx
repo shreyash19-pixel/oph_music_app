@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const MusicTasteSection = () => {
+  const navigate = useNavigate();
   return (
     <div className="bg-black pt-16 xl:px-16 lg:px-10 px-6 mb-16">
       <div className="container mx-auto">
@@ -27,14 +29,15 @@ const MusicTasteSection = () => {
                   WE ARE JUST TASTE ENHANCER
                 </span>
               </h2>
-
               <p className="text-gray-300 mb-8 max-w-md">
-                Lorem ipsum has been the industry&apos;s standard dummy text ever
-                since the 1500s, when an unknown printer took. Standard dummy
-                text ever since the 1500s when an unknown printer took.
+                Lorem ipsum has been the industry&apos;s standard dummy text
+                ever since the 1500s, when an unknown printer took. Standard
+                dummy text ever since the 1500s when an unknown printer took.
               </p>
-
-              <button onClick={() =>{window.location.href=import.meta.env.VITE_PORTAL_URL+'/auth/signup'}} className="bg-cyan-400 z-50 hover:cursor-pointer text-black font-semibold py-3 px-8 rounded-full hover:font-bold transition delay-300">
+              <button
+                onClick={() => navigate("/auth/signup")}
+                className="bg-cyan-400 z-50 hover:cursor-pointer text-black font-semibold py-3 px-8 rounded-full hover:font-bold transition delay-300"
+              >
                 Book Your Spot - Sign Up Now
               </button>
             </div>

@@ -109,7 +109,8 @@ const getArtistDetail = async (ophid) => {
     ad.primary_artist AS primary_artist,
     ad.audio_url AS audio_url,
     sas.overall_status AS overall_status,
-    SUM(ssm.youtube_views) AS total_song_views
+    SUM(ssm.youtube_views) AS total_song_views,
+    GROUP_CONCAT(DISTINCT sa.artist_name SEPARATOR ', ') AS secondary_artist
   FROM user_details ud
   LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
   LEFT JOIN KPI_score kpi ON ud.oph_id = kpi.oph_id
@@ -117,6 +118,7 @@ const getArtistDetail = async (ophid) => {
   LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
   LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
   LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
+  LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
   WHERE ud.oph_id = ?
   GROUP BY
     ud.oph_id,
@@ -142,7 +144,6 @@ const getArtistDetail = async (ophid) => {
 SELECT *
 FROM CTEArtistDetail
 WHERE overall_status = 'approved';
-
   `,
     [ophid],
   );
@@ -162,6 +163,11 @@ WHERE overall_status = 'approved';
 
   rows.forEach((row) => {
     const ophid = row.oph_id;
+
+    // Parse secondary artists into array
+    const secondaryArtists = row.secondary_artist
+      ? row.secondary_artist.split(", ").filter((a) => a.trim())
+      : [];
 
     if (!songMap[ophid]) {
       songMap[ophid] = {
@@ -186,6 +192,8 @@ WHERE overall_status = 'approved';
             song_name: row.song_name,
             primaryArtist: row.primary_artist,
             primary_artist: row.primary_artist,
+            secondary_artist: secondaryArtists,
+            featuring_artists: secondaryArtists,
             total_song_views: row.total_song_views,
             audio_url: row.audio_url,
             audio_file_url: row.audio_url,
@@ -198,6 +206,8 @@ WHERE overall_status = 'approved';
         song_name: row.song_name,
         primaryArtist: row.primary_artist,
         primary_artist: row.primary_artist,
+        secondary_artist: secondaryArtists,
+        featuring_artists: secondaryArtists,
         total_song_views: row.total_song_views,
         audio_url: row.audio_url,
         audio_file_url: row.audio_url,
@@ -254,6 +264,8 @@ WHERE overall_status = 'approved';
     songs: [],
   };
 };
+
+
 
 const getUpcomingSong = async (ophid) => {
   try {

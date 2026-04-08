@@ -1,6 +1,6 @@
 import React from "react";
 import { Link,useNavigate } from "react-router-dom";
-import { FaFacebook } from "react-icons/fa6";
+import { FaFacebook, FaSpotify, FaApple } from "react-icons/fa6";
 import { AiFillInstagram } from "react-icons/ai";
 import { FaLinkedin } from "react-icons/fa";
 import { BsTwitterX } from "react-icons/bs";
@@ -70,8 +70,11 @@ function Footer() {
             <a href="/linkedin" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
               <FaLinkedin size={24} />
             </a>
-            <a href="/twitter" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
-              <BsTwitterX size={24} />
+            <a href="/spotify" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <FaSpotify size={24} />
+            </a>
+            <a href="/apple-music" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <FaApple size={24} />
             </a>
           </div>
         </div>
