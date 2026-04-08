@@ -25,6 +25,12 @@ const Artist_All = () => {
         excludeColumns = {"createdAt,updatedAt,user_pass,step_status,reject_reason,personal_photo,location,current_step,rejected_step,artist_story,artist_story_video"}
         pageSize={10}
         detailsUrl="/ArtistAll"
+        leadColumns={[
+          "oph_id",
+          "OPH_ID",
+          "registration_payment_status",
+          "registration_payment_reject_reason",
+        ]}
       />
       </ArtistSidebar>
       

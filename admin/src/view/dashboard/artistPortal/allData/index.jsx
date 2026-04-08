@@ -142,6 +142,22 @@ const AllData = () => {
       color: 'bg-pink-500 hover:bg-pink-600'
     },
     {
+      id: 'Audio Details',
+      label: 'Download Audio Details',
+      description: 'All song audio submission rows (language, genre, audio URL, status, etc.)',
+      endpoint: '/audio-details-excel',
+      icon: '',
+      color: 'bg-cyan-500 hover:bg-cyan-600'
+    },
+    {
+      id: 'Video Details',
+      label: 'Download Video Details',
+      description: 'All song video submission rows (credits, image/video URLs, status, etc.)',
+      endpoint: '/video-details-excel',
+      icon: '',
+      color: 'bg-violet-500 hover:bg-violet-600'
+    },
+    {
       id: 'Song Registration Application Status',
       label: 'Download Song Registration Application Status',
       description: 'Song registration application status',

@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import axiosApi from '../../../../conf/axios';
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import { useAuth } from "../../../../auth/AuthProvider";
-import { ROLES } from "../../../../utils/roles";
+import { EVENT_WINNER_ASSIGN_ROLES } from "../../../../utils/roles";
 
 const EventWinning = () => {
   const { user } = useAuth();
-  const canAssignWinner = user?.role !== ROLES.PROJECT_MEMBER;
+  const canAssignWinner = Boolean(
+    user?.role && EVENT_WINNER_ASSIGN_ROLES.includes(user.role)
+  );
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

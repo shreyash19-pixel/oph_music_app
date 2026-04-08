@@ -83,8 +83,11 @@ const songRegistrationDetails = async () => {
   return rows;
 };
 
+/** TV Publishing rows that are unlocked for editing (`lock` = 1; 0 = page locked). */
 const tvpublishingDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM tvPublishing");
+  const [rows] = await db.execute(
+    "SELECT * FROM tvPublishing WHERE `lock` = 1"
+  );
   return rows;
 };
 
@@ -99,9 +102,87 @@ const ticketsDetails = async () => {
   return rows;
 };
 
+/**
+ * Internal (`event_participants`) + outside (`event_bookings`) — unified shape for Excel export.
+ */
 const eventParticipantsDetails = async () => {
-  const [rows] = await db.execute("SELECT * FROM event_participants");
-  return rows;
+  const [portalRows] = await db.execute(
+    `SELECT * FROM event_participants
+     ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
+  );
+  const [outsideRows] = await db.execute(
+    `SELECT * FROM event_bookings
+     ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
+  );
+
+  const portal = (portalRows || []).map((r) => ({
+    user_type: "internal",
+    source_table: "event_participants",
+    source_row_id: r.id,
+    event_id: r.event_id,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    first_name: r.first_name ?? "",
+    last_name: r.last_name ?? "",
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  }));
+
+  const outside = (outsideRows || []).map((r) => ({
+    user_type: "outside",
+    source_table: "event_bookings",
+    source_row_id: r.id,
+    event_id: r.event_id,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    first_name: r.first_name ?? "",
+    last_name: r.last_name ?? "",
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  }));
+
+  const combined = [...portal, ...outside];
+  const ophKeys = [
+    ...new Set(
+      combined
+        .map((r) => String(r.oph_id ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  const emptyNames = { artist_full_name: "", artist_stage_name: "" };
+  if (ophKeys.length === 0) {
+    return combined.map((r) => ({ ...r, ...emptyNames }));
+  }
+
+  const artistByOph = new Map();
+  const chunkSize = 200;
+  for (let i = 0; i < ophKeys.length; i += chunkSize) {
+    const chunk = ophKeys.slice(i, i + chunkSize);
+    const ph = chunk.map(() => "?").join(",");
+    const [artistRows] = await db.execute(
+      `SELECT
+         ud.oph_id AS oph_key,
+         ud.full_name AS artist_full_name,
+         ud.stage_name AS artist_stage_name
+       FROM user_details ud
+       WHERE ud.oph_id IN (${ph})`,
+      chunk,
+    );
+    for (const row of artistRows || []) {
+      const k = String(row.oph_key ?? "").trim();
+      if (k) artistByOph.set(k, row);
+    }
+  }
+
+  return combined.map((r) => {
+    const k = String(r.oph_id ?? "").trim();
+    const a = k ? artistByOph.get(k) : null;
+    if (!a) return { ...r, ...emptyNames };
+    return {
+      ...r,
+      artist_full_name: a.artist_full_name ?? "",
+      artist_stage_name: a.artist_stage_name ?? "",
+    };
+  });
 };
 
 
@@ -121,6 +202,20 @@ const SongRegistrationDetails = async () => {
   return rows;
 };
 
+const getAllAudioDetails = async () => {
+  const [rows] = await db.execute(
+    "SELECT * FROM audio_details ORDER BY song_id ASC"
+  );
+  return rows;
+};
+
+const getAllVideoDetails = async () => {
+  const [rows] = await db.execute(
+    "SELECT * FROM video_details ORDER BY song_id ASC"
+  );
+  return rows;
+};
+
 module.exports = {
   getAllApplicationStatus,
   getAllUserDetails,
@@ -135,5 +230,7 @@ module.exports = {
   eventParticipantsDetails,
   contactDetails, 
   epkDetails,
-  SongRegistrationDetails
+  SongRegistrationDetails,
+  getAllAudioDetails,
+  getAllVideoDetails
 };

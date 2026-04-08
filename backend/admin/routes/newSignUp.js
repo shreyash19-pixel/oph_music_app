@@ -6,6 +6,7 @@ const {
   getSingleUserDetails,
   getTransactionDetails,
   getRejectedSignupPayments,
+  getUnifiedNewSignup,
 } = require("../controllers/newSignUp");
 
 const requireSalesHeadOrSuperAdmin = (req, res, next) => {
@@ -16,6 +17,7 @@ const requireSalesHeadOrSuperAdmin = (req, res, next) => {
   return res.status(403).json({ success: false, message: "Forbidden" });
 };
 
+router.get("/newsignup/unified", getUnifiedNewSignup);
 router.get("/newsignup", getAllOphIdsWithRegistration);
 router.get(
   "/newsignup/rejected-signup-payments",

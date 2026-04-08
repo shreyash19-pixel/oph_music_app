@@ -70,6 +70,24 @@ const getAllUserDetailsIfAnyOnboardingStepRejected = async (req, res) => {
   }
 };
 
+/**
+ * One table for New Artist: under-review OR rejected-onboarding, with latest Registration payment.
+ * Sales roles: rejected-onboarding only (same data as /any-rejected-onboarding).
+ */
+const getNewArtistUnifiedQueue = async (req, res) => {
+  try {
+    const role = req.user?.role;
+    const salesOnly = role === "sales head" || role === "sales member";
+    const userDetails = salesOnly
+      ? await userDetailsModel.getAllUserDetailsWithAnyRejectedOnboardingStep()
+      : await userDetailsModel.getAllUserDetailsNewArtistUnifiedQueue();
+    res.status(200).json({ userDetails: userDetails || [] });
+  } catch (error) {
+    console.error("Error fetching new artist unified queue:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const getAllSales = async (req, res) => {
   try {
     const userDetails = await userDetailsModel.getAllSales();
@@ -293,6 +311,7 @@ module.exports = {
   getAllDetailsUnderReview,
   getAllUserDetailsIfAnyStepUnderReview,
   getAllUserDetailsIfAnyOnboardingStepRejected,
+  getNewArtistUnifiedQueue,
   updateStatus,
   getAllSales,
   getUserDetailsStepStatus,

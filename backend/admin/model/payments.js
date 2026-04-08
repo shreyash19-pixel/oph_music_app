@@ -30,8 +30,9 @@ const getPaymentDetailsForAllSong = async () => {
     const [rows] = await db.query(
       `SELECT *
         FROM payments
-        WHERE (from_source = 'Song Registration' OR from_source = 'Special artist song registration')
-        AND status = 'under review'`,
+        WHERE (from_source = 'Song Registration' OR from_source = 'Special artist song registration' OR from_source = 'Song Repayment')
+        AND LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'approved', 'accepted', 'rejected')
+        ORDER BY created_at DESC`,
     );
     return rows;
   } catch (error) {
@@ -40,36 +41,29 @@ const getPaymentDetailsForAllSong = async () => {
 };
 
 /**
- * @param {string|null|undefined} viewerRole — admin JWT role; drives status filter
- *   - sales member → rejected only
- *   - super admin, sales head → under review, approved, rejected
- *   - other roles → under review + approved (no rejected)
+ * Event registration payments: under review, approved/accepted, and rejected (all roles with route access).
+ * from_source match is case-insensitive. Status list includes variants so rejected rows are included.
  */
-const getPaymentDetailsForAllEvents = async (viewerRole = null) => {
+const getPaymentDetailsForAllEvents = async () => {
   try {
-    const role = String(viewerRole ?? "")
-      .trim()
-      .toLowerCase();
+    const statusSql = `LOWER(TRIM(COALESCE(status, ''))) IN (
+      'under review',
+      'approved',
+      'accepted',
+      'rejected',
+      'reject'
+    )`;
 
-    const allStatusesSql = `LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'approved', 'rejected')`;
-
-    let statusSql;
-    if (role === "sales member") {
-      statusSql = `LOWER(TRIM(COALESCE(status, ''))) = 'rejected'`;
-    } else if (role === "sales head" || role === "super admin") {
-      statusSql = allStatusesSql;
-    } else {
-      statusSql = `LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'approved')`;
-    }
+    const eventScopeSql = `
+      event_id IS NOT NULL
+      OR LOWER(TRIM(COALESCE(from_source, ''))) = 'event registration'
+      OR LOWER(TRIM(COALESCE(from_source, ''))) LIKE 'event regist%'
+    `;
 
     const [rows] = await db.query(
       `SELECT *
         FROM payments
-        WHERE (
-          event_id IS NOT NULL
-          OR from_source = 'Event Registration'
-          OR from_source LIKE 'Event Regist%'
-        )
+        WHERE (${eventScopeSql})
         AND (${statusSql})
         ORDER BY created_at DESC`,
     );

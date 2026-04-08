@@ -3,9 +3,8 @@ import axiosApi from "../../../../conf/axios";
 import SearchableDynamicTable from "../../../../components/SearchableDynamicTable";
 import ArtistSidebar from "../../../../components/ArtistSidebar";
 import { useAuth } from "../../../../auth/AuthProvider";
-import { ROLES } from "../../../../utils/roles";
 
-/** Columns hidden on /artist/new for both under-review and rejected-onboarding lists */
+/** Columns hidden on /artist/new (unified queue includes professional/documentation step fields). */
 const artistNewExcludeColumns = [
   "createdAt",
   "updatedAt",
@@ -31,56 +30,23 @@ const sortByFormFill = (rows) =>
 
 const Artist_new = () => {
   const [tableData, setTableData] = useState([]);
-  const [rejectedData, setRejectedData] = useState([]);
   const { user } = useAuth();
-
-  const isSalesMember = user?.role === ROLES.SALES_MEMBER;
-  const isSalesHead = user?.role === ROLES.SALES_HEAD;
-  /** Sales head / member: only artists with personal, professional, or documentation rejected */
-  const useRejectedOnboardingOnly = isSalesMember || isSalesHead;
-  /** Super admin: under-review list plus optional second table of rejected onboarding */
-  const showRejectedSecondTable = user?.role === ROLES.SUPER_ADMIN;
 
   useEffect(() => {
     if (!user?.role) return;
 
     const fetchData = async () => {
       try {
-        const url = useRejectedOnboardingOnly
-          ? "/any-rejected-onboarding"
-          : "/any-under-review";
-        const res = await axiosApi.get(url);
+        const res = await axiosApi.get("/new-artist-unified-queue");
         setTableData(sortByFormFill(res.data.userDetails || []));
       } catch (error) {
-        if (error.response?.status === 404) {
-          setTableData([]);
-        } else {
-          console.error("Error fetching data:", error);
-          setTableData([]);
-        }
+        console.error("Error fetching new artist queue:", error);
+        setTableData([]);
       }
     };
 
     fetchData();
-  }, [user?.role, useRejectedOnboardingOnly]);
-
-  useEffect(() => {
-    if (!showRejectedSecondTable) {
-      setRejectedData([]);
-      return;
-    }
-
-    const fetchRejected = async () => {
-      try {
-        const res = await axiosApi.get("/any-rejected-onboarding");
-        setRejectedData(sortByFormFill(res.data.userDetails || []));
-      } catch (e) {
-        setRejectedData([]);
-      }
-    };
-
-    fetchRejected();
-  }, [showRejectedSecondTable]);
+  }, [user?.role]);
 
   return (
     <div>
@@ -93,18 +59,13 @@ const Artist_new = () => {
             excludeColumns={artistNewExcludeColumns}
             pageSize={10}
             detailsUrl="/ArtistNew"
+            leadColumns={[
+              "oph_id",
+              "OPH_ID",
+              "registration_payment_status",
+              "registration_payment_reject_reason",
+            ]}
           />
-          {showRejectedSecondTable && rejectedData.length > 0 && (
-            <SearchableDynamicTable
-              title={null}
-              showSearch={false}
-              data={rejectedData}
-              showStatusIndicator={false}
-              excludeColumns={artistNewExcludeColumns}
-              pageSize={10}
-              detailsUrl="/ArtistNew"
-            />
-          )}
         </div>
       </ArtistSidebar>
     </div>

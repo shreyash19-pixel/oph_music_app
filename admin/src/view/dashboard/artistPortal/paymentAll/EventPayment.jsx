@@ -8,7 +8,10 @@ import { ROLES } from "../../../../utils/roles";
 
 const EventPayment = () => {
   const { user } = useAuth();
-  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
+  const canApproveReject =
+    user?.role !== ROLES.SALES_MEMBER &&
+    user?.role !== ROLES.ADMINISTRATIVE_MEMBER &&
+    user?.role !== ROLES.ACCOUNTS_MEMBER;
   const { ophid, eventId: eventIdFromUrl, transactionId: transactionIdFromUrl } = useParams();
   const [artist, setArtist] = useState(null);
   const [paymentList, setPaymentList] = useState([]);
@@ -490,7 +493,7 @@ const EventPayment = () => {
           </div>
         ) : (
           <p className="border-t pt-6 text-sm text-gray-600">
-            You can review this payment; approving or rejecting is limited to sales head and other authorized roles.
+            You can review this payment; approving or rejecting is not available for your role.
           </p>
         )}
 
