@@ -39,10 +39,29 @@ const getPaymentDetailsForAllSong = async () => {
   }
 };
 
-const getPaymentDetailsForAllEvents = async () => {
+/**
+ * @param {string|null|undefined} viewerRole — admin JWT role; drives status filter
+ *   - sales member → rejected only
+ *   - super admin, sales head → under review, approved, rejected
+ *   - other roles → under review + approved (no rejected)
+ */
+const getPaymentDetailsForAllEvents = async (viewerRole = null) => {
   try {
-    // Query for event payments - check by event_id (most reliable)
-    // and also check from_source for backward compatibility
+    const role = String(viewerRole ?? "")
+      .trim()
+      .toLowerCase();
+
+    const allStatusesSql = `LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'approved', 'rejected')`;
+
+    let statusSql;
+    if (role === "sales member") {
+      statusSql = `LOWER(TRIM(COALESCE(status, ''))) = 'rejected'`;
+    } else if (role === "sales head" || role === "super admin") {
+      statusSql = allStatusesSql;
+    } else {
+      statusSql = `LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'approved')`;
+    }
+
     const [rows] = await db.query(
       `SELECT *
         FROM payments
@@ -51,7 +70,8 @@ const getPaymentDetailsForAllEvents = async () => {
           OR from_source = 'Event Registration'
           OR from_source LIKE 'Event Regist%'
         )
-        AND status = 'under review'`,
+        AND (${statusSql})
+        ORDER BY created_at DESC`,
     );
     return rows;
   } catch (error) {

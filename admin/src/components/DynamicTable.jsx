@@ -24,12 +24,24 @@ const DynamicTable = ({
     return <p className="text-gray-400 italic">No data available.</p>;
   }
 
+  const parseColumnList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.map((x) => String(x).trim()).filter(Boolean);
+    if (typeof val === "string")
+      return val.split(",").map((x) => x.trim()).filter(Boolean);
+    return [];
+  };
+
   let columns = Object.keys(data[0]);
 
-  if (includeColumns && includeColumns.length > 0) {
-    columns = columns.filter((col) => includeColumns.includes(col));
-  } else if (excludeColumns && excludeColumns.length > 0) {
-    columns = columns.filter((col) => !excludeColumns.includes(col));
+  if (includeColumns && parseColumnList(includeColumns).length > 0) {
+    const inc = parseColumnList(includeColumns);
+    columns = columns.filter((col) => inc.includes(col));
+  } else if (excludeColumns && parseColumnList(excludeColumns).length > 0) {
+    const excludeLower = new Set(
+      parseColumnList(excludeColumns).map((x) => x.toLowerCase()),
+    );
+    columns = columns.filter((col) => !excludeLower.has(col.toLowerCase()));
   }
 
   // Filter out ID columns that should be hidden

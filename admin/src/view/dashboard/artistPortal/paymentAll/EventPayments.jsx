@@ -38,7 +38,9 @@ const EventPayments = () => {
             data={eventdata}
             showStatusIndicator={false}
             pageSize={10}
-            excludeColumns={"Status,song_id,Review,From,reject_reason"}
+            excludeColumns={
+              "song_id,review,release_date,old_release_date,reject_for,From,reject_reason"
+            }
             detailsUrl="/EventPayment"
           />
         ) : (

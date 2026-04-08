@@ -2,7 +2,7 @@ import React from "react";
 import Sidebar from "./Sidebar";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { ROLES } from "../utils/roles";
+import { ROLES, WEBSITE_CONFIG_HUB_ROLES } from "../utils/roles";
 
 /** Who may open the New SignUp queue (under-review list; rejected-payments subview is role-gated on the page). */
 const NEW_SIGNUP_SIDEBAR_ROLES = [
@@ -10,12 +10,14 @@ const NEW_SIGNUP_SIDEBAR_ROLES = [
   ROLES.ADMINISTRATIVE_HEAD,
   ROLES.SALES_HEAD,
   ROLES.SALES_MEMBER,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
 ];
 
 const homeLinks = [
   { label: "Artist Portal", route: "/artistPortal" },
   { label: "New SignUp", route: "/New_SignUp", roles: NEW_SIGNUP_SIDEBAR_ROLES },
-  { label: "Website Config", route: "/WebsiteConfig" },
+  { label: "Website Config", route: "/WebsiteConfig", roles: WEBSITE_CONFIG_HUB_ROLES },
   {
     label: "Assign Role",
     route: "/role_change",

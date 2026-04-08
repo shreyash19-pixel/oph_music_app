@@ -3,8 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosApi from '../../../../conf/axios';
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import toast from 'react-hot-toast';
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const EventWinnerAssign = () => {
+  const { user, loading: authLoading } = useAuth();
   const { event_id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
@@ -15,6 +18,17 @@ const EventWinnerAssign = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (user?.role === ROLES.PROJECT_MEMBER) {
+      setLoading(false);
+      toast.error("You do not have permission to assign winners");
+      navigate("/event-winning", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (authLoading || user?.role === ROLES.PROJECT_MEMBER) return;
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -34,7 +48,7 @@ const EventWinnerAssign = () => {
     };
 
     fetchData();
-  }, [event_id]);
+  }, [event_id, authLoading, user?.role]);
 
   const handleSubmit = async () => {
     if (!selectedOphId) {

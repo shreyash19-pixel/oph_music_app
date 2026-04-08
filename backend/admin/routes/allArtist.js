@@ -3,6 +3,7 @@ const router = express.Router();
 const userDetails = require("../controllers/allArtist");
 const multer = require("multer");
 const authMiddleware = require("../../middleware/authenticate");
+const forbidSalesMemberArtistEdits = require("../middleware/forbidSalesMemberArtistEdits");
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -17,12 +18,14 @@ router.get("/completed/:ophid", userDetails.getAllDetails);
 router.put(
   "/update-user-details",
   authMiddleware,
+  forbidSalesMemberArtistEdits,
   upload.single("profile_image"),
   userDetails.updateUserDetails
 );
 router.put(
   "/update-professional-details",
   authMiddleware,
+  forbidSalesMemberArtistEdits,
   upload.fields([
     { name: "photos", maxCount: 5 },
     { name: "video", maxCount: 1 },
@@ -34,6 +37,7 @@ router.put(
 router.post(
   "/update-documentation-details",
   authMiddleware,
+  forbidSalesMemberArtistEdits,
   upload.fields([
     { name: "aadhar_front_url", maxCount: 1 },
     { name: "aadhar_back_url", maxCount: 1 },

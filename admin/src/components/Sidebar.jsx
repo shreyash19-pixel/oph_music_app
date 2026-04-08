@@ -10,6 +10,13 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { ROLES } from "../utils/roles";
+
+/** Under Event Management, sales roles only see these (not Event Creation / Events). */
+const SALES_EVENT_ALLOWED_LABELS = new Set([
+  "Event Participants",
+  "Event Winning",
+]);
 
 const Sidebar = ({ title, links, userRole }) => {
   const { logout } = useAuth();
@@ -25,6 +32,14 @@ const Sidebar = ({ title, links, userRole }) => {
   const canAccess = (roles) => {
     if (!roles) return true;
     return roles.includes(userRole);
+  };
+
+  const filterEventChildrenForSales = (parentLabel, children) => {
+    if (!children?.length) return children;
+    const isSales =
+      userRole === ROLES.SALES_HEAD || userRole === ROLES.SALES_MEMBER;
+    if (!isSales || parentLabel !== "Event Management") return children;
+    return children.filter((sub) => SALES_EVENT_ALLOWED_LABELS.has(sub.label));
   };
 
   const handleLogout = () => {
@@ -103,7 +118,7 @@ const Sidebar = ({ title, links, userRole }) => {
                       </button>
                       {!collapsed && openSections[link.label] && (
                         <ul className="ml-4 space-y-1">
-                          {link.children
+                          {filterEventChildrenForSales(link.label, link.children)
                             .filter((sub) => canAccess(sub.roles))
                             .map((sub) => (
                               <li key={sub.label}>

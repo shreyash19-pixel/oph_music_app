@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosApi from '../../../../conf/axios';
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { ROLES } from "../../../../utils/roles";
 
 const EventWinning = () => {
+  const { user } = useAuth();
+  const canAssignWinner = user?.role !== ROLES.PROJECT_MEMBER;
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,7 +65,11 @@ const EventWinning = () => {
           <h2 className="text-3xl font-extrabold tracking-wide leading-tight drop-shadow-sm">
             Event Winning
           </h2>
-          <p className="text-sm text-gray-200 mt-1">Select an event to assign a winner</p>
+          <p className="text-sm text-gray-200 mt-1">
+            {canAssignWinner
+              ? "Select an event to assign a winner"
+              : "View events and winners (assigning winners is not available for your role)"}
+          </p>
         </div>
 
         {/* Statistics */}
@@ -98,7 +106,11 @@ const EventWinning = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prize</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Winner</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    {canAssignWinner && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -144,19 +156,22 @@ const EventWinning = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleEventClick(event.event_id)}
-                          disabled={!!event.winner_oph_id}
-                          className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                            event.winner_oph_id
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-[#0d3c44] text-white hover:bg-[#0b3239]'
-                          }`}
-                        >
-                          {event.winner_oph_id ? 'Assigned' : 'Assign Winner'}
-                        </button>
-                      </td>
+                      {canAssignWinner && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => handleEventClick(event.event_id)}
+                            disabled={!!event.winner_oph_id}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                              event.winner_oph_id
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-[#0d3c44] text-white hover:bg-[#0b3239]"
+                            }`}
+                          >
+                            {event.winner_oph_id ? "Assigned" : "Assign Winner"}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
