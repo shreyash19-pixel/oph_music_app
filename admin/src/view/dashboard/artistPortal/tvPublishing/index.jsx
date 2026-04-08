@@ -4,8 +4,16 @@
   import { Lock, Unlock } from "lucide-react";
   // import { toast } from "react-toastify";
   import toast, { Toaster } from "react-hot-toast";
+  import { useAuth } from "../../../../auth/AuthProvider";
+  import {
+    canLockUnlockTvPublishing,
+    canApproveTvPublishing,
+  } from "../../../../utils/roles";
 
   const TvIndex = () => {
+    const { user } = useAuth();
+    const canLockUnlock = canLockUnlockTvPublishing(user?.role);
+    const canApproveReject = canApproveTvPublishing(user?.role);
     const { song_id } = useParams();
     const [tvData, setTvData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -254,21 +262,33 @@
           }}
         >
           <p style={{ fontSize: 24, marginBottom: 20 }}>This page is locked.</p>
-          <button
-            onClick={handleUnlock}
-            disabled={unlocking}
-            style={{
-              padding: "12px 24px",
-              fontSize: 18,
-              cursor: unlocking ? "not-allowed" : "pointer",
-              backgroundColor: "#007bff",
-              border: "none",
-              borderRadius: 6,
-              color: "white",
-            }}
-          >
-            {unlocking ? "Unlocking..." : "Unlock"}
-          </button>
+          {canLockUnlock ? (
+            <button
+              onClick={handleUnlock}
+              disabled={unlocking}
+              style={{
+                padding: "12px 24px",
+                fontSize: 18,
+                cursor: unlocking ? "not-allowed" : "pointer",
+                backgroundColor: "#007bff",
+                border: "none",
+                borderRadius: 6,
+                color: "white",
+              }}
+            >
+              {unlocking ? "Unlocking..." : "Unlock"}
+            </button>
+          ) : canApproveReject ? (
+            <p style={{ fontSize: 16, maxWidth: 420, textAlign: "center", lineHeight: 1.5 }}>
+              This page is locked. A super admin or administrative head must unlock it before you can
+              approve or reject.
+            </p>
+          ) : (
+            <p style={{ fontSize: 16, maxWidth: 420, textAlign: "center", lineHeight: 1.5 }}>
+              Only a super admin or administrative head can unlock and manage this TV publishing
+              record.
+            </p>
+          )}
         </div>
       );
     }
@@ -301,24 +321,30 @@
                 <div className="text-gray-400">No audio available</div>
               )}
               <div className="relative">
-                <button
-                  onClick={toggleLock}
-                  className="p-2 border rounded-md flex items-center gap-1"
-                  title={locked ? "Unlock to edit" : "Lock"}
-                  disabled={!unlock} // Disable if page locked
-                >
-                  {locked ? <Lock size={18} /> : <Unlock size={18} />}
-                  {locked ? "Locked" : "unlock"}
-                </button>
-                {!locked && unlock && (
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    ref={audioInputRef}
-                    onChange={(e) => handleFileChange(e, "audio_url")}
-                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-                    title="Select audio file"
-                  />
+                {canLockUnlock ? (
+                  <>
+                    <button
+                      onClick={toggleLock}
+                      className="p-2 border rounded-md flex items-center gap-1"
+                      title={locked ? "Unlock to edit" : "Lock"}
+                      disabled={!unlock}
+                    >
+                      {locked ? <Lock size={18} /> : <Unlock size={18} />}
+                      {locked ? "Locked" : "unlock"}
+                    </button>
+                    {!locked && unlock && (
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        ref={audioInputRef}
+                        onChange={(e) => handleFileChange(e, "audio_url")}
+                        className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                        title="Select audio file"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-500">View only</span>
                 )}
               </div>
             </div>
@@ -338,42 +364,70 @@
                 <div className="text-gray-400">No video available</div>
               )}
               <div className="relative">
-                <button
-                  onClick={toggleLock}
-                  className="p-2 border rounded-md flex items-center gap-1"
-                  title={locked ? "Unlock to edit" : "Lock"}
-                  disabled={!unlock} // Disable if page locked
-                >
-                  {locked ? <Lock size={18} /> : <Unlock size={18} />}
-                  {locked ? "Locked" : "unlock"}
-                </button>
-                {!locked && unlock && (
-                  <input
-                    type="file"
-                    accept="video/*"
-                    ref={videoInputRef}
-                    onChange={(e) => handleFileChange(e, "video_url")}
-                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-                    title="Select video file"
-                  />
+                {canLockUnlock ? (
+                  <>
+                    <button
+                      onClick={toggleLock}
+                      className="p-2 border rounded-md flex items-center gap-1"
+                      title={locked ? "Unlock to edit" : "Lock"}
+                      disabled={!unlock}
+                    >
+                      {locked ? <Lock size={18} /> : <Unlock size={18} />}
+                      {locked ? "Locked" : "unlock"}
+                    </button>
+                    {!locked && unlock && (
+                      <input
+                        type="file"
+                        accept="video/*"
+                        ref={videoInputRef}
+                        onChange={(e) => handleFileChange(e, "video_url")}
+                        className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                        title="Select video file"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-500">View only</span>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Approve / Reject buttons */}
+        {/* Approve / Reject — super admin, administrative head, administrative member (not lock/upload) */}
         {(() => {
           const shouldShowMessage = 
             tvData.status?.toLowerCase() === "accepted" || 
             tvData.status?.toLowerCase() === "rejected" || 
             selectedStatus?.toLowerCase() === "accepted" || 
             selectedStatus?.toLowerCase() === "rejected";
-          console.log("[UI Render] tvData.status:", tvData.status);
-          console.log("[UI Render] selectedStatus:", selectedStatus);
-          console.log("[UI Render] isRejecting:", isRejecting);
-          console.log("[UI Render] shouldShowMessage:", shouldShowMessage);
           
+          if (!canApproveReject) {
+            return shouldShowMessage ? (
+              <div className="mb-6 text-gray-700 font-semibold flex items-center gap-2">
+                <span className="text-lg">
+                  {(tvData.status?.toLowerCase() === "accepted" || selectedStatus?.toLowerCase() === "accepted") ? "✅" : "❌"}
+                </span>
+                <span>
+                  This song has already been{" "}
+                  <span
+                    className={
+                      (tvData.status?.toLowerCase() === "accepted" || selectedStatus?.toLowerCase() === "accepted")
+                        ? "text-green-700"
+                        : "text-red-700"
+                    }
+                  >
+                    {(tvData.status?.toLowerCase() === "accepted" || selectedStatus?.toLowerCase() === "accepted") ? "accepted" : "rejected"}.
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <p className="mb-6 text-sm text-gray-600">
+                Approving or rejecting this record is not available for your role.
+              </p>
+            );
+          }
+
           return shouldShowMessage ? (
             <div className="mb-6 text-gray-700 font-semibold flex items-center gap-2">
               <span className="text-lg">
@@ -450,16 +504,24 @@
           );
         })()}
 
+        {canApproveReject && !canLockUnlock ? (
+          <p className="mb-4 text-xs text-gray-500">
+            Unlocking this page and editing audio/video files is limited to a super admin or administrative head.
+          </p>
+        ) : null}
+
         {/* Save button */}
-        <div className="text-right">
-          <button
-            onClick={handleSaveChanges}
-            className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
-            disabled={locked || !unlock}
-          >
-            Save Changes
-          </button>
-        </div>
+        {canLockUnlock ? (
+          <div className="text-right">
+            <button
+              onClick={handleSaveChanges}
+              className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
+              disabled={locked || !unlock}
+            >
+              Save Changes
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   };

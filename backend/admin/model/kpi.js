@@ -1,4 +1,9 @@
 const db = require("../../DB/connect");
+const {
+  isSpecialArtistProfile,
+  fetchSpecialArtistPublicSongRows,
+  formatSpecialArtistSongsForTopArtist,
+} = require("../../model/specialArtistPublicSongs");
 
 const getMetricsSummary = async () => {
   const [rows] = await db.execute(`
@@ -370,7 +375,7 @@ const getArtistProfile = async (ophid) => {
   // /get-top-artist lists all fully registered artists (Independent -IA- and Special -SA-);
   // detail view still returns a profile even if the strict triple-approved song CTE is empty.
   const [fallback] = await db.execute(
-    `SELECT ud.oph_id, ud.personal_photo, ud.stage_name, ud.full_name, pd.profession AS Profession, ud.location, pd.bio AS Bio,
+    `SELECT ud.oph_id, ud.artist_type, ud.personal_photo, ud.stage_name, ud.full_name, pd.profession AS Profession, ud.location, pd.bio AS Bio,
             IFNULL(kpi.total_views, 0) AS total_views
      FROM user_details ud
      INNER JOIN application_status app ON ud.oph_id = app.oph_id
@@ -385,6 +390,18 @@ const getArtistProfile = async (ophid) => {
     return null;
   }
   const u = fallback[0];
+
+  let saSongs = [];
+  if (isSpecialArtistProfile(u.artist_type, ophid)) {
+    try {
+      const saRows = await fetchSpecialArtistPublicSongRows(ophid);
+      saSongs = formatSpecialArtistSongsForTopArtist(saRows);
+    } catch (e) {
+      console.error("getArtistProfile special_artist_songs:", e?.message || e);
+      saSongs = [];
+    }
+  }
+
   return {
     personal_photo: u.personal_photo,
     stage_name: u.stage_name,
@@ -394,8 +411,9 @@ const getArtistProfile = async (ophid) => {
     location: u.location,
     total_views: u.total_views,
     bio: u.Bio,
-    total_content: parseInt(totalSongs, 10) || 0,
-    songs: [],
+    total_content:
+      saSongs.length > 0 ? saSongs.length : parseInt(totalSongs, 10) || 0,
+    songs: saSongs,
   };
 };
 

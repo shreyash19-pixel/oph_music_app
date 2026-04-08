@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../../middleware/authenticate");
 const forbidSalesMemberApprovals = require("../../middleware/forbidSalesMemberApprovals");
+const requireBookingVerificationManager = require("../../middleware/requireBookingVerificationManager");
 const signUpPaymentController = require("../controllers/payments");
 
 router.put(
@@ -38,6 +39,11 @@ router.put(
   signUpPaymentController.updateStatusPayment
 );
 router.get("/get-transaction-details", signUpPaymentController.getTransactionDetailsController)
-router.post("/payment-verification", signUpPaymentController.setPaymentVerificationController)
+router.post(
+  "/payment-verification",
+  authMiddleware,
+  requireBookingVerificationManager,
+  signUpPaymentController.setPaymentVerificationController,
+);
 
 module.exports = router;

@@ -1,5 +1,26 @@
 const SongSocialMetrics = require('../model/kpi');
 const { readFromS3 } = require("../../utils");
+
+function isSpecialArtistOphId(ophId) {
+  if (ophId == null || ophId === "") return false;
+  return String(ophId).toUpperCase().includes("-SA-");
+}
+
+/** Map monthly_kpi/special_artist_metrics.json rows to the artist KPI dashboard shape. */
+function mapSpecialArtistMonthlyToKpiShape(r, year, month, ophStr) {
+  return {
+    oph_id: ophStr,
+    year,
+    month,
+    user_traffic: Number(r.traffic) || 0,
+    song_count: 0,
+    total_views: 0,
+    avg_view_duration: "0:0:0",
+    total_accepted_events: Number(r.accepted_event_count) || 0,
+    stage_name: r.stage_name ?? null,
+  };
+}
+
 const getKPI = async (req, res) => {
   try {
     const { OPH_ID } = req.query; // make sure client passes ?OPH_ID=...
@@ -9,33 +30,40 @@ const getKPI = async (req, res) => {
         .json({ success: false, message: "OPH_ID required" });
     }
 
-    const Key = "monthly_kpi/kpi_metrics.json";
-    const s3Data = await readFromS3(Key);
+    const ophStr = String(OPH_ID).trim();
+    const isSA = isSpecialArtistOphId(ophStr);
+    const Key = isSA
+      ? "monthly_kpi/special_artist_metrics.json"
+      : "monthly_kpi/kpi_metrics.json";
+    const s3Data = (await readFromS3(Key)) || {};
 
-   const matchedRecords = [];
+    const matchedRecords = [];
 
-   for (const year of Object.keys(s3Data)) {
-     for (const month of Object.keys(s3Data[year])) {
-       const records = s3Data[year][month];
+    for (const year of Object.keys(s3Data)) {
+      for (const month of Object.keys(s3Data[year] || {})) {
+        const records = s3Data[year][month];
+        if (!Array.isArray(records) || records.length === 0) continue;
 
-       if (records.length > 0) {
-         // filter by OPH_ID before enriching
-         const filtered = records.filter((r) => r.oph_id === OPH_ID);
+        const filtered = records.filter((r) => {
+          const id = r?.oph_id ?? r?.OPH_ID;
+          return id != null && String(id).trim() === ophStr;
+        });
 
-         if (filtered.length > 0) {
-           const enriched = filtered.map((r) => ({
-             ...r,
-             year,
-             month,
-           }));
-
-           matchedRecords.push(...enriched);
-         }
-       }
-     }
-   }
-
-
+        for (const r of filtered) {
+          if (isSA) {
+            matchedRecords.push(
+              mapSpecialArtistMonthlyToKpiShape(r, year, month, ophStr),
+            );
+          } else {
+            matchedRecords.push({
+              ...r,
+              year,
+              month,
+            });
+          }
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,

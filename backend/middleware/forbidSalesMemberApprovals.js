@@ -1,11 +1,16 @@
 /**
- * Use after authMiddleware. Blocks sales members from approve/reject (and equivalent) mutations.
+ * Use after authMiddleware. Blocks roles that may view but must not approve/reject special-artist songs.
  */
+const ROLES_CANNOT_VERIFY_SPECIAL_ARTIST_SONGS = [
+  "sales member",
+  "administrative member",
+];
+
 function forbidSalesMemberApprovals(req, res, next) {
-  if (req.user?.role === "sales member") {
+  if (ROLES_CANNOT_VERIFY_SPECIAL_ARTIST_SONGS.includes(req.user?.role)) {
     return res.status(403).json({
       success: false,
-      message: "Sales members cannot approve or reject",
+      message: "Your role cannot approve or reject this submission",
     });
   }
   next();

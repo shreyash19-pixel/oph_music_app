@@ -21,6 +21,12 @@ const isIndependentArtistOphId = (ophId) => {
   return String(ophId).toUpperCase().includes("-IA-");
 };
 
+/** Special artists use OPH IDs like OPH-CAN-SA-99 (segment `-SA-`). */
+const isSpecialArtistOphId = (ophId) => {
+  if (ophId == null || ophId === "") return false;
+  return String(ophId).toUpperCase().includes("-SA-");
+};
+
 const wrapFilterPlainArrayJson = (handler) => async (req, res, next) => {
   const origJson = res.json.bind(res);
   res.json = (body) => {
@@ -49,6 +55,21 @@ const iaOnlyTopArtistsBody = (body) => {
   return {
     ...body,
     data: body.data.filter((row) => isIndependentArtistOphId(row.oph_id)),
+  };
+};
+
+/** Home ArtistSlider / get-top-artist: show both -IA- and -SA- (matches getTopArtists query). */
+const iaAndSaTopArtistsBody = (body) => {
+  if (!body || typeof body !== "object" || !Array.isArray(body.data)) {
+    return body;
+  }
+  return {
+    ...body,
+    data: body.data.filter(
+      (row) =>
+        isIndependentArtistOphId(row.oph_id) ||
+        isSpecialArtistOphId(row.oph_id),
+    ),
   };
 };
 
@@ -86,7 +107,8 @@ const iaOnlyGetKpiS3Body = (body, req) => {
   if (
     oph != null &&
     String(oph).trim() !== "" &&
-    !isIndependentArtistOphId(oph)
+    !isIndependentArtistOphId(oph) &&
+    !isSpecialArtistOphId(oph)
   ) {
     return { success: true, s3Metrics: [] };
   }
@@ -114,7 +136,7 @@ router.get("/artist-search-filters", getArtistSearchFiltersController);
 router.get("/get-top-searched-artist", getTopSearchedArtistsController);
 router.get(
   "/get-top-artist",
-  wrapFilterJsonBody(getTopArtistsController, iaOnlyTopArtistsBody),
+  wrapFilterJsonBody(getTopArtistsController, iaAndSaTopArtistsBody),
 );
 router.get("/get-top-artist-detail", getArtistProfile);
 

@@ -6,7 +6,9 @@ import { ROLES } from "../../../../utils/roles";
 
 const NewSongsIndividual = () => {
   const { user } = useAuth();
-  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
+  const canApproveReject =
+    user?.role !== ROLES.SALES_MEMBER &&
+    user?.role !== ROLES.ADMINISTRATIVE_MEMBER;
   const { ophid, songId } = useParams();
   const [content, setContent] = useState({});
   const [loading, setLoading] = useState(true);
@@ -256,7 +258,7 @@ const SectionBlock = ({
 
       {!showActions && (
         <p className="text-sm text-gray-600 mt-4">
-          You can review this submission; approving or rejecting is limited to sales head and other authorized roles.
+          You can review this submission; approving or rejecting is not available for your role.
         </p>
       )}
     </div>

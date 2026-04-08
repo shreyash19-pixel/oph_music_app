@@ -31,6 +31,7 @@ const PaymentAll = () => {
     song:
       role === ROLES.SUPER_ADMIN ||
       role === ROLES.ADMINISTRATIVE_HEAD ||
+      role === ROLES.ADMINISTRATIVE_MEMBER ||
       role === ROLES.ACCOUNTS_HEAD ||
       role === ROLES.ACCOUNTS_MEMBER,
     booking:
@@ -75,7 +76,7 @@ const PaymentAll = () => {
     if (canView.events) fetchDataEvents();
     if (canView.song) fetchDataSong();
     if (canView.booking) fetchDataBooking();
-  }, []);
+  }, [user?.role]);
 
   return (
     <div>

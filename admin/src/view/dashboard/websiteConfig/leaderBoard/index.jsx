@@ -38,29 +38,26 @@
        fetchData();
 
      }, []);
-     return (
-       <div className="flex h-screen bg-gray-50">
-         <WebConfigSidebar />
-         <div className="flex-1 ml-10 overflow-auto">
-           <SearchableDynamicTable
-             title="LeaderBoard"
-             data={tableData}
-             includeColumns={[
-               "ranks",
-               "ophid",
-               "stage_name",
-               "personal_photo",
-               "location",
-               "song_count",
-               "views",
-               "score",
-             ]}
-             showStatusIndicator={false}
-             pageSize={10}
-           />
-         </div>
-       </div>
-     );
+    return (
+      <WebConfigSidebar>
+        <SearchableDynamicTable
+          title="LeaderBoard"
+          data={tableData}
+          includeColumns={[
+            "ranks",
+            "ophid",
+            "stage_name",
+            "personal_photo",
+            "location",
+            "song_count",
+            "views",
+            "score",
+          ]}
+          showStatusIndicator={false}
+          pageSize={10}
+        />
+      </WebConfigSidebar>
+    );
    };
  
    

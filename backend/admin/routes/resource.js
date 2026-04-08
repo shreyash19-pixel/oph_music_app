@@ -19,6 +19,7 @@ router.post(
 );
 
 router.get("/allPodcasts", Resource.fetchAllPodcast);
+router.get("/podcast/by-slug/:slug", Resource.getPodcastBySlug);
 router.get(`/podcast/:podcastId`, Resource.getPodcastById);
 router.put(
   "/update_podcast/:podcastId",
@@ -41,6 +42,7 @@ router.post(
   Resource.insertReels,
 );
 router.get("/allReels", Resource.fetchAllReels);
+router.get("/reel/by-slug/:slug", Resource.getReelBySlug);
 router.get(`/reel/:reelId`, Resource.getReelById);
 router.put(
   "/update_reel/:reelId",
@@ -63,6 +65,7 @@ router.post(
   Resource.insertStories,
 );
 router.get("/allStories", Resource.fetchAllStories);
+router.get("/story/by-slug/:slug", Resource.getStoryBySlug);
 router.get(`/story/:storyId`, Resource.getStroyById);
 router.put(
   "/update_story/:storyId",
@@ -90,6 +93,7 @@ router.get(
   authMiddleware,
   Resource.fetchLearningVisibleForArtist,
 );
+router.get("/learning/by-slug/:slug", Resource.getLearningBySlug);
 router.get(`/learning/:learningId`, Resource.getLearningById);
 router.put(
   "/update_learning/:learningId",

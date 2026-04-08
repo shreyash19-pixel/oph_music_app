@@ -66,9 +66,7 @@ const CollabArtistDetail = () => {
   const lastKpiRun = payload?.lastKpiRun;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <WebConfigSidebar />
-      <div className="flex-1 ml-10 overflow-auto p-6">
+    <WebConfigSidebar>
         <Link
           to="/Collab"
           className="inline-flex items-center text-sm font-medium text-[#0d3c44] hover:underline mb-6"
@@ -274,8 +272,7 @@ const CollabArtistDetail = () => {
             </section>
           </div>
         )}
-      </div>
-    </div>
+    </WebConfigSidebar>
   );
 };
 

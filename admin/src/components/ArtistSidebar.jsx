@@ -7,6 +7,7 @@ import {
   CONTENT_PORTAL_ROLES,
   TV_PUBLISHING_PORTAL_ROLES,
   TICKETS_PORTAL_ROLES,
+  PAYMENTS_PORTAL_ROLES,
 } from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -63,13 +64,7 @@ const artistLinks = [
   },
   {
     label: "Payments",
-    roles: [
-      ROLES.SUPER_ADMIN,
-      ROLES.ADMINISTRATIVE_HEAD,
-      ROLES.ADMINISTRATIVE_MEMBER,
-      ROLES.ACCOUNTS_HEAD,
-      ROLES.ACCOUNTS_MEMBER,
-    ],
+    roles: PAYMENTS_PORTAL_ROLES,
     children: [
       {
         label: "All",
