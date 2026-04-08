@@ -16,6 +16,9 @@ const ArtistProfile = ({ id }) => {
   const [currentAudio, setCurrentAudio] = useState(null);
   const [playingSongId, setPlayingSongId] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [audioProgress, setAudioProgress] = useState({ current: 0, duration: 0 });
+  const isSeekingRef = useRef(false);
 
   const fetchArtistDetail = async () => {
     if (id == null || id === "") {
@@ -86,20 +89,48 @@ const ArtistProfile = ({ id }) => {
       }
       const newAudio = new Audio(song.audio_file_url);
       audioRef.current = newAudio;
+      newAudio.volume = volume;
+      
+      // Attach progress listeners
+      newAudio.addEventListener('loadedmetadata', () => {
+        setAudioProgress({ current: 0, duration: newAudio.duration });
+      });
+      newAudio.addEventListener('timeupdate', () => {
+        if (!isSeekingRef.current) {
+          setAudioProgress({ current: newAudio.currentTime, duration: newAudio.duration });
+        }
+      });
+      
       newAudio.play();
       setPlayingSongId(song.song_id);
 
       // Handle when the song ends
       newAudio.onended = () => {
         setPlayingSongId(null);
+        setAudioProgress({ current: 0, duration: 0 });
       };
     }
+  };
+
+  const handleSeek = (songId, value) => {
+    const el = audioRef.current;
+    if (!el || playingSongId !== songId) return;
+    const t = Number(value);
+    if (!Number.isFinite(t)) return;
+    el.currentTime = t;
+    setAudioProgress((p) => ({ ...p, current: t }));
   };
 
 
   useEffect(() => {
     fetchArtistDetail();
   }, [id]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
 
   useEffect(() => {
     return () => {
@@ -230,7 +261,7 @@ const ArtistProfile = ({ id }) => {
                     </td>
                   </tr>
                 ) : (
-                  approvedSongs.map((song, index) => (
+                  approvedSongs.slice(0, 3).map((song, index) => (
                     <tr
                       key={song.song_id ?? index}
                       className="border-b border-gray-800 hover:bg-gray-800/50"
@@ -274,18 +305,33 @@ const ArtistProfile = ({ id }) => {
                         <SongDuration url={song.audio_file_url} />
                       </td>
 
-                      <td className="py-4 flex justify-center">
-                        <button
-                          className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0] ml-4"
-                          onClick={() => handlePlayPause(song)}
-                        >
-                          {playingSongId === song.song_id &&
-                          !audioRef.current?.paused ? (
-                            <FaPause className="text-white" size={13} />
-                          ) : (
-                            <FaPlay className="text-white ml-1" size={13} />
+                      <td className="py-4">
+                        <div className="flex flex-col items-center gap-2">
+                          <button
+                            className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0]"
+                            onClick={() => handlePlayPause(song)}
+                          >
+                            {playingSongId === song.song_id &&
+                            !audioRef.current?.paused ? (
+                              <FaPause className="text-white" size={13} />
+                            ) : (
+                              <FaPlay className="text-white ml-1" size={13} />
+                            )}
+                          </button>
+                          {playingSongId === song.song_id && audioProgress.duration > 0 && (
+                            <input
+                              type="range"
+                              min={0}
+                              max={audioProgress.duration}
+                              step={0.01}
+                              value={Math.min(audioProgress.current, audioProgress.duration)}
+                              onChange={(e) => handleSeek(song.song_id, e.target.value)}
+                              onPointerDown={() => { isSeekingRef.current = true; }}
+                              onPointerUp={() => { isSeekingRef.current = false; }}
+                              className="w-24 h-2 cursor-pointer accent-[#5DC9DE]"
+                            />
                           )}
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))
