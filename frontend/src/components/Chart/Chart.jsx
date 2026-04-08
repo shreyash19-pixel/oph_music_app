@@ -6,6 +6,7 @@ import {
   Bar,
   AreaChart,
   Area,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -54,32 +55,56 @@ export default function Chart({
   }
 
   const renderChart = () => {
-    const commonProps = {
-      data,
-      margin: { top: 10, right: 30, left: 0, bottom: 0 },
-    };
-
     const commonAxisProps = {
       stroke: "#374151",
       tick: { fill: "#6B7280", fontSize: 12 },
       tickLine: { stroke: "#374151" },
     };
 
-    const values = data
-      .flatMap((d) =>
-        Object.entries(d)
-          .filter(([key]) => key !== "name")
-          .map(([, value]) => Number(value)),
-      )
-      .filter((n) => Number.isFinite(n));
-    const minValue = values.length ? Math.min(...values) : 0;
-    const maxValue = values.length ? Math.max(...values) : 0;
-    const yAxisPadding = maxValue * 0.1; // Add 10% padding
-    const yMax = Math.max(maxValue, 0);
-    const yTop = yFromZero
-      ? yMax + Math.max(yMax * 0.1, 1)
-      : maxValue + yAxisPadding;
-    const yBottom = yFromZero ? 0 : minValue - yAxisPadding;
+    const safeData = data.map((d) => ({
+      ...d,
+      value: (() => {
+        const n = Number(d.value);
+        return Number.isFinite(n) ? n : 0;
+      })(),
+    }));
+
+    /** Single month / first bucket > 0: Recharts needs a prior point at y=0 to draw 0→n. */
+    const areaPlotData =
+      yFromZero &&
+      type === "area" &&
+      safeData.length > 0 &&
+      safeData[0].value > 0
+        ? [{ name: "\u00A0", value: 0 }, ...safeData]
+        : safeData;
+
+    const boundsFrom = (plotData) => {
+      const values = plotData
+        .flatMap((d) =>
+          Object.entries(d)
+            .filter(([key]) => key !== "name")
+            .map(([, value]) => Number(value)),
+        )
+        .filter((n) => Number.isFinite(n));
+      const minValue = values.length ? Math.min(...values) : 0;
+      const maxValue = values.length ? Math.max(...values) : 0;
+      const yAxisPadding = maxValue * 0.1;
+      const yMax = Math.max(maxValue, 0);
+      const yTop = yFromZero
+        ? yMax + Math.max(yMax * 0.1, 1)
+        : maxValue + yAxisPadding;
+      const yBottom = yFromZero ? 0 : minValue - yAxisPadding;
+      return { yBottom, yTop };
+    };
+
+    const { yBottom, yTop } = boundsFrom(
+      type === "area" && yFromZero ? areaPlotData : safeData,
+    );
+
+    const commonProps = {
+      data: type === "area" && yFromZero ? areaPlotData : safeData,
+      margin: { top: 10, right: 30, left: 0, bottom: 0 },
+    };
 
     switch (type) {
       case "line":
@@ -150,26 +175,68 @@ export default function Chart({
           </BarChart>
         );
 
-      case "area":
+      case "area": {
+        const grid = (
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#1F2937"
+            vertical={false}
+          />
+        );
+        const axes = (
+          <>
+            <XAxis dataKey="name" {...commonAxisProps} />
+            <YAxis {...commonAxisProps} domain={[yBottom, yTop]} />
+          </>
+        );
+        const defs = (
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={colors[0]} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={colors[0]} stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+        );
+        // yFromZero (e.g. monthly traffic): stroke on Area alone can sit on the baseline and
+        // hide 0 → n segments; overlay Line so the rise from zero is always drawn.
+        if (yFromZero) {
+          return (
+            <ComposedChart {...commonProps}>
+              {grid}
+              {axes}
+              <Tooltip content={<CustomTooltip />} />
+              {defs}
+              <Area
+                type="linear"
+                dataKey="value"
+                stroke="none"
+                strokeWidth={0}
+                fill={`url(#${gradientId})`}
+                connectNulls
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="linear"
+                dataKey="value"
+                stroke={colors[0]}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                connectNulls
+                isAnimationActive={false}
+                dot={{ r: 3, fill: colors[0], strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+              />
+            </ComposedChart>
+          );
+        }
         return (
           <AreaChart {...commonProps}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#1F2937"
-              vertical={false}
-            />
-            <XAxis dataKey="name" {...commonAxisProps} />
-            <YAxis
-              {...commonAxisProps}
-              domain={[yBottom, yTop]}
-            />
+            {grid}
+            {axes}
             <Tooltip content={<CustomTooltip />} />
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={colors[0]} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={colors[0]} stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
+            {defs}
             <Area
               type="linear"
               dataKey="value"
@@ -177,15 +244,12 @@ export default function Chart({
               fill={`url(#${gradientId})`}
               strokeWidth={2}
               connectNulls
-              dot={
-                yFromZero
-                  ? { r: 3, fill: colors[0], strokeWidth: 0 }
-                  : false
-              }
-              activeDot={yFromZero ? { r: 5 } : undefined}
+              dot={false}
+              activeDot={{ r: 5 }}
             />
           </AreaChart>
         );
+      }
 
       default:
         return null;
