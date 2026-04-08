@@ -1,4 +1,9 @@
 const db = require("../DB/connect");
+const {
+  isSpecialArtistProfile,
+  fetchSpecialArtistPublicSongRows,
+  formatSpecialArtistSongsForHome,
+} = require("./specialArtistPublicSongs");
 
 const parseVideoImageUrl = (raw) => {
   if (raw == null || raw === "") return null;
@@ -272,7 +277,7 @@ WHERE overall_status = 'approved';
   }
 
   const [fb] = await db.execute(
-    `SELECT ud.oph_id, ud.full_name AS name, pd.photo_urls AS photos, ud.personal_photo, ud.stage_name,
+    `SELECT ud.oph_id, ud.artist_type, ud.full_name AS name, pd.photo_urls AS photos, ud.personal_photo, ud.stage_name,
             pd.video_url AS video_bio, pd.profession AS profession, ud.location, IFNULL(kpi.total_views, 0) AS total_views,
             pd.bio AS bio, pd.facebook_link AS facebook_url, pd.instagram_link AS instagram_url,
             pd.spotify_link AS spotify_url, pd.apple_music_link AS apple_music_url
@@ -297,6 +302,23 @@ WHERE overall_status = 'approved';
     photos = row.personal_photo ? [row.personal_photo] : [];
   }
 
+  const isSA = isSpecialArtistProfile(row.artist_type, ophid);
+  const primaryLabel =
+    (row.stage_name && String(row.stage_name).trim()) ||
+    (row.name && String(row.name).trim()) ||
+    "";
+
+  let saSongs = [];
+  if (isSA) {
+    try {
+      const saRows = await fetchSpecialArtistPublicSongRows(ophid);
+      saSongs = formatSpecialArtistSongsForHome(saRows, primaryLabel);
+    } catch (e) {
+      console.error("fetchSpecialArtistPublicSongRows:", e?.message || e);
+      saSongs = [];
+    }
+  }
+
   return {
     oph_id: ophid,
     name: row.name,
@@ -307,13 +329,13 @@ WHERE overall_status = 'approved';
     profession: row.profession,
     location: row.location,
     total_views: row.total_views,
-    total_content: parseInt(totalSongs, 10) || 0,
+    total_content: isSA ? saSongs.length : parseInt(totalSongs, 10) || 0,
     bio: row.bio,
     facebook_url: row.facebook_url,
     instagram_url: row.instagram_url,
     spotify_url: row.spotify_url,
     apple_music_url: row.apple_music_url,
-    songs: [],
+    songs: isSA ? saSongs : [],
   };
 };
 

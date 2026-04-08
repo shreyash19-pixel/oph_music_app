@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
+import { buildResourcePath } from "../../../../../utils/resourceSlug";
 import searchIc from "/assets/images/artists/searchIc.svg";
 
 const HeroSection = ({ onSearch }) => {
@@ -31,15 +32,18 @@ const HeroSection = ({ onSearch }) => {
     }
 
     try {
-      const [podcastsRes, reelsRes, storiesRes] = await Promise.all([
-        axiosApi.get(`/allPodcasts`),
-        axiosApi.get(`/allReels`),
-        axiosApi.get(`/allStories`)
-      ]);
+      const [podcastsRes, reelsRes, storiesRes, learningRes] =
+        await Promise.all([
+          axiosApi.get(`/allPodcasts`),
+          axiosApi.get(`/allReels`),
+          axiosApi.get(`/allStories`),
+          axiosApi.get(`/allLearning`),
+        ]);
 
       const allPodcasts = podcastsRes.data.data || [];
       const allReels = reelsRes.data.data || [];
       const allStories = storiesRes.data.data || [];
+      const allLearning = learningRes.data.data || [];
       
       const searchLower = value.toLowerCase().trim();
       
@@ -68,8 +72,14 @@ const HeroSection = ({ onSearch }) => {
       const filteredPodcasts = filterItems(allPodcasts, 'podcast');
       const filteredReels = filterItems(allReels, 'reel');
       const filteredStories = filterItems(allStories, 'story');
-      
-      const combinedResults = [...filteredPodcasts, ...filteredReels, ...filteredStories];
+      const filteredLearning = filterItems(allLearning, 'learning');
+
+      const combinedResults = [
+        ...filteredPodcasts,
+        ...filteredReels,
+        ...filteredStories,
+        ...filteredLearning,
+      ];
       
       setSearchResults(combinedResults);
       console.log('Filtered results:', combinedResults);
@@ -149,15 +159,16 @@ const HeroSection = ({ onSearch }) => {
                     <div
                       key={`${result.type}-${result.id}`}
                       onClick={() => {
-                        if (result.type === 'podcast') {
-                          navigate(`/content/${result.id}`);
-                        } else {
-                          // Scroll to the section on the same page
-                          const sectionId = result.type === 'reel' ? 'reels-section' : 'stories-section';
-                          const element = document.getElementById(sectionId);
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }
+                        const t = result.type;
+                        if (
+                          t === "podcast" ||
+                          t === "reel" ||
+                          t === "story" ||
+                          t === "learning"
+                        ) {
+                          navigate(
+                            buildResourcePath(t, result.id, result.title),
+                          );
                         }
                         setShowDropdown(false);
                       }}

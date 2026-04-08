@@ -10,6 +10,7 @@ import {
   WEBSITE_CONFIG_HUB_ROLES,
   TICKETS_PORTAL_ROLES,
   EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
+  PAYMENTS_PORTAL_ROLES,
 } from "./utils/roles";
 // import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
@@ -774,13 +775,7 @@ function App() {
           <Route
             path="/PaymentAll"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={PAYMENTS_PORTAL_ROLES}>
                 <PaymentAll />
               </ProtectedRoute>
             }
@@ -796,13 +791,7 @@ function App() {
           <Route
             path="/PaymentWithdraw"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ACCOUNTS_HEAD,
-                  ROLES.ACCOUNTS_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={PAYMENTS_PORTAL_ROLES}>
                 <PaymentWithdraw />
               </ProtectedRoute>
             }
@@ -888,7 +877,6 @@ function App() {
                 allowedRoles={[
                   ROLES.SUPER_ADMIN,
                   ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
                   ROLES.SALES_MEMBER,
                   ROLES.SALES_HEAD,
                 ]}

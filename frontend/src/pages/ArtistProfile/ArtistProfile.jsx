@@ -7,8 +7,8 @@ import Modal from 'react-modal';
 import { updateProfileImage } from "../auth/API/profile";
 import { useArtist } from "../auth/API/ArtistContext";
 import Face from "../../../public/assets/images/facebook.png";
-import Twitter from "../../../public/assets/images/twitter.png";
-import Linkedin from "../../../public/assets/images/linkedin.png";
+// import Twitter from "../../../public/assets/images/twitter.png";
+// import Linkedin from "../../../public/assets/images/linkedin.png";
 import Insta from "../../../public/assets/images/instagram.png";
 import Spotify from "../../../public/assets/images/spotify.png";
 import AppleMusic from "../../../public/assets/images/apple.png";
@@ -23,6 +23,20 @@ function socialHref(artist, ...keys) {
     if (typeof v === "string" && v.trim()) return v.trim();
   }
   return null;
+}
+
+/**
+ * API often stores host-only URLs without scheme; relative hrefs would open on the app origin.
+ * Force absolute external URLs (https) for social links.
+ */
+function normalizeExternalHref(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (lower.startsWith("mailto:") || lower.startsWith("tel:")) return s;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("//")) return `https:${s}`;
+  return `https://${s.replace(/^\/+/, "")}`;
 }
 
 function formatTrackLengthSeconds(seconds) {
@@ -341,32 +355,48 @@ export default function ArtistProfile() {
               const ig = socialHref(artist, "instagram_url", "instagram_link", "InstagramLink");
               const sp = socialHref(artist, "spotify_url", "spotify_link", "SpotifyLink");
               const am = socialHref(artist, "apple_music_url", "apple_music_link", "AppleMusicLink");
-              const li = socialHref(artist, "linkedin_url", "linkedin_link");
-              const tw = socialHref(artist, "twitter_url", "twitter_link");
+              // const li = socialHref(artist, "linkedin_url", "linkedin_link");
+              // const tw = socialHref(artist, "twitter_url", "twitter_link");
               const items = [
                 { href: fb, src: Face, alt: "Facebook" },
                 { href: ig, src: Insta, alt: "Instagram" },
                 { href: sp, src: Spotify, alt: "Spotify" },
                 { href: am, src: AppleMusic, alt: "Apple Music" },
-                { href: li, src: Linkedin, alt: "LinkedIn" },
-                { href: tw, src: Twitter, alt: "Twitter" },
+                // { href: li, src: Linkedin, alt: "LinkedIn" },
+                // { href: tw, src: Twitter, alt: "Twitter" },
               ];
-              return items
-                .filter((x) => x.href)
-                .map(({ href, src, alt }) => (
-                  <a
+              return items.map(({ href, src, alt }) => {
+                const safeHref = href ? normalizeExternalHref(href) : null;
+                const imgClass = safeHref
+                  ? "opacity-70 w-10 h-10 object-cover hover:opacity-100"
+                  : "opacity-35 w-10 h-10 object-cover grayscale cursor-not-allowed";
+                const img = (
+                  <img src={src} alt="" className={imgClass} aria-hidden />
+                );
+                if (safeHref) {
+                  return (
+                    <a
+                      key={alt}
+                      href={safeHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={alt}
+                    >
+                      {img}
+                    </a>
+                  );
+                }
+                return (
+                  <span
                     key={alt}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    className="inline-flex select-none"
+                    aria-label={`${alt}: not available`}
+                    title="Not available"
                   >
-                    <img
-                      src={src}
-                      alt={alt}
-                      className="opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                    />
-                  </a>
-                ));
+                    {img}
+                  </span>
+                );
+              });
             })()}
           </div>
 

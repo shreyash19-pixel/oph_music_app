@@ -61,9 +61,7 @@ const Collab = () => {
 
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <WebConfigSidebar />
-      <div className="flex-1 ml-10 overflow-auto p-6">
+    <WebConfigSidebar>
         {lastKpiRun && (
           <div className="mb-6 rounded-xl border border-[#0d3c44]/30 bg-white px-5 py-4 shadow-sm text-gray-800">
             <p className="text-sm font-semibold text-[#0d3c44] uppercase tracking-wide">
@@ -143,8 +141,7 @@ const Collab = () => {
           pageSize={10}
           detailsUrl="/Collab"
         />
-      </div>
-    </div>
+    </WebConfigSidebar>
   );
 };
 

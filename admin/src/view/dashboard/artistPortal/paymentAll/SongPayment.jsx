@@ -8,7 +8,9 @@ import { ROLES } from "../../../../utils/roles";
 
 const SongPayment = () => {
   const { user } = useAuth();
-  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
+  const canApproveReject =
+    user?.role !== ROLES.SALES_MEMBER &&
+    user?.role !== ROLES.ADMINISTRATIVE_MEMBER;
   const { ophid, song_id } = useParams();
   const songid = song_id;
   const [artist, setArtist] = useState(null);
@@ -428,7 +430,7 @@ const SongPayment = () => {
           </div>
         ) : (
           <p className="border-t pt-6 text-sm text-gray-600">
-            You can review this payment; approving or rejecting is limited to sales head and other authorized roles.
+            You can review this payment; approving or rejecting is not available for your role.
           </p>
         )}
 

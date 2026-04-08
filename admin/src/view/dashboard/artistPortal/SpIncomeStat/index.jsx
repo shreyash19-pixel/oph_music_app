@@ -7,7 +7,9 @@ import { ROLES } from "../../../../utils/roles";
 
 const SpIncomeStatIndividual = () => {
   const { user } = useAuth();
-  const canApproveReject = user?.role !== ROLES.SALES_MEMBER;
+  const canApproveReject =
+    user?.role !== ROLES.SALES_MEMBER &&
+    user?.role !== ROLES.ADMINISTRATIVE_MEMBER;
   const { ophid } = useParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -158,7 +160,7 @@ const SectionBlock = ({
         </>
       ) : (
         <p className="text-sm text-gray-600">
-          You can review this status; approving or rejecting is limited to sales head and other authorized roles.
+          You can review this status; approving or rejecting is not available for your role.
         </p>
       )}
     </div>

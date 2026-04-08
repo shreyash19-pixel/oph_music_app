@@ -7,7 +7,7 @@ import Events from "../pages/NavPages/Events/Events";
 import Artists from "../pages/NavPages/Artists/Artists";
 import Leaderboard from "../pages/NavPages/Leaderboard/Leaderboard";
 import Resources from "../pages/NavPages/Resources/Resources";
-import IndividualPodcast from "../pages/NavPages/Resources/components/IndividualPodcast/IndividualPodcast";
+import ResourceDetail from "../pages/NavPages/Resources/components/ResourceDetail/ResourceDetail";
 import IndividualEvent from "../pages/NavPages/Events/components/IndividualEvent/IndividualEvent";
 import MusicPlayerProfile from "../pages/NavPages/Artists/components/MusicPlayerProfile";
 import PaymentScreen from "../pages/NavPages/Events/components/PaymentScreen";
@@ -68,7 +68,11 @@ const NavRoutes = () => {
             element={<Resources />}
           />
 
-          <Route path="content/:id" element={<IndividualPodcast />} />
+          <Route
+            path="resources/:resourceType/:slug"
+            element={<ResourceDetail />}
+          />
+          <Route path="content/:id" element={<ResourceDetail />} />
           <Route path="success" element={<SuccessScreen />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/cancellation-policy" element={<CancellationPolicy />} />

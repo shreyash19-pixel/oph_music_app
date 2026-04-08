@@ -1,6 +1,6 @@
 import { FaPlay, FaPause } from "react-icons/fa";
 import { formatDateTime } from "../../../../utils/date";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import { useDispatch, useSelector } from "react-redux";
 import { useArtist } from "../../../auth/API/ArtistContext";
@@ -20,11 +20,20 @@ const isArtistRegistered = (eventId, artistBookEvents = []) =>
 
 const POLL_MS = 45_000;
 
+const formatPlaybackTime = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+};
+
 const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
   const { ophid, headers } = useArtist();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [audio, setAudio] = useState(null); // State for audio object
-  const [playingSongId, setPlayingSongId] = useState(null); // State for currently playing song ID
+  const audioRef = useRef(null);
+  const [playingSongId, setPlayingSongId] = useState(null);
+  const [playback, setPlayback] = useState({ current: 0, duration: 0 });
+  const [isPlaying, setIsPlaying] = useState(false);
   const eventID = useSelector((state) => state.event.selectedEvent);
   const location = useLocation();
   const dispatch = useDispatch();
@@ -60,31 +69,82 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
   }, [dispatch, headers]);
 
   const handlePlayPause = (song) => {
-    if (audio && playingSongId === song.songId) {
-      // Toggle play/pause for the same song
-      if (!audio.paused) {
-        audio.pause();
-        setPlayingSongId(null);
+    const a = audioRef.current;
+    if (a && playingSongId === song.songId) {
+      if (!a.paused) {
+        a.pause();
+        setIsPlaying(false);
       } else {
-        audio.play();
-        setPlayingSongId(song.songId);
+        a.play();
+        setIsPlaying(true);
       }
-    } else {
-      // New song selected
-      if (audio) {
-        audio.pause();
-      }
-      const newAudio = new Audio(song.audioUrl);
-      newAudio.play();
-      setAudio(newAudio);
-      setPlayingSongId(song.songId);
-
-      // Handle when the song ends
-      newAudio.onended = () => {
-        setPlayingSongId(null);
-      };
+      return;
     }
+
+    if (a) {
+      a.pause();
+      a.src = "";
+    }
+
+    const newAudio = new Audio(song.audioUrl);
+    audioRef.current = newAudio;
+
+    const syncPlayback = () => {
+      setPlayback({
+        current: newAudio.currentTime,
+        duration: Number.isFinite(newAudio.duration) ? newAudio.duration : 0,
+      });
+    };
+
+    newAudio.onloadedmetadata = syncPlayback;
+    newAudio.ontimeupdate = syncPlayback;
+    newAudio.onended = () => {
+      setPlayingSongId(null);
+      setIsPlaying(false);
+      setPlayback({ current: 0, duration: 0 });
+      audioRef.current = null;
+    };
+
+    setPlayingSongId(song.songId);
+    newAudio
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch(() => {
+        setIsPlaying(false);
+        setPlayingSongId(null);
+        setPlayback({ current: 0, duration: 0 });
+        audioRef.current = null;
+      });
   };
+
+  const handleSeek = (e, song) => {
+    e.stopPropagation();
+    const a = audioRef.current;
+    if (
+      !a ||
+      playingSongId !== song.songId ||
+      !Number.isFinite(a.duration) ||
+      a.duration <= 0
+    )
+      return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+    a.currentTime = pct * a.duration;
+    setPlayback({
+      current: a.currentTime,
+      duration: a.duration,
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const navigate = useNavigate();
 
@@ -234,14 +294,12 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
                   >
                     {/* Index */}
                     <span className="w-8 text-gray-400">{index + 1}</span>
-
                     {/* Image */}
                     <img
                       src={song.imageUrl?.[0] || ReleaseBlur}
                       className="w-10 h-10 rounded-md shrink-0"
                       alt=""
                     />
-
                     {/* Song Info */}
                     <div className="flex-grow ms-4 truncate min-w-0">
                       <div className="font-medium truncate">
@@ -255,13 +313,12 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
                             <span>, {song.secondaryArtist.join(", ")}</span>
                           )}
                       </div>
-                    </div>
-
+                    </div>{" "}
+                    {/* ✅ FIX: closed here */}
                     {/* Views */}
                     <span className="w-24 text-right text-gray-400 shrink-0">
                       {song.youtubeViews}
                     </span>
-
                     {/* Play Button */}
                     <span className="w-24 flex items-center justify-end ml-auto shrink-0">
                       <button

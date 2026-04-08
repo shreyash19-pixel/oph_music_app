@@ -10,6 +10,7 @@ const UpdatePodcast = () => {
 
   const [formData, setFormData] = useState({
     title: "",
+    bio: "",
     video_url: null,
     thumbnail_url: null,
     artist_name: "",
@@ -33,6 +34,7 @@ const UpdatePodcast = () => {
 
         setFormData({
           title: data.title || "",
+          bio: data.bio ?? "",
           artist_name: data.artist_name || "",
           duration_in_minutes: data.duration_in_minutes || "",
           views: data.views || 0,
@@ -104,7 +106,7 @@ const UpdatePodcast = () => {
         },
       });
       toast.success("Podcast updated successfully!");
-      navigate("/WebConfig/Podcast");
+      navigate("/allResource");
     } catch (error) {
       console.error("Error updating podcast:", error);
       toast.error("Failed to update podcast.");
@@ -141,6 +143,24 @@ const UpdatePodcast = () => {
             className="w-full border border-gray-300 px-4 py-2 rounded-xl"
             required
           />
+
+          <div className="space-y-2">
+            <label
+              htmlFor="podcast-bio-update"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Bio
+            </label>
+            <textarea
+              id="podcast-bio-update"
+              name="bio"
+              placeholder="Long-form description (optional)"
+              value={formData.bio}
+              onChange={handleChange}
+              rows={6}
+              className="w-full border border-gray-300 px-4 py-2 rounded-xl resize-y min-h-[120px] text-sm"
+            />
+          </div>
 
           {/* Video Upload */}
           <div className="space-y-3">
@@ -306,7 +326,7 @@ const UpdatePodcast = () => {
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
-              onClick={() => navigate("/WebConfig/Podcast")}
+              onClick={() => navigate("/allResource")}
               className="px-4 py-2 rounded-xl bg-gray-300 hover:bg-gray-400 text-black"
             >
               Cancel
