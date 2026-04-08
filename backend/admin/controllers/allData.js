@@ -99,41 +99,42 @@ const downloadEventParticipants = async (req, res) => {
     const worksheet = workbook.addWorksheet("Event Participants");
 
     worksheet.columns = [
-      { header: "Source", key: "source", width: 12 },
-      { header: "Record ID", key: "record_id", width: 14 },
-      { header: "OPH ID", key: "oph_id", width: 22 },
-      { header: "Event ID", key: "event_id", width: 12 },
-      { header: "Status", key: "status", width: 18 },
+      { header: "User type", key: "user_type", width: 12 },
+      { header: "Source table", key: "source_table", width: 18 },
+      { header: "Source row ID", key: "source_row_id", width: 14 },
+      { header: "Event ID", key: "event_id", width: 10 },
+      { header: "OPH ID", key: "oph_id", width: 20 },
+      { header: "First name", key: "first_name", width: 16 },
+      { header: "Last name", key: "last_name", width: 16 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Number", key: "phone", width: 16 },
+      { header: "Profession", key: "profession", width: 22 },
+      { header: "Instagram link", key: "instagram_link", width: 30 },
       { header: "Created At", key: "created_at", width: 14 },
       { header: "Updated At", key: "updated_at", width: 14 },
-      { header: "Booking ref", key: "booking_reference", width: 22 },
-      { header: "Name (outside only)", key: "participant_name", width: 28 },
-      { header: "Email (outside only)", key: "email", width: 32 },
+      { header: "Artist full name (account)", key: "artist_full_name", width: 22 },
+      { header: "Artist stage name", key: "artist_stage_name", width: 18 },
     ];
 
     rows.forEach((row) => {
-      const newRow = worksheet.addRow({
-        source: row.source,
-        record_id: row.record_id,
-        oph_id: row.oph_id,
+      worksheet.addRow({
+        user_type: row.user_type,
+        source_table: row.source_table,
+        source_row_id: row.source_row_id,
         event_id: row.event_id,
-        status: row.status,
+        oph_id: row.oph_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        email: row.user_type === "outside" ? row.email ?? "" : "",
+        phone: row.user_type === "outside" ? row.phone ?? "" : "",
+        profession: row.user_type === "outside" ? row.profession ?? "" : "",
+        instagram_link:
+          row.user_type === "outside" ? row.instagram_link ?? "" : "",
         created_at: row.created_at ? formatDateOnlyIST(row.created_at) : "",
         updated_at: row.updated_at ? formatDateOnlyIST(row.updated_at) : "",
-        booking_reference: row.booking_reference ?? "",
-        participant_name: row.participant_name ?? "",
-        email: row.email ?? "",
+        artist_full_name: row.artist_full_name ?? "",
+        artist_stage_name: row.artist_stage_name ?? "",
       });
-
-      const statusCell = newRow.getCell("status");
-      const s = String(row.status || "").toLowerCase();
-      if (s === "rejected") {
-        statusCell.font = { color: { argb: "FF0000" }, bold: true };
-      } else if (s === "accepted" || s === "approved") {
-        statusCell.font = { color: { argb: "228B22" }, bold: true };
-      } else if (s === "under review" || s === "pending") {
-        statusCell.font = { color: { argb: "FF8C00" }, bold: true };
-      }
     });
 
     worksheet.getRow(1).font = { bold: true };
@@ -169,7 +170,7 @@ const downloadContactUs = async (req, res) => {
     const worksheet = workbook.addWorksheet("Contact Us");
 
     worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
+      { header: "SR. NO.", key: "sr_no", width: 10 },
       { header: "Name", key: "name", width: 25 },
       { header: "Email", key: "email", width: 30 },
       { header: "Phone", key: "phone", width: 15 },
@@ -192,11 +193,11 @@ const downloadContactUs = async (req, res) => {
       }).format(new Date(date));
     };
 
-    // Add rows
-    rows.forEach((row) => {
+    rows.forEach((row, index) => {
       worksheet.addRow({
         ...row,
         created_at: formatDate(row.created_at),
+        sr_no: index + 1,
       });
     });
 
@@ -224,25 +225,32 @@ const downloadContactUs = async (req, res) => {
 
 const downloadSpecialArtistDetails = async (req, res) => {
   try {
-    const rows = await allDataCont.epkDetails(); // your DB fetch function
+    const [detailRows, songRows] = await Promise.all([
+      allDataCont.epkDetails(),
+      allDataCont.specialistArtistSongsExport(),
+    ]);
 
-    if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No special artist details found" });
+    if (
+      (!detailRows || detailRows.length === 0) &&
+      (!songRows || songRows.length === 0)
+    ) {
+      return res.status(404).json({
+        message: "No special artist details or specialist artist songs found",
+      });
     }
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Special Artist Details");
 
     worksheet.columns = [
+      { header: "Date", key: "date", width: 20 },
       { header: "OPH_ID", key: "ophid", width: 20 },
       { header: "Field", key: "field", width: 40 },
+      { header: "Content", key: "content", width: 50 },
       { header: "Status", key: "status", width: 20 },
       { header: "Reason", key: "reason", width: 40 },
-      { header: "Content", key: "content", width: 50 },
-      { header: "Date", key: "date", width: 20 },
     ];
 
-    // Date formatter
     const formatDate = (date) => {
       if (!date) return "";
       return new Intl.DateTimeFormat("en-GB", {
@@ -252,8 +260,18 @@ const downloadSpecialArtistDetails = async (req, res) => {
       }).format(new Date(date));
     };
 
-    // Add rows and apply conditional styling
-    rows.forEach((row) => {
+    const formatDateTime = (date) => {
+      if (!date) return "";
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(date));
+    };
+
+    (detailRows || []).forEach((row) => {
       const newRow = worksheet.addRow({
         ...row,
         date: formatDate(row.date),
@@ -261,19 +279,53 @@ const downloadSpecialArtistDetails = async (req, res) => {
 
       const statusCell = newRow.getCell("status");
 
-      // Apply color-coded styles for status
       if (row.status === "rejected") {
-        statusCell.font = { color: { argb: "FF0000" }, bold: true }; // Red
+        statusCell.font = { color: { argb: "FF0000" }, bold: true };
       } else if (row.status === "approved") {
-        statusCell.font = { color: { argb: "228B22" }, bold: true }; // Green
+        statusCell.font = { color: { argb: "228B22" }, bold: true };
       } else if (row.status === "under review") {
-        statusCell.font = { color: { argb: "FF8C00" }, bold: true }; // Orange
+        statusCell.font = { color: { argb: "FF8C00" }, bold: true };
       }
     });
 
-    // Style headers
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).alignment = { horizontal: "center" };
+
+    const songsSheet = workbook.addWorksheet("Special Artist Songs");
+    songsSheet.columns = [
+      { header: "Song ID", key: "song_id", width: 12 },
+      { header: "OPH_ID", key: "oph_id", width: 22 },
+      { header: "Song Name", key: "song_name", width: 36 },
+      { header: "Song Type", key: "song_type", width: 12 },
+      { header: "Status", key: "status", width: 14 },
+      { header: "Views", key: "views", width: 12 },
+      { header: "Credits", key: "credits", width: 12 },
+      { header: "Duration", key: "duration", width: 12 },
+      { header: "Proof", key: "proof", width: 40 },
+      { header: "Reject Reason", key: "reject_reason", width: 36 },
+      { header: "Created At", key: "created_at", width: 22 },
+      { header: "Updated At", key: "updated_at", width: 22 },
+    ];
+
+    (songRows || []).forEach((row) => {
+      const newRow = songsSheet.addRow({
+        ...row,
+        created_at: formatDateTime(row.created_at),
+        updated_at: formatDateTime(row.updated_at),
+      });
+
+      const statusCell = newRow.getCell("status");
+      if (row.status === "rejected") {
+        statusCell.font = { color: { argb: "FF0000" }, bold: true };
+      } else if (row.status === "approved") {
+        statusCell.font = { color: { argb: "228B22" }, bold: true };
+      } else if (row.status === "pending") {
+        statusCell.font = { color: { argb: "FF8C00" }, bold: true };
+      }
+    });
+
+    songsSheet.getRow(1).font = { bold: true };
+    songsSheet.getRow(1).alignment = { horizontal: "center" };
 
     // Response headers
     res.setHeader(
@@ -289,6 +341,81 @@ const downloadSpecialArtistDetails = async (req, res) => {
     res.end();
   } catch (error) {
     console.error("Error downloading Special Artist Details Excel:", error);
+    res.status(500).json({ error: "Failed to download Excel file" });
+  }
+};
+
+/** Standalone export: specialist / special-artist songs only (same rows as second sheet of special-artist-details export). */
+const downloadSpecialArtistSongsExcel = async (req, res) => {
+  try {
+    const songRows = await allDataCont.specialistArtistSongsExport();
+
+    if (!songRows || songRows.length === 0) {
+      return res.status(404).json({ message: "No special artist songs found" });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Special Artist Songs");
+
+    worksheet.columns = [
+      { header: "Song ID", key: "song_id", width: 12 },
+      { header: "OPH_ID", key: "oph_id", width: 22 },
+      { header: "Song Name", key: "song_name", width: 36 },
+      { header: "Song Type", key: "song_type", width: 12 },
+      { header: "Status", key: "status", width: 14 },
+      { header: "Views", key: "views", width: 12 },
+      { header: "Credits", key: "credits", width: 12 },
+      { header: "Duration", key: "duration", width: 12 },
+      { header: "Proof", key: "proof", width: 40 },
+      { header: "Reject Reason", key: "reject_reason", width: 36 },
+      { header: "Created At", key: "created_at", width: 22 },
+      { header: "Updated At", key: "updated_at", width: 22 },
+    ];
+
+    const formatDateTime = (date) => {
+      if (!date) return "";
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(date));
+    };
+
+    songRows.forEach((row) => {
+      const newRow = worksheet.addRow({
+        ...row,
+        created_at: formatDateTime(row.created_at),
+        updated_at: formatDateTime(row.updated_at),
+      });
+
+      const statusCell = newRow.getCell("status");
+      if (row.status === "rejected") {
+        statusCell.font = { color: { argb: "FF0000" }, bold: true };
+      } else if (row.status === "approved") {
+        statusCell.font = { color: { argb: "228B22" }, bold: true };
+      } else if (row.status === "pending") {
+        statusCell.font = { color: { argb: "FF8C00" }, bold: true };
+      }
+    });
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: "center" };
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=special_artist_songs.xlsx",
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error downloading Special Artist Songs Excel:", error);
     res.status(500).json({ error: "Failed to download Excel file" });
   }
 };
@@ -1259,6 +1386,7 @@ module.exports = {
   downloadEventParticipants,
   downloadContactUs,
   downloadSpecialArtistDetails,
+  downloadSpecialArtistSongsExcel,
   downloadSongsRegister,
   downloadAudioDetailsExcel,
   downloadVideoDetailsExcel

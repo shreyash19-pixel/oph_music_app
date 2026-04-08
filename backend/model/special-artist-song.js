@@ -136,8 +136,8 @@ const insertSpecialArtistSongs = async (
 
   const [records] = await db.execute(
     `SELECT 
-      COUNT(CASE WHEN status = 'approved' THEN 1 END) AS approved_count,
-       COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_count
+      COUNT(CASE WHEN status = 'approved' AND song_type = 'free' THEN 1 END) AS approved_count,
+      COUNT(CASE WHEN status = 'pending' AND song_type = 'free' THEN 1 END) AS pending_count
      FROM special_artist_songs
      WHERE oph_id = ?`,
     [ophid],
@@ -158,7 +158,10 @@ const insertSpecialArtistSongs = async (
 
   if (resp && resp.length > 0) {
     rejectedCount = Number(resp[0].rejected_count);
-    rejectedCount = rejectedCount === 0 ? 0 : rejectedCount - 1;
+    // One resubmission after rejection clears a single rejection credit (not on brand-new inserts).
+    if (songID && rejectedCount > 0) {
+      rejectedCount -= 1;
+    }
   }
 
   await db.execute(
@@ -183,40 +186,39 @@ const getSpeicalArtistSong = async (songId) => {
   return rows;
 };
 
-const getIsSongFree = async (ophid) => {
-  let isFree = true;
+/**
+ * Whether the artist may register another song as free (2 approved free max).
+ * @param {string|number} ophid
+ * @param {string|number|null|undefined} excludeSongId - When updating an existing row, exclude it from pending/approved free counts so edits are not blocked by the row itself.
+ */
+const getIsSongFree = async (ophid, excludeSongId = null) => {
+  const hasExclude =
+    excludeSongId !== null &&
+    excludeSongId !== undefined &&
+    String(excludeSongId).trim() !== "";
 
-  const [rows] = await db.execute(
-    "SELECT * FROM special_artist_free_songs WHERE oph_id = ?",
-    [ophid],
+  const [counts] = await db.execute(
+    `SELECT 
+      COALESCE(SUM(CASE WHEN status = 'approved' AND song_type = 'free' THEN 1 ELSE 0 END), 0) AS approved_free,
+      COALESCE(SUM(CASE WHEN status = 'pending' AND song_type = 'free' THEN 1 ELSE 0 END), 0) AS pending_free
+     FROM special_artist_songs
+     WHERE oph_id = ?${hasExclude ? " AND song_id <> ?" : ""}`,
+    hasExclude ? [ophid, excludeSongId] : [ophid],
   );
 
-  if (rows && rows.length > 0) {
-    if (rows[0].approved_count >= 2) {
-      isFree = false;
-    } else if (
-      rows[0].approved_count >= 0 &&
-      rows[0].approved_count < 2 &&
-      rows[0].rejected_count > 0
-    ) {
-      isFree = true;
-    } else if (
-      rows[0].approved_count === 0 &&
-      rows[0].rejected_count === 0 &&
-      rows[0].pending_count >= 2
-    ) {
-      return false;
-    }
-    else if (
-      rows[0].approved_count > 0 &&
-      rows[0].rejected_count === 0 &&
-      rows[0].pending_count >= 1
-    ) {
-      return false;
-    }
-  }
+  const approvedFree = Number(counts[0]?.approved_free ?? 0);
+  const pendingFree = Number(counts[0]?.pending_free ?? 0);
 
-  return isFree;
+  const [rows] = await db.execute(
+    "SELECT rejected_count FROM special_artist_free_songs WHERE oph_id = ?",
+    [ophid],
+  );
+  const rejected = rows?.length ? Number(rows[0].rejected_count) : 0;
+
+  if (approvedFree >= 2) return false;
+  if (approvedFree === 0 && rejected === 0 && pendingFree >= 2) return false;
+  if (approvedFree > 0 && rejected === 0 && pendingFree >= 1) return false;
+  return true;
 };
 
 module.exports = {

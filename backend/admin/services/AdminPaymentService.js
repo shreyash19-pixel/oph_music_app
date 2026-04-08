@@ -62,17 +62,25 @@ class AdminPaymentService {
             const songStatus = resp[0].status;
 
             if (songStatus !== "rejected") {
-              const [freeSongs] = await connection.execute(
-                "SELECT rejected_count FROM special_artist_free_songs WHERE oph_id = ?",
-                [ophId],
+              const [songRows] = await connection.execute(
+                "SELECT song_type FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
+                [ophId, songId],
               );
-
-              let rejectedCount = Number(freeSongs[0].rejected_count);
-
-              await connection.execute(
-                "UPDATE special_artist_free_songs SET rejected_count = ? WHERE oph_id = ?",
-                [rejectedCount + 1, ophId],
-              );
+              if (songRows[0]?.song_type === "free") {
+                const [freeSongs] = await connection.execute(
+                  "SELECT rejected_count FROM special_artist_free_songs WHERE oph_id = ?",
+                  [ophId],
+                );
+                const rejectedCount = freeSongs.length
+                  ? Number(freeSongs[0].rejected_count)
+                  : 0;
+                await connection.execute(
+                  `INSERT INTO special_artist_free_songs (oph_id, rejected_count)
+                   VALUES (?, ?)
+                   ON DUPLICATE KEY UPDATE rejected_count = VALUES(rejected_count)`,
+                  [ophId, rejectedCount + 1],
+                );
+              }
             }
           }
         }

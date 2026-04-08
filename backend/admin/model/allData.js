@@ -103,13 +103,11 @@ const ticketsDetails = async () => {
 };
 
 /**
- * Internal portal signups (`event_participants`) + outside/public registrations (`event_bookings`).
- * Outside participants (no portal account, or not yet linked) live only in `event_bookings`.
+ * Internal (`event_participants`) + outside (`event_bookings`) — unified shape for Excel export.
  */
 const eventParticipantsDetails = async () => {
   const [portalRows] = await db.execute(
-    `SELECT id, oph_id, event_id, status, created_at, updated_at
-     FROM event_participants
+    `SELECT * FROM event_participants
      ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
   );
   const [outsideRows] = await db.execute(
@@ -117,33 +115,104 @@ const eventParticipantsDetails = async () => {
      ORDER BY COALESCE(updated_at, created_at) DESC, id DESC`
   );
 
+  const professionIds = [
+    ...new Set(
+      (outsideRows || [])
+        .map((r) => r.profession_id)
+        .filter((id) => id != null && id !== ""),
+    ),
+  ];
+  const professionById = new Map();
+  if (professionIds.length > 0) {
+    const ph = professionIds.map(() => "?").join(",");
+    const [profRows] = await db.execute(
+      `SELECT id, name FROM professions WHERE id IN (${ph})`,
+      professionIds,
+    );
+    for (const p of profRows || []) {
+      professionById.set(Number(p.id), p.name ?? "");
+    }
+  }
+
   const portal = (portalRows || []).map((r) => ({
-    source: "portal",
-    record_id: r.id,
-    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    user_type: "internal",
+    source_table: "event_participants",
+    source_row_id: r.id,
     event_id: r.event_id,
-    status: r.status,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    first_name: r.first_name ?? "",
+    last_name: r.last_name ?? "",
+    email: "",
+    phone: "",
+    profession: "",
+    instagram_link: "",
     created_at: r.created_at,
     updated_at: r.updated_at,
-    booking_reference: "",
-    participant_name: "",
-    email: "",
   }));
 
   const outside = (outsideRows || []).map((r) => ({
-    source: "outside",
-    record_id: r.id != null ? `eb-${r.id}` : "",
-    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    user_type: "outside",
+    source_table: "event_bookings",
+    source_row_id: r.id,
     event_id: r.event_id,
-    status: r.status,
+    oph_id: r.oph_id ?? r.OPH_ID ?? "",
+    first_name: r.first_name ?? "",
+    last_name: r.last_name ?? "",
+    email: r.email ?? "",
+    phone: r.phone ?? "",
+    profession:
+      r.profession_id != null && r.profession_id !== ""
+        ? professionById.get(Number(r.profession_id)) ?? ""
+        : "",
+    instagram_link: r.instagram_handle ?? "",
     created_at: r.created_at,
     updated_at: r.updated_at,
-    booking_reference: r.booking_reference ?? "",
-    participant_name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim(),
-    email: r.email ?? "",
   }));
 
-  return [...portal, ...outside];
+  const combined = [...portal, ...outside];
+  const ophKeys = [
+    ...new Set(
+      combined
+        .map((r) => String(r.oph_id ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  const emptyNames = { artist_full_name: "", artist_stage_name: "" };
+  if (ophKeys.length === 0) {
+    return combined.map((r) => ({ ...r, ...emptyNames }));
+  }
+
+  const artistByOph = new Map();
+  const chunkSize = 200;
+  for (let i = 0; i < ophKeys.length; i += chunkSize) {
+    const chunk = ophKeys.slice(i, i + chunkSize);
+    const ph = chunk.map(() => "?").join(",");
+    const [artistRows] = await db.execute(
+      `SELECT
+         ud.oph_id AS oph_key,
+         ud.full_name AS artist_full_name,
+         ud.stage_name AS artist_stage_name
+       FROM user_details ud
+       WHERE ud.oph_id IN (${ph})`,
+      chunk,
+    );
+    for (const row of artistRows || []) {
+      const k = String(row.oph_key ?? "").trim();
+      if (k) artistByOph.set(k, row);
+    }
+  }
+
+  return combined.map((r) => {
+    const k = String(r.oph_id ?? "").trim();
+    const a = k ? artistByOph.get(k) : null;
+    if (!a) return { ...r, ...emptyNames };
+    return {
+      ...r,
+      artist_full_name: a.artist_full_name ?? "",
+      artist_stage_name: a.artist_stage_name ?? "",
+    };
+  });
 };
 
 
@@ -157,6 +226,30 @@ const epkDetails = async () => {
   return rows;
 };
 
+/** Specialist / special artist songs only (matches public isSpecialArtistProfile rules). */
+const specialistArtistSongsExport = async () => {
+  const [rows] = await db.execute(
+    `SELECT
+      sas.song_id,
+      sas.oph_id,
+      sas.song_name,
+      sas.song_type,
+      sas.status,
+      sas.views,
+      sas.credits,
+      sas.duration,
+      sas.proof,
+      sas.reject_reason,
+      sas.created_at,
+      sas.updated_at
+    FROM special_artist_songs sas
+    INNER JOIN user_details ud ON ud.oph_id = sas.oph_id
+    WHERE UPPER(COALESCE(ud.oph_id, '')) LIKE '%-SA-%'
+       OR LOWER(TRIM(COALESCE(ud.artist_type, ''))) LIKE '%special%'
+    ORDER BY sas.updated_at DESC, sas.song_id DESC`,
+  );
+  return rows;
+};
 
 const SongRegistrationDetails = async () => {
   const [rows] = await db.execute("SELECT * FROM songs_register");
@@ -191,6 +284,7 @@ module.exports = {
   eventParticipantsDetails,
   contactDetails, 
   epkDetails,
+  specialistArtistSongsExport,
   SongRegistrationDetails,
   getAllAudioDetails,
   getAllVideoDetails

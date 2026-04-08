@@ -212,6 +212,15 @@ const AllData = () => {
       endpoint: '/special-artist-details-excel',
       icon: '',
       color: 'bg-purple-500 hover:bg-purple-600'
+    },
+    {
+      id: 'Special Artist Songs',
+      label: 'Download Special Artist Songs',
+      description:
+        'Special artist songs only (oph_id contains -SA- or artist_type special): song name, type, status, proof, etc.',
+      endpoint: '/special-artist-songs-excel',
+      icon: '',
+      color: 'bg-fuchsia-500 hover:bg-fuchsia-600'
     }
   ];
 

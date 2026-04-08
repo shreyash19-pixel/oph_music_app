@@ -32,6 +32,7 @@ import Contact from "./view/dashboard/websiteConfig/contact";
 import Resource from "./view/dashboard/websiteConfig/resource";
 import HomePage from "./view/dashboard/websiteConfig/homePage";
 import PageMediaUpload from "./view/dashboard/websiteConfig/PageMediaUpload";
+import UploadVideo from "./view/dashboard/websiteConfig/UploadVideo";
 import Collab from "./view/dashboard/websiteConfig/collab";
 import CollabArtistDetail from "./view/dashboard/websiteConfig/collab/CollabArtistDetail";
 import EventAdminForm from "./view/dashboard/websiteConfig/Events";
@@ -66,6 +67,7 @@ import ContentManage from "./view/dashboard/artistPortal/contentManage";
 import Withdraw from "./view/dashboard/artistPortal/paymentsWithdrawals";
 import ContentAnalysis from "./view/dashboard/artistPortal/contentAnalysis/ContentAnalysis";
 import EventParticipation from "./view/dashboard/websiteConfig/Events/EventParticipation";
+import EventParticipantDetail from "./view/dashboard/websiteConfig/Events/EventParticipantDetail";
 import EventManagement from "./view/dashboard/websiteConfig/Events/EventManagement";
 import EventWinning from "./view/dashboard/websiteConfig/Events/EventWinning";
 import EventWinnerAssign from "./view/dashboard/websiteConfig/Events/EventWinnerAssign";
@@ -255,6 +257,16 @@ function App() {
                 allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}
               >
                 <EventParticipation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/event_participants/participant/:source/:recordId"
+            element={
+              <ProtectedRoute
+                allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}
+              >
+                <EventParticipantDetail />
               </ProtectedRoute>
             }
           />
@@ -571,6 +583,21 @@ function App() {
                 ]}
               >
                 <PageMediaUpload />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/UploadVideo"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.ADMINISTRATIVE_HEAD,
+                  ROLES.ADMINISTRATIVE_MEMBER,
+                ]}
+              >
+                <UploadVideo />
               </ProtectedRoute>
             }
           />

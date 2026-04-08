@@ -436,6 +436,23 @@ const DynamicTable = ({
                 // ... existing code ...
                 onClick={() => {
                 if (detailsUrl) {
+                  // Event participation list → full participant detail page
+                  if (detailsUrl.includes("/event_participants/participant")) {
+                    const src = row.source;
+                    if (src === "internal" || src === "external") {
+                      const rid =
+                        src === "external"
+                          ? String(row.id || "").replace(/^eb-/i, "")
+                          : String(row.id ?? "");
+                      if (rid && rid !== "undefined") {
+                        navigate(
+                          `${detailsUrl}/${src}/${encodeURIComponent(rid)}`,
+                        );
+                      }
+                    }
+                    return;
+                  }
+
                   const ophidValue = row.ophid || row.oph_id || row.OPH_ID || row.ophID; // use oph_id for TV
                   const songIdValue = row.song_id || row.songId;
                   const ticketIdValue = row.ticketNumber || row.ticketNumber;
