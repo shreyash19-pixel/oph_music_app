@@ -4,16 +4,19 @@ const { uploadToS3 } = require("../utils");
 exports.uploadVideo = async (req, res) => {
   try {
     const { description } = req.body;
-    const videoFile = req.file;
+    const videoFile = req.files?.video?.[0];
+    const thumbnailFile = req.files?.thumbnail?.[0];
 
-    if (!videoFile && (!description || !description.trim())) {
+    if (!videoFile && !thumbnailFile && (!description || !description.trim())) {
       return res.status(400).json({
         success: false,
-        message: "Please provide either a video file or a description"
+        message: "Please provide at least a video, thumbnail, or description"
       });
     }
 
     let videoUrl = null;
+    let thumbnailUrl = null;
+
     if (videoFile) {
       videoUrl = await uploadToS3(videoFile, "uploaded-videos");
       if (!videoUrl) {
@@ -24,21 +27,47 @@ exports.uploadVideo = async (req, res) => {
       }
     }
 
+    if (thumbnailFile) {
+      thumbnailUrl = await uploadToS3(thumbnailFile, "uploaded-videos/thumbnails");
+      if (!thumbnailUrl) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload thumbnail to S3"
+        });
+      }
+    }
+
     const connection = await db.getConnection();
     try {
       await connection.execute(
         `CREATE TABLE IF NOT EXISTS About_Us (
           about_us_video VARCHAR(500),
+          about_us_thumbnail VARCHAR(500),
           about_us_desc LONGTEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )`
       );
 
-      // Alter existing table to change column type if needed
       try {
         await connection.execute(
           `ALTER TABLE About_Us MODIFY COLUMN about_us_desc LONGTEXT`
+        );
+      } catch (alterError) {
+        // Ignore error if column already has correct type
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE About_Us ADD COLUMN about_us_thumbnail VARCHAR(500)`
+        );
+      } catch (alterError) {
+        // Ignore error if column already exists
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE About_Us MODIFY COLUMN about_us_thumbnail VARCHAR(500)`
         );
       } catch (alterError) {
         // Ignore error if column already has correct type
@@ -54,6 +83,10 @@ exports.uploadVideo = async (req, res) => {
           updates.push('about_us_video = ?');
           values.push(videoUrl);
         }
+        if (thumbnailUrl) {
+          updates.push('about_us_thumbnail = ?');
+          values.push(thumbnailUrl);
+        }
         if (description && description.trim()) {
           updates.push('about_us_desc = ?');
           values.push(description.trim());
@@ -67,8 +100,8 @@ exports.uploadVideo = async (req, res) => {
         }
       } else {
         await connection.execute(
-          `INSERT INTO About_Us (about_us_video, about_us_desc) VALUES (?, ?)`,
-          [videoUrl, description ? description.trim() : null]
+          `INSERT INTO About_Us (about_us_video, about_us_thumbnail, about_us_desc) VALUES (?, ?, ?)`,
+          [videoUrl, thumbnailUrl, description ? description.trim() : null]
         );
       }
     } finally {
@@ -80,6 +113,7 @@ exports.uploadVideo = async (req, res) => {
       message: "Data uploaded successfully",
       data: {
         video_url: videoUrl,
+        thumbnail_url: thumbnailUrl,
         description: description ? description.trim() : null
       }
     });

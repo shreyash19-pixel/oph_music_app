@@ -20,7 +20,10 @@ const videoUploadTimeout = (req, res, next) => {
 router.post(
   "/upload-video",
   videoUploadTimeout,
-  upload.single("video"),
+  upload.fields([
+    { name: "video", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]),
   uploadController.uploadVideo
 );
 
