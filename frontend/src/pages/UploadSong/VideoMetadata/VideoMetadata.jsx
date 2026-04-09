@@ -944,7 +944,7 @@ export default function VideoMetadataForm() {
 
         {/* Read-only + Pay now: when only payment rejected, or after user just submitted video (payment next) */}
         {showReadOnlyAndPayNow ? (
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-2xl">
             <p className="text-gray-400">
               {showPayNowOnVideoFromState
                 ? "Please complete payment to continue."

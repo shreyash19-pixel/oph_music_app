@@ -133,7 +133,7 @@ export default function Events() {
         <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-8 mb-8">
           {sectionTitle}
         </h2>
-        <NavbarRight />
+        {/* <NavbarRight /> */}
       </div>
       <div className="space-y-6">
         {events.map((event, ind) => {

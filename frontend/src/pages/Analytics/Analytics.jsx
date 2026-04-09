@@ -571,28 +571,20 @@ export default function AnalyticsDashboard() {
 
               <div className="relative">
                 <select
-                  className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 font-medium focus:outline-none focus:border-[#5dc9de]"
+                  className="w-full appearance-none border border-gray-700 rounded-lg p-3 pr-10 text-black font-bold focus:outline-none focus:border-[#5dc9de] truncate"
+                  style={{ backgroundColor: "#5dc9de" }}
                   value={selectedStream || ""}
                   onChange={(e) => setSelectedStream(e.target.value)}
                 >
-                  <option
-                    value=""
-                    disabled
-                    className="bg-[#191D27] text-gray-400"
-                  >
+                  <option key="platform-placeholder" value="" disabled>
                     Select Platform
                   </option>
-
                   {[
                     { key: "yt", value: "YouTube" },
                     { key: "ig", value: "Instagram" },
                     { key: "audio", value: "Audio Platform" },
                   ].map((platform) => (
-                    <option
-                      key={platform.key}
-                      value={platform.value}
-                      className="bg-[#191D27] text-gray-200"
-                    >
+                    <option key={platform.key} value={platform.value}>
                       {platform.value}
                     </option>
                   ))}

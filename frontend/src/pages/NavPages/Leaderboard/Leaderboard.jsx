@@ -251,10 +251,8 @@ function Leaderboard() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <h2
-                    className="text-[#5DC9DE] text-3xl sm:text-4xl font-extrabold uppercase tracking-wide 
-    drop-shadow-[0_0_10px_#5DC9DE] 
-    drop-shadow-[0_0_25px_#5DC9DE] 
-    drop-shadow-[0_0_50px_rgba(93,201,222,0.8)]"
+                    className="text-[#5DC9DE] text-3xl sm:text-3xl font-extrabold uppercase tracking-wide 
+   drop-shadow-[0_0_15px_rgba(34,211,238,1)]"
                   >
                     {title}
                   </h2>

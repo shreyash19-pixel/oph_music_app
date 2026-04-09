@@ -138,7 +138,7 @@ const SongDetails = () => {
     : `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
 
   return (
-    <div className="text-white bg-[#0D0D0D] p-8 sm:p-12 max-w-7xl mx-auto">
+    <div className="text-white mb-6 rounded-xl border px-4 py-4 sm:px-5 sm:py-5 mt-10 border-[#5DC9DE]/35 bg-gray-800/50 ring-1 ring-[#5DC9DE]/25 p-8 sm:p-12 max-w-[1500px] mx-auto">
       {/* SONG DETAILS */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">

@@ -362,7 +362,11 @@ const MYEPK = () => {
                               {/* Close button */}
                               <button
                                 onClick={handleModalClose}
-                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl"
+                                className="absolute top-3 right-3 z-50 
+                    text-white 
+                    font-bold
+                   w-10 h-10 flex items-center justify-center 
+                   text-2xl shadow-lg"
                               >
                                 &times;
                               </button>

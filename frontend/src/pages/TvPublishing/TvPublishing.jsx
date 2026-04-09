@@ -209,12 +209,13 @@ export default function TVPublishing() {
           </div>
 
           {contents.length === 0 ? (
-            <div className="flex items-center justify-center h-[60vh]">
+            <div className="flex items-center justify-center h-[60vh] flex-col gap-6">
               <UnlockIcon />
+              <p className="text-center text-cyan-300">You can submit your songs to request access to this section. If your song meets the eligibility criteria for TV,<br/>  the OPH Community Administration team will review your submission and unlock the section for you. Thank you.</p>
             </div>
           ) : (
             <div className="max-w-4xl">
-              <div className="space-y-2 bg-[#191D27]/90 p-4">
+              <div className="space-y-2 mb-6 rounded-xl border px-4 py-4 sm:px-5 sm:py-5 border-[#5DC9DE]/35 bg-gray-800/50 ring-1 ring-[#5DC9DE]/25 p-4">
                 <label className="block text-gray-400">Song Name</label>
                 <select
                   value={selectedContentId || ""}

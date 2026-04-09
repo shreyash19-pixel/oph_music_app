@@ -40,8 +40,8 @@ const StruggleEndsSection = () => {
         />
         <div className="container px-4 md:px-16 lg:px-16 mx-auto">
           <div className="mb-8 flex justify-center items-center">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-2 text-center md:text-left">
-              YOUR <span className="text-[#5DC9DE]">STRUGGLE ENDS HERE!</span>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-2 text-center md:text-left">
+                ABOUT <span className="text-[#5DC9DE]">OPH COMMUNITY </span>
             </h2>
           </div>
 

@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import axiosApi from "../../../conf/axios";
 import { FaPause, FaPlay } from "react-icons/fa";
 import Face from "../../../../public/assets/images/facebook.png";
@@ -12,14 +17,8 @@ import { SongDuration } from "../../ArtistSpotlight/ArtistSpotlight";
 import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
 import { resolveProfessionLabel } from "../../../utils/professionDisplay";
 import { navigateToArtistDetail } from "../../../utils/artistHash";
-import {
-  resolveSongAudioUrl,
-  songKey,
-} from "../../../utils/songAudioUrl";
-import {
-  normalizeExternalHref,
-  socialHref,
-} from "../../../utils/socialLinks";
+import { resolveSongAudioUrl, songKey } from "../../../utils/songAudioUrl";
+import { normalizeExternalHref, socialHref } from "../../../utils/socialLinks";
 
 const ArtistDetail = () => {
   const [artist, setArtist] = useState({});
@@ -38,8 +37,7 @@ const ArtistDetail = () => {
     duration: 0,
   });
   const [searchParams] = useSearchParams();
-  const artistParam =
-    searchParams.get("artist") || searchParams.get("token");
+  const artistParam = searchParams.get("artist") || searchParams.get("token");
   const id = searchParams.get("id");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,8 +170,7 @@ const ArtistDetail = () => {
       const duration = el.duration;
       setAudioProgress({
         current: el.currentTime,
-        duration:
-          Number.isFinite(duration) && duration > 0 ? duration : 0,
+        duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
       });
     };
     const sync = () => {
@@ -199,7 +196,9 @@ const ArtistDetail = () => {
       ...p,
       current: t,
       duration:
-        Number.isFinite(el.duration) && el.duration > 0 ? el.duration : p.duration,
+        Number.isFinite(el.duration) && el.duration > 0
+          ? el.duration
+          : p.duration,
     }));
   };
 
@@ -463,12 +462,19 @@ const ArtistDetail = () => {
                       { href: am, src: AppleMusic, alt: "Apple Music" },
                     ];
                     return items.map(({ href, src, alt }) => {
-                      const safeHref = href ? normalizeExternalHref(href) : null;
+                      const safeHref = href
+                        ? normalizeExternalHref(href)
+                        : null;
                       const imgClass = safeHref
                         ? "opacity-70 w-10 h-10 object-cover hover:opacity-100"
                         : "opacity-35 w-10 h-10 object-cover grayscale cursor-not-allowed";
                       const img = (
-                        <img src={src} alt="" className={imgClass} aria-hidden />
+                        <img
+                          src={src}
+                          alt=""
+                          className={imgClass}
+                          aria-hidden
+                        />
                       );
                       if (safeHref) {
                         return (
@@ -515,21 +521,21 @@ const ArtistDetail = () => {
 
                         {/* Modal */}
                         {isOpen && (
-                          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-                            <div className="relative w-[90%] max-w-2xl shadow-xl p-4">
+                          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4">
+                            <div className="relative w-full max-w-3xl max-h-[90vh] bg-black rounded-lg shadow-xl overflow-hidden">
                               {/* Close button */}
                               <button
                                 onClick={handleModalClose}
-                                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl"
+                                className="absolute top-3 right-3 z-[10000] text-white text-3xl cursor-pointer"
                               >
                                 &times;
                               </button>
 
-                              {/* Video */}
-                              <div className="aspect-w-16 aspect-h-9">
+                              {/* Video Wrapper */}
+                              <div className="w-full h-full flex items-center justify-center pointer-events-none">
                                 <CustomVideoPlayer
                                   src={artist.video_bio}
-                                  className="w-full h-full rounded-lg"
+                                  className="w-full h-auto max-h-[90vh] object-contain pointer-events-auto"
                                   autoPlay
                                   pauseOtherVideos={true}
                                 />
@@ -755,12 +761,14 @@ const RelatedArtists = ({ rankedArtists }) => {
                 tabIndex={0}
                 className="flex flex-col items-center cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => {
-                  if (oid) void navigateToArtistDetail(navigate, String(oid).trim());
+                  if (oid)
+                    void navigateToArtistDetail(navigate, String(oid).trim());
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    if (oid) void navigateToArtistDetail(navigate, String(oid).trim());
+                    if (oid)
+                      void navigateToArtistDetail(navigate, String(oid).trim());
                   }
                 }}
               >

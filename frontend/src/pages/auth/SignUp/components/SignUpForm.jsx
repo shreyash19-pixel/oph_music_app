@@ -526,8 +526,8 @@ const SignUpForm = () => {
         />
 
         <img
-          src={Elipse2}
-          className="absolute h-[600px] bottom-[650px] left-0"
+          src={Elipse}
+          className="absolute h-[600px] bottom-[650px] right-0"
           alt=""
         />
 

@@ -13,7 +13,7 @@ const Footer = ({ userData }) => {
     >
       <div className="flex flex-col justify-between w-full z-10 container mx-auto mt-12 gap-8">
         {/* Top Section */}
-        <div className="flex flex-col lg:flex-row items-center lg:items-start text-center lg:text-left w-full gap-8">
+        <div className="flex flex-col lg:flex-row items-center lg:items-start text-center lg:text-left w-full gap-8 justify-end justify-between">
           <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight uppercase w-full lg:w-1/2">
             Your Music
             <br />
