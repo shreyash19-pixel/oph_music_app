@@ -395,36 +395,111 @@ const updateEventPaymentSp = async (req, res) => {
       }
     }
 
-    // Send email if payment is approved (internal users only)
-    if ((status === "approved" || status === "Approved") && isInternalUser) {
-      console.log("Payment approved, fetching user email...");
+    // Send email if payment is approved
+    if (status === "approved" || status === "Approved") {
+      console.log("=== EMAIL SENDING PROCESS STARTED ===");
+      console.log("Event ID:", eventId);
+      console.log("Transaction ID:", transactionId);
       const db = require('../../DB/connect');
-      const [userDetails] = await db.execute("SELECT email, full_name FROM user_details WHERE oph_id = ?", [ophId]);
-      console.log("User details:", userDetails);
-      const userEmail = userDetails[0]?.email;
-      const userName = userDetails[0]?.full_name;
-      console.log("User email:", userEmail);
+      let userEmail = null;
+      let userName = null;
+      let eventName = null;
+      
+      try {
+        console.log("Step 1: Fetching payment details with event booking info...");
+        // Join payments with event_bookings using transaction_id
+        const [paymentData] = await db.execute(
+          `SELECT 
+            p.oph_id,
+            p.transaction_id,
+            p.event_id,
+            eb.email,
+            eb.first_name,
+            eb.last_name,
+            e.EventName
+          FROM OphData.payments p
+          LEFT JOIN OphData.event_bookings eb ON p.transaction_id = eb.payment_transaction_id
+          LEFT JOIN OphData.events e ON p.event_id = e.id
+          WHERE p.transaction_id = ? AND p.status = 'approved'
+          LIMIT 1`,
+          [transactionId]
+        );
+        
+        console.log("Payment data found:", paymentData.length > 0 ? "YES" : "NO");
+        console.log("Payment data:", JSON.stringify(paymentData, null, 2));
+        
+        if (paymentData && paymentData.length > 0) {
+          const payment = paymentData[0];
+          userEmail = payment.email;
+          userName = payment.first_name && payment.last_name 
+            ? `${payment.first_name} ${payment.last_name}`.trim()
+            : payment.first_name || payment.last_name || 'Artist';
+          eventName = payment.EventName;
+          console.log("✓ Email found:", userEmail);
+          console.log("✓ Name found:", userName);
+          console.log("✓ Event name:", eventName);
+        } else {
+          console.log("✗ No payment data found with approved status");
+        }
+        
+        // Fallback: If email not found in event_bookings, try user_details
+        if (!userEmail && paymentData && paymentData.length > 0) {
+          const ophId = paymentData[0].oph_id;
+          console.log("Step 2: Email not found in event_bookings, checking user_details for oph_id:", ophId);
+          
+          if (ophId) {
+            const [userDetails] = await db.execute(
+              "SELECT email, full_name FROM user_details WHERE oph_id = ?",
+              [ophId]
+            );
+            console.log("User details found:", userDetails.length > 0 ? "YES" : "NO");
+            console.log("User details:", JSON.stringify(userDetails, null, 2));
+            
+            if (userDetails && userDetails.length > 0) {
+              userEmail = userDetails[0]?.email;
+              userName = userDetails[0]?.full_name;
+              console.log("✓ Email found in user_details:", userEmail);
+              console.log("✓ Name found in user_details:", userName);
+            }
+          }
+        }
+      } catch (error) {
+        console.log("✗ Error fetching payment/event data:", error.message);
+        console.log("Error stack:", error.stack);
+      }
       
       if (userEmail) {
-        console.log("Sending event booking confirmation email to:", userEmail);
-        const emailResult = await resend.emails.send({
-          from: 'OPH Community <creators@ophcommunity.org>',
-          to: userEmail,
-          subject: 'Event Successfully Booked!',
-          html: `
-            <p>Hi ${userName || 'Artist'},</p>
-            <p>Great news! Your event has been successfully booked.</p>
-            <p>Transaction ID: ${transactionId}</p>
-            <p>You can view your event details in your dashboard.</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
-        });
-        console.log("Email sent successfully:", emailResult);
+        console.log("Step 3: Attempting to send email...");
+        console.log("Recipient email:", userEmail);
+        console.log("Recipient name:", userName);
+        console.log("Event name:", eventName);
+        try {
+          const emailResult = await resend.emails.send({
+            from: 'OPH Community <creators@ophcommunity.org>',
+            to: userEmail,
+            subject: 'Event Successfully Booked!',
+            html: `
+              <p>Hi ${userName || 'Artist'},</p>
+              <p>Great news! Your event registration has been successfully approved.</p>
+              ${eventName ? `<p><strong>Event:</strong> ${eventName}</p>` : ''}
+              <p><strong>Transaction ID:</strong> ${transactionId}</p>
+              <p>You can view your event details in your dashboard.</p>
+              <br/>
+              <p>Best regards,<br/>
+              OPH Community Team<br/>
+              <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+          });
+          console.log("✓✓✓ Email sent successfully!");
+          console.log("Email result:", JSON.stringify(emailResult, null, 2));
+        } catch (error) {
+          console.log("✗✗✗ Error sending email:", error.message);
+          console.log("Error details:", JSON.stringify(error, null, 2));
+        }
       } else {
-        console.log("No email found for user");
+        console.log("✗✗✗ FINAL RESULT: No email found");
+        console.log("Summary: Checked payments joined with event_bookings and user_details, no email address found");
       }
+      console.log("=== EMAIL SENDING PROCESS ENDED ===");
     }
 
     res.status(200).json({
