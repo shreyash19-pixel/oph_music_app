@@ -207,6 +207,13 @@ export default function VideoMetadataForm() {
 
     if (isSubmitting) return;
 
+    if (!contentId) {
+      toast.error(
+        "Missing song information. Please go back and open this step from the upload flow again."
+      );
+      return;
+    }
+
     if (showReadOnlyAndPayNow) {
       toast.info("Use Pay now to complete payment. No need to resubmit video.");
       return;
@@ -240,18 +247,16 @@ export default function VideoMetadataForm() {
       return;
     }
 
-    /** Above this size, upload video with presigned PUT to S3 (avoids Cloudflare ~100MB limit on API). */
-    const DIRECT_UPLOAD_THRESHOLD = 80 * 1024 * 1024;
-
+    /**
+     * Always PUT new video files to S3 via presigned URL, then POST only metadata + thumbnails.
+     * Large multipart POSTs to the API often never reach Node behind Cloudflare (typical ~100MB cap).
+     */
     try {
       setIsSubmitting(true);
       setIsLoading(true);
 
       let directS3VideoUrl = null;
-      if (
-        formData.video_file &&
-        formData.video_file.size > DIRECT_UPLOAD_THRESHOLD
-      ) {
+      if (formData.video_file) {
         const pres = await axiosApi.get("/video-details/presigned-upload", {
           headers,
           params: {
@@ -270,28 +275,42 @@ export default function VideoMetadataForm() {
           formData.video_file.type ||
           "application/octet-stream";
         const putStart = Date.now();
-        await axios.put(pres.data.uploadUrl, formData.video_file, {
-          headers: { "Content-Type": ct },
-          timeout: 0,
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity,
-          onUploadProgress: (ev) => {
-            if (!ev.total) return;
-            const loadedMB = ev.loaded / (1024 * 1024);
-            const totalMB = ev.total / (1024 * 1024);
-            const pct = Math.round((ev.loaded / ev.total) * 100);
-            const elapsed = (Date.now() - putStart) / 1000;
-            const speed = loadedMB / (elapsed || 1);
-            setUploadProgress({
-              percentage: pct,
-              loadedMB,
-              totalMB,
-              speed,
-              time: elapsed,
-              isUploading: true,
-            });
-          },
-        });
+        try {
+          await axios.put(pres.data.uploadUrl, formData.video_file, {
+            headers: { "Content-Type": ct },
+            timeout: 0,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+            onUploadProgress: (ev) => {
+              if (!ev.total) return;
+              const loadedMB = ev.loaded / (1024 * 1024);
+              const totalMB = ev.total / (1024 * 1024);
+              const pct = Math.round((ev.loaded / ev.total) * 100);
+              const elapsed = (Date.now() - putStart) / 1000;
+              const speed = loadedMB / (elapsed || 1);
+              setUploadProgress({
+                percentage: pct,
+                loadedMB,
+                totalMB,
+                speed,
+                time: elapsed,
+                isUploading: true,
+              });
+            },
+          });
+        } catch (putErr) {
+          console.error("[Video upload] S3 PUT failed:", putErr);
+          const net =
+            putErr?.message === "Network Error" ||
+            putErr?.code === "ERR_NETWORK" ||
+            !putErr?.response;
+          toast.error(
+            net
+              ? "Video upload to storage failed (network/CORS). Ensure the S3 bucket allows PUT from your website origin."
+              : `Video upload to storage failed (${putErr?.response?.status ?? "error"}).`
+          );
+          throw putErr;
+        }
         directS3VideoUrl = pres.data.publicUrl;
       }
 

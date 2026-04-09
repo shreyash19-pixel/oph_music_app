@@ -67,10 +67,19 @@ exports.createVideoDetails = async (req, res) => {
       })
     }
 
+    const presignedUrlLen = req.body.existing_video_url
+      ? String(req.body.existing_video_url).trim().length
+      : 0;
+    if (presignedUrlLen > 0) {
+      console.log(
+        `[Video Upload] Presigned path: existing_video_url in body (len=${presignedUrlLen}), no multipart video_file`
+      );
+    }
+
     // Don't check connection at start - only check during/after upload
     // Initial check can give false positives
 
-    const video_url = req.files.video_file?.[0];
+    const video_url = req.files?.video_file?.[0];
     const image_url = req.files?.thumbnails || [];
     
     // Get existing thumbnails from request body (if any)
