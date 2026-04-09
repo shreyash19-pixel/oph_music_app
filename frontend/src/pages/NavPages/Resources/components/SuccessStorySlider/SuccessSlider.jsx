@@ -290,7 +290,7 @@ function SuccessSlider({ searchText, title }) {
             onClick={closeModal}
           >
             <div
-              className="relative bg-black rounded-lg shadow-lg max-w-2xl w-full mx-4"
+              className="relative bg-black rounded-lg shadow-2xl w-full max-w-[440px] aspect-[9/16] mx-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -304,7 +304,7 @@ function SuccessSlider({ searchText, title }) {
                   ref={modalVideoRef}
                   id="video-player-success"
                   src={selectedVideo}
-                  className="rounded-lg w-full"
+                  className="rounded-lg w-full object-contain"
                   autoPlay
                   pauseOtherVideos={true}
                   onPlay={() => setIsPlaying(true)}

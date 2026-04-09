@@ -28,7 +28,7 @@ function PodcastSlider({ searchText, title }) {
       try {
         const response = await axiosApi.get("/allPodcasts");
         const sortedData = (response.data.data || []).sort(
-          (a, b) => b.views - a.views
+          (a, b) => b.views - a.views,
         );
         setAllPodcasts(sortedData);
       } catch (err) {
@@ -44,7 +44,7 @@ function PodcastSlider({ searchText, title }) {
   const filteredPodcasts = useMemo(() => {
     if (searchText) {
       return allPodcasts.filter((podcast) =>
-        podcast.title.toLowerCase().includes(searchText.toLowerCase())
+        podcast.title.toLowerCase().includes(searchText.toLowerCase()),
       );
     }
     return allPodcasts;
@@ -73,7 +73,10 @@ function PodcastSlider({ searchText, title }) {
         } else if (videoRef.videoElement && videoRef.videoElement.pause) {
           videoRef.videoElement.pause();
         }
-        if (videoRef.videoElement && videoRef.videoElement.currentTime !== undefined) {
+        if (
+          videoRef.videoElement &&
+          videoRef.videoElement.currentTime !== undefined
+        ) {
           videoRef.videoElement.currentTime = 0;
         }
         // Reset auto-play flag for other videos
@@ -94,7 +97,7 @@ function PodcastSlider({ searchText, title }) {
     }
 
     setPlayingIndex(index);
-    
+
     // Reset the flag after a short delay (play will be handled by ref callback)
     setTimeout(() => {
       setIsPlayButtonClicked(false);
@@ -223,7 +226,7 @@ function PodcastSlider({ searchText, title }) {
                           hasAutoPlayed.current[index] = true;
                           setTimeout(() => {
                             if (el && el.play && playingIndex === index) {
-                              el.play().catch(err => {
+                              el.play().catch((err) => {
                                 console.error("Auto-play error:", err);
                               });
                             }
@@ -277,28 +280,42 @@ function PodcastSlider({ searchText, title }) {
                   <Link
                     to={buildResourcePath("podcast", podcast.id, podcast.title)}
                   >
-                    <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer ">
+                    <h3 className="text-xl font-semibold mb-2 hover:text-[#5DC9DE] hover:cursor-pointer">
                       {podcast.title}
                     </h3>
                   </Link>
-                  <div className="text-gray-400 text-sm sm:text-base">
-                    <span>{podcast.artist_name}</span>
-                    <span className="mx-2">—</span>
-                    <span>{podcast.duration_in_minutes || "--"} min</span>
-                    <span className="mx-2">—</span>
-                    <span>{formatListeners(podcast.views)}</span>
-                    <br />
-                    <span>{podcast.credit_name || ""}</span>
-                    <div className="flex flex-wrap gap-2 justify-center mt-2">
-                      {podcast.keywords
-                        ? podcast.keywords
-                            .split(",")
-                            .map((keyword, index) => (
-                              <span key={index} className="px-2 py-1 bg-gray-700 rounded text-xs">{keyword.trim()}</span>
-                            ))
-                        : null}
+
+                  {/* Meta Info */}
+                  <div className="text-gray-400 text-sm sm:text-base space-y-1">
+                    <div>
+                      <span>{podcast.artist_name}</span>
+                      <span className="mx-2">—</span>
+                      <span>{podcast.duration_in_minutes || "--"} min</span>
+                      <span className="mx-2">—</span>
+                      <span>{formatListeners(podcast.views)}</span>
                     </div>
+
+                    {/* Podcast Bio */}
+                    {podcast.credit_name && (
+                      <div className="text-gray-300 text-sm mt-1 break-words">
+                        {podcast.credit_name}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Hashtags */}
+                  {podcast.keywords && (
+                    <div className="flex flex-wrap gap-2 justify-center mt-3">
+                      {podcast.keywords.split(",").map((keyword, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-gray-700 rounded text-xs break-words"
+                        >
+                          #{keyword.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -317,7 +334,7 @@ function PodcastSlider({ searchText, title }) {
                           hasAutoPlayed.current[index] = true;
                           setTimeout(() => {
                             if (el && el.play && playingIndex === index) {
-                              el.play().catch(err => {
+                              el.play().catch((err) => {
                                 console.error("Auto-play error:", err);
                               });
                             }
@@ -385,11 +402,14 @@ function PodcastSlider({ searchText, title }) {
                     <span>{podcast.credit_name || ""}</span>
                     <div className="flex flex-wrap gap-2 justify-center mt-2">
                       {podcast.keywords
-                        ? podcast.keywords
-                            .split(",")
-                            .map((keyword, index) => (
-                              <span key={index} className="px-2 py-1 bg-gray-700 rounded text-xs">{keyword.trim()}</span>
-                            ))
+                        ? podcast.keywords.split(",").map((keyword, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-gray-700 rounded text-xs"
+                            >
+                              #{keyword.trim()}
+                            </span>
+                          ))
                         : null}
                     </div>
                   </div>

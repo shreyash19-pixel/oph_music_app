@@ -479,7 +479,7 @@ useEffect(() => {
           <div className="space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center">
-              <h1 className="text-cyan-400 text-xl font-extrabold mb-2 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              <h1 className="text-4xl font-bold mt-4 mb-4 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 ANALYTICS
               </h1>
               <div className="relative">

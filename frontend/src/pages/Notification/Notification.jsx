@@ -106,7 +106,7 @@ const Notification = () => {
   return (
     <div className="bg-black min-h-[calc(100vh-70px)] text-white">
       <div className="px-8 py-6">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+        <h1 className="text-4xl font-bold mt-8 mb-8 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           NOTIFICATION
         </h1>
 

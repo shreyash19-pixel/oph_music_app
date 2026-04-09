@@ -8,7 +8,7 @@ import { useArtist } from "../auth/API/ArtistContext";
 export default function TimeCalendar() {
   const { headers, ophid } = useArtist();
   const [currentMonthIndex, setCurrentMonthIndex] = useState(
-    new Date().getMonth()
+    new Date().getMonth(),
   );
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [blockedDatesInfo, setBlockedDatesInfo] = useState({});
@@ -29,7 +29,7 @@ export default function TimeCalendar() {
           // "/date-block/blocked-dates-with-artists",
           {
             headers: headers,
-          }
+          },
         );
 
         if (response.data.success === true) {
@@ -38,7 +38,7 @@ export default function TimeCalendar() {
           response.data.data.forEach((item) => {
             const d = new Date(item.current_booking_date);
             const localDateStr = `${d.getFullYear()}-${String(
-              d.getMonth() + 1
+              d.getMonth() + 1,
             ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
             dateMap[localDateStr] = {
               content: item.oph_id,
@@ -51,7 +51,6 @@ export default function TimeCalendar() {
             //   artist: item.artist,
             // };
           });
-
 
           setBlockedDatesInfo(dateMap);
         } else {
@@ -97,7 +96,7 @@ export default function TimeCalendar() {
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
     return Object.prototype.hasOwnProperty.call(blockedDatesInfo, dateStr);
@@ -124,7 +123,7 @@ export default function TimeCalendar() {
     const oneYearFromNow = new Date(
       today.getFullYear() + 1,
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     );
     const checkDate = new Date(year, month, day);
     return checkDate <= oneYearFromNow;
@@ -166,7 +165,7 @@ export default function TimeCalendar() {
     const totalDays = daysInMonth(currentMonthIndex, currentYear);
     const prevMonthDays = daysInMonth(
       (currentMonthIndex - 1 + 12) % 12,
-      currentMonthIndex === 0 ? currentYear - 1 : currentYear
+      currentMonthIndex === 0 ? currentYear - 1 : currentYear,
     );
 
     const days = [];
@@ -241,7 +240,7 @@ export default function TimeCalendar() {
     const d = new Date(year, month, day);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
     const isCurrentOwnerOfDate = data.find((da) => {
@@ -252,15 +251,13 @@ export default function TimeCalendar() {
 
     const dateInfo = blockedDatesInfo[dateStr];
 
-   
-
     if (dateInfo) {
       // if (dateInfo.artist.id === currentArtistId.artist.id) {
       if (isCurrentOwnerOfDate.oph_id === ophid) {
         // Check if the date is within 5 days of today
         if (isWithinFiveDays(year, month, day)) {
           toast.error(
-            "You cannot change dates that are within 5 days of today"
+            "You cannot change dates that are within 5 days of today",
           );
           return;
         }
@@ -289,18 +286,16 @@ export default function TimeCalendar() {
   const renderCalendarCell = ({ day, isCurrentMonth }, index, weekindex) => {
     const isBlocked = isDateBlocked(currentYear, currentMonthIndex, day);
 
-    
-
     const isPast = isDateInPast(currentYear, currentMonthIndex, day);
     const isValidFutureDate = isWithinOneYear(
       currentYear,
       currentMonthIndex,
-      day
+      day,
     );
     const isWithinFiveDaysRestriction = isWithinFiveDays(
       currentYear,
       currentMonthIndex,
-      day
+      day,
     );
     // Removed unused variables: d, dateStr, artist
 
@@ -318,7 +313,7 @@ export default function TimeCalendar() {
               currentYear,
               currentMonthIndex,
               day,
-              isCurrentMonth
+              isCurrentMonth,
             );
           }
         }}
@@ -328,8 +323,8 @@ export default function TimeCalendar() {
               ? "bg-[#FF6B6B]/30 border-[#FF6B6B] shadow-[#FF6B6B]/20 shadow-inner"
               : "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
             : isCurrentMonth
-            ? "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
-            : "bg-gray-900/40 border-gray-700"
+              ? "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
+              : "bg-gray-900/40 border-gray-700"
         }
         ${isPast ? "opacity-50" : ""}
         ${!isValidFutureDate ? " opacity-25" : ""}
@@ -359,9 +354,7 @@ export default function TimeCalendar() {
             </svg>
           )}
         </div>
-        {isBlocked && isCurrentMonth && (
-          <UserAvatar fullName={artist.artist} />
-        )}
+        {isBlocked && isCurrentMonth && <UserAvatar fullName={artist.artist} />}
       </div>
     );
   };
@@ -433,35 +426,48 @@ export default function TimeCalendar() {
                       {calendarDays
                         .slice(weekIndex * 7, weekIndex * 7 + 7)
                         .map((dayData, index) =>
-                          renderCalendarCell(dayData, index)
+                          renderCalendarCell(dayData, index),
                         )}
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>
-
-            {/* Month and Year Selector */}
-            <div className="flex justify-end items-center mt-4">
-              <select
-                value={currentMonthIndex}
-                onChange={(e) => setCurrentMonthIndex(parseInt(e.target.value))}
-                className="bg-gray-800 text-white rounded px-4 py-2 mr-2"
+            <div className="flex justify-end items-center mt-4 gap-4">
+              {/* LEFT ARROW */}
+              <button
+                onClick={() => {
+                  setCurrentMonthIndex((prev) => (prev === 0 ? 11 : prev - 1));
+                }}
+                className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
               >
-                {months.map((month, index) => (
-                  <option key={index} value={index}>
-                    {month}
-                  </option>
-                ))}
-              </select>
+                ◀
+              </button>
+
+              {/* MONTH DISPLAY */}
+              <div className="text-white text-lg font-semibold min-w-[120px] text-center">
+                {months[currentMonthIndex]}
+              </div>
+
+              {/* RIGHT ARROW */}
+              <button
+                onClick={() => {
+                  setCurrentMonthIndex((prev) => (prev === 11 ? 0 : prev + 1));
+                }}
+                className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
+              >
+                ▶
+              </button>
+
+              {/* YEAR DROPDOWN */}
               <select
                 value={currentYear}
                 onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-                className="bg-gray-800 text-white rounded px-4 py-2"
+                className="bg-gray-800 text-white rounded px-4 py-2 ml-2"
               >
                 {Array.from(
                   { length: 5 },
-                  (_, i) => new Date().getFullYear() + i
+                  (_, i) => new Date().getFullYear() + i,
                 ).map((year) => (
                   <option key={year} value={year}>
                     {year}

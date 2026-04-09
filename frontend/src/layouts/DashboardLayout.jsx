@@ -21,6 +21,7 @@ const ArtistLayout = () => {
   const { headers } = useArtist();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const dispatch = useDispatch();
+  const [contents, setContents] = useState([]);
 
   // Add effect to handle body scrolling
   useEffect(() => {
@@ -77,14 +78,14 @@ const ArtistLayout = () => {
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-[300px]">
-        <Sidebar />
+        <Sidebar contents = {contents} />
       </div>
 
       {/* Main Content */}
       <div className="flex-1">
         {/* <Navbar onMenuClick={() => setIsSidebarOpen(true)} /> */}
         <main>
-          <Outlet />
+          <Outlet context={{ contents, setContents }} />
         </main>
       </div>
     </div>

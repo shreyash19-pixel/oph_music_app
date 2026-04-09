@@ -23,7 +23,7 @@ const Logout = pubImg("logout.png");
 import { X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 
-const SidebarNav = ({ onClose }) => {
+const SidebarNav = ({ onClose, contents, setContents }) => {
   const navigate = useNavigate();
   const { logout } = useArtist();
   const [userData, setUserData] = useState(null);
@@ -32,6 +32,9 @@ const SidebarNav = ({ onClose }) => {
   const [data, setData] = useState([]);
   const { ophid, headers } = useArtist();
   const [artistType, setArtistType] = useState("");
+
+  console.log(contents);
+  
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
@@ -145,6 +148,7 @@ const SidebarNav = ({ onClose }) => {
       label: "TV Publishing",
       to: "/dashboard/tv-publishing",
       type: "Independent artist",
+      lock: <img src={Lock} className="w-[24px] h-[24px]" />
     },
     {
       icon: <img src={Spot} className="w-[24px] h-[24px]" />,
@@ -235,6 +239,13 @@ const SidebarNav = ({ onClose }) => {
                     <span className="text-[14px] font-medium">
                       {item.label}
                     </span>
+
+                    {
+                      contents?.length === 0 && 
+                      (<span className="ml-auto">
+                        {item.lock}
+                      </span>)
+                    }
                   </button>
                 </li>
               ))}

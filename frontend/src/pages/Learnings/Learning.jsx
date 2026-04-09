@@ -44,7 +44,7 @@ const Learnings = () => {
 
   return (
     <div className="px-8">
-      <h2 className="text-2xl font-bold mb-4 text-cyan-300">Learnings</h2>
+      <h2 className="text-4xl font-bold mt-12 mb-12 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">LEARNINGS</h2>
       {loadError && (
         <p className="text-amber-300/90 text-sm mb-4">{loadError}</p>
       )}
