@@ -1,5 +1,6 @@
+const db = require("../DB/connect");
 const videoDetails = require("../model/video_details");
-const { uploadToS3 } = require("../utils");
+const { uploadToS3, getPresignedVideoPutUrl } = require("../utils");
 const SongApplicationStatusService = require("../services/song/SongApplicationStatusService");
 
 exports.createVideoDetails = async (req, res) => {
@@ -52,6 +53,13 @@ exports.createVideoDetails = async (req, res) => {
   try {
     const { ophid, song_id, credits } = req.body;
 
+    if (req._videoUploadT0) {
+      const multerSec = ((Date.now() - req._videoUploadT0) / 1000).toFixed(1);
+      console.log(
+        `[Video Upload] Phase A: multipart fully received (multer) in ${multerSec}s | song_id=${song_id} oph_id=${ophid}`
+      );
+    }
+
     if (!ophid || !song_id || !credits) {
       return res.status(400).json({
         success: false,
@@ -59,10 +67,19 @@ exports.createVideoDetails = async (req, res) => {
       })
     }
 
+    const presignedUrlLen = req.body.existing_video_url
+      ? String(req.body.existing_video_url).trim().length
+      : 0;
+    if (presignedUrlLen > 0) {
+      console.log(
+        `[Video Upload] Presigned path: existing_video_url in body (len=${presignedUrlLen}), no multipart video_file`
+      );
+    }
+
     // Don't check connection at start - only check during/after upload
     // Initial check can give false positives
 
-    const video_url = req.files.video_file?.[0];
+    const video_url = req.files?.video_file?.[0];
     const image_url = req.files?.thumbnails || [];
     
     // Get existing thumbnails from request body (if any)
@@ -114,8 +131,12 @@ exports.createVideoDetails = async (req, res) => {
 
     if (video_url) {
       const fileSizeMB = (video_url.size / (1024 * 1024)).toFixed(2);
-      console.log(`[Video Upload] Starting video upload: ${video_url.originalname} (${fileSizeMB}MB)`);
-      console.log(`[Video Upload] File received from client, uploading to S3...`);
+      console.log(
+        `[Video Upload] Phase B: video ready (${video_url.path ? "disk" : "memory"}) | ${video_url.originalname} | ${fileSizeMB} MB | song_id=${song_id}`
+      );
+      console.log(
+        `[Video Upload] Phase C: starting S3 multipart upload (progress logs follow)…`
+      );
       
       const io = req.app.get('io');
       const onlineUsers = req.app.get('onlineUsers');
@@ -131,7 +152,13 @@ exports.createVideoDetails = async (req, res) => {
         : null;
 
       try {
-        const url = await uploadToS3(video_url, `video-meta/${ophid}/video-url`, abortSignal, progressCallback);
+        const url = await uploadToS3(
+          video_url,
+          `video-meta/${ophid}/video-url`,
+          abortSignal,
+          progressCallback,
+          { song_id, oph_id: ophid, phase: "video-metadata" }
+        );
 
         // Check if upload was cancelled (only if abortSignal was set by actual abort/error event)
         if (abortSignal.aborted) {
@@ -141,7 +168,9 @@ exports.createVideoDetails = async (req, res) => {
 
         if (url) {
           videoURL = url
-          console.log(`[Video Upload] ✅ Video upload completed successfully: ${url}`);
+          console.log(
+            `[Video Upload] Phase D: S3 upload complete | song_id=${song_id} | url=${url}`
+          );
         } else {
           console.error(`[Video Upload] ❌ Video upload failed - no URL returned`);
         }
@@ -177,6 +206,46 @@ exports.createVideoDetails = async (req, res) => {
     if (abortSignal.aborted) {
       console.log(`[Video Upload] ⚠️ Request was aborted, not saving to database`);
       return;
+    }
+
+    const hasNewVideoUpload = !!(req.files?.video_file?.[0]);
+    const hasNewThumbnailUpload = !!(req.files?.thumbnails?.length > 0);
+    const hasPresignedVideoUrl =
+      !!(req.body.existing_video_url && String(req.body.existing_video_url).trim());
+    // Presigned flow: video is already on S3; only body fields are sent. Must not hit payment-only short-circuit.
+    if (
+      !hasNewVideoUpload &&
+      !hasNewThumbnailUpload &&
+      !hasPresignedVideoUrl
+    ) {
+      const existingRows = await videoDetails.getVideoDetails(song_id);
+      const existing = existingRows?.[0];
+      if (existing && existing.status !== "rejected") {
+        const payState = await videoDetails.checkPaymentStatus(song_id, ophid);
+        const needPay =
+          payState.nextPagePath === "repayment" ||
+          payState.nextPagePath === "payment";
+        if (needPay) {
+          const creditsMatch =
+            String(credits ?? "").trim() ===
+            String(existing.credits ?? "").trim();
+          const rr = existing.reject_reason;
+          const noVideoRejectReason =
+            rr == null || String(rr).trim() === "";
+          const videoStandingGood =
+            existing.status === "approved" ||
+            (existing.status === "under review" && noVideoRejectReason);
+          if (creditsMatch && videoStandingGood) {
+            return res.status(200).json({
+              success: true,
+              message:
+                "Video is already approved or in review. Complete payment to continue.",
+              paymentOnlyRepay: true,
+              redirectPath: null,
+            });
+          }
+        }
+      }
     }
 
     // 3️⃣  Insert into the child table
@@ -410,4 +479,64 @@ exports.checkPaymentStatusController = async (req, res) => {
   }
 
 }
+
+/**
+ * Presigned S3 PUT for large videos — avoids sending multi‑GB through Cloudflare/nginx.
+ * Browser PUTs the file to uploadUrl, then POSTs /video-details with existing_video_url only.
+ */
+exports.presignedVideoUpload = async (req, res) => {
+  try {
+    const song_id = req.query.song_id;
+    const filename = req.query.filename;
+    const content_type = req.query.content_type || "application/octet-stream";
+
+    const tokenOphid =
+      req.user?.userData?.artist?.id ||
+      req.user?.userData?.artist?.OPH_ID ||
+      req.user?.ophid ||
+      req.user?.OPH_ID;
+
+    if (!song_id || !filename || !tokenOphid) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing song_id, filename, or valid session",
+      });
+    }
+
+    const [rows] = await db.execute(
+      `SELECT song_id FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+      [song_id, tokenOphid, tokenOphid]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: "Song not found or access denied",
+      });
+    }
+
+    const { uploadUrl, publicUrl, contentType } = getPresignedVideoPutUrl(
+      tokenOphid,
+      filename,
+      content_type
+    );
+
+    console.log(
+      `[Video Upload] Presigned PUT issued song_id=${song_id} oph_id=${tokenOphid}`
+    );
+
+    return res.status(200).json({
+      success: true,
+      uploadUrl,
+      publicUrl,
+      contentType,
+    });
+  } catch (err) {
+    console.error("[Video Upload] presignedVideoUpload:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to create upload URL",
+    });
+  }
+};
 

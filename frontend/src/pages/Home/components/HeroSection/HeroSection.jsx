@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import axiosApi from "../../../../conf/axios";
 import formatDateAndAdjustMonth, { isRegistrationOpen, isRegistrationNotStartedYet, formatRegistrationStartDate, formatRegistrationEndDate } from "../../../../utils/date";
@@ -24,6 +24,23 @@ function firstUpcomingRelease(raw) {
   if (Array.isArray(raw)) return raw[0] ?? null;
   if (typeof raw === "object") return raw;
   return null;
+}
+
+function parseReleaseInstant(raw) {
+  if (raw == null || raw === "") return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+/** Song hero slide only when primary row has a real release date (same fields as SongCard). */
+function hasValidSongReleaseForHero(upcomingSong) {
+  const row = firstUpcomingRelease(upcomingSong);
+  if (!row || typeof row !== "object" || Object.keys(row).length === 0)
+    return false;
+  const rawDate =
+    row.dateTime ?? row.release_date ?? row.releaseDate ?? null;
+  return parseReleaseInstant(rawDate) != null;
 }
 
 const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
@@ -69,13 +86,25 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
     fetchPageMedia();
   }, []);
 
-  const slides = [];
-  if (upcomingSong && Object.keys(upcomingSong).length > 0) slides.push({ type: 'song', data: upcomingSong });
-  if (upcomingEvent) slides.push({ type: 'event', data: upcomingEvent });
+  const slides = useMemo(() => {
+    const s = [];
+    if (hasValidSongReleaseForHero(upcomingSong)) {
+      s.push({ type: "song", data: upcomingSong });
+    }
+    if (upcomingEvent) s.push({ type: "event", data: upcomingEvent });
+    return s;
+  }, [upcomingSong, upcomingEvent]);
+
+  const multiSlide = slides.length > 1;
+
+  useEffect(() => {
+    if (currentSlide >= slides.length) setCurrentSlide(0);
+  }, [slides.length, currentSlide]);
 
   const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
   const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
   const handleTouchEnd = () => {
+    if (!multiSlide || slides.length === 0) return;
     if (touchStart - touchEnd > 50) {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }
@@ -151,11 +180,15 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
         )}
       </div>
 
-      {/* Slider Container */}
+      {/* Slider: swipe + dots only when both song + event slides exist */}
       <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        {...(multiSlide
+          ? {
+              onTouchStart: handleTouchStart,
+              onTouchMove: handleTouchMove,
+              onTouchEnd: handleTouchEnd,
+            }
+          : {})}
       >
         {slides[currentSlide]?.type === 'song' && (() => {
           const row = firstUpcomingRelease(slides[currentSlide].data);
@@ -163,50 +196,83 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
           return <SongCard releaseData={row} />;
         })()}
 
-        {slides[currentSlide]?.type === 'event' && (
-          <div
-            className="relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 py-6 sm:ps-10 ps-6 pe-6 bg-cover bg-center rounded-2xl"
-            style={{
-              backgroundImage: "url('/assets/images/songUploadCardBg.png')",
-            }}
-          >
-            <div className="flex flex-col md:flex-row gap-6 mt-6 w-full">
+        {slides[currentSlide]?.type === 'event' && (() => {
+          const ev = slides[currentSlide].data;
+          const eventImage = String(ev?.image ?? ev?.Image ?? "")
+            .trim();
+          return (
+          <div className="relative overflow-hidden py-6 sm:ps-10 ps-6 pe-6 rounded-2xl min-h-[200px]">
+            {eventImage ? (
+              <>
+                <img
+                  src={eventImage}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/85 to-slate-900/70"
+                  aria-hidden
+                />
+              </>
+            ) : (
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800 bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "url('/assets/images/songUploadCardBg.png')",
+                }}
+              />
+            )}
+            <div className="relative z-10 flex flex-col md:flex-row gap-6 mt-6 w-full">
               <div className="w-full md:w-2/3 space-y-4">
                 <div>
                   <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
                     NEW EVENT
                   </p>
                   <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-                    {slides[currentSlide].data.EventName}
+                    {ev.EventName}
                   </h2>
                 </div>
                 <div className="text-slate-300 text-sm sm:text-base space-y-2">
                   <div className="flex flex-wrap gap-1 sm:gap-2">
                     <span>Competition Date:</span>
                     <span className="font-medium text-white">
-                      {formatDateAndAdjustMonth(slides[currentSlide].data.dateTime)}
+                      {formatDateAndAdjustMonth(ev.dateTime)}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1 sm:gap-2">
                     <span>Registration:</span>
                     <span className="font-medium text-white">
-                      {formatRegistrationStartDate(slides[currentSlide].data.registrationStart)} to {formatRegistrationEndDate(slides[currentSlide].data.registrationEnd)}
+                      {formatRegistrationStartDate(ev.registrationStart)} to {formatRegistrationEndDate(ev.registrationEnd)}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1 sm:gap-2">
                     <span>Registration Fee:</span>
                     <span className="font-medium text-white">
-                      {slides[currentSlide].data.registrationFee_normal}/-
+                      {ev.registrationFee_normal}/-
                     </span>
                   </div>
                 </div>
               </div>
+              {eventImage ? (
+                <div className="w-full md:w-1/3 min-h-[140px] md:min-h-[180px] rounded-xl overflow-hidden border border-white/10 shadow-lg shrink-0 hidden sm:block">
+                  <img
+                    src={eventImage}
+                    alt={ev?.EventName ? `${ev.EventName} poster` : "Event"}
+                    className="w-full h-full object-cover min-h-[140px] md:min-h-[180px]"
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Dots */}
-        {slides.length > 1 && (
+        {multiSlide && (
           <div className="flex justify-center gap-2 mt-4">
             {slides.map((_, idx) => (
               <button

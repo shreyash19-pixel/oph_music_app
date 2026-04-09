@@ -240,6 +240,12 @@ export default function UploadSongs() {
                 const bothRejected = rejectedPayments?.length >= 2;
                 const isPaymentRepayment =
                   paymentSection && st === "rejected";
+                const rs = song.rejectedSections || [];
+                const paymentOnlyResume =
+                  rs.some((s) => s.section === "payment") &&
+                  !rs.some(
+                    (s) => s.section === "video" || s.section === "audio"
+                  );
                 let state = {
                   song_id: song.id,
                   songName: song.name,
@@ -248,7 +254,9 @@ export default function UploadSongs() {
                   lyrical_services: song.lyrical_services,
                   isFixingRejected: st === "rejected",
                   rejectedSections: song.rejectedSections,
-                  ...(song.resumeVideoPayNow && { showPayNowOnVideo: true }),
+                  ...((song.resumeVideoPayNow || paymentOnlyResume) && {
+                    showPayNowOnVideo: true,
+                  }),
                   ...(isPaymentRepayment && paymentRepayAmount != null && {
                     amount: paymentRepayAmount,
                     paymentRepayAmount,
