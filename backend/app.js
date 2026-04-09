@@ -8,6 +8,9 @@ const { Server } = require("socket.io");
 const app = express();
 const port = process.env.PORT;
 
+// Behind nginx / Cloudflare so req.ip and secure cookies behave
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 
 // Optimize server timeouts
@@ -113,6 +116,25 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Earliest log for POST /video-details: runs when request headers hit Node (before 1GB body finishes).
+// If this never appears in PM2 logs, nginx/Cloudflare blocked the upload — not the app.
+app.use((req, res, next) => {
+  if (req.method !== "POST") return next();
+  const pathOnly = (req.originalUrl || req.url || "").split("?")[0];
+  if (pathOnly !== "/video-details" && !pathOnly.endsWith("/video-details")) {
+    return next();
+  }
+  const cl = req.headers["content-length"];
+  const mb =
+    cl && !Number.isNaN(Number(cl))
+      ? (Number(cl) / (1024 * 1024)).toFixed(2)
+      : "unknown-chunked-or-missing";
+  console.log(
+    `[Video Upload][trace-0-headers] ${new Date().toISOString()} | ~${mb} MB | ip=${req.ip} | CL=${cl || "none"}`
+  );
+  next();
+});
 
 // ✅ HANDLE PREFLIGHT EXPLICITLY WITH SAME OPTIONS
 app.options("*", cors(corsOptions));
