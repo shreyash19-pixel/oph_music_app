@@ -11,6 +11,34 @@ function parseReleaseInstant(raw) {
   return d;
 }
 
+/** DB may store MySQL TIME (HH:MM:SS), ISO string, or empty. */
+function formatReleaseTiming(raw) {
+  if (raw == null || raw === "") return null;
+  const s = String(raw).trim();
+  if (!s || s.toLowerCase() === "null") return null;
+  const timeOnly = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (timeOnly) {
+    let h = parseInt(timeOnly[1], 10);
+    const min = parseInt(timeOnly[2], 10);
+    const period = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${String(min).padStart(2, "0")} ${period} IST`;
+  }
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) {
+    return (
+      d.toLocaleTimeString("en-GB", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+      }) + " IST"
+    );
+  }
+  return s;
+}
+
 function pickThumbnailUrl(image) {
   if (image == null) return DEFAULT_THUMB;
   if (typeof image === "string") {
@@ -76,6 +104,10 @@ const SongCard = ({ releaseData }) => {
         })
       : "TBA");
 
+  const rawTiming =
+    releaseData?.release_time ?? releaseData?.releaseTime ?? null;
+  const timingLabel = formatReleaseTiming(rawTiming);
+
   return (
     <div
       onClick={() => navigate("/dashboard/song-details", {
@@ -99,10 +131,18 @@ const SongCard = ({ releaseData }) => {
         </div>
 
         <div className="space-y-2 text-slate-300">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-gray-400">Release Date:</span>
             <span className="font-medium text-white">{releaseLabel}</span>
           </div>
+          {timingLabel && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-400">
+                Song release timing:
+              </span>
+              <span className="font-medium text-white">{timingLabel}</span>
+            </div>
+          )}
         </div>
 
         <button className="bg-[#5DC9DE] text-black rounded-full shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.2),0_1px_2px_rgba(93,201,222,0.15),0_2px_4px_rgba(93,201,222,0.15),0_4px_8px_rgba(93,201,222,0.15),0_8px_16px_rgba(93,201,222,0.15),0_16px_32px_rgba(93,201,222,0.15)]

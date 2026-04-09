@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Camera, Plus, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import axiosApi from "../../../conf/axios";
 import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
@@ -73,28 +74,47 @@ export default function VideoMetadataForm() {
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
   const [videoMetadataLoaded, setVideoMetadataLoaded] = useState(false);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const [showPayNowAfterSubmit, setShowPayNowAfterSubmit] = useState(false);
   const progressCleanupRef = useRef(null);
 
+  const rejectedSectionsNav = location.state?.rejectedSections;
+  const paymentOnlyRejectedFromNav =
+    Array.isArray(rejectedSectionsNav) &&
+    rejectedSectionsNav.some((s) => s.section === "payment") &&
+    !rejectedSectionsNav.some(
+      (s) => s.section === "video" || s.section === "audio"
+    );
+
   // Video is in rejected list (from status page) = user must submit video changes first
-  const isVideoRejected = location.state?.rejectedSections?.some(
+  const isVideoRejected = rejectedSectionsNav?.some(
     (s) => s.section === "video"
   );
   // Paid in advance without lyrical: never show Pay now (no payment needed)
   const isPaidInAdvanceNoLyricalCheck = isPaidInAdvance && !lyricalServices;
-  // Only payment rejected = payment needed AND video was already submitted (so show read-only + Pay now)
+  const paymentStillNeedsCompletion =
+    nextPage === "repayment" || nextPage === "payment";
+  // Only payment rejected = pay again; video/audio not in rejected list from dashboard (or stale video reject_reason in DB)
   const onlyPaymentRejected =
     !isPaidInAdvanceNoLyricalCheck &&
     videoMetadataLoaded &&
-    (nextPage === "repayment" || nextPage === "payment") &&
-    formData.reject_reason === null &&
-    !isVideoRejected &&
-    !!formData.existing_video_url; // must have submitted video before showing read-only
+    paymentCheckDone &&
+    paymentStillNeedsCompletion &&
+    !!formData.existing_video_url &&
+    (paymentOnlyRejectedFromNav ||
+      (!isVideoRejected && formData.reject_reason == null));
   // After audio resubmit when both audio and payment were rejected: land here with read-only + Pay now
-  const showPayNowOnVideoFromState = location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
+  const showPayNowOnVideoFromState =
+    location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
   // Show read-only + Pay now when: (1) video already submitted and only payment left, (2) user just submitted on this page, or (3) came from audio resubmit (audio+payment rejected)
   // Never show for paid in advance without lyrical
-  const showReadOnlyAndPayNow = !isPaidInAdvanceNoLyricalCheck && (onlyPaymentRejected || showPayNowAfterSubmit || showPayNowOnVideoFromState);
+  const showReadOnlyAndPayNow =
+    !isPaidInAdvanceNoLyricalCheck &&
+    (onlyPaymentRejected ||
+      showPayNowAfterSubmit ||
+      (showPayNowOnVideoFromState &&
+        videoMetadataLoaded &&
+        !!formData.existing_video_url));
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
@@ -177,6 +197,8 @@ export default function VideoMetadataForm() {
       }
     } catch (err) {
       console.error("Error checking payment status:", err);
+    } finally {
+      setPaymentCheckDone(true);
     }
   };
 
@@ -184,6 +206,18 @@ export default function VideoMetadataForm() {
     e.preventDefault();
 
     if (isSubmitting) return;
+
+    if (!contentId) {
+      toast.error(
+        "Missing song information. Please go back and open this step from the upload flow again."
+      );
+      return;
+    }
+
+    if (showReadOnlyAndPayNow) {
+      toast.info("Use Pay now to complete payment. No need to resubmit video.");
+      return;
+    }
 
     if (
       formData.thumbnails.length === 0 &&
@@ -213,9 +247,95 @@ export default function VideoMetadataForm() {
       return;
     }
 
+    /**
+     * Always PUT new video files to S3 via presigned URL, then POST only metadata + thumbnails.
+     * Large multipart POSTs to the API often never reach Node behind Cloudflare (typical ~100MB cap).
+     */
     try {
       setIsSubmitting(true);
       setIsLoading(true);
+
+      let directS3VideoUrl = null;
+      if (formData.video_file) {
+        const pres = await axiosApi.get("/video-details/presigned-upload", {
+          headers,
+          params: {
+            song_id: contentId,
+            filename: formData.video_file.name,
+            content_type:
+              formData.video_file.type || "application/octet-stream",
+          },
+        });
+        if (!pres.data?.success || !pres.data.uploadUrl || !pres.data.publicUrl) {
+          toast.error(pres.data?.message || "Could not prepare video upload.");
+          throw new Error("presign failed");
+        }
+        const ct =
+          pres.data.contentType ||
+          formData.video_file.type ||
+          "application/octet-stream";
+        const putStart = Date.now();
+        const totalMBVideo = formData.video_file.size / (1024 * 1024);
+        if (socket?.connected && ophid) {
+          socket.emit("presigned-video-upload-progress", {
+            ophid: String(ophid).trim(),
+            song_id: contentId,
+            percentage: 0,
+            loadedMB: 0,
+            totalMB: totalMBVideo,
+            speed: 0,
+            time: 0,
+          });
+        }
+        try {
+          await axios.put(pres.data.uploadUrl, formData.video_file, {
+            headers: { "Content-Type": ct },
+            timeout: 0,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+            onUploadProgress: (ev) => {
+              if (!ev.total) return;
+              const loadedMB = ev.loaded / (1024 * 1024);
+              const totalMB = ev.total / (1024 * 1024);
+              const pct = Math.round((ev.loaded / ev.total) * 100);
+              const elapsed = (Date.now() - putStart) / 1000;
+              const speed = loadedMB / (elapsed || 1);
+              setUploadProgress({
+                percentage: pct,
+                loadedMB,
+                totalMB,
+                speed,
+                time: elapsed,
+                isUploading: true,
+              });
+              if (socket?.connected && ophid) {
+                socket.emit("presigned-video-upload-progress", {
+                  ophid: String(ophid).trim(),
+                  song_id: contentId,
+                  percentage: pct,
+                  loadedMB,
+                  totalMB,
+                  speed,
+                  time: elapsed,
+                });
+              }
+            },
+          });
+        } catch (putErr) {
+          console.error("[Video upload] S3 PUT failed:", putErr);
+          const net =
+            putErr?.message === "Network Error" ||
+            putErr?.code === "ERR_NETWORK" ||
+            !putErr?.response;
+          toast.error(
+            net
+              ? "Video upload to storage failed (network/CORS). Ensure the S3 bucket allows PUT from your website origin."
+              : `Video upload to storage failed (${putErr?.response?.status ?? "error"}).`
+          );
+          throw putErr;
+        }
+        directS3VideoUrl = pres.data.publicUrl;
+      }
 
       const formDataToSend = new FormData();
       formDataToSend.append("song_id", contentId);
@@ -227,7 +347,9 @@ export default function VideoMetadataForm() {
         formDataToSend.append("existing_thumbnails", JSON.stringify(formData.existing_thumbnails));
       }
 
-      if (formData.video_file) {
+      if (directS3VideoUrl) {
+        formDataToSend.append("existing_video_url", directS3VideoUrl);
+      } else if (formData.video_file) {
         formDataToSend.append("video_file", formData.video_file);
       } else if (formData.existing_video_url) {
         // Preserve existing S3 URL when user resubmits without choosing a new file
@@ -256,9 +378,9 @@ export default function VideoMetadataForm() {
       
       console.log(`[Frontend] Sending ${newThumbnails.length} new thumbnail(s) and ${formData.existing_thumbnails?.length || 0} existing thumbnail URL(s)`);
 
-      // Calculate total file size for progress tracking
+      // Calculate total file size for progress tracking (multipart leg only after direct S3 video)
       let totalSize = 0;
-      if (formData.video_file) {
+      if (formData.video_file && !directS3VideoUrl) {
         totalSize += formData.video_file.size;
       }
       newThumbnails.forEach((thumb) => {
@@ -268,20 +390,34 @@ export default function VideoMetadataForm() {
       });
 
       const startTime = Date.now();
-      const totalMBInitial = formData.video_file
-        ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
-        : totalSize ? (totalSize / (1024 * 1024)).toFixed(2) : "0";
-      setUploadProgress({
-        percentage: 0,
-        loadedMB: 0,
-        totalMB: parseFloat(totalMBInitial),
-        speed: 0,
-        time: 0,
-        isUploading: true,
-      });
+      const totalMBInitial = directS3VideoUrl
+        ? totalSize
+          ? (totalSize / (1024 * 1024)).toFixed(2)
+          : "0"
+        : formData.video_file
+          ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
+          : totalSize
+            ? (totalSize / (1024 * 1024)).toFixed(2)
+            : "0";
+      if (!directS3VideoUrl) {
+        setUploadProgress({
+          percentage: 0,
+          loadedMB: 0,
+          totalMB: parseFloat(totalMBInitial),
+          speed: 0,
+          time: 0,
+          isUploading: true,
+        });
+      } else {
+        setUploadProgress((prev) => ({
+          ...prev,
+          totalMB: parseFloat(totalMBInitial) || prev.totalMB,
+          isUploading: true,
+        }));
+      }
 
       // Real S3 progress from backend via socket (matches backend logs)
-      if (formData.video_file && socket) {
+      if (formData.video_file && !directS3VideoUrl && socket) {
         const handler = (data) => {
           setUploadProgress((prev) => ({
             ...prev,
@@ -300,9 +436,12 @@ export default function VideoMetadataForm() {
       // Do not set Content-Type — browser/axios must add multipart boundary.
       // Auth: axios interceptor adds Authorization from localStorage if header missing.
       const response = await axiosApi.post(`/video-details`, formDataToSend, {
+        timeout: 0, // large video: browser→server multer + server→S3 can exceed any fixed limit
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
         onUploadProgress: (progressEvent) => {
-          // For video uploads progress comes from socket; only use this for thumbnails-only
-          if (formData.video_file) return;
+          // Video in multipart: progress from socket. Direct S3 video: use this for thumbnails leg only.
+          if (formData.video_file && !directS3VideoUrl) return;
           if (progressEvent.total) {
             const loaded = progressEvent.loaded;
             const total = progressEvent.total;
@@ -409,6 +548,12 @@ export default function VideoMetadataForm() {
             console.warn("Refetch video metadata after submit:", e);
           }
         };
+
+        if (response.data.paymentOnlyRepay === true) {
+          await refetchForReadOnly();
+          setShowPayNowAfterSubmit(true);
+          return;
+        }
 
         // Paid in advance + lyrical: only show Pay now when PAYMENT is rejected, not when only video was rejected
         const isPaidInAdvanceWithLyrical = isPaidInAdvance && lyricalServices;
@@ -675,6 +820,7 @@ export default function VideoMetadataForm() {
         }
       }).catch(() => {});
     }
+    setPaymentCheckDone(false);
     checkAlreadyBookedDate();
     fetchVideoMetadata();
     checkPaymentStaus();
@@ -701,6 +847,20 @@ export default function VideoMetadataForm() {
       },
     });
     return null;
+  }
+
+  const holdForPaymentResumeUi =
+    !!contentId &&
+    !isPaidInAdvanceNoLyricalCheck &&
+    (paymentOnlyRejectedFromNav || location.state?.showPayNowOnVideo === true) &&
+    (!videoMetadataLoaded || !paymentCheckDone);
+
+  if (holdForPaymentResumeUi) {
+    return (
+      <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
+        <Loading />
+      </div>
+    );
   }
 
   return (

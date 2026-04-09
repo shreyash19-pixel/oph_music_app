@@ -372,6 +372,7 @@ LIMIT 1;
         dateTime: r.release_date,
         EventName: r.song_name,
         image,
+        release_time: r.release_time ?? null,
       };
     }
 
