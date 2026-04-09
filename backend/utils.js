@@ -1,4 +1,5 @@
 // src/utils/s3.js
+const fs = require("fs");
 const AWS = require('aws-sdk');
 require("dotenv").config();
 
@@ -38,7 +39,23 @@ const uploadToS3 = async (
   progressCallback = null,
   logContext = null
 ) => {
-  const fileSize = file.size || file.buffer?.length || 0;
+  let fileSize = file.size || file.buffer?.length || 0;
+  const diskPath =
+    file.path && typeof file.path === "string" && fs.existsSync(file.path)
+      ? file.path
+      : null;
+  if (diskPath) {
+    try {
+      const st = fs.statSync(diskPath);
+      fileSize = st.size;
+    } catch (e) {
+      console.error(`[S3 Upload] stat failed for temp file:`, diskPath, e.message);
+      throw e;
+    }
+  } else if (!file.buffer && !diskPath) {
+    throw new Error("uploadToS3: file has no buffer and no path (use multer memoryStorage or diskStorage)");
+  }
+
   const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
   const isVideo = file.mimetype?.startsWith('video/');
   const fileType = isVideo ? 'VIDEO' : file.mimetype?.startsWith('audio/') ? 'AUDIO' : 'FILE';
@@ -52,14 +69,20 @@ const uploadToS3 = async (
     mimetype: file.mimetype,
     size: `${fileSizeMB}MB`,
     folder: folder,
+    source: diskPath ? `disk:${diskPath}` : "memory",
   });
   
   const params = {
     Bucket: process.env.S3_BUCKET,
     Key: `${folder}/${Date.now()}-${file.originalname}`,
-    Body: file.buffer,
     ContentType: file.mimetype,
   };
+  if (diskPath) {
+    params.Body = fs.createReadStream(diskPath);
+    params.ContentLength = fileSize;
+  } else {
+    params.Body = file.buffer;
+  }
 
   let upload = null;
   let s3Key = null;
@@ -258,6 +281,17 @@ const uploadToS3 = async (
       stack: error.stack
     });
     throw new Error(`Failed to upload file to S3: ${error.message}`);
+  } finally {
+    if (diskPath && fs.existsSync(diskPath)) {
+      try {
+        fs.unlinkSync(diskPath);
+        if (isVideo || fileSize > 20 * 1024 * 1024) {
+          console.log(`[S3 Upload]${ctx} Temp file removed after S3 (${fileSizeMB}MB)`);
+        }
+      } catch (e) {
+        console.warn(`[S3 Upload]${ctx} Could not remove temp file:`, diskPath, e.message);
+      }
+    }
   }
 };
 

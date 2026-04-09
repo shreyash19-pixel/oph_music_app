@@ -122,7 +122,7 @@ exports.createVideoDetails = async (req, res) => {
     if (video_url) {
       const fileSizeMB = (video_url.size / (1024 * 1024)).toFixed(2);
       console.log(
-        `[Video Upload] Phase B: video file in memory | ${video_url.originalname} | ${fileSizeMB} MB | song_id=${song_id}`
+        `[Video Upload] Phase B: video ready (${video_url.path ? "disk" : "memory"}) | ${video_url.originalname} | ${fileSizeMB} MB | song_id=${song_id}`
       );
       console.log(
         `[Video Upload] Phase C: starting S3 multipart upload (progress logs follow)…`
