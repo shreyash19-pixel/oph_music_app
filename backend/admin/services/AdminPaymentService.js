@@ -46,6 +46,10 @@ class AdminPaymentService {
 
       if (place === "Special Artist Song Registration") {
         console.log("in special artist");
+        console.log("Status received:", status);
+        console.log("OphId:", ophId);
+        console.log("SongId:", songId);
+        console.log("TransactionId:", transactionId);
 
         console.log(status + "sdsdsdsdsds");
         if (status === "rejected") {
@@ -83,6 +87,86 @@ class AdminPaymentService {
               }
             }
           }
+        }
+
+        console.log("Checking if status is approved...");
+        console.log("Status === 'approved':", status === "approved");
+        console.log("Status === 'Approved':", status === "Approved");
+        
+        // Send email if special artist song is approved
+        if (status === "approved" || status === "Approved") {
+          console.log("=== SPECIAL ARTIST SONG APPROVAL EMAIL PROCESS STARTED ===");
+          console.log("OphId for email:", ophId);
+          console.log("SongId for email:", songId);
+          console.log("TransactionId for email:", transactionId);
+          
+          const { Resend } = require('resend');
+          const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
+          
+          try {
+            console.log("Executing query to fetch user and song data...");
+            // Get user details and song details
+            const [userData] = await connection.execute(
+              `SELECT 
+                ud.email,
+                ud.full_name,
+                ud.stage_name,
+                sas.song_name,
+                sas.song_id
+              FROM user_details ud
+              LEFT JOIN special_artist_songs sas ON ud.oph_id = sas.oph_id
+              WHERE ud.oph_id = ? AND sas.song_id = ?
+              LIMIT 1`,
+              [ophId, songId]
+            );
+            
+            console.log("Query executed successfully");
+            console.log("User data found:", userData.length > 0 ? "YES" : "NO");
+            console.log("User and song data:", JSON.stringify(userData, null, 2));
+            
+            if (userData && userData.length > 0) {
+              const userEmail = userData[0].email;
+              const userName = userData[0].full_name || userData[0].stage_name;
+              const songName = userData[0].song_name;
+              
+              console.log("Extracted email:", userEmail);
+              console.log("Extracted userName:", userName);
+              console.log("Extracted songName:", songName);
+              
+              if (userEmail) {
+                console.log("Email found, attempting to send...");
+                console.log("Sending special artist song approval email to:", userEmail);
+                
+                const emailResult = await resend.emails.send({
+                  from: 'OPH Community <creators@ophcommunity.org>',
+                  to: userEmail,
+                  subject: 'Special Artist Song Approved!',
+                  html: `
+                    <p>Hi ${userName || 'Artist'},</p>
+                    <p>Great news! Your special artist song has been approved.</p>
+                    ${songName ? `<p><strong>Song:</strong> ${songName}</p>` : ''}
+                    <p><strong>Transaction ID:</strong> ${transactionId}</p>
+                    <p>You can view your song details in your dashboard.</p>
+                    <br/>
+                    <p>Best regards,<br/>
+                    OPH Community Team<br/>
+                    <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+                });
+                console.log("✓✓✓ Special artist song approval email sent successfully!");
+                console.log("Email result:", JSON.stringify(emailResult, null, 2));
+              } else {
+                console.log("✗ No email found for user");
+              }
+            } else {
+              console.log("✗ No user/song data found for ophId:", ophId, "songId:", songId);
+            }
+          } catch (error) {
+            console.log("✗✗✗ Error sending special artist song approval email:", error.message);
+            console.log("Error stack:", error.stack);
+          }
+          console.log("=== SPECIAL ARTIST SONG APPROVAL EMAIL PROCESS ENDED ===");
+        } else {
+          console.log("Status is not approved, skipping email. Status:", status);
         }
       }
 

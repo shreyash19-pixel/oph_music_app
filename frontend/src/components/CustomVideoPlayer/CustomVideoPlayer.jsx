@@ -94,8 +94,10 @@ const CustomVideoPlayer = forwardRef(
 
     // Handle play/pause
     const togglePlayPause = (e) => {
-      console.log("sdsd");
-      e.preventDefault();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       const video = videoRef.current;
       if (!video) return;
 
@@ -393,19 +395,15 @@ const CustomVideoPlayer = forwardRef(
 
         {/* Play Button Overlay (when video is paused) */}
         {showPlayButtonOverlay && !isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 onPlayButtonClick?.();
-                const video = videoRef.current;
-                if (video && video.paused) {
-                  togglePlayPause(e);
-                }
+                togglePlayPause(e);
               }}
-              className={`z-30 pointer-events-auto transition-opacity ${
+              className={`z-30 transition-opacity ${
                 playOverlayVariant === "purple"
                   ? "rounded-full bg-[#6F4FA0] p-5 sm:p-6 shadow-lg hover:bg-purple-500 hover:opacity-95"
                   : "hover:opacity-80"
