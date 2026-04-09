@@ -326,6 +326,9 @@ export default function VideoMetadataForm() {
       // Do not set Content-Type — browser/axios must add multipart boundary.
       // Auth: axios interceptor adds Authorization from localStorage if header missing.
       const response = await axiosApi.post(`/video-details`, formDataToSend, {
+        timeout: 0, // large video: browser→server multer + server→S3 can exceed any fixed limit
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
         onUploadProgress: (progressEvent) => {
           // For video uploads progress comes from socket; only use this for thumbnails-only
           if (formData.video_file) return;

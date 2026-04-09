@@ -11,11 +11,14 @@ const port = process.env.PORT;
 const server = http.createServer(app);
 
 // Optimize server timeouts
-// Regular requests: 30 seconds (fast response)
-// Large file uploads handled separately via route-specific timeouts
-server.timeout = 30000; // 30 seconds for regular requests
+// Node's default server.requestTimeout is 300000ms (5 min) and applies to the
+// entire incoming request including multipart body. 1GB video on a slow link
+// often exceeds that, so the server stops reading while the browser keeps sending.
+server.requestTimeout = 0; // disable — large video uploads (multer → S3) need longer
+// Socket inactivity timeout while waiting for the next request on a keep-alive connection
+server.timeout = 120000; // 2 minutes idle (not the same as requestTimeout)
 server.keepAliveTimeout = 65000; // 65 seconds
-server.headersTimeout = 66000; // 66 seconds (must be > keepAliveTimeout)
+server.headersTimeout = 66000; // must be > keepAliveTimeout
 
 // Connect DB (assumed it runs inside connectDB file)
 const connectDB = require("./DB/connect");

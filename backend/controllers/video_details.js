@@ -52,6 +52,13 @@ exports.createVideoDetails = async (req, res) => {
   try {
     const { ophid, song_id, credits } = req.body;
 
+    if (req._videoUploadT0) {
+      const multerSec = ((Date.now() - req._videoUploadT0) / 1000).toFixed(1);
+      console.log(
+        `[Video Upload] Phase A: multipart fully received (multer) in ${multerSec}s | song_id=${song_id} oph_id=${ophid}`
+      );
+    }
+
     if (!ophid || !song_id || !credits) {
       return res.status(400).json({
         success: false,
@@ -114,8 +121,12 @@ exports.createVideoDetails = async (req, res) => {
 
     if (video_url) {
       const fileSizeMB = (video_url.size / (1024 * 1024)).toFixed(2);
-      console.log(`[Video Upload] Starting video upload: ${video_url.originalname} (${fileSizeMB}MB)`);
-      console.log(`[Video Upload] File received from client, uploading to S3...`);
+      console.log(
+        `[Video Upload] Phase B: video file in memory | ${video_url.originalname} | ${fileSizeMB} MB | song_id=${song_id}`
+      );
+      console.log(
+        `[Video Upload] Phase C: starting S3 multipart upload (progress logs follow)…`
+      );
       
       const io = req.app.get('io');
       const onlineUsers = req.app.get('onlineUsers');
@@ -131,7 +142,13 @@ exports.createVideoDetails = async (req, res) => {
         : null;
 
       try {
-        const url = await uploadToS3(video_url, `video-meta/${ophid}/video-url`, abortSignal, progressCallback);
+        const url = await uploadToS3(
+          video_url,
+          `video-meta/${ophid}/video-url`,
+          abortSignal,
+          progressCallback,
+          { song_id, oph_id: ophid, phase: "video-metadata" }
+        );
 
         // Check if upload was cancelled (only if abortSignal was set by actual abort/error event)
         if (abortSignal.aborted) {
@@ -141,7 +158,9 @@ exports.createVideoDetails = async (req, res) => {
 
         if (url) {
           videoURL = url
-          console.log(`[Video Upload] ✅ Video upload completed successfully: ${url}`);
+          console.log(
+            `[Video Upload] Phase D: S3 upload complete | song_id=${song_id} | url=${url}`
+          );
         } else {
           console.error(`[Video Upload] ❌ Video upload failed - no URL returned`);
         }
