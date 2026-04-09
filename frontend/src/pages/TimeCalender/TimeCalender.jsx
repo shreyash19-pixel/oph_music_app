@@ -4,6 +4,7 @@ import axiosApi from "../../conf/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useArtist } from "../auth/API/ArtistContext";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 export default function TimeCalendar() {
   const { headers, ophid } = useArtist();
@@ -383,22 +384,25 @@ export default function TimeCalendar() {
         {!isLoading && !error && (
           <>
             <div className="flex items-center justify-between">
-              <h2 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+                
                 TIME CALENDAR
               </h2>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
-                  <span>Booked</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#FF6B6B]"></div>
-                  <span>Locked (within 5 days)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>
-                  <span>Available</span>
-                </div>
+              <NavbarRight />
+            </div>
+
+            <div className="flex items-center  justify-end gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
+                <span>Booked</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#FF6B6B]"></div>
+                <span>Locked (within 5 days)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>
+                <span>Available</span>
               </div>
             </div>
 
@@ -441,7 +445,7 @@ export default function TimeCalendar() {
                 }}
                 className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
               >
-                ◀
+                {"<"}
               </button>
 
               {/* MONTH DISPLAY */}
@@ -456,7 +460,7 @@ export default function TimeCalendar() {
                 }}
                 className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
               >
-                ▶
+                {">"}
               </button>
 
               {/* YEAR DROPDOWN */}

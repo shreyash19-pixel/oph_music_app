@@ -8,6 +8,8 @@ import {
   resolveLeaderboardOphId,
 } from "../../utils/artistHash";
 
+import NavbarRight from "../../components/Navbar/NavbarRight";
+
 const ARTIST_SPOTLIGHT_EMPTY_NOTE = "No Note Provided Yet.";
 const LEADERBOARD_UI_MAX_ROWS = 10;
 
@@ -413,9 +415,12 @@ export default function ArtistSpotlight() {
         <div className="min-h-[calc(100vh-70px)] text-gray-100 p-0 lg:p-6">
           <div className="max-w-8xl mx-auto space-y-8">
             {/* Artist Header */}
-            <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] lg:px-0 px-6 lg:py-0 pt-6">
-              ARTIST SPOTLIGHT
-            </h1>
+            <div className="flex justify-between items-center  mb-8">
+              <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+                ARTIST SPOTLIGHT
+              </h2>
+              <NavbarRight />
+            </div>
             <div className="flex justify-start items-center gap-4 px-6">
               {/* Artist Image with Rank Badge */}
               <div className="relative">
@@ -424,13 +429,19 @@ export default function ArtistSpotlight() {
                   alt={artist.stage_name}
                   className="w-32 h-32 rounded-full border-[6px] border-[#5DC9DE] object-cover shadow-[0_0_20px_#5DC9DE]"
                 />
+
                 {/* Rank Badge */}
                 {(() => {
                   const rank = getArtistRank();
+
+                  // Common purple style
+                  const rankBgClass =
+                    "bg-[#6F4FA0] text-white ring-1 ring-[#6F4FA0]";
+
                   if (rank == null) {
                     return (
                       <span
-                        className="absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums bg-[#6F4FA0] text-white ring-1 ring-[#6F4FA0]"
+                        className={`absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums ${rankBgClass}`}
                         title="Not on the community leaderboard yet. Rankings are for artists who appear on the public leaderboard."
                         aria-label="Not on the community leaderboard"
                       >
@@ -438,14 +449,6 @@ export default function ArtistSpotlight() {
                       </span>
                     );
                   }
-                  const rankBgClass =
-                    rank === 1
-                      ? "bg-yellow-400 text-black"
-                      : rank === 2
-                        ? "bg-emerald-400 text-black"
-                        : rank === 3
-                          ? "bg-cyan-400 text-black"
-                          : "bg-[#1f2937] text-white ring-2 ring-[#5DC9DE]";
 
                   return (
                     <span

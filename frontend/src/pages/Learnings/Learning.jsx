@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 const Learnings = () => {
   const [learnings, setLearnings] = useState([]);
@@ -44,12 +45,16 @@ const Learnings = () => {
 
   return (
     <div className="px-8">
-      <h2 className="text-4xl font-bold mt-12 mb-12 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">LEARNINGS</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold mt-12 mb-12 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          LEARNINGS
+        </h2>
+        <NavbarRight />
+      </div>
       {loadError && (
         <p className="text-amber-300/90 text-sm mb-4">{loadError}</p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
         {learnings.length > 0 &&
           learnings.map((learning) => (
             <div key={learning.id} className="rounded-lg overflow-hidden">
@@ -63,11 +68,17 @@ const Learnings = () => {
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-2"
                   onClick={() => openModal(learning.video_url)}
                 >
-                  <img className="w-24" src="/assets/images/play_button.png" alt="Play" />
+                  <img
+                    className="w-24"
+                    src="/assets/images/play_button.png"
+                    alt="Play"
+                  />
                 </button>
               </div>
               <div className="text-center p-4">
-                <h3 className="text-lg font-medium text-white">{learning.title}</h3>
+                <h3 className="text-lg font-medium text-white">
+                  {learning.title}
+                </h3>
               </div>
             </div>
           ))}

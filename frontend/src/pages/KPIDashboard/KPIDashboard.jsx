@@ -4,6 +4,7 @@ import axiosApi from "../../conf/axios";
 import Loading from "../../components/Loading";
 import { useArtist } from "../auth/API/ArtistContext";
 import { ChevronDown } from "lucide-react";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 const MONTH_NAMES = [
   "January",
@@ -38,10 +39,7 @@ function sortMetricsChronologically(metrics) {
 
 export default function KPIDashboard() {
   const { ophid, headers } = useArtist();
-  const isSpecialArtist = useMemo(
-    () => isSpecialArtistOphId(ophid),
-    [ophid],
-  );
+  const isSpecialArtist = useMemo(() => isSpecialArtistOphId(ophid), [ophid]);
   const [kpiData, setKpiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -239,35 +237,37 @@ export default function KPIDashboard() {
               )}
               */}
             </div>
-            {!isSpecialArtist && (
-              <div className="relative">
-                <button
-                  className="flex items-center px-4 py-2 w-[150px] bg-white/10 border border-white/30 border-cyan-200 rounded-full text-sm text-white-400 appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50 shadow-lg shadow-white/20"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const selectElement = e.currentTarget.querySelector("select");
-                    if (selectElement) {
-                      selectElement.focus();
-                      selectElement.click();
-                    }
-                  }}
-                >
-                  <select
-                    className="bg-transparent border-none focus:ring-0 focus:outline-none w-full"
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
-                  >
-                    {durationOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white-400 pointer-events-none" />
-                </button>
-              </div>
-            )}
+            <NavbarRight />
           </div>
+
+          {!isSpecialArtist && (
+            <div className="flex justify-end">
+              <button
+                className="flex items-center px-4 py-2 w-[150px] bg-white/10 border border-white/30 border-cyan-200 rounded-full text-sm text-white-400 appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50 shadow-lg shadow-white/20"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const selectElement = e.currentTarget.querySelector("select");
+                  if (selectElement) {
+                    selectElement.focus();
+                    selectElement.click();
+                  }
+                }}
+              >
+                <select
+                  className="bg-transparent border-none focus:ring-0 focus:outline-none w-full"
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                >
+                  {durationOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white-400 pointer-events-none" />
+              </button>
+            </div>
+          )}
 
           {/* Ranking position — hidden for special artists (no IA KPI leaderboard row) */}
           {!isSpecialArtist && (

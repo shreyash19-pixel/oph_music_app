@@ -10,6 +10,7 @@ import { isTomorrow, differenceInDays } from "date-fns";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { useArtist } from "../auth/API/ArtistContext";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 const SongDetails = () => {
   const [data, setData] = useState(null);
@@ -139,10 +140,13 @@ const SongDetails = () => {
   return (
     <div className="text-white bg-[#0D0D0D] p-8 sm:p-12 max-w-7xl mx-auto">
       {/* SONG DETAILS */}
-      <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase mb-8">
-        Song Details
-      </h2>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          Song Details
+        </h2>
 
+        <NavbarRight />
+      </div>
       <div className="flex flex-col lg:flex-row gap-10">
         {/* LEFT SECTION */}
         <div className="flex gap-8 items-start">
@@ -185,7 +189,7 @@ const SongDetails = () => {
 
       {/* RELEASE DETAILS */}
       <div className="mt-12">
-        <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold mb-6">
+        <h2 className="text-3xl font-bold mb-8 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           Release Details:
         </h2>
 
@@ -237,7 +241,6 @@ const SongDetails = () => {
                     navigator.clipboard.writeText(item.link);
                     toast.success("Link copied!!!");
                   }
-                  
                 }}
                 className="text-gray-300 hover:text-white transition flex items-center justify-center gap-2 mx-auto"
               >

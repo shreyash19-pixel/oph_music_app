@@ -8,6 +8,7 @@ import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
+import NavbarRight from "../../../components/Navbar/NavbarRight";
 
 function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   const [name, setName] = useState("");
@@ -978,6 +979,12 @@ export default function AudioMetadataForm() {
 
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
+      <div className="flex justify-between items-center  mb-8">
+        <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          Audio Metadata
+        </h2>
+        <NavbarRight />
+      </div>
       {isLoading && (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
@@ -996,9 +1003,6 @@ export default function AudioMetadataForm() {
             }`}
           >
             <div className="">
-              <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-                Audio Metadata
-              </h1>
               {rejectReason && (
                 <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
                   <p className="text-red-400 font-semibold mb-1">

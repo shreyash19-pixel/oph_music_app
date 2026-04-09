@@ -1,0 +1,6 @@
+ <div className="flex justify-between items-center">
+          <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            BLOCK DATE
+          </h2>
+          <NavbarRight />
+        </div>

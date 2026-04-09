@@ -4,6 +4,7 @@ import { useArtist } from "../auth/API/ArtistContext";
 import Loading from "../../components/Loading";
 import toast from "react-hot-toast";
 import { useOutletContext } from "react-router-dom";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 export default function TVPublishing() {
   const [loading, setLoading] = useState(false);
@@ -197,20 +198,23 @@ export default function TVPublishing() {
       {!loading && (
         <div
           className={`space-y-8 relative ${
-            contents.length === 0 ? "" : "max-w-4xl"
+            contents.length === 0 ? "" : "w-full"
           }`}
         >
-          <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-            TV PUBLISHING
-          </h1>
+          <div className="flex justify-between items-center  mb-8">
+            <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              TV PUBLISHING
+            </h2>
+            <NavbarRight />
+          </div>
 
           {contents.length === 0 ? (
             <div className="flex items-center justify-center h-[60vh]">
               <UnlockIcon />
             </div>
           ) : (
-            <div>
-              <div className="space-y-2 bg-[#191D27]/35 p-4">
+            <div className="max-w-4xl">
+              <div className="space-y-2 bg-[#191D27]/90 p-4">
                 <label className="block text-gray-400">Song Name</label>
                 <select
                   value={selectedContentId || ""}

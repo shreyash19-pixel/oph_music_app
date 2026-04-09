@@ -5,6 +5,8 @@ import axiosApi from "../../conf/axios";
 import getToken from "../../utils/getToken";
 import { useArtist } from "../auth/API/ArtistContext";
 import { use } from "react";
+import NavbarRight from "../../components/Navbar/NavbarRight";
+
 export default function BlockDateForm() {
   const { headers, ophid } = useArtist();
   const location = useLocation();
@@ -17,9 +19,9 @@ export default function BlockDateForm() {
   const [isProcessing, setIsProcessing] = useState(false);
   useEffect(() => {
     if (ophid) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        oph_id: ophid
+        oph_id: ophid,
       }));
     }
   }, [ophid]);
@@ -44,17 +46,17 @@ export default function BlockDateForm() {
   //   }
   // }, [location.state]);
 
-
-
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
     // Save form data to sessionStorage before navigation
-    sessionStorage.setItem('blockDateFormData', JSON.stringify({
-      selectedDate: formData.selectedDate,
-      numberOfSongs: formData.numberOfSongs
-    }));
+    sessionStorage.setItem(
+      "blockDateFormData",
+      JSON.stringify({
+        selectedDate: formData.selectedDate,
+        numberOfSongs: formData.numberOfSongs,
+      }),
+    );
 
     // Navigate to payment screen with form data
     navigate("/dashboard/payment", {
@@ -62,8 +64,8 @@ export default function BlockDateForm() {
         date: formData.selectedDate,
         returnPath: "/dashboard/block-date",
         heading: "Date Blocking Fee",
-        from: "Date booking"
-      }
+        from: "Date booking",
+      },
     });
   };
 
@@ -72,21 +74,25 @@ export default function BlockDateForm() {
     try {
       setIsProcessing(true);
 
-      const response = await axiosApi.post("/date-block/block", {
-        expected_songs: parseInt(dateBlockData.numberOfSongs),
-        date: new Date(dateBlockData.selectedDate),
-        payment_id: paymentData.newPaymentIds[0]
-      }, {
-        headers: headers
-      });
+      const response = await axiosApi.post(
+        "/date-block/block",
+        {
+          expected_songs: parseInt(dateBlockData.numberOfSongs),
+          date: new Date(dateBlockData.selectedDate),
+          payment_id: paymentData.newPaymentIds[0],
+        },
+        {
+          headers: headers,
+        },
+      );
 
       if (response.data.success) {
         navigate("/dashboard/success", {
           state: {
             heading: "Your date blocked successfully!",
             btnText: "View Calendar",
-            redirectTo: "/dashboard/time-calendar"
-          }
+            redirectTo: "/dashboard/time-calendar",
+          },
         });
       }
     } catch (error) {
@@ -107,10 +113,14 @@ export default function BlockDateForm() {
 
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6">
-      <div className="max-w-xl">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">BLOCK DATE</h1>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="w-full">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            BLOCK DATE
+          </h2>
+          <NavbarRight />
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
           <div className="space-y-2">
             <label className="block">
               OPH ID <span className="text-red-500">*</span>
@@ -129,7 +139,8 @@ export default function BlockDateForm() {
               Number of songs <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <select disabled
+              <select
+                disabled
                 name="numberOfSongs"
                 value={formData.numberOfSongs}
                 onChange={handleChange}
