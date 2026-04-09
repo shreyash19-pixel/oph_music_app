@@ -192,7 +192,7 @@ function SuccessSlider({ searchText, title }) {
           </h2>
         ) : (
           <h1 className="text-xl lg:text-4xl font-bold text-center mb-8 leading-tight uppercase mt-2">
-            Success Stroies
+            Success Stories
           </h1>
         )}
       </div>

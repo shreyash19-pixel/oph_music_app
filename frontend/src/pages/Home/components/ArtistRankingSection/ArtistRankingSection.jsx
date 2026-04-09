@@ -68,7 +68,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
         </h2>
       </div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+        <h2 className="text-white text-3xl font-extrabold mb-4 drop-shadow-[0_0_10px_rgba(34,211,238,1)] uppercase">
           {currentMonth}
         </h2>
       </div>

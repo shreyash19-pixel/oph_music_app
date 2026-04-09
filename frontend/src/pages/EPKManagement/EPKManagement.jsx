@@ -170,7 +170,7 @@ const EPKManagement = () => {
 
   return (
     <div className="ml-[63px] mr-[63px]">
-      <h1 className="mt-[55px] font-extrabold text-[55px]">EPK Management</h1>
+      <h1 className="mt-[55px] font-bold text-[50px] uppercase text-[#00B8D9] drop-shadow-[0_0_15px_rgba(34,211,238,1)]">EPK Management</h1>
 
       <form className="flex flex-col gap-[42px]" onSubmit={handleFormSubmit}>
         <div className="grid grid-cols-2 mt-[35px] gap-[54px]">

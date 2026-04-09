@@ -170,7 +170,7 @@ const SidebarNav = ({ onClose, contents, setContents }) => {
     },
     {
       icon: <img src={Event} className="w-[24px] h-[24px]" />,
-      label: "Event",
+      label: "Events",
       to: "/dashboard/events",
       type: "Independent artist, Special artist",
     },

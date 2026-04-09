@@ -261,7 +261,7 @@ const AddNewSong = () => {
 
   return (
     <div className="ml-[63px] mr-[63px]">
-      <h1 className="mt-[55px] font-extrabold text-[55px]">Add New Song </h1>
+      <h1 className="mt-[55px] font-bold text-[50px] text-[#00B8D9] drop-shadow-[0_0_15px_rgba(34,211,238,1)] uppercase">Add New Song </h1>
       <form
         className="mt-[40px] flex items-center justify-center flex-col w-full"
         onSubmit={handleSubmit}
