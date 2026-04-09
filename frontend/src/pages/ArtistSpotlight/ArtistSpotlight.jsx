@@ -275,8 +275,17 @@ function Songs() {
   return (
     <div className="space-y-6">
       <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
-        <div className="flex min-h-[200px] sm:min-h-[260px] items-center justify-center px-4">
-          <h2 className="text-center text-4xl font-bold tracking-tight text-cyan-400 sm:text-5xl md:text-6xl lg:text-7xl">
+        <div className="flex min-h-[200px] sm:min-h-[260px] items-center justify-center px-4 flex-col p-8 gap-5">
+          <svg
+            width="120"
+            height="120"
+            viewBox="0 0 24 24"
+            fill="#5DC9DE"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 1C9.24 1 7 3.24 7 6V9H6C4.9 9 4 9.9 4 11V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V11C20 9.9 19.1 9 18 9H17V6C17 3.24 14.76 1 12 1ZM9 6C9 4.34 10.34 3 12 3C13.66 3 15 4.34 15 6V9H9V6ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17Z" />
+          </svg>
+          <h2 className="text-center text-3xl font-bold tracking-tight text-cyan-400 sm:text-5xl md:text-6xl lg:text-7xl drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             Coming soon
           </h2>
         </div>
@@ -523,14 +532,12 @@ export default function ArtistSpotlight() {
             )}
 
             {/* Note Section */}
-            {/* <div className="space-y-4 lg:px-0 px-6">
+            {activeTab === "leaderboard" && <div className="space-y-4 lg:px-0 px-6">
               <h3 className="text-xl font-semibold text-cyan-400">
                 Note (How to improve ranking):
               </h3>
-              <p className="text-gray-500 whitespace-pre-line">
-                {notes}
-              </p>
-            </div> */}
+              <p className="text-gray-500 whitespace-pre-line">{notes}</p>
+            </div>}
           </div>
         </div>
       )}

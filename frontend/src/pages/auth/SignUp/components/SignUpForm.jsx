@@ -525,6 +525,12 @@ const SignUpForm = () => {
           alt=""
         />
 
+        <img
+          src={Elipse2}
+          className="absolute h-[600px] bottom-[650px] left-0"
+          alt=""
+        />
+
         <h1 className="text-4xl text-center text-white font-bold">
           <span className="text-[#5DC9DE]">ABOUT:</span> WHAT WE PROVIDE TO
           ASSIST
