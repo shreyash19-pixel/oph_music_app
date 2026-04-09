@@ -275,6 +275,18 @@ export default function VideoMetadataForm() {
           formData.video_file.type ||
           "application/octet-stream";
         const putStart = Date.now();
+        const totalMBVideo = formData.video_file.size / (1024 * 1024);
+        if (socket?.connected && ophid) {
+          socket.emit("presigned-video-upload-progress", {
+            ophid: String(ophid).trim(),
+            song_id: contentId,
+            percentage: 0,
+            loadedMB: 0,
+            totalMB: totalMBVideo,
+            speed: 0,
+            time: 0,
+          });
+        }
         try {
           await axios.put(pres.data.uploadUrl, formData.video_file, {
             headers: { "Content-Type": ct },
@@ -296,6 +308,17 @@ export default function VideoMetadataForm() {
                 time: elapsed,
                 isUploading: true,
               });
+              if (socket?.connected && ophid) {
+                socket.emit("presigned-video-upload-progress", {
+                  ophid: String(ophid).trim(),
+                  song_id: contentId,
+                  percentage: pct,
+                  loadedMB,
+                  totalMB,
+                  speed,
+                  time: elapsed,
+                });
+              }
             },
           });
         } catch (putErr) {

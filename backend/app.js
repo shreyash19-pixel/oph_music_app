@@ -178,6 +178,8 @@ const io = new Server(server, {
 });
 
 const onlineUsers = new Map();
+/** Throttle presigned PUT progress logs per socket+session (browser→S3; bytes never hit Node). */
+const presignedProgressLogThrottle = new Map();
 
 io.on("connection", (socket) => {
   socket.on("register", (ophid) => {
@@ -190,7 +192,55 @@ io.on("connection", (socket) => {
     onlineUsers.set(trimmedOphid, socket.id);
   });
 
+  // Client reports axios PUT progress to S3 (presigned URL); we log it like server-side S3 progress.
+  socket.on("presigned-video-upload-progress", (data) => {
+    try {
+      if (!data || typeof data !== "object") return;
+      const ophid = String(data.ophid ?? "").trim();
+      if (!ophid) return;
+      if (onlineUsers.get(ophid) !== socket.id) return;
+
+      const song_id = data.song_id != null ? String(data.song_id) : "?";
+      const pct = Math.min(
+        100,
+        Math.max(0, Math.round(Number(data.percentage ?? data.percent ?? 0)))
+      );
+      const loadedMB = Number(data.loadedMB);
+      const totalMB = Number(data.totalMB);
+      const speed = Number(data.speed ?? 0);
+
+      const key = `${socket.id}:${ophid}:${song_id}`;
+      const now = Date.now();
+      const prev = presignedProgressLogThrottle.get(key) ?? {
+        lastPct: -999,
+        lastLog: 0,
+      };
+      const shouldLog =
+        pct >= 100 ||
+        pct <= 1 ||
+        pct - prev.lastPct >= 5 ||
+        now - prev.lastLog >= 2000;
+      if (!shouldLog) return;
+
+      presignedProgressLogThrottle.set(key, { lastPct: pct, lastLog: now });
+      if (pct >= 100) presignedProgressLogThrottle.delete(key);
+
+      const loadedStr = Number.isFinite(loadedMB) ? loadedMB.toFixed(2) : "?";
+      const totalStr = Number.isFinite(totalMB) ? totalMB.toFixed(2) : "?";
+      const spdStr = Number.isFinite(speed) ? speed.toFixed(2) : "?";
+
+      console.log(
+        `[Video Upload][presigned-PUT→S3] song_id=${song_id} oph_id=${ophid} | ${pct}% | ${loadedStr}/${totalStr} MB | ${spdStr} MB/s`
+      );
+    } catch (e) {
+      // ignore malformed payloads
+    }
+  });
+
   socket.on("disconnect", () => {
+    for (const k of presignedProgressLogThrottle.keys()) {
+      if (k.startsWith(`${socket.id}:`)) presignedProgressLogThrottle.delete(k);
+    }
     for (let [key, value] of onlineUsers.entries()) {
       if (value === socket.id) {
         onlineUsers.delete(key);
