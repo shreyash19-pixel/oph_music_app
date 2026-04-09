@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import axiosApi from "../../conf/axios";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import Modal from 'react-modal';
+import Modal from "react-modal";
 import { updateProfileImage } from "../auth/API/profile";
 import { useArtist } from "../auth/API/ArtistContext";
 import Face from "../../../public/assets/images/facebook.png";
@@ -13,10 +13,8 @@ import Insta from "../../../public/assets/images/instagram.png";
 import Spotify from "../../../public/assets/images/spotify.png";
 import AppleMusic from "../../../public/assets/images/apple.png";
 import { resolveProfessionLabel } from "../../utils/professionDisplay";
-import {
-  normalizeExternalHref,
-  socialHref,
-} from "../../utils/socialLinks";
+import { normalizeExternalHref, socialHref } from "../../utils/socialLinks";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 Modal.setAppElement("#root");
 
@@ -78,7 +76,10 @@ export default function ArtistProfile() {
   const songsLoadKey = React.useMemo(
     () =>
       (approvedSongs ?? [])
-        .map((s) => `${s.song_id ?? ""}|${String(s.audio_url || s.audio_file_url || "").trim()}`)
+        .map(
+          (s) =>
+            `${s.song_id ?? ""}|${String(s.audio_url || s.audio_file_url || "").trim()}`,
+        )
         .join(";"),
     [approvedSongs],
   );
@@ -104,12 +105,16 @@ export default function ArtistProfile() {
             prev[sid] != null && prev[sid] > 0 ? prev : { ...prev, [sid]: d },
           );
         } else {
-          setTrackLengthSec((prev) => (prev[sid] != null ? prev : { ...prev, [sid]: -1 }));
+          setTrackLengthSec((prev) =>
+            prev[sid] != null ? prev : { ...prev, [sid]: -1 },
+          );
         }
       };
 
       const onErr = () => {
-        setTrackLengthSec((prev) => (prev[sid] != null ? prev : { ...prev, [sid]: -1 }));
+        setTrackLengthSec((prev) =>
+          prev[sid] != null ? prev : { ...prev, [sid]: -1 },
+        );
       };
 
       el.addEventListener("loadedmetadata", onMeta);
@@ -184,14 +189,16 @@ export default function ArtistProfile() {
   const fetchProfile = async () => {
     if (!id) return;
     try {
-      const response = await axiosApi.get(`/get-artist-detail?id=${encodeURIComponent(id)}`, {
-        ...(headers?.Authorization ? { headers } : {}),
-      });
+      const response = await axiosApi.get(
+        `/get-artist-detail?id=${encodeURIComponent(id)}`,
+        {
+          ...(headers?.Authorization ? { headers } : {}),
+        },
+      );
       const data = response.data?.data;
       console.log("Artist Profile Data:", data);
       if (data) {
         setArtist(data);
-        
       }
     } catch (err) {
       console.log(err);
@@ -207,7 +214,7 @@ export default function ArtistProfile() {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      return toast.error('Passwords do not match');
+      return toast.error("Passwords do not match");
     }
     if (!newPassword || newPassword.trim() === "") {
       toast.error("Please enter a new password");
@@ -217,7 +224,8 @@ export default function ArtistProfile() {
       toast.error("Password must be at least 8 characters long");
       return;
     }
-    const token = parsedData?.token || headers?.Authorization?.replace('Bearer ', '');
+    const token =
+      parsedData?.token || headers?.Authorization?.replace("Bearer ", "");
     if (!token) {
       toast.error("Authentication token not found");
       return;
@@ -227,13 +235,16 @@ export default function ArtistProfile() {
       await axiosApi.post(
         "/auth/change-password",
         { new_password: newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       toast.success("Password changed successfully");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error changing password. Please try again.");
+      toast.error(
+        error.response?.data?.message ||
+          "Error changing password. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -253,9 +264,9 @@ export default function ArtistProfile() {
         const formData = new FormData();
         formData.append("profile_image", file);
         const response = await updateProfileImage(formData, headers);
-        setArtist(prev => ({
+        setArtist((prev) => ({
           ...prev,
-          personal_photo: response.data.personal_photo
+          personal_photo: response.data.personal_photo,
         }));
         toast.success("Profile image updated successfully");
       } catch (error) {
@@ -308,6 +319,7 @@ export default function ArtistProfile() {
                 <span className="text-cyan-400">{artist.stage_name}</span>
               </p>
             </div>
+            <NavbarRight />
           </div>
 
           <div className="mt-4 space-y-2">
@@ -332,10 +344,30 @@ export default function ArtistProfile() {
           {/* Social links: FB / IG / Spotify / Apple come from professional_details via get-artist-detail */}
           <div className="flex flex-wrap gap-4">
             {(() => {
-              const fb = socialHref(artist, "facebook_url", "facebook_link", "FacebookLink");
-              const ig = socialHref(artist, "instagram_url", "instagram_link", "InstagramLink");
-              const sp = socialHref(artist, "spotify_url", "spotify_link", "SpotifyLink");
-              const am = socialHref(artist, "apple_music_url", "apple_music_link", "AppleMusicLink");
+              const fb = socialHref(
+                artist,
+                "facebook_url",
+                "facebook_link",
+                "FacebookLink",
+              );
+              const ig = socialHref(
+                artist,
+                "instagram_url",
+                "instagram_link",
+                "InstagramLink",
+              );
+              const sp = socialHref(
+                artist,
+                "spotify_url",
+                "spotify_link",
+                "SpotifyLink",
+              );
+              const am = socialHref(
+                artist,
+                "apple_music_url",
+                "apple_music_link",
+                "AppleMusicLink",
+              );
               // const li = socialHref(artist, "linkedin_url", "linkedin_link");
               // const tw = socialHref(artist, "twitter_url", "twitter_link");
               const items = [
@@ -388,7 +420,7 @@ export default function ArtistProfile() {
                 <tr className="text-center text-gray-300 border-b border-gray-800 text-xs">
                   <th className="pb-4 font-normal">#</th>
                   <th className="pb-4 font-normal">SONG NAME</th>
-                  <th className="pb-4 font-normal">PLAYS</th> 
+                  <th className="pb-4 font-normal">PLAYS</th>
                   <th
                     className="pb-4 font-normal"
                     title="Length of your uploaded audio file"
@@ -410,49 +442,49 @@ export default function ArtistProfile() {
                   </tr>
                 ) : (
                   approvedSongs.map((song, index) => (
-                  <tr key={song.song_id} className="group text-center">
-                    <td className="py-4">{index + 1}</td>
-                    <td className="py-4 text-center">
-                      <div className="flex justify-center">
-                        <div className="max-w-[120px] truncate">
-                          <div className="font-medium">{song.song_name}</div>
-                          <div className="text-sm text-gray-400">
-                            {song.primary_artist}
+                    <tr key={song.song_id} className="group text-center">
+                      <td className="py-4">{index + 1}</td>
+                      <td className="py-4 text-center">
+                        <div className="flex justify-center">
+                          <div className="max-w-[120px] truncate">
+                            <div className="font-medium">{song.song_name}</div>
+                            <div className="text-sm text-gray-400">
+                              {song.primary_artist}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4">{song.total_song_views ?? "—"}</td>
-                    <td className="py-4 tabular-nums text-gray-200 min-w-[3.5rem]">
-                      {(() => {
-                        const sec = trackLengthSec[song.song_id];
-                        if (sec === undefined) return "…";
-                        if (sec > 0) return formatTrackLengthSeconds(sec);
-                        const mins = song.duration_in_minutes;
-                        if (
-                          mins != null &&
-                          mins !== "" &&
-                          !Number.isNaN(Number(mins)) &&
-                          Number(mins) > 0
-                        ) {
-                          return `${Math.floor(Number(mins))}:00`;
-                        }
-                        return "—";
-                      })()}
-                    </td>
-                    <td className="py-4">
-                      <button
-                        className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 transition-colors"
-                        onClick={() => handlePlayPause(song)}
-                      >
-                        {playingSongId === song.song_id && !audio?.paused ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="py-4">{song.total_song_views ?? "—"}</td>
+                      <td className="py-4 tabular-nums text-gray-200 min-w-[3.5rem]">
+                        {(() => {
+                          const sec = trackLengthSec[song.song_id];
+                          if (sec === undefined) return "…";
+                          if (sec > 0) return formatTrackLengthSeconds(sec);
+                          const mins = song.duration_in_minutes;
+                          if (
+                            mins != null &&
+                            mins !== "" &&
+                            !Number.isNaN(Number(mins)) &&
+                            Number(mins) > 0
+                          ) {
+                            return `${Math.floor(Number(mins))}:00`;
+                          }
+                          return "—";
+                        })()}
+                      </td>
+                      <td className="py-4">
+                        <button
+                          className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 transition-colors"
+                          onClick={() => handlePlayPause(song)}
+                        >
+                          {playingSongId === song.song_id && !audio?.paused ? (
+                            <Pause className="w-4 h-4" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>

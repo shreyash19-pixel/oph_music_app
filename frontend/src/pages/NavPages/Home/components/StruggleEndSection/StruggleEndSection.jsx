@@ -26,7 +26,8 @@ const StruggleEndsSection = () => {
     fetchAboutUs();
   }, []);
 
-  if (loading) return <div className="bg-black text-white py-16 px-4">Loading...</div>;
+  if (loading)
+    return <div className="bg-black text-white py-16 px-4">Loading...</div>;
 
   return (
     aboutUs && (
@@ -37,9 +38,9 @@ const StruggleEndsSection = () => {
           className="absolute z-10 right-0 -top-[300px] w-[400px]"
           alt=""
         />
-        <div className="container px-4 md:px-16 lg:px-16">
-          <div className="mb-8">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-2 justify-center text-center md:text-left md:ml-[10%]">
+        <div className="container px-4 md:px-16 lg:px-16 mx-auto">
+          <div className="mb-8 flex justify-center items-center">
+            <h2 className="text-3xl lg:text-5xl font-bold mb-2 text-center md:text-left">
               YOUR <span className="text-[#5DC9DE]">STRUGGLE ENDS HERE!</span>
             </h2>
           </div>

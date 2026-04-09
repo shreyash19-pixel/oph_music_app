@@ -95,28 +95,37 @@ const getPaymentDetailsForEventsByOphId = async (ophid) => {
     // Return all statuses so admin can approve/reject any payment
     const [rows] = await db.query(
       `SELECT 
-        id,
-        oph_id,
-        transaction_id,
-        review,
-        status,
-        from_source,
-        song_id,
-        event_id,
-        release_date,
-        reject_reason,
-        reject_for,
-        amount,
-        created_at,
-        updated_at
-      FROM payments
+        p.id,
+        p.oph_id,
+        p.transaction_id,
+        p.review,
+        p.status,
+        p.from_source,
+        p.song_id,
+        p.event_id,
+        p.release_date,
+        p.reject_reason,
+        p.reject_for,
+        p.amount,
+        p.created_at,
+        p.updated_at,
+        eb.first_name AS booking_first_name,
+        eb.last_name AS booking_last_name,
+        eb.email AS booking_email,
+        eb.phone AS booking_phone,
+        eb.instagram_handle AS booking_instagram_handle,
+        pr.name AS booking_profession
+      FROM payments p
+      LEFT JOIN event_bookings eb
+        ON eb.payment_transaction_id = p.transaction_id
+      LEFT JOIN professions pr ON pr.id = eb.profession_id
       WHERE (
-        event_id IS NOT NULL
-        OR from_source = 'Event Registration'
-        OR from_source LIKE 'Event Regist%'
+        p.event_id IS NOT NULL
+        OR p.from_source = 'Event Registration'
+        OR p.from_source LIKE 'Event Regist%'
       )
-      AND oph_id = ?
-      ORDER BY created_at DESC`,
+      AND p.oph_id = ?
+      ORDER BY p.created_at DESC`,
       [ophid],
     );
     return rows;

@@ -3,24 +3,27 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useArtist } from "../../pages/auth/API/ArtistContext";
-import Elp from "../../../public/assets/images/Ellipse4.png";
-import Logo from "../../../public/assets/images/logo.png";
 import { TiHome } from "react-icons/ti";
-import Calender from "../../../public/assets/images/calender.png";
-import EPK from "../../../public/assets/images/my-epk.png";
-import SongUp from "../../../public/assets/images/song.png";
-import Tv from "../../../public/assets/images/tv.png";
-import Spot from "../../../public/assets/images/spotlight.png";
-import Anal from "../../../public/assets/images/analytics.png";
-import Ticket from "../../../public/assets/images/ticket.png";
-import Event from "../../../public/assets/images/event.png";
-import Income from "../../../public/assets/images/income.png";
-import Key from "../../../public/assets/images/key.png";
-import Logout from "../../../public/assets/images/logout.png";
+
+/** Public dir is served at site root; do not import from `public/` (breaks Rollup on Linux). */
+const pubImg = (file) => `${import.meta.env.BASE_URL}assets/images/${file}`;
+const Elp = pubImg("Ellipse4.png");
+const Logo = pubImg("logo.png");
+const Calender = pubImg("calender.png");
+const EPK = pubImg("my-epk.png");
+const SongUp = pubImg("song.png");
+const Tv = pubImg("tv.png");
+const Spot = pubImg("spotlight.png");
+const Anal = pubImg("analytics.png");
+const Ticket = pubImg("ticket.png");
+const Event = pubImg("event.png");
+const Income = pubImg("income.png");
+const Key = pubImg("key.png");
+const Logout = pubImg("logout.png");
 import { X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 
-const SidebarNav = ({ onClose }) => {
+const SidebarNav = ({ onClose, contents, setContents }) => {
   const navigate = useNavigate();
   const { logout } = useArtist();
   const [userData, setUserData] = useState(null);
@@ -29,6 +32,9 @@ const SidebarNav = ({ onClose }) => {
   const [data, setData] = useState([]);
   const { ophid, headers } = useArtist();
   const [artistType, setArtistType] = useState("");
+
+  console.log(contents);
+  
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
@@ -142,6 +148,7 @@ const SidebarNav = ({ onClose }) => {
       label: "TV Publishing",
       to: "/dashboard/tv-publishing",
       type: "Independent artist",
+      lock: <img src={Lock} className="w-[24px] h-[24px]" />
     },
     {
       icon: <img src={Spot} className="w-[24px] h-[24px]" />,
@@ -232,6 +239,13 @@ const SidebarNav = ({ onClose }) => {
                     <span className="text-[14px] font-medium">
                       {item.label}
                     </span>
+
+                    {
+                      contents?.length === 0 && 
+                      (<span className="ml-auto">
+                        {item.lock}
+                      </span>)
+                    }
                   </button>
                 </li>
               ))}

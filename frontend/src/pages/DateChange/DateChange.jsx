@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import axiosApi from "../../conf/axios";
 
 import { toast, Bounce, ToastContainer } from "react-toastify";
-
+import NavbarRight from "../../components/Navbar/NavbarRight";
 import { useArtist } from "../auth/API/ArtistContext";
 
 export default function DateChangeForm() {
@@ -22,20 +22,16 @@ export default function DateChangeForm() {
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
-        const response = await axiosApi.get(
-          "/bookings",
-          {
-            headers: headers,
-          }
-        );
- 
+        const response = await axiosApi.get("/bookings", {
+          headers: headers,
+        });
+
         if (response.data.success) {
-                
           // Extract just the dates from the response
           const dates = response.data.data.map(
-            (item) => item.current_booking_date?.split("T")[0]
+            (item) => item.current_booking_date?.split("T")[0],
           );
-         
+
           setBlockedDates(dates);
         }
       } catch (error) {
@@ -43,7 +39,7 @@ export default function DateChangeForm() {
       }
     };
 
-    fetchBlockedDates();    
+    fetchBlockedDates();
   }, []);
 
   const isBlockedDate = (date) => {
@@ -53,21 +49,19 @@ export default function DateChangeForm() {
     if (isNaN(parsedDate.getTime())) return false;
 
     console.log(parsedDate);
-    
 
-    const formattedDate = parsedDate.toISOString().split("T")[0];    
+    const formattedDate = parsedDate.toISOString().split("T")[0];
     // Exclude the current date being changed from blocked dates check
- 
-  
+
     return blockedDates.some(
       (blockedDate) =>
-        blockedDate === formattedDate && formattedDate !== formData.oldDate
+        blockedDate === formattedDate && formattedDate !== formData.oldDate,
     );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-      
+
     if (isBlockedDate(formData.newDate)) {
       toast.error("Date already booked");
       return;
@@ -91,7 +85,7 @@ export default function DateChangeForm() {
       //     headers: headers,
       //   }
       // );
- 
+
       navigate("/auth/payment", {
         state: {
           old_booking_date: formData.oldDate,
@@ -103,7 +97,6 @@ export default function DateChangeForm() {
           reason: formData.reason,
         },
       });
-
     } catch (error) {
       console.error("Error changing date:", error);
       toast.error("Error changing date. Please try again.");
@@ -122,12 +115,14 @@ export default function DateChangeForm() {
 
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6">
-      <div className="max-w-xl">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-          DATE CHANGE
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="w-full">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            DATE CHANGE
+          </h2>
+          <NavbarRight />
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
           <div className="space-y-2">
             <label className="block">
               OPH ID <span className="text-red-500">*</span>

@@ -3,6 +3,7 @@ import { useArtist } from "../auth/API/ArtistContext";
 import axiosApi from "../../conf/axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 export default function IncomeWithdrawal() {
   const { headers, ophid } = useArtist();
@@ -231,9 +232,7 @@ export default function IncomeWithdrawal() {
       setLoading(true);
       const response = await axiosApi.post(
         "/set-special-artists-income-status",
-        { ophid: ophid,
-          status: "requested"
-         },
+        { ophid: ophid, status: "requested" },
         {
           headers: {
             ...headers,
@@ -302,9 +301,12 @@ export default function IncomeWithdrawal() {
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6">
       <div className="container space-y-6">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-          INCOME
-        </h1>
+        <div className="flex justify-between items-center  mb-8">
+          <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            INCOME
+          </h2>
+          <NavbarRight />
+        </div>
 
         {/* Available Amount Card */}
         <div className="bg-[#6F4FA0] rounded-lg p-6">

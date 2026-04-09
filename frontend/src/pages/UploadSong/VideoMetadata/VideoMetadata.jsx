@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Camera, Plus, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import axiosApi from "../../../conf/axios";
 import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
 import CustomVideoPlayer from "../../../components/CustomVideoPlayer/CustomVideoPlayer";
 import { socket } from "../../../../hook/socket";
+import NavbarRight from "../../../components/Navbar/NavbarRight";
 
 export default function VideoMetadataForm() {
   const navigate = useNavigate();
@@ -16,18 +18,20 @@ export default function VideoMetadataForm() {
   const [payStat, setPayStat] = useState("");
 
   console.log(location);
-  
-  
+
   // Get song_id from location state (e.g. from upload flow or when returning from payment cancel)
   const contentId = location.state?.song_id;
 
   const [nextPage, setNextPage] = useState("");
-  const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
+  const releaseDateRaw =
+    location.state?.release_date ?? location.state?.booking_date;
   const formattedDate = (() => {
     if (!releaseDateRaw) return "";
     const s = String(releaseDateRaw).trim();
     if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-    const release_date = new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
+    const release_date = new Date(releaseDateRaw).toLocaleDateString("en-GB", {
+      timeZone: "Asia/Kolkata",
+    });
     if (!release_date || !release_date.includes("/")) return "";
     const parts = release_date.split("/");
     if (parts.length < 3) return "";
@@ -35,16 +39,25 @@ export default function VideoMetadataForm() {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   })();
   const release_date = releaseDateRaw
-    ? new Date(releaseDateRaw).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
+    ? new Date(releaseDateRaw).toLocaleDateString("en-GB", {
+        timeZone: "Asia/Kolkata",
+      })
     : "";
 
   const [songName, setSongName] = useState(location.state?.songName || "");
   // Prefer location.state (from navigation) so "Paid in Advance" from backend works; fallback to localStorage
-  const projectTypeRaw = location.state?.project_type || localStorage.getItem("projectType") || "";
-  const projectType = typeof projectTypeRaw === "string" ? projectTypeRaw.trim() : "";
-  const isPaidInAdvance = projectType.length > 0 && String(projectType).toLowerCase().includes("paid in advance");
-  const lyricalServices = location.state?.lyrical_services === true || location.state?.lyrical_services === "true"
-    || location.state?.lyrical_services === 1 || location.state?.lyrical_services === "1";
+  const projectTypeRaw =
+    location.state?.project_type || localStorage.getItem("projectType") || "";
+  const projectType =
+    typeof projectTypeRaw === "string" ? projectTypeRaw.trim() : "";
+  const isPaidInAdvance =
+    projectType.length > 0 &&
+    String(projectType).toLowerCase().includes("paid in advance");
+  const lyricalServices =
+    location.state?.lyrical_services === true ||
+    location.state?.lyrical_services === "true" ||
+    location.state?.lyrical_services === 1 ||
+    location.state?.lyrical_services === "1";
   const { headers, ophid } = useArtist();
   const [formData, setFormData] = useState({
     credits: "",
@@ -59,7 +72,7 @@ export default function VideoMetadataForm() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPaidForLyricalVideo, setHasPaidForLyricalVideo] = useState(false); // Add state for lyrical video payment
-  
+
   // Upload progress state
   const [uploadProgress, setUploadProgress] = useState({
     percentage: 0,
@@ -73,33 +86,53 @@ export default function VideoMetadataForm() {
   const [checkBookingDates, setCheckBookingDates] = useState([]);
   const [navigateToSongReg, setNavigateToSongReg] = useState(false);
   const [videoMetadataLoaded, setVideoMetadataLoaded] = useState(false);
+  const [paymentCheckDone, setPaymentCheckDone] = useState(false);
   const [showPayNowAfterSubmit, setShowPayNowAfterSubmit] = useState(false);
   const progressCleanupRef = useRef(null);
 
+  const rejectedSectionsNav = location.state?.rejectedSections;
+  const paymentOnlyRejectedFromNav =
+    Array.isArray(rejectedSectionsNav) &&
+    rejectedSectionsNav.some((s) => s.section === "payment") &&
+    !rejectedSectionsNav.some(
+      (s) => s.section === "video" || s.section === "audio",
+    );
+
   // Video is in rejected list (from status page) = user must submit video changes first
-  const isVideoRejected = location.state?.rejectedSections?.some(
-    (s) => s.section === "video"
+  const isVideoRejected = rejectedSectionsNav?.some(
+    (s) => s.section === "video",
   );
   // Paid in advance without lyrical: never show Pay now (no payment needed)
   const isPaidInAdvanceNoLyricalCheck = isPaidInAdvance && !lyricalServices;
-  // Only payment rejected = payment needed AND video was already submitted (so show read-only + Pay now)
+  const paymentStillNeedsCompletion =
+    nextPage === "repayment" || nextPage === "payment";
+  // Only payment rejected = pay again; video/audio not in rejected list from dashboard (or stale video reject_reason in DB)
   const onlyPaymentRejected =
     !isPaidInAdvanceNoLyricalCheck &&
     videoMetadataLoaded &&
-    (nextPage === "repayment" || nextPage === "payment") &&
-    formData.reject_reason === null &&
-    !isVideoRejected &&
-    !!formData.existing_video_url; // must have submitted video before showing read-only
+    paymentCheckDone &&
+    paymentStillNeedsCompletion &&
+    !!formData.existing_video_url &&
+    (paymentOnlyRejectedFromNav ||
+      (!isVideoRejected && formData.reject_reason == null));
   // After audio resubmit when both audio and payment were rejected: land here with read-only + Pay now
-  const showPayNowOnVideoFromState = location.state?.showPayNowOnVideo === true && !isPaidInAdvanceNoLyricalCheck;
+  const showPayNowOnVideoFromState =
+    location.state?.showPayNowOnVideo === true &&
+    !isPaidInAdvanceNoLyricalCheck;
   // Show read-only + Pay now when: (1) video already submitted and only payment left, (2) user just submitted on this page, or (3) came from audio resubmit (audio+payment rejected)
   // Never show for paid in advance without lyrical
-  const showReadOnlyAndPayNow = !isPaidInAdvanceNoLyricalCheck && (onlyPaymentRejected || showPayNowAfterSubmit || showPayNowOnVideoFromState);
+  const showReadOnlyAndPayNow =
+    !isPaidInAdvanceNoLyricalCheck &&
+    (onlyPaymentRejected ||
+      showPayNowAfterSubmit ||
+      (showPayNowOnVideoFromState &&
+        videoMetadataLoaded &&
+        !!formData.existing_video_url));
 
   const urlToFile = async (url, fileName, mimeType) => {
     try {
-      if (!url || typeof url !== 'string') {
-        throw new Error('Invalid URL provided');
+      if (!url || typeof url !== "string") {
+        throw new Error("Invalid URL provided");
       }
       const res = await fetch(url);
       if (!res.ok) {
@@ -140,7 +173,7 @@ export default function VideoMetadataForm() {
       setFormData((prev) => ({
         ...prev,
         existing_thumbnails: prev.existing_thumbnails.filter(
-          (_, i) => i !== index
+          (_, i) => i !== index,
         ),
       }));
     } catch (error) {
@@ -171,12 +204,14 @@ export default function VideoMetadataForm() {
       if (response.data.success) {
         const nextPagePath = response.data.data?.nextPagePath;
         const rejectReason = response.data.data?.reject_reason;
-        
+
         setNextPage(nextPagePath || "");
         setPayStat(rejectReason || "");
       }
     } catch (err) {
       console.error("Error checking payment status:", err);
+    } finally {
+      setPaymentCheckDone(true);
     }
   };
 
@@ -184,6 +219,18 @@ export default function VideoMetadataForm() {
     e.preventDefault();
 
     if (isSubmitting) return;
+
+    if (!contentId) {
+      toast.error(
+        "Missing song information. Please go back and open this step from the upload flow again.",
+      );
+      return;
+    }
+
+    if (showReadOnlyAndPayNow) {
+      toast.info("Use Pay now to complete payment. No need to resubmit video.");
+      return;
+    }
 
     if (
       formData.thumbnails.length === 0 &&
@@ -204,18 +251,104 @@ export default function VideoMetadataForm() {
     }
 
     const storedToken = localStorage.getItem("token");
-    if (
-      !storedToken ||
-      storedToken === "undefined" ||
-      storedToken === "null"
-    ) {
+    if (!storedToken || storedToken === "undefined" || storedToken === "null") {
       toast.error("Please sign in again to upload your video.");
       return;
     }
 
+    /**
+     * Always PUT new video files to S3 via presigned URL, then POST only metadata + thumbnails.
+     * Large multipart POSTs to the API often never reach Node behind Cloudflare (typical ~100MB cap).
+     */
     try {
       setIsSubmitting(true);
       setIsLoading(true);
+
+      let directS3VideoUrl = null;
+      if (formData.video_file) {
+        const pres = await axiosApi.get("/video-details/presigned-upload", {
+          headers,
+          params: {
+            song_id: contentId,
+            filename: formData.video_file.name,
+            content_type:
+              formData.video_file.type || "application/octet-stream",
+          },
+        });
+        if (
+          !pres.data?.success ||
+          !pres.data.uploadUrl ||
+          !pres.data.publicUrl
+        ) {
+          toast.error(pres.data?.message || "Could not prepare video upload.");
+          throw new Error("presign failed");
+        }
+        const ct =
+          pres.data.contentType ||
+          formData.video_file.type ||
+          "application/octet-stream";
+        const putStart = Date.now();
+        const totalMBVideo = formData.video_file.size / (1024 * 1024);
+        if (socket?.connected && ophid) {
+          socket.emit("presigned-video-upload-progress", {
+            ophid: String(ophid).trim(),
+            song_id: contentId,
+            percentage: 0,
+            loadedMB: 0,
+            totalMB: totalMBVideo,
+            speed: 0,
+            time: 0,
+          });
+        }
+        try {
+          await axios.put(pres.data.uploadUrl, formData.video_file, {
+            headers: { "Content-Type": ct },
+            timeout: 0,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+            onUploadProgress: (ev) => {
+              if (!ev.total) return;
+              const loadedMB = ev.loaded / (1024 * 1024);
+              const totalMB = ev.total / (1024 * 1024);
+              const pct = Math.round((ev.loaded / ev.total) * 100);
+              const elapsed = (Date.now() - putStart) / 1000;
+              const speed = loadedMB / (elapsed || 1);
+              setUploadProgress({
+                percentage: pct,
+                loadedMB,
+                totalMB,
+                speed,
+                time: elapsed,
+                isUploading: true,
+              });
+              if (socket?.connected && ophid) {
+                socket.emit("presigned-video-upload-progress", {
+                  ophid: String(ophid).trim(),
+                  song_id: contentId,
+                  percentage: pct,
+                  loadedMB,
+                  totalMB,
+                  speed,
+                  time: elapsed,
+                });
+              }
+            },
+          });
+        } catch (putErr) {
+          console.error("[Video upload] S3 PUT failed:", putErr);
+          const net =
+            putErr?.message === "Network Error" ||
+            putErr?.code === "ERR_NETWORK" ||
+            !putErr?.response;
+          toast.error(
+            net
+              ? "Video upload to storage failed (network/CORS). Ensure the S3 bucket allows PUT from your website origin."
+              : `Video upload to storage failed (${putErr?.response?.status ?? "error"}).`,
+          );
+          throw putErr;
+        }
+        directS3VideoUrl = pres.data.publicUrl;
+      }
 
       const formDataToSend = new FormData();
       formDataToSend.append("song_id", contentId);
@@ -223,28 +356,41 @@ export default function VideoMetadataForm() {
       formDataToSend.append("credits", formData.credits);
 
       // Send existing thumbnails as JSON (URLs that are already on S3)
-      if (formData.existing_thumbnails && formData.existing_thumbnails.length > 0) {
-        formDataToSend.append("existing_thumbnails", JSON.stringify(formData.existing_thumbnails));
+      if (
+        formData.existing_thumbnails &&
+        formData.existing_thumbnails.length > 0
+      ) {
+        formDataToSend.append(
+          "existing_thumbnails",
+          JSON.stringify(formData.existing_thumbnails),
+        );
       }
 
-      if (formData.video_file) {
+      if (directS3VideoUrl) {
+        formDataToSend.append("existing_video_url", directS3VideoUrl);
+      } else if (formData.video_file) {
         formDataToSend.append("video_file", formData.video_file);
       } else if (formData.existing_video_url) {
         // Preserve existing S3 URL when user resubmits without choosing a new file
-        formDataToSend.append("existing_video_url", formData.existing_video_url);
+        formDataToSend.append(
+          "existing_video_url",
+          formData.existing_video_url,
+        );
       }
 
       // Only send NEW thumbnails (File objects), not existing ones that were converted from URLs
       // Filter out thumbnails that are actually existing ones (check if they have a name that matches existing URLs)
-      const newThumbnails = formData.thumbnails.filter(thumbnail => {
+      const newThumbnails = formData.thumbnails.filter((thumbnail) => {
         // If thumbnail is a File object (has .name and .size), it's a new upload
         // If it was converted from URL, it might not have proper File properties
         // Check if it's actually a new file by seeing if it exists in existing_thumbnails
         if (thumbnail instanceof File) {
-          const isExisting = formData.existing_thumbnails?.some(existingUrl => {
-            const existingFileName = existingUrl.split("/").pop();
-            return thumbnail.name === existingFileName;
-          });
+          const isExisting = formData.existing_thumbnails?.some(
+            (existingUrl) => {
+              const existingFileName = existingUrl.split("/").pop();
+              return thumbnail.name === existingFileName;
+            },
+          );
           return !isExisting; // Only include if it's NOT an existing thumbnail
         }
         return true; // Include if it's not a File (shouldn't happen, but be safe)
@@ -253,12 +399,14 @@ export default function VideoMetadataForm() {
       newThumbnails.forEach((thumbnail) => {
         formDataToSend.append("thumbnails", thumbnail);
       });
-      
-      console.log(`[Frontend] Sending ${newThumbnails.length} new thumbnail(s) and ${formData.existing_thumbnails?.length || 0} existing thumbnail URL(s)`);
 
-      // Calculate total file size for progress tracking
+      console.log(
+        `[Frontend] Sending ${newThumbnails.length} new thumbnail(s) and ${formData.existing_thumbnails?.length || 0} existing thumbnail URL(s)`,
+      );
+
+      // Calculate total file size for progress tracking (multipart leg only after direct S3 video)
       let totalSize = 0;
-      if (formData.video_file) {
+      if (formData.video_file && !directS3VideoUrl) {
         totalSize += formData.video_file.size;
       }
       newThumbnails.forEach((thumb) => {
@@ -268,20 +416,34 @@ export default function VideoMetadataForm() {
       });
 
       const startTime = Date.now();
-      const totalMBInitial = formData.video_file
-        ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
-        : totalSize ? (totalSize / (1024 * 1024)).toFixed(2) : "0";
-      setUploadProgress({
-        percentage: 0,
-        loadedMB: 0,
-        totalMB: parseFloat(totalMBInitial),
-        speed: 0,
-        time: 0,
-        isUploading: true,
-      });
+      const totalMBInitial = directS3VideoUrl
+        ? totalSize
+          ? (totalSize / (1024 * 1024)).toFixed(2)
+          : "0"
+        : formData.video_file
+          ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
+          : totalSize
+            ? (totalSize / (1024 * 1024)).toFixed(2)
+            : "0";
+      if (!directS3VideoUrl) {
+        setUploadProgress({
+          percentage: 0,
+          loadedMB: 0,
+          totalMB: parseFloat(totalMBInitial),
+          speed: 0,
+          time: 0,
+          isUploading: true,
+        });
+      } else {
+        setUploadProgress((prev) => ({
+          ...prev,
+          totalMB: parseFloat(totalMBInitial) || prev.totalMB,
+          isUploading: true,
+        }));
+      }
 
       // Real S3 progress from backend via socket (matches backend logs)
-      if (formData.video_file && socket) {
+      if (formData.video_file && !directS3VideoUrl && socket) {
         const handler = (data) => {
           setUploadProgress((prev) => ({
             ...prev,
@@ -294,15 +456,19 @@ export default function VideoMetadataForm() {
           }));
         };
         socket.on("video-upload-progress", handler);
-        progressCleanupRef.current = () => socket.off("video-upload-progress", handler);
+        progressCleanupRef.current = () =>
+          socket.off("video-upload-progress", handler);
       }
 
       // Do not set Content-Type — browser/axios must add multipart boundary.
       // Auth: axios interceptor adds Authorization from localStorage if header missing.
       const response = await axiosApi.post(`/video-details`, formDataToSend, {
+        timeout: 0, // large video: browser→server multer + server→S3 can exceed any fixed limit
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
         onUploadProgress: (progressEvent) => {
-          // For video uploads progress comes from socket; only use this for thumbnails-only
-          if (formData.video_file) return;
+          // Video in multipart: progress from socket. Direct S3 video: use this for thumbnails leg only.
+          if (formData.video_file && !directS3VideoUrl) return;
           if (progressEvent.total) {
             const loaded = progressEvent.loaded;
             const total = progressEvent.total;
@@ -310,7 +476,10 @@ export default function VideoMetadataForm() {
             const loadedMB = (loaded / (1024 * 1024)).toFixed(2);
             const totalMB = (total / (1024 * 1024)).toFixed(2);
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            const speed = elapsed > 0 ? (loaded / (1024 * 1024) / parseFloat(elapsed)).toFixed(2) : 0;
+            const speed =
+              elapsed > 0
+                ? (loaded / (1024 * 1024) / parseFloat(elapsed)).toFixed(2)
+                : 0;
             setUploadProgress((prev) => ({
               ...prev,
               percentage,
@@ -325,9 +494,7 @@ export default function VideoMetadataForm() {
       });
 
       // Paid in advance + lyrical NOT selected: no payment, go directly to success
-      const isPaidInAdvanceNoLyrical =
-        isPaidInAdvance &&
-        !lyricalServices;
+      const isPaidInAdvanceNoLyrical = isPaidInAdvance && !lyricalServices;
       if (isPaidInAdvanceNoLyrical) {
         const response = await axiosApi.post(
           "/insert-calender-song-project",
@@ -343,7 +510,7 @@ export default function VideoMetadataForm() {
               ...headers,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (response.data.success) {
@@ -355,7 +522,7 @@ export default function VideoMetadataForm() {
               headers: {
                 "Content-Type": "application/json",
               },
-            }
+            },
           );
 
           if (paymentUpdateResponse.data.success) {
@@ -379,7 +546,10 @@ export default function VideoMetadataForm() {
         // Refetch video metadata so read-only view shows saved thumbnails and video URLs
         const refetchForReadOnly = async () => {
           try {
-            const res = await axiosApi.get(`/video-details`, { headers, params: { contentId } });
+            const res = await axiosApi.get(`/video-details`, {
+              headers,
+              params: { contentId },
+            });
             if (res.data?.success && res.data?.data?.video_metadata?.[0]) {
               const d = res.data.data.video_metadata[0];
               let imageUrls = [];
@@ -389,7 +559,9 @@ export default function VideoMetadataForm() {
                 else if (typeof rawImageUrl === "string") {
                   try {
                     const parsed = JSON.parse(rawImageUrl);
-                    imageUrls = Array.isArray(parsed) ? parsed : [parsed].filter(Boolean);
+                    imageUrls = Array.isArray(parsed)
+                      ? parsed
+                      : [parsed].filter(Boolean);
                   } catch {
                     imageUrls = [rawImageUrl].filter(Boolean);
                   }
@@ -410,13 +582,21 @@ export default function VideoMetadataForm() {
           }
         };
 
+        if (response.data.paymentOnlyRepay === true) {
+          await refetchForReadOnly();
+          setShowPayNowAfterSubmit(true);
+          return;
+        }
+
         // Paid in advance + lyrical: only show Pay now when PAYMENT is rejected, not when only video was rejected
         const isPaidInAdvanceWithLyrical = isPaidInAdvance && lyricalServices;
         if (isPaidInAdvanceWithLyrical) {
           const isPaymentRejected =
             nextPage === "repayment" ||
             nextPage === "payment" ||
-            location.state?.rejectedSections?.some((s) => s.section === "payment");
+            location.state?.rejectedSections?.some(
+              (s) => s.section === "payment",
+            );
           if (isPaymentRejected) {
             await refetchForReadOnly();
             setShowPayNowAfterSubmit(true);
@@ -435,15 +615,19 @@ export default function VideoMetadataForm() {
 
         // Check if there's a redirect path from backend (for rejected sections)
         if (response.data.redirectPath) {
-          if (response.data.redirectPath === '/dashboard/success') {
+          if (response.data.redirectPath === "/dashboard/success") {
             navigate("/dashboard/success", {
               state: {
-                heading: "Your song registration has been completed successfully!",
+                heading:
+                  "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
                 redirectTo: "/dashboard",
               },
             });
-          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+          } else if (
+            response.data.redirectPath ===
+            "/dashboard/upload-song/audio-metadata/"
+          ) {
             // Redirect to audio metadata
             navigate("/dashboard/upload-song/audio-metadata/", {
               state: {
@@ -455,7 +639,10 @@ export default function VideoMetadataForm() {
                 isFixingRejected: true,
               },
             });
-          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+          } else if (
+            response.data.redirectPath ===
+            "/dashboard/upload-song/video-metadata/"
+          ) {
             // Redirect to video metadata (shouldn't happen after submitting video, but handle it)
             navigate("/dashboard/upload-song/video-metadata/", {
               state: {
@@ -467,7 +654,7 @@ export default function VideoMetadataForm() {
                 isFixingRejected: true,
               },
             });
-          } else if (response.data.redirectPath === '/auth/payment') {
+          } else if (response.data.redirectPath === "/auth/payment") {
             await refetchForReadOnly();
             setShowPayNowAfterSubmit(true);
           } else {
@@ -496,7 +683,7 @@ export default function VideoMetadataForm() {
       const msg = error.response?.data?.message;
       if (status === 401) {
         toast.error(
-          msg || "Session expired or not signed in. Please log in again."
+          msg || "Session expired or not signed in. Please log in again.",
         );
       } else {
         toast.error("Failed to upload video metadata. Please try again.");
@@ -522,7 +709,7 @@ export default function VideoMetadataForm() {
   const checkIfDateIsAvail = () => {
     const check = checkBookingDates.find((date) => {
       const formattedDate = new Date(
-        location.state.release_date
+        location.state.release_date,
       ).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
       });
@@ -531,7 +718,7 @@ export default function VideoMetadataForm() {
         "en-IN",
         {
           timeZone: "Asia/Kolkata",
-        }
+        },
       );
 
       if (formattedReleaseDate === formattedDate && date.ophid !== ophid) {
@@ -601,7 +788,9 @@ export default function VideoMetadataForm() {
           else if (typeof rawImageUrl === "string") {
             try {
               const parsed = JSON.parse(rawImageUrl);
-              imageUrls = Array.isArray(parsed) ? parsed : [parsed].filter(Boolean);
+              imageUrls = Array.isArray(parsed)
+                ? parsed
+                : [parsed].filter(Boolean);
             } catch {
               imageUrls = [rawImageUrl].filter(Boolean);
             }
@@ -638,43 +827,55 @@ export default function VideoMetadataForm() {
     // Sync song navigation when entering this page (e.g. after browser back from payment).
     // Backend sets status to draft when not fixing a rejected step, so song shows as Draft.
     if (contentId && ophid && headers?.Authorization && location.pathname) {
-      axiosApi.post(
-        "/update-song-navigation",
-        {
-          song_id: contentId,
-          oph_id: ophid,
-          next_page: location.pathname,
-        },
-        { headers }
-      ).catch(() => {});
+      axiosApi
+        .post(
+          "/update-song-navigation",
+          {
+            song_id: contentId,
+            oph_id: ophid,
+            next_page: location.pathname,
+          },
+          { headers },
+        )
+        .catch(() => {});
     }
 
     // Draft: check if release date is still free on calendar; if taken, redirect to register-song
-    const releaseDateRaw = location.state?.release_date ?? location.state?.booking_date;
+    const releaseDateRaw =
+      location.state?.release_date ?? location.state?.booking_date;
     if (contentId && releaseDateRaw && headers?.Authorization) {
-      const releaseDateForApi = typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
-        ? releaseDateRaw.split("/").reverse().join("-")
-        : releaseDateRaw;
-      axiosApi.get("/check-release-date-available", {
-        headers,
-        params: { release_date: releaseDateForApi, song_id: contentId, ophid }
-      }).then((res) => {
-        if (res.data.success && res.data.available === false) {
-          navigate("/dashboard/upload-song/register-song", {
-            replace: true,
-            state: {
-              song_id: contentId,
-              songName: location.state?.songName || songName,
-              release_date: releaseDateRaw,
-              project_type: location.state?.project_type,
-              lyrical_services: location.state?.lyrical_services,
-              dateNoLongerAvailable: true,
-              returnToPage: "/dashboard/upload-song/video-metadata"
-            }
-          });
-        }
-      }).catch(() => {});
+      const releaseDateForApi =
+        typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
+          ? releaseDateRaw.split("/").reverse().join("-")
+          : releaseDateRaw;
+      axiosApi
+        .get("/check-release-date-available", {
+          headers,
+          params: {
+            release_date: releaseDateForApi,
+            song_id: contentId,
+            ophid,
+          },
+        })
+        .then((res) => {
+          if (res.data.success && res.data.available === false) {
+            navigate("/dashboard/upload-song/register-song", {
+              replace: true,
+              state: {
+                song_id: contentId,
+                songName: location.state?.songName || songName,
+                release_date: releaseDateRaw,
+                project_type: location.state?.project_type,
+                lyrical_services: location.state?.lyrical_services,
+                dateNoLongerAvailable: true,
+                returnToPage: "/dashboard/upload-song/video-metadata",
+              },
+            });
+          }
+        })
+        .catch(() => {});
     }
+    setPaymentCheckDone(false);
     checkAlreadyBookedDate();
     fetchVideoMetadata();
     checkPaymentStaus();
@@ -693,7 +894,8 @@ export default function VideoMetadataForm() {
       state: {
         song_id: contentId,
         songName,
-        release_date: location.state?.release_date ?? location.state?.booking_date,
+        release_date:
+          location.state?.release_date ?? location.state?.booking_date,
         project_type: location.state?.project_type,
         lyrical_services: location.state?.lyrical_services,
         dateNoLongerAvailable: true,
@@ -703,12 +905,30 @@ export default function VideoMetadataForm() {
     return null;
   }
 
+  const holdForPaymentResumeUi =
+    !!contentId &&
+    !isPaidInAdvanceNoLyricalCheck &&
+    (paymentOnlyRejectedFromNav ||
+      location.state?.showPayNowOnVideo === true) &&
+    (!videoMetadataLoaded || !paymentCheckDone);
+
+  if (holdForPaymentResumeUi) {
+    return (
+      <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
+        <Loading />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
-      <div className="max-w-xl space-y-8">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-          VIDEO METADATA
-        </h1>
+      <div className="w-full space-y-8">
+        <div className="flex justify-between items-center  mb-8">
+          <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            VIDEO METADATA
+          </h2>
+          <NavbarRight />
+        </div>
         {formData.reject_reason && (
           <p className="text-red-700">
             Video rejection reason: {formData.reject_reason}
@@ -729,13 +949,19 @@ export default function VideoMetadataForm() {
               {showPayNowOnVideoFromState
                 ? "Please complete payment to continue."
                 : showPayNowAfterSubmit
-                ? "Video submitted successfully. Please complete payment to continue."
-                : "Your video details are already approved. Please complete payment to continue."}
+                  ? "Video submitted successfully. Please complete payment to continue."
+                  : "Your video details are already approved. Please complete payment to continue."}
             </p>
             {/* Read-only preview */}
             <div className="space-y-2">
               <label className="block text-gray-400">Song Name:</label>
-              <input disabled value={songName} className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700 opacity-80" type="text" readOnly />
+              <input
+                disabled
+                value={songName}
+                className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700 opacity-80"
+                type="text"
+                readOnly
+              />
             </div>
             {formData.credits && (
               <div className="space-y-2">
@@ -750,7 +976,12 @@ export default function VideoMetadataForm() {
                 <label className="block text-gray-400">Thumbnails:</label>
                 <div className="grid grid-cols-3 gap-4">
                   {formData.existing_thumbnails.map((url, i) => (
-                    <img key={i} src={url} alt="" className="w-full aspect-square object-cover rounded-lg opacity-90" />
+                    <img
+                      key={i}
+                      src={url}
+                      alt=""
+                      className="w-full aspect-square object-cover rounded-lg opacity-90"
+                    />
                   ))}
                 </div>
               </div>
@@ -758,7 +989,11 @@ export default function VideoMetadataForm() {
             {formData.existing_video_url && (
               <div className="space-y-2">
                 <label className="block text-gray-400">Video:</label>
-                <CustomVideoPlayer src={formData.existing_video_url} className="w-full rounded-lg" pauseOtherVideos={true} />
+                <CustomVideoPlayer
+                  src={formData.existing_video_url}
+                  className="w-full rounded-lg"
+                  pauseOtherVideos={true}
+                />
               </div>
             )}
             <button
@@ -785,11 +1020,18 @@ export default function VideoMetadataForm() {
         ) : (
           <>
             {/* Full-screen loader: show progress inside loader when uploading */}
-            {(isLoading || isRemoving || isUploading || uploadProgress.isUploading) && (
-              <Loading progress={uploadProgress.isUploading ? uploadProgress : undefined} />
+            {(isLoading ||
+              isRemoving ||
+              isUploading ||
+              uploadProgress.isUploading) && (
+              <Loading
+                progress={
+                  uploadProgress.isUploading ? uploadProgress : undefined
+                }
+              />
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
               {/* Song Name Display */}
               <div className="space-y-2">
                 <label className="block text-gray-400">Song Name:</label>
@@ -809,7 +1051,10 @@ export default function VideoMetadataForm() {
                 <textarea
                   value={formData.credits}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, credits: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      credits: e.target.value,
+                    }))
                   }
                   placeholder="Enter credits..."
                   rows={4}
@@ -823,13 +1068,17 @@ export default function VideoMetadataForm() {
                 <div className="flex items-center gap-3">
                   <Camera className="w-5 h-5 text-gray-400" />
                   <span>
-                    Upload Maximum 3 Pictures <span className="text-red-500">*</span>
+                    Upload Maximum 3 Pictures{" "}
+                    <span className="text-red-500">*</span>
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   {formData.existing_thumbnails?.map((url, index) => (
-                    <div key={`existing-${index}`} className="relative aspect-square">
+                    <div
+                      key={`existing-${index}`}
+                      className="relative aspect-square"
+                    >
                       <img
                         src={url}
                         alt={`Existing thumbnail ${index + 1}`}
@@ -846,7 +1095,10 @@ export default function VideoMetadataForm() {
                   ))}
 
                   {formData.thumbnails.map((photo, index) => (
-                    <div key={`new-${index}`} className="relative aspect-square">
+                    <div
+                      key={`new-${index}`}
+                      className="relative aspect-square"
+                    >
                       <img
                         src={URL.createObjectURL(photo)}
                         alt={`Upload ${index + 1}`}
@@ -862,7 +1114,9 @@ export default function VideoMetadataForm() {
                     </div>
                   ))}
 
-                  {formData.thumbnails.length + (formData.existing_thumbnails?.length || 0) < 3 && (
+                  {formData.thumbnails.length +
+                    (formData.existing_thumbnails?.length || 0) <
+                    3 && (
                     <label className="cursor-pointer">
                       <input
                         type="file"
@@ -887,7 +1141,9 @@ export default function VideoMetadataForm() {
                   </label>
                   {formData.existing_video_url && !formData.video_file && (
                     <div className="mb-2">
-                      <p className="text-sm text-gray-400">Existing video file:</p>
+                      <p className="text-sm text-gray-400">
+                        Existing video file:
+                      </p>
                       <CustomVideoPlayer
                         src={formData.existing_video_url}
                         className="w-full mt-2 rounded-lg"
@@ -911,7 +1167,10 @@ export default function VideoMetadataForm() {
                           <button
                             type="button"
                             onClick={() =>
-                              setFormData((prev) => ({ ...prev, video_file: null }))
+                              setFormData((prev) => ({
+                                ...prev,
+                                video_file: null,
+                              }))
                             }
                             className="p-1 hover:text-red-500"
                           >
@@ -943,7 +1202,8 @@ export default function VideoMetadataForm() {
               </button>
               {nextPage === "repayment" && formData.reject_reason && (
                 <p className="text-gray-400 text-sm text-center mt-2">
-                  After submitting, you will be redirected to complete payment if needed.
+                  After submitting, you will be redirected to complete payment
+                  if needed.
                 </p>
               )}
             </form>

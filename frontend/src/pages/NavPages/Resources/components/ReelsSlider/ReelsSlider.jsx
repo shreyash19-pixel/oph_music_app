@@ -263,7 +263,7 @@ function ReelsSlider({ searchText, title }) {
             onClick={closeModal}
           >
             <div
-              className="relative bg-black rounded-lg shadow-2xl max-w-4xl w-full mx-auto"
+              className="relative bg-black rounded-lg shadow-2xl w-full max-w-[440px] aspect-[9/16] mx-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -277,7 +277,7 @@ function ReelsSlider({ searchText, title }) {
                   ref={modalVideoRef}
                   id="video-player-reels"
                   src={selectedVideo}
-                  className="rounded-lg w-full h-full"
+                  className="rounded-lg w-full h-full object-contain"
                   autoPlay
                   pauseOtherVideos={true}
                   onPlay={() => setIsPlaying(true)}

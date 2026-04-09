@@ -32,6 +32,8 @@ import PendingScreen from "../pages/PendingScreen/PendingScreen.jsx";
 import MYEPK from "../pages/MYEPK/MYEPK.jsx";
 import EPKManagement from "../pages/EPKManagement/EPKManagement.jsx";
 import AddNewSong from "../pages/AddNewSong/AddNewSong.jsx";
+
+
 const ArtistRoutes = () => {
   return (
     <Provider store={artistStore}>

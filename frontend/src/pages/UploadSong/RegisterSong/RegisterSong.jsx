@@ -8,6 +8,7 @@ import { Bounce, ToastContainer } from "react-toastify";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import NavbarRight from "../../../components/Navbar/NavbarRight";
 
 const REGISTER_SONG_STATE_KEY = "registerSongState";
 const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionStorage
@@ -36,11 +37,17 @@ export default function RegisterSongForm() {
 
   const projectType = localStorage.getItem("projectType");
   localStorage.setItem("projectType", projectType);
-  const isUpdateReleaseDateOnly = location.state?.dateNoLongerAvailable === true && location.state?.song_id;
+  const isUpdateReleaseDateOnly =
+    location.state?.dateNoLongerAvailable === true && location.state?.song_id;
   const [formData, setFormData] = useState({
     oph_id: ophid,
     name: location.state?.songName || "",
-    release_date: location.state?.release_date ? (typeof location.state.release_date === "string" && location.state.release_date.includes("-") ? location.state.release_date : "") : "",
+    release_date: location.state?.release_date
+      ? typeof location.state.release_date === "string" &&
+        location.state.release_date.includes("-")
+        ? location.state.release_date
+        : ""
+      : "",
     p_line: "",
     cp_line: "",
     song_reg: songReg,
@@ -64,15 +71,23 @@ export default function RegisterSongForm() {
         ...prev,
         name: location.state.songName || prev.name,
         release_date: location.state.release_date
-          ? (String(location.state.release_date).includes("/")
+          ? String(location.state.release_date).includes("/")
             ? location.state.release_date.split("/").reverse().join("-")
-            : String(location.state.release_date).slice(0, 10))
+            : String(location.state.release_date).slice(0, 10)
           : prev.release_date,
-        lyrical_services: location.state.lyrical_services ?? prev.lyrical_services,
+        lyrical_services:
+          location.state.lyrical_services ?? prev.lyrical_services,
         project_type: location.state.project_type || prev.project_type,
       }));
     }
-  }, [location.state?.dateNoLongerAvailable, location.state?.song_id, location.state?.songName, location.state?.release_date, location.state?.lyrical_services, location.state?.project_type]);
+  }, [
+    location.state?.dateNoLongerAvailable,
+    location.state?.song_id,
+    location.state?.songName,
+    location.state?.release_date,
+    location.state?.lyrical_services,
+    location.state?.project_type,
+  ]);
 
   const handleProjectTypeChange = (e) => {
     const { id, checked } = e.target;
@@ -133,7 +148,7 @@ export default function RegisterSongForm() {
         // Find Song Registration amount from costing table
         const songRegCost = costingData.find(
           (item) =>
-            item.name && item.name.toLowerCase().includes("song registration")
+            item.name && item.name.toLowerCase().includes("song registration"),
         );
         if (songRegCost) {
           setSongRegAmount(parseFloat(songRegCost.cost) || 0);
@@ -143,7 +158,7 @@ export default function RegisterSongForm() {
         // Find Lyrics Service amount from costing table (paid-in-advance lyrical add-on)
         const lyricalVideoCost = costingData.find(
           (item) =>
-            item.name && item.name.toLowerCase().includes("lyrics service")
+            item.name && item.name.toLowerCase().includes("lyrics service"),
         );
         if (lyricalVideoCost) {
           setLyricalVideoAmount(parseFloat(lyricalVideoCost.cost) || 0);
@@ -195,7 +210,7 @@ export default function RegisterSongForm() {
           setIsLoading(false);
           // Extract just the dates from the response
           const dates = response.data.data.map(
-            (item) => item.current_booking_date
+            (item) => item.current_booking_date,
           );
 
           setBlockedDates(dates);
@@ -317,7 +332,7 @@ export default function RegisterSongForm() {
     // return
     return blockedDates.some(
       (blockedDate) =>
-        blockedDate === formattedDate && formattedDate !== formData.oldDate
+        blockedDate === formattedDate && formattedDate !== formData.oldDate,
     );
   };
 
@@ -334,22 +349,19 @@ export default function RegisterSongForm() {
           next_step: updatedFormData.next_step,
           videoType: videoType,
         },
-        { headers: headers }
+        { headers: headers },
       );
 
       if (response.data.success) {
-        navigate(
-          `/dashboard/upload-song/audio-metadata`,
-          {
-            state: {
-              song_id: response.data.contentID,
-              songName: updatedFormData.name,
-              release_date: updatedFormData.release_date,
-              project_type: projectType,
-              lyrical_services: updatedFormData.lyrical_services,
-            },
-          }
-        );
+        navigate(`/dashboard/upload-song/audio-metadata`, {
+          state: {
+            song_id: response.data.contentID,
+            songName: updatedFormData.name,
+            release_date: updatedFormData.release_date,
+            project_type: projectType,
+            lyrical_services: updatedFormData.lyrical_services,
+          },
+        });
       }
     } catch (error) {
       console.error("Error booking date", error);
@@ -372,21 +384,18 @@ export default function RegisterSongForm() {
           projectsType: projectsType,
           videoType: videoType,
         },
-        { headers: headers }
+        { headers: headers },
       );
       if (response.data.success) {
-        navigate(
-          `/dashboard/upload-song/audio-metadata`,
-          {
-            state: {
-              song_id: response.data.contentID,
-              songName: updatedFormData.name,
-              release_date: updatedFormData.release_date,
-              project_type: projectType,
-              lyrical_services: updatedFormData.lyrical_services,
-            },
-          }
-        );
+        navigate(`/dashboard/upload-song/audio-metadata`, {
+          state: {
+            song_id: response.data.contentID,
+            songName: updatedFormData.name,
+            release_date: updatedFormData.release_date,
+            project_type: projectType,
+            lyrical_services: updatedFormData.lyrical_services,
+          },
+        });
       }
     } catch (error) {
       console.error("Error booking date", error);
@@ -409,22 +418,19 @@ export default function RegisterSongForm() {
           projectsType: projectsType,
           videoType: videoType,
         },
-        { headers: headers }
+        { headers: headers },
       );
       console.log(response);
       if (response.data.success) {
-        navigate(
-          `/dashboard/upload-song/audio-metadata`,
-          {
-            state: {
-              song_id: response.data.contentID,
-              songName: updatedFormData.name,
-              release_date: updatedFormData.release_date,
-              project_type: projectType,
-              lyrical_services: updatedFormData.lyrical_services,
-            },
-          }
-        );
+        navigate(`/dashboard/upload-song/audio-metadata`, {
+          state: {
+            song_id: response.data.contentID,
+            songName: updatedFormData.name,
+            release_date: updatedFormData.release_date,
+            project_type: projectType,
+            lyrical_services: updatedFormData.lyrical_services,
+          },
+        });
       }
     } catch (error) {
       console.error("Error booking date", error);
@@ -446,27 +452,40 @@ export default function RegisterSongForm() {
       try {
         const res = await axiosApi.post(
           "/update-song-release-date",
-          { song_id: location.state.song_id, oph_id: ophid, release_date: dateStr },
-          { headers }
+          {
+            song_id: location.state.song_id,
+            oph_id: ophid,
+            release_date: dateStr,
+          },
+          { headers },
         );
         if (res.data.success) {
-          toast.success("Release date updated. You can continue with your song.");
-          const returnToPage = location.state?.returnToPage || "/dashboard/upload-song/audio-metadata";
+          toast.success(
+            "Release date updated. You can continue with your song.",
+          );
+          const returnToPage =
+            location.state?.returnToPage ||
+            "/dashboard/upload-song/audio-metadata";
           const nextState = {
             song_id: location.state.song_id,
             songName: location.state.songName || formData.name,
             release_date: dateStr,
             project_type: location.state?.project_type || projectType,
-            lyrical_services: location.state?.lyrical_services ?? formData.lyrical_services,
+            lyrical_services:
+              location.state?.lyrical_services ?? formData.lyrical_services,
           };
-          if (location.state?.rejectedSections) nextState.rejectedSections = location.state.rejectedSections;
-          if (location.state?.isFixingRejected != null) nextState.isFixingRejected = location.state.isFixingRejected;
+          if (location.state?.rejectedSections)
+            nextState.rejectedSections = location.state.rejectedSections;
+          if (location.state?.isFixingRejected != null)
+            nextState.isFixingRejected = location.state.isFixingRejected;
           navigate(returnToPage, { state: nextState });
         } else {
           toast.error(res.data.message || "Failed to update release date.");
         }
       } catch (err) {
-        toast.error(err?.response?.data?.message || "Failed to update release date.");
+        toast.error(
+          err?.response?.data?.message || "Failed to update release date.",
+        );
       }
       return;
     }
@@ -477,7 +496,10 @@ export default function RegisterSongForm() {
     }
 
     // Validate video type selection
-    if (!videoType || (videoType !== "Music Video" && videoType !== "Lyrical Video")) {
+    if (
+      !videoType ||
+      (videoType !== "Music Video" && videoType !== "Lyrical Video")
+    ) {
       toast.error("Please select either Music Video or Lyrical Video.");
       return;
     }
@@ -735,18 +757,27 @@ export default function RegisterSongForm() {
           </div>
         </div>
       ) : (
-        <div className="max-w-xl">
-          <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-            {isUpdateReleaseDateOnly ? "UPDATE RELEASE DATE" : "REGISTER YOUR SONG"}
-          </h1>
+        <div className="w-full">
+          <div className="flex justify-between items-center  mb-8">
+            <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              {isUpdateReleaseDateOnly
+                ? "UPDATE RELEASE DATE"
+                : "REGISTER YOUR SONG"}
+            </h2>
+             <NavbarRight />
+          </div>
           {isUpdateReleaseDateOnly && (
             <div className="mb-6 p-4 rounded-lg bg-amber-900/30 border border-amber-500/50 text-amber-200">
-              <p className="font-medium">The release date you selected is no longer available.</p>
-              <p className="text-sm mt-1">Please select a new release date for this song to continue.</p>
+              <p className="font-medium">
+                The release date you selected is no longer available.
+              </p>
+              <p className="text-sm mt-1">
+                Please select a new release date for this song to continue.
+              </p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
             {/* Song Name */}
             <div className="space-y-2">
               <label className="block">
@@ -1020,7 +1051,9 @@ export default function RegisterSongForm() {
               type="submit"
               className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
             >
-              {isUpdateReleaseDateOnly ? "Update release date & continue" : "Continue"}
+              {isUpdateReleaseDateOnly
+                ? "Update release date & continue"
+                : "Continue"}
             </button>
           </form>
         </div>

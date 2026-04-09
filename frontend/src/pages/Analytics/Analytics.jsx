@@ -1,9 +1,11 @@
 import { ChartArea, ChevronDown } from "lucide-react";
 import Chart from "../../components/Chart/Chart";
-import React,{ useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
+import NavbarRight from "../../components/Navbar/NavbarRight";
+import "./styles.css";
 
 const AUDIO_CHART_COLORS = [
   "#22d3ee",
@@ -110,9 +112,7 @@ function audioChartDataWithBaseline(monthPoints) {
     return mapped.map(({ name, value }) => ({ name, value }));
   }
   const prevKey = prevAudioMonthKey(first.monthKey);
-  const baselineLabel = prevKey
-    ? audioMonthLabelFromKey(prevKey)
-    : "Start";
+  const baselineLabel = prevKey ? audioMonthLabelFromKey(prevKey) : "Start";
   return [
     { name: baselineLabel, value: 0 },
     ...mapped.map(({ name, value }) => ({ name, value })),
@@ -137,7 +137,7 @@ export default function AnalyticsDashboard() {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [videoData, setVideoData] = useState(null);
-  const [exchangeRate] = useState(1/92.7); // Fixed conversion rate: 1 USD = 92.7 INR, so 1 INR = 0.01079 USD
+  const [exchangeRate] = useState(1 / 92.7); // Fixed conversion rate: 1 USD = 92.7 INR, so 1 INR = 0.01079 USD
   const chartsPerPage = 3;
 
   const [analyticsData, setAnalyticsData] = useState({
@@ -195,38 +195,37 @@ export default function AnalyticsDashboard() {
     fetchContent();
   }, [ophid]);
 
-useEffect(() => {
-  const fetchBySongId = async () => {
-    if (!selectedContent || !selectedContent[0]?.song_id) return; // ✅ Wait until a song is selected
+  useEffect(() => {
+    const fetchBySongId = async () => {
+      if (!selectedContent || !selectedContent[0]?.song_id) return; // ✅ Wait until a song is selected
 
-    const songId = selectedContent[0].song_id;
+      const songId = selectedContent[0].song_id;
 
-    try {
-      console.log("Fetching video data for song:", songId);
-      setIsLoading(true);
+      try {
+        console.log("Fetching video data for song:", songId);
+        setIsLoading(true);
 
-      const response = await axiosApi.get(`/getVideoyId/${songId}`);
-      console.log("res", response.data);
+        const response = await axiosApi.get(`/getVideoyId/${songId}`);
+        console.log("res", response.data);
 
-      if (response.status === 200) {
-        setVideoData(response.data); // ✅ store separately for reuse
-        console.log("✅ Fetched content by song ID:", response.data);
-      } else {
-        console.warn("⚠️ No data found for this song ID:", songId);
-        setVideoData(null); 
+        if (response.status === 200) {
+          setVideoData(response.data); // ✅ store separately for reuse
+          console.log("✅ Fetched content by song ID:", response.data);
+        } else {
+          console.warn("⚠️ No data found for this song ID:", songId);
+          setVideoData(null);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching data by song_id:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("❌ Error fetching data by song_id:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchBySongId();
-}, [selectedContent]);
-  
- console.log("Video Data Available:", videoData);
+    fetchBySongId();
+  }, [selectedContent]);
 
+  console.log("Video Data Available:", videoData);
 
   const submitMetric = (contents.dbMetrics || [])
     .concat(contents.s3Metrics || [])
@@ -238,9 +237,7 @@ useEffect(() => {
           : null;
       const revenueRaw = metric.audio_platform_revenue;
       const revenueNum =
-        revenueRaw != null && revenueRaw !== ""
-          ? Number(revenueRaw)
-          : null;
+        revenueRaw != null && revenueRaw !== "" ? Number(revenueRaw) : null;
       return {
         name: metric.song_name,
         date: metric.updated_at || null,
@@ -260,10 +257,7 @@ useEffect(() => {
         audio_platform_streams: Number.isFinite(streams) ? streams : null,
         audio_platform_revenue: Number.isFinite(revenueNum) ? revenueNum : null,
         audioDate:
-          metric.audioDate ??
-          metric.updated_at ??
-          metric.created_at ??
-          null,
+          metric.audioDate ?? metric.updated_at ?? metric.created_at ?? null,
       };
     });
 
@@ -274,8 +268,8 @@ useEffect(() => {
   const rows = Array.isArray(selectedContent)
     ? selectedContent
     : selectedContent
-    ? [selectedContent]
-    : [];
+      ? [selectedContent]
+      : [];
 
   const audioChartRows = rows.filter(
     (c) =>
@@ -295,7 +289,11 @@ useEffect(() => {
     ? (() => {
         const dataMap = new Map();
         selectedContent.forEach((c) => {
-          const dateKey = c.date ? new Date(c.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
+          const dateKey = c.date
+            ? new Date(c.date).toLocaleDateString("en-GB", {
+                timeZone: "Asia/Kolkata",
+              })
+            : "Unknown Date";
           const existing = dataMap.get(dateKey);
           const newData = {
             name: dateKey,
@@ -305,29 +303,36 @@ useEffect(() => {
             valueDuration: parseDuration(c.youtube_avg_view_duration),
             valueInstagram: c.insta_engagement || 0,
           };
-          
-          if (!existing || new Date(c.date).getTime() > new Date(existing.date).getTime()) {
+
+          if (
+            !existing ||
+            new Date(c.date).getTime() > new Date(existing.date).getTime()
+          ) {
             dataMap.set(dateKey, newData);
           }
         });
-        return Array.from(dataMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return Array.from(dataMap.values()).sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
       })()
     : selectedContent
-    ? [
-        {
-          name: selectedContent.date
-            ? new Date(selectedContent.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })
-            : "Unknown Date",
-          date: selectedContent.date,
-          value: selectedContent.youtube_views,
-          valueEngagement: selectedContent.youtube_engagement,
-          valueInstagram: selectedContent.insta_engagement,
-          valueDuration: parseDuration(
-            selectedContent.youtube_avg_view_duration
-          ),
-        },
-      ]
-    : [];
+      ? [
+          {
+            name: selectedContent.date
+              ? new Date(selectedContent.date).toLocaleDateString("en-GB", {
+                  timeZone: "Asia/Kolkata",
+                })
+              : "Unknown Date",
+            date: selectedContent.date,
+            value: selectedContent.youtube_views,
+            valueEngagement: selectedContent.youtube_engagement,
+            valueInstagram: selectedContent.insta_engagement,
+            valueDuration: parseDuration(
+              selectedContent.youtube_avg_view_duration,
+            ),
+          },
+        ]
+      : [];
 
   const AudiochartData = audioChartRows.map((c) => {
     const monthKey = audioMonthKeyFromDate(c.audioDate);
@@ -386,7 +391,7 @@ useEffect(() => {
     const currentDate = new Date();
     const cutoffDate = new Date();
     cutoffDate.setDate(currentDate.getDate() - selectedDuration);
-    
+
     return data.filter((d) => {
       if (!d[dateField]) return false;
       const itemDate = new Date(d[dateField]);
@@ -410,8 +415,7 @@ useEffect(() => {
     }
     for (const pts of byPlatform.values()) {
       pts.sort(
-        (a, b) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime(),
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
     }
     return Array.from(byPlatform.entries())
@@ -439,18 +443,17 @@ useEffect(() => {
 
   console.log("DEBUG selectedContent:", selectedContent);
 
-
   console.log(
     "testLine",
     AudiochartData.map((d) => ({
       date: d.date,
       value: d.value,
-    }))
+    })),
   );
 
   console.log(
     "test",
-    chartData.map((d) => ({ name: d.name, value: d.valueDuration }))
+    chartData.map((d) => ({ name: d.name, value: d.valueDuration })),
   );
 
   console.log(chartData);
@@ -478,53 +481,55 @@ useEffect(() => {
         <div className="min-h-[calc(100vh-70px)] px-8 py-6">
           <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
-              <h1 className="text-cyan-400 text-xl font-extrabold mb-2 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            <div className="flex justify-between items-center  mb-4">
+              <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 ANALYTICS
-              </h1>
-              <div className="relative">
-                <button
-                  className="flex items-center px-4 py-2 w-[150px] bg-white/10 border border-white/30 border-cyan-200 rounded-full text-sm text-white-400 appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50 shadow-lg shadow-white/20"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const selectElement =
-                      e.currentTarget.querySelector("select");
-                    if (selectElement) {
-                      selectElement.focus();
-                      selectElement.click();
+              </h2>
+              <NavbarRight />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                className="flex items-center px-4 py-2 w-[150px]   text-sm text-white-400 appearance-none focus:outline-none "
+                onClick={(e) => {
+                  e.preventDefault();
+                  const selectElement = e.currentTarget.querySelector("select");
+                  if (selectElement) {
+                    selectElement.focus();
+                    selectElement.click();
+                  }
+                }}
+              >
+                <select
+                  className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-[#5dc9de]"
+                  value={selectedDuration}
+                  onChange={(e) => {
+                    setSelectedDuration(Number(e.target.value));
+                    if (streams.length > 0) {
+                      handleStreamChange(streams[0].content_stream_id);
                     }
                   }}
                 >
-                  <select
-                    className="bg-transparent border-none focus:ring-0 focus:outline-none w-full"
-                    value={selectedDuration}
-                    onChange={(e) => {
-                      setSelectedDuration(Number(e.target.value));
-                      if (streams.length > 0) {
-                        handleStreamChange(streams[0].content_stream_id);
-                      }
-                    }}
-                  >
-                    {durationOptions.map((option) => (
-                      <option
-                        key={`duration-${option.value}`}
-                        value={option.value}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white-400 pointer-events-none" />
-                </button>
-              </div>
+                  {durationOptions.map((option) => (
+                    <option
+                      key={`duration-${option.value}`}
+                      value={option.value}
+                      className="bg-[#191D27] text-gray-200"
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white-400 pointer-events-none" />
+              </button>
             </div>
 
             {/* Song Selection and Platform */}
             <div className="flex gap-4">
               <div className="flex-1 relative">
                 <select
-                  className="w-full appearance-none bg-gray-800/50 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-cyan-400 truncate"
-                  value={selectedContent?.[0]?.song_id?.toString() ?? ""} // ✅ use id
+                  className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-cyan-400"
+                  value={selectedContent?.[0]?.song_id?.toString() ?? ""}
                   onChange={(e) => {
                     const songId = parseInt(e.target.value, 10);
 
@@ -534,21 +539,27 @@ useEffect(() => {
 
                     if (selectedRows.length === 0) {
                       console.error(
-                        "Selected content not found in contents array"
+                        "Selected content not found in contents array",
                       );
                       return;
                     }
 
-                    setSelectedContent(selectedRows); // ✅ update displayed data immediately
+                    setSelectedContent(selectedRows);
                   }}
                 >
-                  <option key="song-placeholder" value="" disabled>
+                  <option
+                    value=""
+                    disabled
+                    className="bg-[#191D27] text-gray-400"
+                  >
                     Select a Song
                   </option>
+
                   {uniqueSongs.map((uniqueContent, songIdx) => (
                     <option
                       key={`song-${String(uniqueContent.song_id)}-${songIdx}`}
                       value={String(uniqueContent.song_id)}
+                      className="bg-[#191D27] text-gray-200"
                     >
                       {uniqueContent.song_name || uniqueContent.name}
                     </option>
@@ -560,20 +571,28 @@ useEffect(() => {
 
               <div className="relative">
                 <select
-                  className="w-full appearance-none border border-gray-700 rounded-lg p-3 pr-10 text-black font-bold focus:outline-none focus:border-[#5dc9de] truncate"
-                  style={{ backgroundColor: "#5dc9de" }}
+                  className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 font-medium focus:outline-none focus:border-[#5dc9de]"
                   value={selectedStream || ""}
                   onChange={(e) => setSelectedStream(e.target.value)}
                 >
-                  <option key="platform-placeholder" value="" disabled>
+                  <option
+                    value=""
+                    disabled
+                    className="bg-[#191D27] text-gray-400"
+                  >
                     Select Platform
                   </option>
+
                   {[
                     { key: "yt", value: "YouTube" },
                     { key: "ig", value: "Instagram" },
                     { key: "audio", value: "Audio Platform" },
                   ].map((platform) => (
-                    <option key={platform.key} value={platform.value}>
+                    <option
+                      key={platform.key}
+                      value={platform.value}
+                      className="bg-[#191D27] text-gray-200"
+                    >
                       {platform.value}
                     </option>
                   ))}
@@ -623,7 +642,7 @@ useEffect(() => {
                       ? Array.isArray(selectedContent)
                         ? selectedContent.reduce(
                             (sum, c) => sum + toNum(c.youtube_views),
-                            0
+                            0,
                           )
                         : Number(selectedContent?.youtube_views || 0)
                       : "--"}{" "}
@@ -645,13 +664,17 @@ useEffect(() => {
               <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col">
-                    <p className="text-sm text-gray-400">Generated Revenue (USD):</p>
+                    <p className="text-sm text-gray-400">
+                      Generated Revenue (USD):
+                    </p>
                     <p className="text-xl font-bold text-cyan-400">
                       ${inrToUsd(totalRevenueINR).toFixed(2)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end justify-center">
-                    <p className="text-sm text-gray-400">Generated Revenue (INR):</p>
+                    <p className="text-sm text-gray-400">
+                      Generated Revenue (INR):
+                    </p>
                     <p className="text-xl font-bold text-cyan-400">
                       ₹{totalRevenueINR}
                     </p>
@@ -697,7 +720,11 @@ useEffect(() => {
                         metric={engagementMetric}
                         colors={["#8959D3"]}
                         showLegend={true}
-                        legendLabel={selectedContent?.[0]?.song_name || selectedContent?.[0]?.name || "Song"}
+                        legendLabel={
+                          selectedContent?.[0]?.song_name ||
+                          selectedContent?.[0]?.name ||
+                          "Song"
+                        }
                       />,
                       <Chart
                         key="duration"
@@ -779,7 +806,7 @@ useEffect(() => {
                             }
                             onClick={() =>
                               setCurrentPage((prev) =>
-                                Math.min(prev + 1, totalPages(chartsArray) - 1)
+                                Math.min(prev + 1, totalPages(chartsArray) - 1),
                               )
                             }
                             className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
@@ -797,4 +824,4 @@ useEffect(() => {
       )}
     </>
   );
-} 
+}

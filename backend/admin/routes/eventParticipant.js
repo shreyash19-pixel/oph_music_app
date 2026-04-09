@@ -17,6 +17,10 @@ router.get('/event_part/:ophid', eventParticipantController.getParticipantByOphA
 // - `/event_part/:ophid` -> all events for the user
 // - `/event_part/:ophid?event_id=123` -> specific event for the user
 router.get("/getParticipant", eventParticipantController.getParticipant);
+router.get(
+  "/participant-detail/:source/:recordId",
+  eventParticipantController.getParticipantAdminDetail,
+);
 
 // // Update status of a participant
 // // PATCH /participants/:id

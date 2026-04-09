@@ -50,7 +50,7 @@ const SignUpForm = () => {
   useEffect(() => {
     if (location.state?.status === "cancelled") {
       toast.error(
-        "Payment is mandatory. Please complete the payment to continue."
+        "Payment is mandatory. Please complete the payment to continue.",
       );
       navigate("/auth/login", { replace: true, state: {} });
     } else if (location.state?.status === "success") {
@@ -148,7 +148,7 @@ const SignUpForm = () => {
           ? getFieldError(
               "confirmPassword",
               updatedFormData.confirmPassword,
-              updatedFormData
+              updatedFormData,
             )
           : errors.confirmPassword;
 
@@ -182,7 +182,7 @@ const SignUpForm = () => {
           state: {
             from: "Registration",
             user_type: formData.artistType,
-            backPath : "/auth/signup"
+            backPath: "/auth/signup",
           },
           replace: true,
         });
@@ -525,6 +525,12 @@ const SignUpForm = () => {
           alt=""
         />
 
+        <img
+          src={Elipse2}
+          className="absolute h-[600px] bottom-[650px] left-0"
+          alt=""
+        />
+
         <h1 className="text-4xl text-center text-white font-bold">
           <span className="text-[#5DC9DE]">ABOUT:</span> WHAT WE PROVIDE TO
           ASSIST
@@ -721,13 +727,13 @@ const SignUpForm = () => {
             Only Per Song Registration fees{" "}
             <span className="text-[#5DC9DE]">– 799</span>
           </p>
-          <h1 className="text-center mt-16 font-semibold px-4 lg:px-48 text-xl lg:text-xl uppercase">
-            Now – No hassle for Anything just Make your Music Peacefully –<br />{" "}
+          <h1 className="text-center mt-16 font-bold px-4 lg:px-48 text-[32px] uppercase">
+            Now – No hassle for Anything just Make your Music Peacefully –<br />
             Rest live on India's Only Real Music Community
           </h1>
           <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-20 text-center text-xl font-bold">OPH COMMUNITY</h2>
-          <p className="text-gray-400 text-center mt-4">
+          <h2 className="mt-20 text-center text-xl font-bold text-[42px]">OPH COMMUNITY</h2>
+          <p className="text-gray-400 text-center mt-4 text-[22px]">
             One stop solution for artist journey to success.
           </p>
           {/* <p className="text-center px-2 py-3 rounded-full bg-cyan-300 text-black">
@@ -735,7 +741,7 @@ const SignUpForm = () => {
              </p> */}
           <div className="w-full flex justify-center">
             <button
-              className="px-8 py-3 rounded-full text-black mt-5 bg-[#5DC9DE]"
+              className="px-8 py-3 rounded-full text-black mt-5 bg-[#5DC9DE] font-bold"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} //scroll to top
             >
               Lets Start

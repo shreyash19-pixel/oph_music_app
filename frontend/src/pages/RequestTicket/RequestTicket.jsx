@@ -7,6 +7,7 @@ import axiosApi from "../../conf/axios";
 import toast from "react-hot-toast";
 import { useArtist } from "../auth/API/ArtistContext";
 import axios from "axios";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 const TICKET_KEY = "ticket_state";
 const STATUS_MAP = {
@@ -14,12 +15,11 @@ const STATUS_MAP = {
   Resolved: "Resolved",
 };
 
-
 export default function RequestTicketForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { headers, artist } = useArtist();
-  const { ophid,user } = useArtist();
+  const { ophid, user } = useArtist();
   const [ticketCategories, setTicketCategories] = useState([]);
   const [allPlans, setAllPlans] = useState([]);
   const [ticketPlan, setTicketPlan] = useState([]);
@@ -38,7 +38,7 @@ export default function RequestTicketForm() {
       });
       setAllPlans(response.data.data);
       const supportPlan = response.data.data.find(
-        (plan) => plan.name === "Support Ticket"
+        (plan) => plan.name === "Support Ticket",
       );
       if (supportPlan) {
         setTicketPlan([supportPlan.id]);
@@ -56,7 +56,7 @@ export default function RequestTicketForm() {
       console.log("Name:", user?.userData?.artist?.name);
       console.log("Email:", user?.email);
     }
-  }, [user]); 
+  }, [user]);
 
   // const fetchTicketCategories = async () => {
   //   try {
@@ -72,95 +72,93 @@ export default function RequestTicketForm() {
   //     }
   //   }
   // };
- const ticketNumber = `${Math.floor(1000 + Math.random() * 9000)}`;
+  const ticketNumber = `${Math.floor(1000 + Math.random() * 9000)}`;
   const fetchTicketCategories = () => {
-  const testCategories = [
-    { id: "1", name: "General Enquiry " },
-    { id: "2", name: "Related to Profile" },
-    { id: "3", name: "Change Payment Account" },
-    { id: "4", name: "Others" },
-  ];
-  setTicketCategories(testCategories);
+    const testCategories = [
+      { id: "1", name: "General Enquiry " },
+      { id: "2", name: "Related to Profile" },
+      { id: "3", name: "Change Payment Account" },
+      { id: "4", name: "Others" },
+    ];
+    setTicketCategories(testCategories);
   };
-  
+
   const [formData, setFormData] = useState({
     category: "",
-    subject: "", 
+    subject: "",
     description: "",
     attachments: [],
   });
 
-
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
 
-     if (type === "file") {
-       setFormData((prev) => ({
-         ...prev,
-         attachments: Array.from(files), // Save File objects directly
-       }));
-     } else {
-       setFormData((prev) => ({
-         ...prev,
-         [name]: value,
-       }));
-     }
+    if (type === "file") {
+      setFormData((prev) => ({
+        ...prev,
+        attachments: Array.from(files), // Save File objects directly
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
-   useEffect(() => {
-     const fetchTickets = async () => {
-       if (!ophid) return;
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!ophid) return;
 
-       try {
-         const response = await axiosApi.get(`/getAllTickets?ophID=${ophid}`);
-         console.log("Response", response.data.data);
+      try {
+        const response = await axiosApi.get(`/getAllTickets?ophID=${ophid}`);
+        console.log("Response", response.data.data);
 
-         const sanitized = response.data.data.map((ticket) => {
-           let parsedImages = [];
+        const sanitized = response.data.data.map((ticket) => {
+          let parsedImages = [];
 
-           try {
-             // Try to parse JSON safely
-             if (
-               typeof ticket.imageURL === "string" &&
-               ticket.imageURL.trim() !== ""
-             ) {
-               parsedImages = JSON.parse(ticket.imageURL);
+          try {
+            // Try to parse JSON safely
+            if (
+              typeof ticket.imageURL === "string" &&
+              ticket.imageURL.trim() !== ""
+            ) {
+              parsedImages = JSON.parse(ticket.imageURL);
 
-               // If it’s a single string (not array), convert it into array
-               if (typeof parsedImages === "string") {
-                 parsedImages = [parsedImages];
-               }
+              // If it’s a single string (not array), convert it into array
+              if (typeof parsedImages === "string") {
+                parsedImages = [parsedImages];
+              }
 
-               // If parsed value isn’t array (like null or object), fallback to []
-               if (!Array.isArray(parsedImages)) {
-                 parsedImages = [];
-               }
-             }
-           } catch (err) {
-             console.warn("Error parsing imageURL:", ticket.imageURL, err);
-             parsedImages = [];
-           }
+              // If parsed value isn’t array (like null or object), fallback to []
+              if (!Array.isArray(parsedImages)) {
+                parsedImages = [];
+              }
+            }
+          } catch (err) {
+            console.warn("Error parsing imageURL:", ticket.imageURL, err);
+            parsedImages = [];
+          }
 
-           return {
-             ...ticket,
-             imageURL: parsedImages,
-           };
-         });
+          return {
+            ...ticket,
+            imageURL: parsedImages,
+          };
+        });
 
-         setTickets(sanitized);
-       } catch (err) {
-         console.error("Failed to fetch tickets:", err);
-       }
-     };
+        setTickets(sanitized);
+      } catch (err) {
+        console.error("Failed to fetch tickets:", err);
+      }
+    };
 
-     fetchTickets();
-   }, [ophid]);
+    fetchTickets();
+  }, [ophid]);
 
   const submitTicket = async (formData) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-
 
     const formDataObj = new FormData();
     try {
@@ -172,22 +170,16 @@ export default function RequestTicketForm() {
       formDataObj.append("email", user?.email || "");
       formDataObj.append("ticketNumber", ticketNumber);
 
+      formData.attachments.forEach((file) => {
+        formDataObj.append("attachment", file);
+      });
 
-     formData.attachments.forEach((file) => {
-       formDataObj.append("attachment", file);
-     });
-
-
-      const response = await axiosApi.post(
-        "/sendTicket",
-        formDataObj,
-        {
-          headers: {
-            ...headers,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axiosApi.post("/sendTicket", formDataObj, {
+        headers: {
+          ...headers,
+          "Content-Type": "multipart/form-data",
+        },
+      });
       console.log(response);
 
       if (response.status === 201) {
@@ -207,47 +199,42 @@ export default function RequestTicketForm() {
         if (location.state) {
           navigate("/dashboard/request-ticket", { replace: true });
         }
-
       }
     } catch (error) {
-        toast.error("Ticket Submission Failed");
-        console.log(formDataObj);
-    } 
+      toast.error("Ticket Submission Failed");
+      console.log(formDataObj);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Testing for submit");
     // Validate required fields
-    if (
-      !formData.category ||
-      !formData.subject ||
-      !formData.description
-    ) {
+    if (!formData.category || !formData.subject || !formData.description) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-      setIsSubmitting(true);
-      try {
-        await submitTicket(formData, null); // null payment_id for free tickets
+    setIsSubmitting(true);
+    try {
+      await submitTicket(formData, null); // null payment_id for free tickets
 
-        // Navigate to success page instead of showing toast
-        navigate("/dashboard/success", {
-          state: {
-            heading: "Your request ticket has been successfully generated!",
-            btnText: "View Requests",
-            redirectTo: "/dashboard/request-ticket",
-          },
-          replace: true,
-        });
+      // Navigate to success page instead of showing toast
+      navigate("/dashboard/success", {
+        state: {
+          heading: "Your request ticket has been successfully generated!",
+          btnText: "View Requests",
+          redirectTo: "/dashboard/request-ticket",
+        },
+        replace: true,
+      });
 
-        // Clear form data from session storage
-      } catch (error) {
-        toast.error("Failed to submit ticket. Please try again.");
-      } finally {
-        setIsSubmitting(false);
-      }
+      // Clear form data from session storage
+    } catch (error) {
+      toast.error("Failed to submit ticket. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
     // } else {
     //   // Navigate to payment page
     //   await navigate("/dashboard/payment", {
@@ -314,13 +301,16 @@ export default function RequestTicketForm() {
   useEffect(() => {
     fetchTicketCategories();
   }, []);
-  
+
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-6 p-6">
-      <div className="max-w-xl">
-        <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-          REQUEST TICKET
-        </h1>
+      <div className="w-full">
+        <div className="flex justify-between items-center  mb-8">
+          <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            REQUEST TICKET
+          </h2>
+          <NavbarRight />
+        </div>
 
         {/* Submitted Requests List */}
         <div className=" p-4 mb-6">
@@ -334,8 +324,8 @@ export default function RequestTicketForm() {
                     ticket.status === 0
                       ? "border-t-2 border-yellow-200"
                       : ticket.status === 1
-                      ? "border-t-2 border-green-200"
-                      : "border-t-2 border-red-200"
+                        ? "border-t-2 border-green-200"
+                        : "border-t-2 border-red-200"
                   }`}
                 >
                   <div>
@@ -347,7 +337,9 @@ export default function RequestTicketForm() {
                     </p>
                     <p className="text-sm">{ticket.category}</p>
                     <p className="text-xs text-gray-400">
-                      {new Date(ticket.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
+                      {new Date(ticket.createdAt).toLocaleDateString("en-GB", {
+                        timeZone: "Asia/Kolkata",
+                      })}
                     </p>
                   </div>
                   <span
@@ -367,7 +359,7 @@ export default function RequestTicketForm() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
           {/* Profile Code */}
           <div className="space-y-2">
             <label className="block">

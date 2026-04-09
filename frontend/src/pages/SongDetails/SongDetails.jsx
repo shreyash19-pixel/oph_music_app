@@ -10,6 +10,7 @@ import { isTomorrow, differenceInDays } from "date-fns";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { useArtist } from "../auth/API/ArtistContext";
+import NavbarRight from "../../components/Navbar/NavbarRight";
 
 const SongDetails = () => {
   const [data, setData] = useState(null);
@@ -79,7 +80,12 @@ const SongDetails = () => {
   const formatDate = (dateString) => {
     try {
       const d = new Date(dateString);
-      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+      });
     } catch {
       return "TBD";
     }
@@ -132,167 +138,134 @@ const SongDetails = () => {
     : `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
 
   return (
-    <div className="text-white bg-[#121212] rounded-xl shadow-2xl p-8 sm:p-10 font-sans max-w-5xl mx-auto mt-10">
-      {/* Banner */}
-      <div className="bg-gradient-to-r from-[#00B8D9] via-[#00B8D9] to-[#008C91] p-4 sm:p-5 rounded-lg mb-8 shadow-lg border-2 border-[#00B8D9]/40">
-        <h2 className="text-white text-xl sm:text-2xl font-bold uppercase tracking-wider text-center sm:text-left">
-          ⚠️ {bannerMessage} ⚠️
+    <div className="text-white bg-[#0D0D0D] p-8 sm:p-12 max-w-7xl mx-auto">
+      {/* SONG DETAILS */}
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          Song Details
         </h2>
-        <p className="text-gray-200 text-sm sm:text-base mt-1 text-center sm:text-left">
-          Get ready for the release of{" "}
-          <span className="font-semibold text-white">
-            {content.song_name.toUpperCase()}
-          </span>{" "}
-          on{" "}
-          <span className="text-[#ffffff]">
-            {formatDate(content.release_date)}
-          </span>
-        </p>
+
+        <NavbarRight />
       </div>
+      <div className="flex flex-col lg:flex-row gap-10">
+        {/* LEFT SECTION */}
+        <div className="flex gap-8 items-start">
+          <img
+            src={JSON.parse(content.image_url)}
+            alt="Album"
+            className="w-48 h-48 sm:w-56 sm:h-56 object-cover rounded-md shadow-lg"
+          />
 
-      {/* Song Details */}
-      <h2 className="text-2xl sm:text-3xl font-bold mb-4 uppercase text-[#00B8D9]">
-        Song Details
-      </h2>
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 space-y-6 sm:space-y-0">
-        <img
-          src={JSON.parse(content.image_url)}
-          alt="Album Cover"
-          className="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-md shadow-xl hover:scale-105 transition-all duration-300 mx-auto sm:mx-0"
-        />
-        <div className="flex-1 sm:ml-8">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-            {/* Title */}
-            <div className="flex flex-col space-y-2">
-              <h3 className="font-semibold text-[#00B8D9] text-lg">Title</h3>
-              <p className="text-gray-200">{content.song_name.toUpperCase()}</p>
-            </div>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">
+              {content.song_name.toUpperCase()}
+            </h1>
 
-            {/* Primary Artist */}
-            <div className="flex flex-col space-y-2">
-              <h3 className="font-semibold text-[#00B8D9] text-lg">
-                Primary Artist
-              </h3>
-              <p className="text-gray-200">
-                {content.stage_name} ({content.full_name})
+            <div className="space-y-2 text-gray-300 text-base">
+              <p>
+                <span className="text-gray-400">Artist Name:</span>{" "}
+                {content.stage_name}
               </p>
-            </div>
-
-            {/* Secondary Artists */}
-            <div className="flex flex-col space-y-2">
-              <h3 className="font-semibold text-[#00B8D9] text-lg">
-                Secondary-Artists
-              </h3>
-              <p className="text-gray-200">
-                {secondary_artists
-                  ? [...(secondary_artists.featuring || [])]
-                      .map((a) => a)
-                      .join(", ") || "N/A"
-                  : "N/A"}
+              <p>
+                <span className="text-gray-400">Lyrics:</span>{" "}
+                {content.stage_name}
               </p>
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <h3 className="font-semibold text-[#00B8D9] text-lg">
-                Secondary-Lyrics
-              </h3>
-              <p className="text-gray-200">
-                {secondary_artists
-                  ? [...(secondary_artists.lyricist || [])]
-                      .map((a) => a)
-                      .join(", ") || "N/A"
-                  : "N/A"}
+              <p>
+                <span className="text-gray-400">Music:</span>{" "}
+                {content.stage_name}
               </p>
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <h3 className="font-semibold text-[#00B8D9] text-lg">
-                Secondary-Composer
-              </h3>
-              <p className="text-gray-200">
-                {secondary_artists
-                  ? [...(secondary_artists.composer || [])]
-                      .map((a) => a)
-                      .join(", ") || "N/A"
-                  : "N/A"}
+              <p>
+                <span className="text-gray-400">Produced By:</span>{" "}
+                {secondary_artists?.producer?.join(", ") || "N/A"}
               </p>
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <h3 className="font-semibold text-[#00B8D9] text-lg">
-                Secondary-Producer
-              </h3>
-              <p className="text-gray-200">
-                {secondary_artists
-                  ? [...(secondary_artists.producer || [])]
-                      .map((a) => a)
-                      .join(", ") || "N/A"
-                  : "N/A"}
+              <p>
+                <span className="text-gray-400">Secondary Artist:</span>{" "}
+                {secondary_artists?.featuring?.join(", ") || "N/A"}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Release Details */}
-      <h2 className="text-2xl sm:text-3xl font-bold mb-4 uppercase text-[#00B8D9]">
-        Release Details
-      </h2>
-      <div className="text-gray-400 text-xs sm:text-sm uppercase mb-2 flex border-b border-gray-600 px-4">
-        <div className="flex-1 text-center py-2">Platform</div>
-        <div className="flex-1 text-center py-2">Release Time</div>
-        <div className="flex-1 text-center py-2">Status</div>
-        <div className="flex-1 text-center py-2">Share</div>
-      </div>
+      {/* RELEASE DETAILS */}
+      <div className="mt-12">
+        <h2 className="text-3xl font-bold mb-8 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          Release Details:
+        </h2>
 
-      {release_details?.length > 0 ? (
-        release_details.map((detail, idx) => (
+        {/* HEADER */}
+        <div className="grid grid-cols-3 text-gray-500 text-sm uppercase border-b border-gray-600">
+          <div className="py-3 px-2 border-r border-gray-700">Details</div>
+          <div className="py-3 px-2 text-center border-r border-gray-700">
+            Status
+          </div>
+          <div className="py-3 px-2 text-center border-r border-gray-700">
+            Share
+          </div>
+        </div>
+
+        {/* ROWS */}
+        {release_details?.map((item, i) => (
           <div
-            key={idx}
-            className="flex items-center py-3 px-4 border-b border-gray-700 text-center"
+            key={i}
+            className="grid grid-cols-3 items-center text-base border-b border-gray-800"
           >
-            <div className="flex-1 border-r border-gray-600">
-              <p className="font-semibold">{detail.stream_name}</p>
-            </div>
-
-            <div className="flex-1 border-r border-gray-600">
-              <p>
-                {detail.release_time ? formatTime(detail.release_time) : "TBD"}
+            {/* DETAILS */}
+            <div className="py-4 px-2 border-r border-gray-700">
+              <p className="text-gray-300">
+                {item.stream_name} Timing:{" "}
+                <span className="text-white font-semibold">
+                  {item.release_time ? formatTime(item.release_time) : "TBD"}
+                </span>
               </p>
             </div>
 
-            <div className="flex-1 border-r border-gray-600">
-              {getStatusIcon(detail.status)}
+            {/* STATUS */}
+            <div className="py-4 px-2 text-center border-r border-gray-700">
+              <span
+                className={`font-medium ${
+                  item.status === "completed"
+                    ? "text-green-400"
+                    : "text-gray-400"
+                }`}
+              >
+                {item.status === "completed" ? "Completed" : "In-Progress"}
+              </span>
             </div>
 
-            <div className="flex-1">
+            {/* SHARE */}
+            <div className="py-4 px-2 text-center border-r border-gray-700">
               <button
                 onClick={() => {
-                  console.log(detail.link);
-                  if (detail.link) {
-                    navigator.clipboard.writeText(detail.link);
-                    toast.success("Link copied!");
+                  if (item.link) {
+                    navigator.clipboard.writeText(item.link);
+                    toast.success("Link copied!!!");
                   }
                 }}
-                disabled={!detail.link}
-                className={`px-4 py-2 rounded-md text-sm flex items-center justify-center mx-auto transition-all duration-300
-                  ${
-                    detail.link
-                      ? "bg-[#00B8D9] hover:bg-[#008C91] text-white"
-                      : "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  }`}
+                className="text-gray-300 hover:text-white transition flex items-center justify-center gap-2 mx-auto"
               >
-                <FaShareAlt className="mr-2 sm:hidden" />
-                <span className="hidden sm:inline-block">Copy Link</span>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="flex-shrink-0"
+                >
+                  <path
+                    d="M21.4354 2.58198C20.9352 2.0686 20.1949 1.87734 19.5046 2.07866L3.408 6.75952C2.6797 6.96186 2.16349 7.54269 2.02443 8.28055C1.88237 9.0315 2.37858 9.98479 3.02684 10.3834L8.0599 13.4768C8.57611 13.7939 9.24238 13.7144 9.66956 13.2835L15.4329 7.4843C15.723 7.18231 16.2032 7.18231 16.4934 7.4843C16.7835 7.77623 16.7835 8.24935 16.4934 8.55134L10.72 14.3516C10.2918 14.7814 10.2118 15.4508 10.5269 15.9702L13.6022 21.0538C13.9623 21.6577 14.5826 22 15.2628 22C15.3429 22 15.4329 22 15.513 21.9899C16.2933 21.8893 16.9135 21.3558 17.1436 20.6008L21.9156 4.52479C22.1257 3.84028 21.9356 3.09537 21.4354 2.58198Z"
+                    fill="#9BA3B7"
+                  />
+                </svg>
+
+                <span className="whitespace-nowrap">Share Link</span>
               </button>
             </div>
+
+            <div></div>
           </div>
-        ))
-      ) : (
-        <p className="text-center py-4 text-gray-400">
-          No release details available.
-        </p>
-      )}
+        ))}
+      </div>
     </div>
   );
 };

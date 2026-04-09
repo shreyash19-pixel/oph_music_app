@@ -1,0 +1,9 @@
+select {
+  background-color: #191D27;
+  color: #e5e7eb;
+}
+
+select option {
+  background-color: #191D27;
+  color: #e5e7eb;
+}
