@@ -24,7 +24,7 @@ const HeroSection = ({ handleSearch, setArtistExists, artistExists, handleFilter
   };
 
   return (
-    <div className="relative sm:min-h-[70vh] w-full flex flex-col items-center justify-center text-white p-8 pt-20 md:pt-0">
+    <div className="relative sm:min-h-[55vh] w-full flex flex-col items-center justify-center text-white p-8 pt-20 md:pt-0">
       {/* Background image */}
       <div
         className="absolute inset-0 bg-[url('/assets/images/leaderboard.png')] bg-cover bg-center"

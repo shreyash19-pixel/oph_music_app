@@ -37,9 +37,7 @@ function Leaderboard({ leaderboardData, artistId }) {
     : null;
   const meRankRaw = meRow?.ranks ?? meRow?.rank;
   const meRank =
-    meRankRaw != null && meRankRaw !== ""
-      ? Number(meRankRaw)
-      : null;
+    meRankRaw != null && meRankRaw !== "" ? Number(meRankRaw) : null;
   const meRankValid = Number.isFinite(meRank) ? meRank : null;
 
   const goToArtistProfile = (ophId) => {
@@ -125,9 +123,7 @@ function Leaderboard({ leaderboardData, artistId }) {
                 <span className="text-gray-500">Reach: </span>
                 <span className="font-semibold text-white">
                   {formatReach(
-                    meRow.total_views ??
-                      meRow.Total_views ??
-                      meRow.totalViews,
+                    meRow.total_views ?? meRow.Total_views ?? meRow.totalViews,
                   )}
                 </span>
               </span>
@@ -137,100 +133,96 @@ function Leaderboard({ leaderboardData, artistId }) {
       </div>
 
       <div className="overflow-x-auto">
-      <table className="w-[100%] border-separate border-spacing-y-2">
-        <thead>
-          <tr className="text-center text-gray-400 rounded-2xl border-gray-800 rounded-2xl">
-            <th className="py-2 px-3 lg:px-4">#</th>
-            <th className="py-2 px-3 lg:px-4">ARTIST</th>
-            <th className="py-2 px-3 lg:px-4">STAGE NAME</th>
-            <th className="py-2 hidden lg:block px-3 lg:px-4">LOCATION</th>
-            <th className="py-2 px-3 lg:px-4">SONGS</th>
-            <th className="py-2 px-3 lg:px-4">REACH</th>
-            <th className="py-2 hidden lg:block px-3 lg:px-4">PROFILE</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length > 0 &&
-            rows.map((artist, index) => (
-              <tr
-                role="button"
-                tabIndex={0}
-                onClick={() =>
-                  goToArtistProfile(resolveLeaderboardOphId(artist))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    goToArtistProfile(resolveLeaderboardOphId(artist));
+        <table className="w-[100%] border-separate border-spacing-y-2">
+          <thead>
+            <tr className="text-center text-gray-400 rounded-2xl border-gray-800 rounded-2xl">
+              <th className="py-2 px-3 lg:px-4">#</th>
+              <th className="py-2 px-3 lg:px-4">ARTIST</th>
+              <th className="py-2 px-3 lg:px-4">STAGE NAME</th>
+              <th className="py-2 hidden lg:block px-3 lg:px-4">LOCATION</th>
+              <th className="py-2 px-3 lg:px-4">SONGS</th>
+              <th className="py-2 px-3 lg:px-4">REACH</th>
+              <th className="py-2 hidden lg:block px-3 lg:px-4">PROFILE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length > 0 &&
+              rows.map((artist, index) => (
+                <tr
+                  role="button"
+                  tabIndex={0}
+                  onClick={() =>
+                    goToArtistProfile(resolveLeaderboardOphId(artist))
                   }
-                }}
-                key={`${resolveLeaderboardOphId(artist) || "row"}-${index}`}
-                className={`cursor-pointer rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
-                  artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
-                }`}
-              >
-                <td className="px-3 lg:px-4 py-2">
-                  <span
-                    className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${
-                      artist.ranks === 1
-                        ? "bg-yellow-400"
-                        : artist.ranks === 2
-                          ? "bg-emerald-400"
-                          : artist.ranks === 3
-                            ? "bg-cyan-400"
-                            : "bg-transparent text-white"
-                    }`}
-                  >
-                    {String(artist.ranks).padStart(2, "0")}
-                  </span>
-                </td>
-                <td className="py-2 flex items-center justify-center px-3 lg:px-4">
-                  <img
-                    src={`${artist.personal_photo}?height=40&width=40`}
-                    alt={artist.stage_name}
-                    className="w-8 h-8 rounded-full"
-                  />
-                </td>
-                <td className="py-2 px-3 lg:px-4">{artist.stage_name}</td>
-                <td className="py-2 hidden lg:block px-3 lg:px-4">
-                  {artist.location}
-                </td>
-                <td className="py-2 px-3 lg:px-4">{artist.song_count}</td>
-                <td className="py-2 px-3 lg:px-4">
-                  {formatReach(
-                    artist.total_views ??
-                      artist.Total_views ??
-                      artist.totalViews,
-                  )}
-                </td>
-                <td className="py-2 hidden lg:block px-3 lg:px-4">
-                  <button
-                    type="button"
-                    className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const oid = resolveLeaderboardOphId(artist);
-                      if (!oid) return;
-                      goToArtistProfile(oid);
-                    }}
-                  >
-                    View Profile
-                  </button>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      goToArtistProfile(resolveLeaderboardOphId(artist));
+                    }
+                  }}
+                  key={`${resolveLeaderboardOphId(artist) || "row"}-${index}`}
+                  className={`cursor-pointer rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
+                    artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
+                  }`}
+                >
+                  <td className="px-3 lg:px-4 py-2">
+                    <span
+                      className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${
+                        artist.ranks === 1
+                          ? "bg-yellow-400"
+                          : artist.ranks === 2
+                            ? "bg-emerald-400"
+                            : artist.ranks === 3
+                              ? "bg-cyan-400"
+                              : "bg-transparent text-white"
+                      }`}
+                    >
+                      {String(artist.ranks).padStart(2, "0")}
+                    </span>
+                  </td>
+                  <td className="py-2 flex items-center justify-center px-3 lg:px-4">
+                    <img
+                      src={`${artist.personal_photo}?height=40&width=40`}
+                      alt={artist.stage_name}
+                      className="w-8 h-8 rounded-full"
+                    />
+                  </td>
+                  <td className="py-2 px-3 lg:px-4">{artist.stage_name}</td>
+                  <td className="py-2 hidden lg:block px-3 lg:px-4">
+                    {artist.location}
+                  </td>
+                  <td className="py-2 px-3 lg:px-4">{artist.song_count}</td>
+                  <td className="py-2 px-3 lg:px-4">
+                    {formatReach(
+                      artist.total_views ??
+                        artist.Total_views ??
+                        artist.totalViews,
+                    )}
+                  </td>
+                  <td className="py-2 hidden lg:block px-3 lg:px-4">
+                    <button
+                      type="button"
+                      className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const oid = resolveLeaderboardOphId(artist);
+                        if (!oid) return;
+                        goToArtistProfile(oid);
+                      }}
+                    >
+                      View Profile
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-export const SongDuration = ({
-  url,
-  className = "",
-  as: As = "span",
-}) => {
+export const SongDuration = ({ url, className = "", as: As = "span" }) => {
   const [duration, setDuration] = useState(null);
 
   useEffect(() => {
@@ -311,12 +303,9 @@ export default function ArtistSpotlight() {
       setNotes(ARTIST_SPOTLIGHT_EMPTY_NOTE);
       return;
     }
-    const raw =
-      row.Notes ?? row.notes ?? row.NOTE ?? row.note ?? null;
+    const raw = row.Notes ?? row.notes ?? row.NOTE ?? row.note ?? null;
     const text =
-      raw == null ||
-      raw === "null" ||
-      String(raw).trim() === ""
+      raw == null || raw === "null" || String(raw).trim() === ""
         ? ARTIST_SPOTLIGHT_EMPTY_NOTE
         : String(raw);
     setNotes(text);
@@ -433,7 +422,7 @@ export default function ArtistSpotlight() {
                 <img
                   src={artist.personal_photo}
                   alt={artist.stage_name}
-                  className="w-32 h-32 rounded-full border-4 border-[#5DC9DE] object-cover"
+                  className="w-32 h-32 rounded-full border-[6px] border-[#5DC9DE] object-cover shadow-[0_0_20px_#5DC9DE]"
                 />
                 {/* Rank Badge */}
                 {(() => {
@@ -441,7 +430,7 @@ export default function ArtistSpotlight() {
                   if (rank == null) {
                     return (
                       <span
-                        className="absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums bg-gray-800/90 text-gray-400 ring-1 ring-gray-600"
+                        className="absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums bg-[#6F4FA0] text-white ring-1 ring-[#6F4FA0]"
                         title="Not on the community leaderboard yet. Rankings are for artists who appear on the public leaderboard."
                         aria-label="Not on the community leaderboard"
                       >
@@ -472,7 +461,7 @@ export default function ArtistSpotlight() {
 
               {/* Artist Info */}
               <div className="text-left">
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-[45px] font-bold text-white">
                   {artist.full_name}
                 </h2>
                 <p className="text-gray-400">
@@ -485,9 +474,7 @@ export default function ArtistSpotlight() {
             <div className="px-6">
               <p className="text-gray-400">
                 Profession:{" "}
-                {formatProfessionLabel(
-                  artist.Profession ?? artist.profession,
-                )}
+                {formatProfessionLabel(artist.Profession ?? artist.profession)}
               </p>
               <p className="text-gray-500 mt-4">{artist.Bio}</p>
             </div>

@@ -159,7 +159,7 @@ const ArtistSlider = ({
 
   const handleSliderNav = (direction) => {
     if (sliderRef.current) {
-      if (direction === 'next') {
+      if (direction === "next") {
         sliderRef.current.slickNext();
       } else {
         sliderRef.current.slickPrev();
@@ -232,31 +232,40 @@ const ArtistSlider = ({
               …
             </p> */}
           </div>
-          <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16 relative z-50">
+          <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16 relative z-50 flex items-center gap-2">
+            {/* Prev Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleSliderNav('prev');
+                handleSliderNav("prev");
               }}
-              className="bg-gray-800 p-3 rounded-full hover:bg-gray-700 transition-colors mr-2 cursor-pointer"
+              className="flex items-center justify-center 
+               w-10 h-10 sm:w-12 sm:h-12 
+               bg-gray-800 rounded-full 
+               hover:bg-gray-700 transition-colors cursor-pointer"
             >
               <img
                 src={arrowLeftIc}
                 alt="Previous"
-                className="w-[20px] h-[20px] pointer-events-none"
+                className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none"
               />
             </button>
+
+            {/* Next Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleSliderNav('next');
+                handleSliderNav("next");
               }}
-              className="bg-[#6F4FA0] p-3 rounded-full hover:bg-[#5a3f80] transition-colors cursor-pointer"
+              className="flex items-center justify-center 
+               w-10 h-10 sm:w-12 sm:h-12 
+               bg-[#6F4FA0] rounded-full 
+               hover:bg-[#5a3f80] transition-colors cursor-pointer"
             >
               <img
                 src={arrowRightIc}
                 alt="Next"
-                className="w-[20px] h-[20px] pointer-events-none"
+                className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none"
               />
             </button>
           </div>
@@ -314,73 +323,71 @@ const ArtistSlider = ({
             {artists.map((artist, index) => {
               const id = artist.oph_id ?? artist.OPH_ID;
               return (
-              <div key={id ?? `artist-slide-${index}`} className="px-4 cursor-pointer mb-10">
                 <div
-                  className="group relative pointer-events-auto"
-                  onTouchEnd={(e) => {
-                    //  e.preventDefault();
-                    handleArtistClick(id, index);
-                  }}
+                  key={id ?? `artist-slide-${index}`}
+                  className="px-4 cursor-pointer mb-10"
                 >
-                  <div className="flex justify-center overflow-hidden">
-                    <Image
-                      src={artist.personal_photo}
-                      fallback={
-                        <Shimmer
-                          width={200}
-                          height={200}
-                          className="rounded-full"
-                        />
-                      }
-                      alt={artist.stage_name}
-                      NativeImgProps={{
-                        className: `
+                  <div
+                    className="group relative pointer-events-auto"
+                    onTouchEnd={(e) => {
+                      //  e.preventDefault();
+                      handleArtistClick(id, index);
+                    }}
+                  >
+                    <div className="flex justify-center overflow-hidden">
+                      <Image
+                        src={artist.personal_photo}
+                        fallback={
+                          <Shimmer
+                            width={200}
+                            height={200}
+                            className="rounded-full"
+                          />
+                        }
+                        alt={artist.stage_name}
+                        NativeImgProps={{
+                          className: `
       w-[200px] h-[200px] 
       rounded-full 
       object-cover 
       ${id === currArtist ? "border-4 border-primary" : ""}
     `,
-                      }}
-                    />
-                  </div>
-                  <div
-                    className="flex flex-col text-center items-center justify-end p-4"
-                    onMouseUp={(e) => {
-                      if (e.button === 0)
-                        handleArtistClick(id, index);
-                    }}
-                  >
-                    <a
-                      className={`text-lg font-semibold ${
-                        id === currArtist
-                          ? "text-[#5DC9DE]"
-                          : "text-white"
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleArtistClick(id, index);
+                        }}
+                      />
+                    </div>
+                    <div
+                      className="flex flex-col text-center items-center justify-end p-4"
+                      onMouseUp={(e) => {
+                        if (e.button === 0) handleArtistClick(id, index);
                       }}
                     >
-                      {artist.stage_name}
-                    </a>
-                    <p
-                      className={`text-sm ${
-                        id === currArtist
-                          ? "text-white"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {artist.total_views >= 1000000
-                        ? `${(artist.total_views / 1000000).toFixed(1)}M`
-                        : artist.total_views >= 1000
-                        ? `${(artist.total_views / 1000).toFixed(1)}K`
-                        : artist.total_views}{" "}
-                      + Listeners
-                    </p>
+                      <a
+                        className={`text-lg font-semibold ${
+                          id === currArtist ? "text-[#5DC9DE]" : "text-white"
+                        }`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleArtistClick(id, index);
+                        }}
+                      >
+                        {artist.stage_name}
+                      </a>
+                      <p
+                        className={`text-sm ${
+                          id === currArtist ? "text-white" : "text-gray-400"
+                        }`}
+                      >
+                        {artist.total_views >= 1000000
+                          ? `${(artist.total_views / 1000000).toFixed(1)}M`
+                          : artist.total_views >= 1000
+                            ? `${(artist.total_views / 1000).toFixed(1)}K`
+                            : artist.total_views}{" "}
+                        + Listeners
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
+              );
             })}
           </Slider>
         </div>

@@ -9,7 +9,8 @@ import { TiHome } from "react-icons/ti";
 import Calender from "../../../public/assets/images/calender.png";
 import EPK from "../../../public/assets/images/my-epk.png";
 import SongUp from "../../../public/assets/images/song.png";
-import Tv from "../../../public/assets/images/tv.png";
+import Lock from "../../../public/assets/images/lock.png";
+import Tv from "../../../public/assets/images/Tv.png";
 import Spot from "../../../public/assets/images/spotlight.png";
 import Anal from "../../../public/assets/images/analytics.png";
 import Ticket from "../../../public/assets/images/ticket.png";
@@ -20,7 +21,7 @@ import Logout from "../../../public/assets/images/logout.png";
 import { X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 
-const SidebarNav = ({ onClose }) => {
+const SidebarNav = ({ onClose, contents, setContents }) => {
   const navigate = useNavigate();
   const { logout } = useArtist();
   const [userData, setUserData] = useState(null);
@@ -29,6 +30,9 @@ const SidebarNav = ({ onClose }) => {
   const [data, setData] = useState([]);
   const { ophid, headers } = useArtist();
   const [artistType, setArtistType] = useState("");
+
+  console.log(contents);
+  
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
@@ -142,6 +146,7 @@ const SidebarNav = ({ onClose }) => {
       label: "TV Publishing",
       to: "/dashboard/tv-publishing",
       type: "Independent artist",
+      lock: <img src={Lock} className="w-[24px] h-[24px]" />
     },
     {
       icon: <img src={Spot} className="w-[24px] h-[24px]" />,
@@ -232,6 +237,13 @@ const SidebarNav = ({ onClose }) => {
                     <span className="text-[14px] font-medium">
                       {item.label}
                     </span>
+
+                    {
+                      contents?.length === 0 && 
+                      (<span className="ml-auto">
+                        {item.lock}
+                      </span>)
+                    }
                   </button>
                 </li>
               ))}

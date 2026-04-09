@@ -23,7 +23,6 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   const [loading, setLoading] = useState(false);
 
   console.log(contentId);
-  
 
   const handleSubmitSecondary = async (e) => {
     e.preventDefault();
@@ -257,11 +256,10 @@ export default function AudioMetadataForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef(null);
-  
+
   // Get song_id from location state instead of URL params
   const contentId = location.state?.song_id;
   console.log(contentId);
-  
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -462,7 +460,7 @@ export default function AudioMetadataForm() {
     artistType,
     index,
     artistName,
-    artistLegalName
+    artistLegalName,
   ) => {
     const formData = new FormData();
 
@@ -480,7 +478,7 @@ export default function AudioMetadataForm() {
             "Content-Type": "application/json",
             ...headers,
           },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -531,7 +529,7 @@ export default function AudioMetadataForm() {
 
       formData.append(
         "primary_artist",
-        `${user?.userData?.artist.name} - ${user?.userData?.artist.stage_name}`
+        `${user?.userData?.artist.name} - ${user?.userData?.artist.stage_name}`,
       );
       formData.append("mood", mood);
       formData.append("lyrics", lyrics);
@@ -584,53 +582,83 @@ export default function AudioMetadataForm() {
 
       if (response.status === 201) {
         setIsLoading(false);
-        
+
         // Check if there's a redirect path from backend (for rejected sections)
         if (response.data.redirectPath) {
-          if (response.data.redirectPath === '/dashboard/success') {
+          if (response.data.redirectPath === "/dashboard/success") {
             navigate("/dashboard/success", {
               state: {
-                heading: "Your song registration has been completed successfully!",
+                heading:
+                  "Your song registration has been completed successfully!",
                 btnText: "Back to Home",
                 redirectTo: "/dashboard",
               },
             });
-          } else if (response.data.redirectPath === '/dashboard/upload-song/audio-metadata/') {
+          } else if (
+            response.data.redirectPath ===
+            "/dashboard/upload-song/audio-metadata/"
+          ) {
             // Redirect to audio metadata (shouldn't happen after submitting audio, but handle it)
             navigate("/dashboard/upload-song/audio-metadata/", {
               state: {
                 song_id: response.data.song_id || contentId,
-                songName: response.data.songName || location.state?.songName || songName,
+                songName:
+                  response.data.songName ||
+                  location.state?.songName ||
+                  songName,
                 release_date: location.state?.release_date,
                 project_type: location.state?.project_type,
                 lyrical_services: location.state?.lyrical_services,
                 isFixingRejected: true,
               },
             });
-          } else if (response.data.redirectPath === '/dashboard/upload-song/video-metadata/') {
+          } else if (
+            response.data.redirectPath ===
+            "/dashboard/upload-song/video-metadata/"
+          ) {
             // Video: first-time flow (maintain flow after back) or resubmission (audio+payment rejected)
             const isResubmission = response.data.wasRejected === true;
             navigate("/dashboard/upload-song/video-metadata/", {
               state: {
                 song_id: response.data.song_id || contentId,
-                songName: response.data.songName || location.state?.songName || songName,
-                release_date: response.data.releaseDate || location.state?.release_date,
-                project_type: response.data.projectType || location.state?.project_type,
-                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state?.lyrical_services,
-                ...(isResubmission && { isFixingRejected: true, showPayNowOnVideo: response.data.showPayNowOnVideo === true }),
+                songName:
+                  response.data.songName ||
+                  location.state?.songName ||
+                  songName,
+                release_date:
+                  response.data.releaseDate || location.state?.release_date,
+                project_type:
+                  response.data.projectType || location.state?.project_type,
+                lyrical_services:
+                  response.data.lyricalServices !== undefined
+                    ? response.data.lyricalServices
+                    : location.state?.lyrical_services,
+                ...(isResubmission && {
+                  isFixingRejected: true,
+                  showPayNowOnVideo: response.data.showPayNowOnVideo === true,
+                }),
               },
             });
-          } else if (response.data.redirectPath === '/auth/payment') {
+          } else if (response.data.redirectPath === "/auth/payment") {
             // Redirect to payment
             navigate("/auth/payment", {
               state: {
                 from: "Song Repayment",
-                booking_date: response.data.releaseDate || location.state?.release_date,
-                release_date: response.data.releaseDate || location.state?.release_date,
+                booking_date:
+                  response.data.releaseDate || location.state?.release_date,
+                release_date:
+                  response.data.releaseDate || location.state?.release_date,
                 song_id: response.data.song_id || contentId,
-                songName: response.data.songName || location.state?.songName || songName,
-                project_type: response.data.projectType || location.state?.project_type,
-                lyrical_services: response.data.lyricalServices !== undefined ? response.data.lyricalServices : location.state?.lyrical_services,
+                songName:
+                  response.data.songName ||
+                  location.state?.songName ||
+                  songName,
+                project_type:
+                  response.data.projectType || location.state?.project_type,
+                lyrical_services:
+                  response.data.lyricalServices !== undefined
+                    ? response.data.lyricalServices
+                    : location.state?.lyrical_services,
                 backPath: `/dashboard/upload-song/audio-metadata`,
               },
             });
@@ -641,18 +669,15 @@ export default function AudioMetadataForm() {
         } else {
           // Default navigation logic (existing behavior)
           nextPage === "video"
-            ? navigate(
-                `/dashboard/upload-song/video-metadata`,
-                {
-                  state: {
-                    song_id: response.data.song_id || contentId,
-                    songName: location.state?.songName || songName,
-                    release_date: location.state?.release_date,
-                    project_type: location.state?.project_type,
-                    lyrical_services: location.state?.lyrical_services,
-                  },
-                }
-              )
+            ? navigate(`/dashboard/upload-song/video-metadata`, {
+                state: {
+                  song_id: response.data.song_id || contentId,
+                  songName: location.state?.songName || songName,
+                  release_date: location.state?.release_date,
+                  project_type: location.state?.project_type,
+                  lyrical_services: location.state?.lyrical_services,
+                },
+              })
             : navigate("/dashboard/pending", {
                 state: {
                   heading: "Your audio details are under review",
@@ -664,7 +689,10 @@ export default function AudioMetadataForm() {
       }
     } catch (error) {
       console.error("Error submitting audio metadata:", error);
-      toast.error(error?.response?.data?.message || "Failed to submit audio. Please try again.");
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to submit audio. Please try again.",
+      );
     } finally {
       setIsLoading(false);
       setIsSubmitting(false);
@@ -673,10 +701,10 @@ export default function AudioMetadataForm() {
 
   const checkIfDateIsAvail = () => {
     if (!location.state?.release_date) return;
-    
+
     const check = checkBookingDates.find((date) => {
       const formattedDate = new Date(
-        location.state.release_date
+        location.state.release_date,
       ).toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
       });
@@ -685,7 +713,7 @@ export default function AudioMetadataForm() {
         "en-IN",
         {
           timeZone: "Asia/Kolkata",
-        }
+        },
       );
 
       if (formattedReleaseDate === formattedDate && date.ophid !== ophid) {
@@ -738,7 +766,9 @@ export default function AudioMetadataForm() {
       if (response.data.success) {
         const { audio_metadata, secondary_artists } = response.data.data;
 
-        setSongName(audio_metadata[0]?.Song_name || location.state?.songName || songName);
+        setSongName(
+          audio_metadata[0]?.Song_name || location.state?.songName || songName,
+        );
         setLangID(audio_metadata[0]?.language || null);
         setGenre(audio_metadata[0]?.genre || "");
         setSubGenre(audio_metadata[0]?.sub_genre || "");
@@ -747,7 +777,7 @@ export default function AudioMetadataForm() {
         setPrimary(audio_metadata[0]?.primary_artist || "");
         setLanguages(
           languages.find((lang) => lang.id === audio_metadata[0]?.language) ||
-            languages
+            languages,
         );
         const audioRejectReason = audio_metadata[0]?.reject_reason || "";
         setRejectReason(audioRejectReason);
@@ -782,25 +812,25 @@ export default function AudioMetadataForm() {
         setFeaturingArtists(
           secondary_artists
             .filter((artist) => artist.artist_type === "Featuring Artist")
-            .map(parseArtist)
+            .map(parseArtist),
         );
 
         setLyricistArtists(
           secondary_artists
             .filter((artist) => artist.artist_type === "Lyricist Artist")
-            .map(parseArtist)
+            .map(parseArtist),
         );
 
         setComposerArtists(
           secondary_artists
             .filter((artist) => artist.artist_type === "Composer Artist")
-            .map(parseArtist)
+            .map(parseArtist),
         );
 
         setProducerArtists(
           secondary_artists
             .filter((artist) => artist.artist_type === "Producer Artist")
-            .map(parseArtist)
+            .map(parseArtist),
         );
       }
     } catch (error) {
@@ -823,54 +853,64 @@ export default function AudioMetadataForm() {
       navigate("/dashboard/upload-song/register-song", { replace: true });
       return;
     }
-    
+
     // Sync song navigation when entering this page (e.g. after browser back from video-metadata).
     // Backend sets status to draft when not fixing a rejected step, so song shows as Draft.
     if (contentId && ophid && headers?.Authorization && location.pathname) {
-      axiosApi.post(
-        "/update-song-navigation",
-        {
-          song_id: contentId,
-          oph_id: ophid,
-          next_page: location.pathname,
-        },
-        { headers }
-      ).catch(() => {});
+      axiosApi
+        .post(
+          "/update-song-navigation",
+          {
+            song_id: contentId,
+            oph_id: ophid,
+            next_page: location.pathname,
+          },
+          { headers },
+        )
+        .catch(() => {});
     }
-    
+
     // Check if we're fixing a rejected item from location state
     if (location.state?.isFixingRejected) {
       setIsFixingRejected(true);
       console.log("🔧 User is fixing a rejected item - will not set to draft");
     }
-    
+
     // Draft: check if release date is still free on calendar (source of truth); if taken, redirect to register-song
     const releaseDateRaw = location.state?.release_date;
     if (contentId && releaseDateRaw && headers?.Authorization) {
-      const releaseDateForApi = typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
-        ? releaseDateRaw.split("/").reverse().join("-") // DD/MM/YYYY -> YYYY-MM-DD
-        : releaseDateRaw;
-      axiosApi.get("/check-release-date-available", {
-        headers,
-        params: { release_date: releaseDateForApi, song_id: contentId, ophid }
-      }).then((res) => {
-        if (res.data.success && res.data.available === false) {
-          navigate("/dashboard/upload-song/register-song", {
-            replace: true,
-            state: {
-              song_id: contentId,
-              songName: location.state?.songName || songName,
-              release_date: releaseDateRaw,
-              project_type: location.state?.project_type,
-              lyrical_services: location.state?.lyrical_services,
-              dateNoLongerAvailable: true,
-              returnToPage: "/dashboard/upload-song/audio-metadata"
-            }
-          });
-        }
-      }).catch(() => {});
+      const releaseDateForApi =
+        typeof releaseDateRaw === "string" && releaseDateRaw.includes("/")
+          ? releaseDateRaw.split("/").reverse().join("-") // DD/MM/YYYY -> YYYY-MM-DD
+          : releaseDateRaw;
+      axiosApi
+        .get("/check-release-date-available", {
+          headers,
+          params: {
+            release_date: releaseDateForApi,
+            song_id: contentId,
+            ophid,
+          },
+        })
+        .then((res) => {
+          if (res.data.success && res.data.available === false) {
+            navigate("/dashboard/upload-song/register-song", {
+              replace: true,
+              state: {
+                song_id: contentId,
+                songName: location.state?.songName || songName,
+                release_date: releaseDateRaw,
+                project_type: location.state?.project_type,
+                lyrical_services: location.state?.lyrical_services,
+                dateNoLongerAvailable: true,
+                returnToPage: "/dashboard/upload-song/audio-metadata",
+              },
+            });
+          }
+        })
+        .catch(() => {});
     }
-    
+
     checkAlreadyBookedDate();
     fetchAudioMetadata();
     checkVideoStaus();
@@ -880,7 +920,6 @@ export default function AudioMetadataForm() {
     // Status only changes when user submits metadata or admin approves/rejects
     // No need to set to "draft" on page leave
   }, [contentId, headers, location.state, location.pathname, ophid]);
-
 
   async function getAudioAsBlob(url) {
     const response = await fetch(url);
@@ -962,7 +1001,9 @@ export default function AudioMetadataForm() {
               </h1>
               {rejectReason && (
                 <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
-                  <p className="text-red-400 font-semibold mb-1">Audio Rejection</p>
+                  <p className="text-red-400 font-semibold mb-1">
+                    Audio Rejection
+                  </p>
                   <p className="text-red-300 text-sm">{rejectReason}</p>
                 </div>
               )}
@@ -1097,6 +1138,11 @@ export default function AudioMetadataForm() {
                           onClick={() => {
                             setSelectedArtistType(type);
                             setShowSecondaryForm(true);
+
+                            window.scrollTo({
+                              top: 0,
+                              behavior: "smooth", // This creates a smooth scrolling effect
+                            });
                           }}
                           className="bg-none border border-cyan-400 text-cyan-400 px-4 py-2 rounded-full hover:bg-cyan-300 hover:text-black transition-colors"
                         >
@@ -1122,7 +1168,7 @@ export default function AudioMetadataForm() {
                                   type,
                                   index,
                                   artist.name,
-                                  artist.legal_name
+                                  artist.legal_name,
                                 )
                               }
                               className="text-red-500 hover:text-red-400"
@@ -1187,7 +1233,7 @@ export default function AudioMetadataForm() {
                 artistType={selectedArtistType}
                 onClose={() => setShowSecondaryForm(false)}
                 onArtistAdd={handleArtistAdd}
-                contentId = {contentId}
+                contentId={contentId}
               />
             </div>
           )}

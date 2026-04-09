@@ -358,7 +358,7 @@ const MYEPK = () => {
                         {/* Modal */}
                         {isOpen && (
                           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-                            <div className="relative w-[90%] max-w-2xl bg-white rounded-2xl shadow-xl p-4">
+                            <div className="relative w-[95%] max-w-3xl shadow-xl p-4">
                               {/* Close button */}
                               <button
                                 onClick={handleModalClose}
@@ -523,14 +523,14 @@ const MYEPK = () => {
                     alt="Selected"
                     className="max-w-full max-h-[80vh] rounded-md"
                   />
-                  <div className="mt-4 flex justify-center">
+                  {/* <div className="mt-4 flex justify-center">
                     <button
                       onClick={handleDownload}
                       className="bg-[#5CC8DE] text-black px-4 py-2 rounded-md "
                     >
                       Download Image
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
