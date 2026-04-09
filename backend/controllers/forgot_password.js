@@ -35,7 +35,7 @@ const forgotPassword = async (req, res) => {
     );
 
     // Generate reset link
-    const resetLink = `http://localhost:5173/auth/reset-password?token=${resetToken}`;
+    const resetLink = `https://ophcommunity.in/auth/reset-password?token=${resetToken}`;
     const htmlContent = `
       <p>Hi ${artistData.name || artistData.full_name || "Artist"},</p>
       <p>Forgot your password? No worries—it happens to the best of us! Just click the button below to set a new one and get back into your account:</p>
