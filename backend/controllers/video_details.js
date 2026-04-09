@@ -1,5 +1,6 @@
+const db = require("../DB/connect");
 const videoDetails = require("../model/video_details");
-const { uploadToS3 } = require("../utils");
+const { uploadToS3, getPresignedVideoPutUrl } = require("../utils");
 const SongApplicationStatusService = require("../services/song/SongApplicationStatusService");
 
 exports.createVideoDetails = async (req, res) => {
@@ -200,7 +201,14 @@ exports.createVideoDetails = async (req, res) => {
 
     const hasNewVideoUpload = !!(req.files?.video_file?.[0]);
     const hasNewThumbnailUpload = !!(req.files?.thumbnails?.length > 0);
-    if (!hasNewVideoUpload && !hasNewThumbnailUpload) {
+    const hasPresignedVideoUrl =
+      !!(req.body.existing_video_url && String(req.body.existing_video_url).trim());
+    // Presigned flow: video is already on S3; only body fields are sent. Must not hit payment-only short-circuit.
+    if (
+      !hasNewVideoUpload &&
+      !hasNewThumbnailUpload &&
+      !hasPresignedVideoUrl
+    ) {
       const existingRows = await videoDetails.getVideoDetails(song_id);
       const existing = existingRows?.[0];
       if (existing && existing.status !== "rejected") {
@@ -462,4 +470,64 @@ exports.checkPaymentStatusController = async (req, res) => {
   }
 
 }
+
+/**
+ * Presigned S3 PUT for large videos — avoids sending multi‑GB through Cloudflare/nginx.
+ * Browser PUTs the file to uploadUrl, then POSTs /video-details with existing_video_url only.
+ */
+exports.presignedVideoUpload = async (req, res) => {
+  try {
+    const song_id = req.query.song_id;
+    const filename = req.query.filename;
+    const content_type = req.query.content_type || "application/octet-stream";
+
+    const tokenOphid =
+      req.user?.userData?.artist?.id ||
+      req.user?.userData?.artist?.OPH_ID ||
+      req.user?.ophid ||
+      req.user?.OPH_ID;
+
+    if (!song_id || !filename || !tokenOphid) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing song_id, filename, or valid session",
+      });
+    }
+
+    const [rows] = await db.execute(
+      `SELECT song_id FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+      [song_id, tokenOphid, tokenOphid]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: "Song not found or access denied",
+      });
+    }
+
+    const { uploadUrl, publicUrl, contentType } = getPresignedVideoPutUrl(
+      tokenOphid,
+      filename,
+      content_type
+    );
+
+    console.log(
+      `[Video Upload] Presigned PUT issued song_id=${song_id} oph_id=${tokenOphid}`
+    );
+
+    return res.status(200).json({
+      success: true,
+      uploadUrl,
+      publicUrl,
+      contentType,
+    });
+  } catch (err) {
+    console.error("[Video Upload] presignedVideoUpload:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to create upload URL",
+    });
+  }
+};
 

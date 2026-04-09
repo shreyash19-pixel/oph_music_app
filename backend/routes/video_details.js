@@ -88,6 +88,13 @@ const uploadVideoFields = (req, res, next) => {
   });
 };
 
+// Large video: browser PUTs directly to S3 (bypasses Cloudflare ~100MB limit on API hostname)
+router.get(
+  "/video-details/presigned-upload",
+  authMiddleware,
+  controller.presignedVideoUpload
+);
+
 router.post(
   "/video-details",
   authMiddleware,

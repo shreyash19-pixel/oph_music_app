@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Camera, Plus, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import axiosApi from "../../../conf/axios";
 import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
@@ -239,9 +240,60 @@ export default function VideoMetadataForm() {
       return;
     }
 
+    /** Above this size, upload video with presigned PUT to S3 (avoids Cloudflare ~100MB limit on API). */
+    const DIRECT_UPLOAD_THRESHOLD = 80 * 1024 * 1024;
+
     try {
       setIsSubmitting(true);
       setIsLoading(true);
+
+      let directS3VideoUrl = null;
+      if (
+        formData.video_file &&
+        formData.video_file.size > DIRECT_UPLOAD_THRESHOLD
+      ) {
+        const pres = await axiosApi.get("/video-details/presigned-upload", {
+          headers,
+          params: {
+            song_id: contentId,
+            filename: formData.video_file.name,
+            content_type:
+              formData.video_file.type || "application/octet-stream",
+          },
+        });
+        if (!pres.data?.success || !pres.data.uploadUrl || !pres.data.publicUrl) {
+          toast.error(pres.data?.message || "Could not prepare video upload.");
+          throw new Error("presign failed");
+        }
+        const ct =
+          pres.data.contentType ||
+          formData.video_file.type ||
+          "application/octet-stream";
+        const putStart = Date.now();
+        await axios.put(pres.data.uploadUrl, formData.video_file, {
+          headers: { "Content-Type": ct },
+          timeout: 0,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          onUploadProgress: (ev) => {
+            if (!ev.total) return;
+            const loadedMB = ev.loaded / (1024 * 1024);
+            const totalMB = ev.total / (1024 * 1024);
+            const pct = Math.round((ev.loaded / ev.total) * 100);
+            const elapsed = (Date.now() - putStart) / 1000;
+            const speed = loadedMB / (elapsed || 1);
+            setUploadProgress({
+              percentage: pct,
+              loadedMB,
+              totalMB,
+              speed,
+              time: elapsed,
+              isUploading: true,
+            });
+          },
+        });
+        directS3VideoUrl = pres.data.publicUrl;
+      }
 
       const formDataToSend = new FormData();
       formDataToSend.append("song_id", contentId);
@@ -253,7 +305,9 @@ export default function VideoMetadataForm() {
         formDataToSend.append("existing_thumbnails", JSON.stringify(formData.existing_thumbnails));
       }
 
-      if (formData.video_file) {
+      if (directS3VideoUrl) {
+        formDataToSend.append("existing_video_url", directS3VideoUrl);
+      } else if (formData.video_file) {
         formDataToSend.append("video_file", formData.video_file);
       } else if (formData.existing_video_url) {
         // Preserve existing S3 URL when user resubmits without choosing a new file
@@ -282,9 +336,9 @@ export default function VideoMetadataForm() {
       
       console.log(`[Frontend] Sending ${newThumbnails.length} new thumbnail(s) and ${formData.existing_thumbnails?.length || 0} existing thumbnail URL(s)`);
 
-      // Calculate total file size for progress tracking
+      // Calculate total file size for progress tracking (multipart leg only after direct S3 video)
       let totalSize = 0;
-      if (formData.video_file) {
+      if (formData.video_file && !directS3VideoUrl) {
         totalSize += formData.video_file.size;
       }
       newThumbnails.forEach((thumb) => {
@@ -294,20 +348,34 @@ export default function VideoMetadataForm() {
       });
 
       const startTime = Date.now();
-      const totalMBInitial = formData.video_file
-        ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
-        : totalSize ? (totalSize / (1024 * 1024)).toFixed(2) : "0";
-      setUploadProgress({
-        percentage: 0,
-        loadedMB: 0,
-        totalMB: parseFloat(totalMBInitial),
-        speed: 0,
-        time: 0,
-        isUploading: true,
-      });
+      const totalMBInitial = directS3VideoUrl
+        ? totalSize
+          ? (totalSize / (1024 * 1024)).toFixed(2)
+          : "0"
+        : formData.video_file
+          ? (formData.video_file.size / (1024 * 1024)).toFixed(2)
+          : totalSize
+            ? (totalSize / (1024 * 1024)).toFixed(2)
+            : "0";
+      if (!directS3VideoUrl) {
+        setUploadProgress({
+          percentage: 0,
+          loadedMB: 0,
+          totalMB: parseFloat(totalMBInitial),
+          speed: 0,
+          time: 0,
+          isUploading: true,
+        });
+      } else {
+        setUploadProgress((prev) => ({
+          ...prev,
+          totalMB: parseFloat(totalMBInitial) || prev.totalMB,
+          isUploading: true,
+        }));
+      }
 
       // Real S3 progress from backend via socket (matches backend logs)
-      if (formData.video_file && socket) {
+      if (formData.video_file && !directS3VideoUrl && socket) {
         const handler = (data) => {
           setUploadProgress((prev) => ({
             ...prev,
@@ -330,8 +398,8 @@ export default function VideoMetadataForm() {
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
         onUploadProgress: (progressEvent) => {
-          // For video uploads progress comes from socket; only use this for thumbnails-only
-          if (formData.video_file) return;
+          // Video in multipart: progress from socket. Direct S3 video: use this for thumbnails leg only.
+          if (formData.video_file && !directS3VideoUrl) return;
           if (progressEvent.total) {
             const loaded = progressEvent.loaded;
             const total = progressEvent.total;

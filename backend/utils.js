@@ -402,4 +402,33 @@ const getPresignedDownloadUrl = (key, expiresIn = 900) => {
   return s3.getSignedUrl("getObject", params);
 };
 
-module.exports = { uploadToS3, uploadToS3Form, readFromS3, saveToS3, deleteFromS3, getPresignedDownloadUrl };
+/**
+ * Presigned PUT so the browser uploads the video directly to S3 (bypasses Cloudflare/nginx body limits).
+ * Client must send PUT with exactly the same Content-Type header as contentType.
+ */
+const getPresignedVideoPutUrl = (ophid, originalFilename, contentType) => {
+  const safeName = String(originalFilename || "video").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const key = `video-meta/${ophid}/video-url/${Date.now()}-${safeName}`;
+  const ct = (contentType && String(contentType).trim()) || "application/octet-stream";
+  const params = {
+    Bucket: process.env.S3_BUCKET,
+    Key: key,
+    Expires: 60 * 60,
+    ContentType: ct,
+  };
+  const uploadUrl = s3.getSignedUrl("putObject", params);
+  const region = process.env.AWS_REGION || "ap-south-1";
+  const bucket = process.env.S3_BUCKET;
+  const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+  return { uploadUrl, publicUrl, key, contentType: ct };
+};
+
+module.exports = {
+  uploadToS3,
+  uploadToS3Form,
+  readFromS3,
+  saveToS3,
+  deleteFromS3,
+  getPresignedDownloadUrl,
+  getPresignedVideoPutUrl,
+};
