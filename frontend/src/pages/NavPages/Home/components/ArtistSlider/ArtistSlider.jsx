@@ -347,11 +347,13 @@ const ArtistSlider = ({
                         alt={artist.stage_name}
                         NativeImgProps={{
                           className: `
-      w-[200px] h-[200px] 
-      rounded-full 
-      object-cover 
-      ${id === currArtist ? "border-4 border-primary" : ""}
-    `,
+        w-[150px] sm:w-[180px] lg:w-[200px]
+  aspect-square
+  rounded-full
+  object-cover
+  flex-shrink-0
+        ${id === currArtist ? "border-4 border-primary" : ""}
+      `,
                         }}
                       />
                     </div>
