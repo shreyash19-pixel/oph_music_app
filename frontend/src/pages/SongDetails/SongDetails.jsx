@@ -10,7 +10,6 @@ import { isTomorrow, differenceInDays } from "date-fns";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { useArtist } from "../auth/API/ArtistContext";
-import NavbarRight from "../../components/Navbar/NavbarRight";
 
 const SongDetails = () => {
   const [data, setData] = useState(null);
@@ -140,13 +139,11 @@ const SongDetails = () => {
   return (
     <div className="text-white mb-6 rounded-xl border px-4 py-4 sm:px-5 sm:py-5 mt-10 border-[#5DC9DE]/35 bg-gray-800/50 ring-1 ring-[#5DC9DE]/25 p-8 sm:p-12 max-w-[1500px] mx-auto">
       {/* SONG DETAILS */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-3xl font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-          Song Details
-        </h2>
 
-        <NavbarRight />
-      </div>
+      <h2 className="text-3xl mb-8 font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+        SONG DETAILS
+      </h2>
+
       <div className="flex flex-col lg:flex-row gap-10">
         {/* LEFT SECTION */}
         <div className="flex gap-8 items-start">
@@ -190,7 +187,7 @@ const SongDetails = () => {
       {/* RELEASE DETAILS */}
       <div className="mt-12">
         <h2 className="text-3xl font-bold mb-8 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-          Release Details:
+          RELEASE DETAILS:
         </h2>
 
         {/* HEADER */}

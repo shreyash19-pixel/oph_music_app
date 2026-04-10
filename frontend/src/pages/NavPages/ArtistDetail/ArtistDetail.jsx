@@ -535,7 +535,7 @@ const ArtistDetail = () => {
                               <div className="w-full h-full flex items-center justify-center pointer-events-none">
                                 <CustomVideoPlayer
                                   src={artist.video_bio}
-                                  className="w-full h-auto max-h-[90vh] object-contain pointer-events-auto"
+                                  className="w-full h-auto max-h-[75vh] object-contain pointer-events-auto"
                                   autoPlay
                                   pauseOtherVideos={true}
                                 />
