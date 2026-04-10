@@ -372,7 +372,14 @@ const AdminSignUpForm = () => {
           <p className="text-gray-200 text-sm">
             Already have an account?{" "}
             <button
-              onClick={() => navigate("/admin/signin")}
+              type="button"
+              onClick={() => {
+                const url =
+                  import.meta.env.VITE_ARTIST_APP_URL || "http://localhost:5174/";
+                window.location.assign(
+                  url.endsWith("/") ? url : `${url}/`,
+                );
+              }}
               className="text-white hover:text-gray-300 font-medium underline"
             >
               Sign In

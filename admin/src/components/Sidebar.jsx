@@ -7,6 +7,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LogOut,
+  User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -153,6 +154,19 @@ const Sidebar = ({ title, links, userRole }) => {
             })}
           </ul>
         </nav>
+        <div className="mt-auto shrink-0 border-t border-white/15 pt-3 pb-1 px-2">
+          <button
+            type="button"
+            onClick={() => navigate("/admin-profile")}
+            className={`w-full flex items-center gap-3 py-2.5 px-2 rounded-lg font-medium text-left hover:bg-[#0b3239] transition ${
+              collapsed ? "justify-center" : ""
+            }`}
+            aria-label="Profile"
+          >
+            <User className="w-5 h-5 shrink-0 opacity-90" />
+            {!collapsed && <span>Profile</span>}
+          </button>
+        </div>
       </aside>
     </>
   );

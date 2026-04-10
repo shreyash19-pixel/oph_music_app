@@ -942,60 +942,17 @@ export default function VideoMetadataForm() {
           </div>
         )}
 
-        {/* Read-only + Pay now: when only payment rejected, or after user just submitted video (payment next) */}
+        {/* Payment next: same route/flow as before, but no read-only field preview — full form stays below for active submit */}
         {showReadOnlyAndPayNow ? (
-          <div className="space-y-6 max-w-2xl">
-            <p className="text-gray-400">
-              {showPayNowOnVideoFromState
-                ? "Please complete payment to continue."
-                : showPayNowAfterSubmit
-                  ? "Video submitted successfully. Please complete payment to continue."
-                  : "Your video details are already approved. Please complete payment to continue."}
-            </p>
-            {/* Read-only preview */}
-            <div className="space-y-2">
-              <label className="block text-gray-400">Song Name:</label>
-              <input
-                disabled
-                value={songName}
-                className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700 opacity-80"
-                type="text"
-                readOnly
-              />
+          <div className="space-y-8 max-w-4xl w-full">
+            <div className="rounded-2xl border-2 border-cyan-500/50 bg-gray-900/70 px-10 py-12 sm:px-14 sm:py-16 min-h-[220px] sm:min-h-[260px] flex flex-col justify-center shadow-[0_0_40px_rgba(34,211,238,0.12)]">
+              <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-cyan-300 leading-snug">
+                Video details have been submitted successfully.
+              </p>
+              <p className="mt-5 sm:mt-6 text-gray-400 text-base sm:text-lg md:text-xl max-w-3xl">
+                Proceed to payment to continue your registration.
+              </p>
             </div>
-            {formData.credits && (
-              <div className="space-y-2">
-                <label className="block text-gray-400">Credits:</label>
-                <div className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700 opacity-80 text-gray-300 whitespace-pre-wrap">
-                  {formData.credits}
-                </div>
-              </div>
-            )}
-            {formData.existing_thumbnails?.length > 0 && (
-              <div className="space-y-2">
-                <label className="block text-gray-400">Thumbnails:</label>
-                <div className="grid grid-cols-3 gap-4">
-                  {formData.existing_thumbnails.map((url, i) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt=""
-                      className="w-full aspect-square object-cover rounded-lg opacity-90"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {formData.existing_video_url && (
-              <div className="space-y-2">
-                <label className="block text-gray-400">Video:</label>
-                <CustomVideoPlayer
-                  src={formData.existing_video_url}
-                  className="w-full rounded-lg"
-                  pauseOtherVideos={true}
-                />
-              </div>
-            )}
             <button
               type="button"
               onClick={() =>
@@ -1012,7 +969,7 @@ export default function VideoMetadataForm() {
                   },
                 })
               }
-              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
+              className="w-full max-w-4xl bg-cyan-400 text-gray-900 rounded-full py-4 text-lg font-semibold hover:bg-cyan-300 transition-colors"
             >
               Pay now
             </button>

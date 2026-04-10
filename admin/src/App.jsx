@@ -23,6 +23,7 @@ import AdminSignInForm from "./pages/AdminSignIn";
 import AdminSignUpForm from "./pages/AdminSignUp";
 import AssignRoles from "./pages/AssignRole";
 import Home from "./pages/Home";
+import AdminProfile from "./pages/AdminProfile";
 
 import Dashboard from "./view/dashboard/home";
 import ArtistPortal from "./view/dashboard/artistPortal";
@@ -110,6 +111,14 @@ function App() {
           <Route path="/" element={<AdminSignInForm />} />
           <Route path="/signup" element={<AdminSignUpForm />} />
           <Route path="/home" element={<Dashboard />} />
+          <Route
+            path="/admin-profile"
+            element={
+              <ProtectedRoute allowedRoles={Object.values(ROLES)}>
+                <AdminProfile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/ArtistNew/:ophid" element={<ArtistNew />} />
           <Route
             path="/ArtistAll/:ophid"
