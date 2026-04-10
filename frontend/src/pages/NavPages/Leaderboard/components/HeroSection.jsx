@@ -7,16 +7,16 @@ const HeroSection = ({ handleSearch, setArtistExists, artistExists, handleFilter
   const [showNoFound, setShowNoFound] = useState(false);
 
   useEffect(() => {
-    if (!artistExists) {
+    if (artistExists == null) {
       setShowNoFound(true);
       const timer = setTimeout(() => {
         setShowNoFound(false);
-        setArtistExists(true);
+        setArtistExists([]);
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [artistExists]);
+  }, [artistExists, setArtistExists]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -78,7 +78,9 @@ const HeroSection = ({ handleSearch, setArtistExists, artistExists, handleFilter
 
         {/* No Found message */}
         <div className="h-6 mt-4">
-          {artistExists.length === 0 && input.trim() !== "" && (
+          {Array.isArray(artistExists) &&
+            artistExists.length === 0 &&
+            input.trim() !== "" && (
             <div className="text-red-500 transition-opacity duration-500">
               This Artist has not been Ranked.
             </div>

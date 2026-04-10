@@ -35,6 +35,29 @@ function sortMonthEntriesLatestFirst(entries) {
   });
 }
 
+/** S3 payload is `{ [year]: { January: [...], ... } }`. Pick current year or latest year with data. */
+function pickLeaderboardYearBlock(full, year) {
+  if (!full || typeof full !== "object" || Array.isArray(full)) return {};
+  const block = full[year] ?? full[String(year)];
+  if (block && typeof block === "object" && !Array.isArray(block)) {
+    return block;
+  }
+  const yearKeys = Object.keys(full)
+    .filter((k) => /^\d{4}$/.test(String(k)))
+    .map((k) => Number(k))
+    .sort((a, b) => b - a);
+  for (const yk of yearKeys) {
+    const b = full[yk] ?? full[String(yk)];
+    if (b && typeof b === "object" && !Array.isArray(b)) return b;
+  }
+  return {};
+}
+
+function asMonthArtistMap(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  return v;
+}
+
 const LEADERBOARD_TOP_PER_MONTH = 10;
 
 /** Best rank first, then take first N (API order may vary). */
@@ -52,7 +75,7 @@ function getTopArtistsForMonth(artists) {
 function Leaderboard() {
   const navigate = useNavigate();
 
-  const [artistsData, setArtistData] = useState([]);
+  const [artistsData, setArtistData] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchArtist, setSearchArtist] = useState("");
   const artistRefs = useRef({});
@@ -70,21 +93,30 @@ function Leaderboard() {
   // const [uniqueProfessions, setUniqueProfessions] = useState([]);
   const getCurrentYear = new Date().getFullYear();
 
-  const leaderboardMonthEntries = useMemo(
-    () => sortMonthEntriesLatestFirst(Object.entries(artistsData)),
-    [artistsData],
-  );
+  const leaderboardMonthEntries = useMemo(() => {
+    const data = asMonthArtistMap(artistsData);
+    const entries = Object.entries(data).filter(([, artists]) =>
+      Array.isArray(artists),
+    );
+    return sortMonthEntriesLatestFirst(entries);
+  }, [artistsData]);
 
   useEffect(() => {
     const fetchArtist = async () => {
       try {
         const response = await axiosApi.get("/leaderboard/history");
-
-        if (response.data.success) {
-          setArtistData(response.data.data[getCurrentYear]);
+        if (response.data?.success) {
+          const monthMap = pickLeaderboardYearBlock(
+            response.data.data,
+            getCurrentYear,
+          );
+          setArtistData(monthMap);
+        } else {
+          setArtistData({});
         }
       } catch (err) {
         console.error(err.message);
+        setArtistData({});
       } finally {
         setLoading(false);
       }
@@ -103,12 +135,15 @@ function Leaderboard() {
     console.log(normalizedArtistName);
 
     setSearchArtist(normalizedArtistName);
-    const exists = Object.values(artistsData).map((month) =>
-      month.map((artist) =>
-        artist.stage_name.toLowerCase().includes(normalizedArtistName)
-          ? artist
-          : null,
-      ),
+    const data = asMonthArtistMap(artistsData);
+    const exists = Object.values(data).map((month) =>
+      Array.isArray(month)
+        ? month.map((artist) =>
+            artist?.stage_name?.toLowerCase().includes(normalizedArtistName)
+              ? artist
+              : null,
+          )
+        : [],
     );
 
     const filteredArtists = exists.flat().filter((artist) => artist !== null);
@@ -129,12 +164,14 @@ function Leaderboard() {
     const stageNames = new Set();
     const ranks = new Set();
 
-    Object.values(artistsData)
+    const data = asMonthArtistMap(artistsData);
+    Object.values(data)
       .flat()
       .forEach((artist) => {
-        locations.add(artist.location);
-        stageNames.add(artist.stage_name);
-        ranks.add(artist.ranks);
+        if (!artist || typeof artist !== "object") return;
+        if (artist.location != null) locations.add(artist.location);
+        if (artist.stage_name != null) stageNames.add(artist.stage_name);
+        if (artist.ranks != null) ranks.add(artist.ranks);
       });
 
     setUniqueLocations([...locations]);
@@ -162,15 +199,18 @@ function Leaderboard() {
   };
 
   const applyFilters = () => {
-    const filteredArtists = Object.values(artistsData)
+    const data = asMonthArtistMap(artistsData);
+    const filteredArtists = Object.values(data)
       .flat()
       .filter((artist) => {
+        if (!artist || typeof artist !== "object") return false;
         return (
           (filters.location.length === 0 ||
             filters.location.includes(artist.location)) &&
           (filters.stageName.length === 0 ||
             filters.stageName.includes(artist.stage_name)) &&
-          (filters.rank.length === 0 || filters.rank.includes(artist.rank))
+          (filters.rank.length === 0 ||
+            filters.rank.includes(artist.ranks ?? artist.rank))
         );
       });
     setArtistExists(filteredArtists);
@@ -232,7 +272,7 @@ function Leaderboard() {
         </div>
       )}
       {!loading && (
-        <div className="scroll-smooth">
+        <div className="scroll-smooth min-h-screen bg-black text-white">
           <HeroSection
             handleSearch={handleSearch}
             setArtistExists={setArtistExists}
@@ -242,6 +282,14 @@ function Leaderboard() {
           <div className="lg:px-10 px-6 xl:px-16">
             <div className="container w-full mb-8 h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
           </div>
+          {leaderboardMonthEntries.length === 0 && (
+            <div className="px-6 lg:px-10 xl:px-16 pb-24 text-center">
+              <p className="text-gray-400 text-lg max-w-xl mx-auto">
+                Leaderboard rankings are not available yet. When monthly KPI data
+                is published, top artists will appear here.
+              </p>
+            </div>
+          )}
           {leaderboardMonthEntries.map(([title, artists]) => {
             const topArtists = getTopArtistsForMonth(artists);
             return (
@@ -277,16 +325,16 @@ function Leaderboard() {
                   {topArtists.map((artist, index) => (
                     <div
                       key={`${title}-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
-                      ref={(el) =>
-                        (artistRefs.current[artist.stage_name.toLowerCase()] =
-                          el)
-                      }
+                      ref={(el) => {
+                        const key = (artist.stage_name || "").toLowerCase();
+                        if (key) artistRefs.current[key] = el;
+                      }}
                       className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                         artistExists &&
                         artistExists.some(
                           (art) =>
-                            art.stage_name.toLowerCase() ===
-                            artist.stage_name.toLowerCase(),
+                            (art.stage_name || "").toLowerCase() ===
+                            (artist.stage_name || "").toLowerCase(),
                           // || art.name.toLowerCase() === artist.name.toLowerCase()
                         )
                           ? "bg-[#6F4FA0] text-white"
@@ -386,10 +434,10 @@ function Leaderboard() {
                   {topArtists.map((artist, index) => (
                     <div
                       key={`${title}-mobile-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
-                      ref={(el) =>
-                        (artistRefs.current[artist.stage_name.toLowerCase()] =
-                          el)
-                      }
+                      ref={(el) => {
+                        const key = (artist.stage_name || "").toLowerCase();
+                        if (key) artistRefs.current[key] = el;
+                      }}
                       role="button"
                       tabIndex={0}
                       onClick={() => {
@@ -409,8 +457,8 @@ function Leaderboard() {
                         artistExists &&
                         artistExists.some(
                           (art) =>
-                            art.stage_name.toLowerCase() ===
-                            artist.stage_name.toLowerCase(),
+                            (art.stage_name || "").toLowerCase() ===
+                            (artist.stage_name || "").toLowerCase(),
                           // ||
                           //art.name.toLowerCase() === artist.name.toLowerCase()
                         )
