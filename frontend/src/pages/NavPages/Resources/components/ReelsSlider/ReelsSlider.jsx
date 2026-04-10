@@ -46,9 +46,11 @@ function ReelsSlider({ searchText, title }) {
           reel.title.toLowerCase().includes(searchLower) ||
           reel.artist_name?.toLowerCase().includes(searchLower) ||
           reel.credit_name?.toLowerCase().includes(searchLower) ||
-          (reel.keywords && reel.keywords.toLowerCase().split(',').some(keyword => 
-            keyword.trim().includes(searchLower)
-          ))
+          (reel.keywords &&
+            reel.keywords
+              .toLowerCase()
+              .split(",")
+              .some((keyword) => keyword.trim().includes(searchLower)))
         );
       });
     }
@@ -267,8 +269,8 @@ function ReelsSlider({ searchText, title }) {
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                className="absolute top-4 right-4 text-white w-12 h-12 rounded-full bg-gray-800 bg-opacity-50 hover:bg-opacity-75 flex items-center justify-center text-4xl z-50 font-bold transition-colors duration-200"
                 onClick={closeModal}
+                className="absolute top-4 right-4 text-white text-3xl font-bold z-50 hover:opacity-80"
               >
                 &times;
               </button>

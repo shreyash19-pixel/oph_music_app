@@ -209,7 +209,7 @@ const TipsSlider = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-2 right-2 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl z-50 font-bold bg-black/50"
+              className="absolute top-4 right-4 text-white text-3xl font-bold z-50 hover:opacity-80"
               onClick={closeModal}
             >
               &times;
