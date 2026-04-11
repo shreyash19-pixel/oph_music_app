@@ -6,6 +6,7 @@ import Elipse from "../../../../../../public/assets/images/elipse.png";
 import { SongDuration } from "../../../../ArtistSpotlight/ArtistSpotlight";
 import { navigateToArtistDetail } from "../../../../../utils/artistHash";
 import { resolveProfessionLabel } from "../../../../../utils/professionDisplay";
+import { resolveSongAudioUrl, songKey } from "../../../../../utils/songAudioUrl";
 
 const ArtistProfile = ({ id }) => {
   const navigate = useNavigate();
@@ -13,8 +14,10 @@ const ArtistProfile = ({ id }) => {
   const [error, setError] = useState(null);
   const [artist, setArtist] = useState(null);
   const audioRef = useRef(null);
-  const [currentAudio, setCurrentAudio] = useState(null);
+  const lastLoadedSongKeyRef = useRef(null);
+  const progressRafRef = useRef(null);
   const [playingSongId, setPlayingSongId] = useState(null);
+  const [activeSeekSongId, setActiveSeekSongId] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [volume, setVolume] = useState(1);
   const [audioProgress, setAudioProgress] = useState({ current: 0, duration: 0 });
@@ -71,56 +74,90 @@ const ArtistProfile = ({ id }) => {
     }
   };
 
+  const attachAudioProgressListeners = (el, key) => {
+    const flushProgress = () => {
+      progressRafRef.current = null;
+      if (isSeekingRef.current) return;
+      const duration = el.duration;
+      setAudioProgress({
+        current: el.currentTime,
+        duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
+      });
+    };
+    const sync = () => {
+      if (isSeekingRef.current) return;
+      if (progressRafRef.current != null) return;
+      progressRafRef.current = requestAnimationFrame(flushProgress);
+    };
+    el.addEventListener("loadedmetadata", flushProgress);
+    el.addEventListener("timeupdate", sync);
+    el.addEventListener("durationchange", flushProgress);
+    el.addEventListener("playing", () => {
+      setActiveSeekSongId(key);
+    });
+  };
+
   const handlePlayPause = (song) => {
+    const key = songKey(song);
+    const src = resolveSongAudioUrl(song);
+    if (!key || !src) return;
+
     const current = audioRef.current;
-    if (current && playingSongId === song.song_id) {
-      // Toggle play/pause for the same song
+
+    if (current && lastLoadedSongKeyRef.current === key) {
       if (!current.paused) {
         current.pause();
         setPlayingSongId(null);
       } else {
-        current.play();
-        setPlayingSongId(song.song_id);
+        void current.play();
+        setPlayingSongId(key);
       }
-    } else {
-      // New song selected
-      if (current) {
-        current.pause();
-      }
-      const newAudio = new Audio(song.audio_file_url);
-      audioRef.current = newAudio;
-      newAudio.volume = volume;
-      
-      // Attach progress listeners
-      newAudio.addEventListener('loadedmetadata', () => {
-        setAudioProgress({ current: 0, duration: newAudio.duration });
-      });
-      newAudio.addEventListener('timeupdate', () => {
-        if (!isSeekingRef.current) {
-          setAudioProgress({ current: newAudio.currentTime, duration: newAudio.duration });
-        }
-      });
-      
-      newAudio.play();
-      setPlayingSongId(song.song_id);
-
-      // Handle when the song ends
-      newAudio.onended = () => {
-        setPlayingSongId(null);
-        setAudioProgress({ current: 0, duration: 0 });
-      };
+      return;
     }
+
+    if (current) {
+      current.pause();
+    }
+
+    setActiveSeekSongId(null);
+    setAudioProgress({ current: 0, duration: 0 });
+
+    const newAudio = new Audio(src);
+    newAudio.volume = volume;
+    audioRef.current = newAudio;
+    lastLoadedSongKeyRef.current = key;
+    attachAudioProgressListeners(newAudio, key);
+
+    newAudio.onended = () => {
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongKeyRef.current = null;
+      setAudioProgress({ current: 0, duration: 0 });
+    };
+
+    void newAudio.play().catch(() => {
+      setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongKeyRef.current = null;
+    });
+    setPlayingSongId(key);
   };
 
-  const handleSeek = (songId, value) => {
+  const handleSeek = (key, value) => {
     const el = audioRef.current;
-    if (!el || playingSongId !== songId) return;
+    if (!el || lastLoadedSongKeyRef.current !== key) return;
     const t = Number(value);
     if (!Number.isFinite(t)) return;
     el.currentTime = t;
-    setAudioProgress((p) => ({ ...p, current: t }));
+    setAudioProgress((p) => ({
+      ...p,
+      current: t,
+      duration:
+        Number.isFinite(el.duration) && el.duration > 0
+          ? el.duration
+          : p.duration,
+    }));
   };
-
 
   useEffect(() => {
     fetchArtistDetail();
@@ -133,11 +170,25 @@ const ArtistProfile = ({ id }) => {
   }, [volume]);
 
   useEffect(() => {
+    const endSeek = () => {
+      isSeekingRef.current = false;
+    };
+    window.addEventListener("pointerup", endSeek);
+    window.addEventListener("pointercancel", endSeek);
+    return () => {
+      window.removeEventListener("pointerup", endSeek);
+      window.removeEventListener("pointercancel", endSeek);
+    };
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setPlayingSongId(null);
+      setActiveSeekSongId(null);
+      lastLoadedSongKeyRef.current = null;
     };
   }, []);
 
@@ -261,9 +312,14 @@ const ArtistProfile = ({ id }) => {
                     </td>
                   </tr>
                 ) : (
-                  approvedSongs.slice(0, 3).map((song, index) => (
+                  approvedSongs.slice(0, 3).map((song, index) => {
+                    const sk = songKey(song);
+                    const audioSrc = resolveSongAudioUrl(song);
+                    const songTitle =
+                      song.song_name || song.name || song.title || "";
+                    return (
                     <tr
-                      key={song.song_id ?? index}
+                      key={sk || index}
                       className="border-b border-gray-800 hover:bg-gray-800/50"
                     >
                       <td className="py-4">
@@ -273,7 +329,7 @@ const ArtistProfile = ({ id }) => {
                           </span>
                           {/* Mobile-only song name */}
                           <span className="text-sm text-gray-400 sm:hidden truncate w-[120px]">
-                            {truncateText(song.name, 20)}
+                            {truncateText(songTitle, 20)}
                           </span>
                         </div>
                       </td>
@@ -282,7 +338,7 @@ const ArtistProfile = ({ id }) => {
                       <td className="py-4 hidden sm:table-cell">
                         <div className="ms-5">
                           <div className="font-medium truncate overflow-hidden whitespace-nowrap w-[150px]">
-                            {truncateText(song.name, 20)}
+                            {truncateText(songTitle, 20)}
                           </div>
                           {song.featuring_artists &&
                             song.featuring_artists.map((artist, ind) => (
@@ -302,39 +358,63 @@ const ArtistProfile = ({ id }) => {
                         {song.total_views ?? song.youtube_views ?? "—"}
                       </td>
                       <td className="py-4 text-center">
-                        <SongDuration url={song.audio_file_url} />
+                        <SongDuration url={audioSrc} />
                       </td>
 
-                      <td className="py-4">
-                        <div className="flex flex-col items-center gap-2">
+                      <td className="py-4 text-center align-middle">
+                        <div className="flex flex-col items-stretch gap-1.5 min-w-[120px] sm:min-w-[160px] max-w-[240px] mx-auto">
                           <button
-                            className="min-w-[30px] w-[30px] min-h-[30px] h-[30px] flex-shrink-0 flex items-center justify-center rounded-full bg-[#6F4FA0]"
+                            type="button"
+                            disabled={!audioSrc}
+                            className="min-w-[30px] w-[30px] h-[30px] mx-auto flex items-center justify-center rounded-full bg-[#6F4FA0] disabled:opacity-40 disabled:cursor-not-allowed"
                             onClick={() => handlePlayPause(song)}
+                            aria-label={
+                              playingSongId === sk && !audioRef.current?.paused
+                                ? "Pause"
+                                : "Play"
+                            }
                           >
-                            {playingSongId === song.song_id &&
+                            {playingSongId === sk &&
                             !audioRef.current?.paused ? (
                               <FaPause className="text-white" size={13} />
                             ) : (
                               <FaPlay className="text-white ml-1" size={13} />
                             )}
                           </button>
-                          {playingSongId === song.song_id && audioProgress.duration > 0 && (
-                            <input
-                              type="range"
-                              min={0}
-                              max={audioProgress.duration}
-                              step={0.01}
-                              value={Math.min(audioProgress.current, audioProgress.duration)}
-                              onChange={(e) => handleSeek(song.song_id, e.target.value)}
-                              onPointerDown={() => { isSeekingRef.current = true; }}
-                              onPointerUp={() => { isSeekingRef.current = false; }}
-                              className="w-24 h-2 cursor-pointer accent-[#5DC9DE]"
-                            />
-                          )}
+                          <div className="h-7 w-full flex items-center touch-none px-0.5">
+                            {activeSeekSongId === sk &&
+                              audioProgress.duration > 0 && (
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={audioProgress.duration}
+                                  step={0.01}
+                                  value={Math.min(
+                                    audioProgress.current,
+                                    audioProgress.duration,
+                                  )}
+                                  onChange={(e) =>
+                                    handleSeek(sk, e.target.value)
+                                  }
+                                  onPointerDown={() => {
+                                    isSeekingRef.current = true;
+                                  }}
+                                  onMouseDown={() => {
+                                    isSeekingRef.current = true;
+                                  }}
+                                  onTouchStart={() => {
+                                    isSeekingRef.current = true;
+                                  }}
+                                  aria-label={`Seek ${songTitle || "track"}`}
+                                  className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
+                                />
+                              )}
+                          </div>
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

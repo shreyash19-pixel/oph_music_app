@@ -21,12 +21,14 @@ export const fetchLeaderboard = createAsyncThunk('fetchLeaderboard', async (head
             headers: headers
         });
         if (response.data.success) {
-            return response.data.data;
+            const raw = response.data.data;
+            return Array.isArray(raw) ? raw : [];
         }
     }
     catch (err) {
         console.log(err);
     }
+    return [];
 })
 
 

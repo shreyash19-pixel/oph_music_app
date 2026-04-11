@@ -99,4 +99,46 @@ const updateAdminRole = async (req, res) => {
   }
 };
 
-module.exports = { signin, updateAdminRole };
+const getAdminProfile = async (req, res) => {
+  try {
+    const email = req.user?.email;
+    if (!email) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
+    const row = await admin_details.getProfileByEmail(email);
+    if (!row) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin profile not found",
+      });
+    }
+
+    const name = row.Name ?? row.name ?? null;
+    const rowEmail = row.Email ?? row.email ?? null;
+    const contactNumber =
+      row.ContactNumber ?? row.contact_number ?? row.contactNumber ?? null;
+    const role = row.Role ?? row.role ?? null;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        name,
+        email: rowEmail,
+        contactNumber,
+        role,
+      },
+    });
+  } catch (err) {
+    console.error("getAdminProfile error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Could not load profile",
+    });
+  }
+};
+
+module.exports = { signin, updateAdminRole, getAdminProfile };

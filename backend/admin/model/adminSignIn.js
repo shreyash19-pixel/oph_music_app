@@ -25,8 +25,21 @@ const updateRoleByEmail = async (email, newRole) => {
   return result;
 };
 
+/** Name, phone, etc. for the signed-in admin (admin panel JWT). */
+const getProfileByEmail = async (email) => {
+  const [rows] = await db.execute(
+    `SELECT Name, Email, ContactNumber, Role
+     FROM admin
+     WHERE Email = ?
+     LIMIT 1`,
+    [email]
+  );
+  return rows[0] ?? null;
+};
+
 module.exports = {
   findUserByEmail,
   getAuthSessionByEmail,
   updateRoleByEmail,
+  getProfileByEmail,
 };

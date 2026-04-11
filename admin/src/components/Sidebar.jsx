@@ -151,6 +151,18 @@ const Sidebar = ({ title, links, userRole }) => {
                 </li>
               );
             })}
+            <li key="profile">
+              <button
+                type="button"
+                onClick={() => navigate("/admin-profile")}
+                className={`w-full text-left py-2 px-2 font-medium rounded hover:bg-[#0b3239] transition ${
+                  collapsed ? "justify-center" : ""
+                }`}
+                aria-label="Profile"
+              >
+                <span className={`${collapsed ? "sr-only" : ""}`}>Profile</span>
+              </button>
+            </li>
           </ul>
         </nav>
       </aside>

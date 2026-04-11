@@ -20,6 +20,7 @@ const Event = pubImg("event.png");
 const Income = pubImg("income.png");
 const Key = pubImg("key.png");
 const Logout = pubImg("logout.png");
+const LockIcon = pubImg("lock.png");
 import { X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 
@@ -148,7 +149,14 @@ const SidebarNav = ({ onClose, contents, setContents }) => {
       label: "TV Publishing",
       to: "/dashboard/tv-publishing",
       type: "Independent artist",
-      lock: <img src={Lock} className="w-[24px] h-[24px]" />
+      lock: (
+        <img
+          src={LockIcon}
+          className="w-[24px] h-[24px] shrink-0"
+          alt=""
+          aria-hidden
+        />
+      ),
     },
     {
       icon: <img src={Spot} className="w-[24px] h-[24px]" />,
