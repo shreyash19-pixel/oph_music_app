@@ -82,6 +82,14 @@ const payment = async (req, res) => {
       });
     }
 
+    if (error.message === "Date is already booked by another user") {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This release date is no longer available. Please choose another date and submit payment again.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Payment - server Error",
@@ -149,6 +157,13 @@ const songRepaymentController = async (req, res) => {
     return res.status(201).json(response);
   } catch (error) {
     console.error("Song repayment error:", error);
+    if (error.message === "Date is already booked by another user") {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This release date is no longer available. Please choose another date and submit payment again.",
+      });
+    }
     return res.status(500).json({
       success: false,
       message: error.message || "Server error",
