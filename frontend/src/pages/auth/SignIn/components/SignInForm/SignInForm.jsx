@@ -50,6 +50,8 @@ const SignInForm = () => {
         login(response.token);
 
         const path = resolvePostLoginPath(response.step);
+        console.log(path);
+        
         if (path === "/dashboard") {
           navigate(path, { replace: true });
         } else {

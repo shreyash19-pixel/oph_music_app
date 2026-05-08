@@ -162,6 +162,8 @@ class UserService {
           user.oph_id,
         );
 
+      console.log("User" + ":" + user + " " + applicationStatus);
+
       // 4. Determine navigation path based on application status
       const navTo = this.determineNavigationPath(user, applicationStatus);
 
@@ -294,6 +296,14 @@ class UserService {
     // PRIORITY 1: Check for rejected steps FIRST (user needs to resubmit)
     // Rejected steps take priority - user must fix these before anything else
     // Check in sequence: user -> professional -> documentation -> payment
+
+    if (this.isStatus(payment_status, "rejected")) {
+      console.log(
+        "[Navigation] Payment status is rejected, redirecting to /auth/payment",
+      );
+      return "/auth/payment";
+    }
+
     if (this.isStatus(user_status, "rejected")) {
       console.log(
         "[Navigation] User status is rejected, redirecting to /auth/create-profile/personal-details",
@@ -311,12 +321,6 @@ class UserService {
         "[Navigation] Documentation status is rejected, redirecting to /auth/create-profile/documentation-details",
       );
       return "/auth/create-profile/documentation-details";
-    }
-    if (this.isStatus(payment_status, "rejected")) {
-      console.log(
-        "[Navigation] Payment status is rejected, redirecting to /auth/payment",
-      );
-      return "/auth/payment";
     }
 
     // Signup initializes application_status as all "pending" while user_details.step_status
@@ -336,10 +340,14 @@ class UserService {
     }
 
     if (
-      (this.isStatus(user_status, "under review") ||  this.isStatus(user_status, "approved")) && 
-      (this.isStatus(professional_status, "under review") ||  this.isStatus(professional_status, "approved")) &&
-      (this.isStatus(documentation_status, "under review") ||  this.isStatus(documentation_status, "approved")) &&
-      (this.isStatus(payment_status, "under review") ||  this.isStatus(payment_status, "approved"))
+      (this.isStatus(user_status, "under review") ||
+        this.isStatus(user_status, "approved")) &&
+      (this.isStatus(professional_status, "under review") ||
+        this.isStatus(professional_status, "approved")) &&
+      (this.isStatus(documentation_status, "under review") ||
+        this.isStatus(documentation_status, "approved")) &&
+      (this.isStatus(payment_status, "under review") ||
+        this.isStatus(payment_status, "approved"))
     ) {
       console.log(
         "[Navigation] At least one step is under review, redirecting to /auth/profile-status",

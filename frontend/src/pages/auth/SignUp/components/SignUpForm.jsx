@@ -312,7 +312,7 @@ const SignUpForm = () => {
                 >
                   <option value="">Select Artist Type</option>
                   <option value="Independent artist">Independent artist</option>
-                  <option value="Special artist">Special artist</option>
+                  <option value="Special artist">Specialist Artists</option>
                 </select>
                 {errors.artistType && (
                   <div className="text-red-500 text-sm mt-1">

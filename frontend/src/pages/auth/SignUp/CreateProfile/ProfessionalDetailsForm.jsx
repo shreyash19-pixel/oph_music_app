@@ -31,6 +31,8 @@ const ProfessionalDetailsForm = () => {
   const [searchParams] = useSearchParams();
   const [professions, setProfessions] = useState([]);
   const [professionsLoading, setProfessionsLoading] = useState(true);
+  const location = useLocation();
+  const user_type = location.state?.user_type;
 
   const shouldHideSongsPlanned = ophid?.includes("SA");
 
@@ -310,9 +312,10 @@ const ProfessionalDetailsForm = () => {
       formDataToSend.append("step", stepPath);
 
       // Calculate and append experience in months
-      const experienceMonths =
-        formData.ExperienceYearly * 12 + formData.experienceMonths;
-      formDataToSend.append("ExperienceMonthly", experienceMonths);
+      // const experienceMonths =
+      //   formData.ExperienceYearly * 12 + formData.experienceMonths;
+      formDataToSend.append("ExperienceMonthly", formData.experienceMonths);
+      formDataToSend.append("ExperienceYearly", formData.ExperienceYearly);
 
       // Append number of songs planned
       if (ophid && shouldHideSongsPlanned) {
@@ -361,7 +364,11 @@ const ProfessionalDetailsForm = () => {
       if (response.success) {
         toast.success("Professional details updated successfully");
         const path = `${response.step}`;
-        navigate(path);
+        navigate(path ,{
+          state:{
+            user_type: user_type
+          }
+        });
       }
     } catch (error) {
       toast.error(

@@ -51,7 +51,7 @@ const determineNextStepAfterProfessional = (applicationStatus) => {
         InstagramLink,
         FacebookLink,
         AppleMusicLink,
-        ExperienceYearly = 0,
+        ExperienceYearly,
         ExperienceMonthly,
         SongsPlanningCount,
         SongsPlanningType,

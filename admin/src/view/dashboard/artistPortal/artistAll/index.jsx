@@ -323,6 +323,7 @@ const ArtistAll = () => {
       // If no new image is provided, we need to get the existing image from the database
       if (!hasNewImage) {
         try {
+          
           // Fetch existing user data to get current personal_photo
           const existingDataResponse = await axiosApi.get(
             `/auth/personal-details?ophid=${ophid}`,
