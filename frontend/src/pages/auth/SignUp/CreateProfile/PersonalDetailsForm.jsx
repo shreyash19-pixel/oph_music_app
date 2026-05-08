@@ -139,6 +139,7 @@ const PersonalDetailsForm = () => {
           location: response.data.location || "",
           step_status: response.data.step_status || "",
           current_step: response.data.current_step || "",
+          artist_type: response.data.artist_type || ""
         });
 
         setcheckSimilarData({
@@ -288,8 +289,14 @@ const PersonalDetailsForm = () => {
       const res = await axiosApi.post(`/increment-count/${ophid}`);
       if (response.success) {
         toast.success("Personal details updated successfully");
+        console.log(formData.artist_type + " artist type");
+        
         const path = `${response.step}`;
-        navigate(path);
+        navigate(path,{
+          state : {
+            user_type: formData.artist_type
+          }
+        });
       }
     } catch (error) {
       toast.error(

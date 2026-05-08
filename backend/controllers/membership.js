@@ -3,17 +3,20 @@ const personal_details = require("../model/personal_details");
 const prof_details = require("../model/professional_details");
 const professions = require("../model/professions");
 const fs = require("fs");
-const { uploadToS3, uploadToS3Form, getPresignedDownloadUrl } = require("../utils");
+const {
+  uploadToS3,
+  uploadToS3Form,
+  getPresignedDownloadUrl,
+} = require("../utils");
 const { launchChromiumBrowser } = require("../utils/puppeteerLaunch");
 
 const membershipForm = async (req, res) => {
   try {
     // Fetch professions from database instead of hardcoding
     const professionOptions = await professions.getAll();
-    
 
     // Fetch banks from database
-    const Banks = require('../model/banks');
+    const Banks = require("../model/banks");
     const banking = await Banks.getBanks();
     const { ophid } = req.query;
     const OPH_ID = ophid;
@@ -22,97 +25,106 @@ const membershipForm = async (req, res) => {
       return res.status(400).send("Missing ophid parameter");
     }
 
+    // Fetch artist data
+    // const artist = await DB.knex('artists as a')
+    // .leftJoin('professions as p', 'a.profession_id', 'p.id')
+    // .where('a.id', req.params.id)
+    // .first('a.*', 'p.name as profession_name');
 
-      // Fetch artist data
-      // const artist = await DB.knex('artists as a')
-      // .leftJoin('professions as p', 'a.profession_id', 'p.id')
-      // .where('a.id', req.params.id)
-      // .first('a.*', 'p.name as profession_name');
+    const artist = await personal_details.getFullPersonalDetails(ophid);
+    const artistProf = await prof_details.getProfessionalByOphId(OPH_ID);
+    const artistDoc = await docs.getDocumentationDetailsByOphId(ophid);
 
-      const artist = await personal_details.getFullPersonalDetails(ophid);
-      const artistProf = await prof_details.getProfessionalByOphId(OPH_ID);
-      const artistDoc = await docs.getDocumentationDetailsByOphId(ophid);
+    // Validate data exists
+    if (!artist || artist.length === 0) {
+      return res.status(404).send("Artist not found");
+    }
 
-      // Validate data exists
-      if (!artist || artist.length === 0) {
-        return res.status(404).send("Artist not found");
+    if (!artistProf || artistProf.length === 0) {
+      return res.status(404).send("Professional details not found");
+    }
+
+    if (!artistDoc || artistDoc.length === 0) {
+      return res.status(404).send("Documentation details not found");
+    }
+
+    // Handle both createdAt (old) and created_at (new) column names
+    const createdDate = artist[0]?.created_at || artist[0]?.createdAt;
+    const formattedDate = createdDate
+      ? (createdDate instanceof Date ? createdDate : new Date(createdDate))
+          .toISOString()
+          .split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
+    const aadharFrontUrl = artistDoc[0]?.AadharFrontURL || null;
+    const aadharBackUrl = artistDoc[0]?.AadharBackURL || null;
+    const panFrontUrl = artistDoc[0]?.PanFrontURL || null;
+
+    // BankName is now stored as string directly, no need to convert or lookup
+    const BankName = artistDoc[0]?.BankName || null;
+
+    const bankDetails = {
+      bank_name: BankName,
+      bank_acc_number: artistDoc[0]?.AccountNumber || null,
+      bank_ifsc_code: artistDoc[0]?.IFSCCode || null,
+      bank_acc_name: artistDoc[0]?.AccountHolderName || null,
+    };
+    const signatureUrl = artistDoc[0]?.SignatureImageURL || null;
+
+    const professionId = artistProf[0]?.Profession
+      ? parseInt(artistProf[0].Profession)
+      : null;
+    const professionName = professionId
+      ? professionOptions.find((p) => p.id === professionId)?.name || null
+      : null;
+
+    // Load header image from local assets folder
+    let headerImageBase64 = null;
+    try {
+      const path = require("path");
+      const imagePath = path.join(
+        __dirname,
+        "../assests/membership_header.jpg",
+      );
+
+      if (fs.existsSync(imagePath)) {
+        const imageBuffer = fs.readFileSync(imagePath);
+        const base64 = imageBuffer.toString("base64");
+        const contentType = "image/jpeg"; // Assuming it's a JPEG
+        headerImageBase64 = `data:${contentType};base64,${base64}`;
+        console.log(
+          "[membership] ✅ Header image loaded from local assets folder",
+        );
+      } else {
+        console.warn("[membership] ⚠️ Header image not found at:", imagePath);
       }
+    } catch (error) {
+      console.error(
+        "[membership] ❌ Error loading header image:",
+        error.message,
+      );
+    }
 
-      if (!artistProf || artistProf.length === 0) {
-        return res.status(404).send("Professional details not found");
-      }
+    // const paymentId = await DB.knex('payments').where('artist_id', artist.id).where('plan_id', 4).where('status', 0).first('trans_id');
+    // // Fetch bank details
+    // const bankDetails = await DB.knex('user_bank_accs')
+    // .leftJoin('banks as b', 'user_bank_accs.bank_id', 'b.id')
+    // .where('artist_id', artist.id)
+    // .first('user_bank_accs.*', 'b.bank_name as bank_name');
 
-      if (!artistDoc || artistDoc.length === 0) {
-        return res.status(404).send("Documentation details not found");
-      }
+    // Fetch documents
+    // const documents = await DB.knex('user_docs')
+    //   .where('artist_id', artist.id)
+    //   .first();
 
-      // Handle both createdAt (old) and created_at (new) column names
-      const createdDate = artist[0]?.created_at || artist[0]?.createdAt;
-      const formattedDate = createdDate 
-        ? (createdDate instanceof Date ? createdDate : new Date(createdDate)).toISOString().split("T")[0]
-        : new Date().toISOString().split("T")[0];
-      
-      const aadharFrontUrl = artistDoc[0]?.AadharFrontURL || null;
-      const aadharBackUrl = artistDoc[0]?.AadharBackURL || null;
-      const panFrontUrl = artistDoc[0]?.PanFrontURL || null;
-
-      // BankName is now stored as string directly, no need to convert or lookup
-      const BankName = artistDoc[0]?.BankName || null;
-
-      const bankDetails = {
-        bank_name: BankName,
-        bank_acc_number: artistDoc[0]?.AccountNumber || null,
-        bank_ifsc_code: artistDoc[0]?.IFSCCode || null,
-        bank_acc_name: artistDoc[0]?.AccountHolderName || null,
-      };
-      const signatureUrl = artistDoc[0]?.SignatureImageURL || null;
-
-      const professionId = artistProf[0]?.Profession 
-        ? parseInt(artistProf[0].Profession) 
-        : null;
-      const professionName = professionId 
-        ? professionOptions.find((p) => p.id === professionId)?.name || null
-        : null;
-
-      // Load header image from local assets folder
-      let headerImageBase64 = null;
-      try {
-        const path = require('path');
-        const imagePath = path.join(__dirname, '../assests/membership_header.jpg');
-        
-        if (fs.existsSync(imagePath)) {
-          const imageBuffer = fs.readFileSync(imagePath);
-          const base64 = imageBuffer.toString('base64');
-          const contentType = 'image/jpeg'; // Assuming it's a JPEG
-          headerImageBase64 = `data:${contentType};base64,${base64}`;
-          console.log('[membership] ✅ Header image loaded from local assets folder');
-        } else {
-          console.warn('[membership] ⚠️ Header image not found at:', imagePath);
-        }
-      } catch (error) {
-        console.error('[membership] ❌ Error loading header image:', error.message);
-      }
-
-      // const paymentId = await DB.knex('payments').where('artist_id', artist.id).where('plan_id', 4).where('status', 0).first('trans_id');
-      // // Fetch bank details
-      // const bankDetails = await DB.knex('user_bank_accs')
-      // .leftJoin('banks as b', 'user_bank_accs.bank_id', 'b.id')
-      // .where('artist_id', artist.id)
-      // .first('user_bank_accs.*', 'b.bank_name as bank_name');
-
-      // Fetch documents
-      // const documents = await DB.knex('user_docs')
-      //   .where('artist_id', artist.id)
-      //   .first();
-
-      // // Get S3 URLs for documents
-      // const aadharFrontUrl = documents?.aadhar_front;
-      // const aadharBackUrl = documents?.aadhar_back;
-      // const panFrontUrl = documents?.pan_front;
-      // // const panBackUrl = documents?.pan_back;
-      // const signatureUrl = documents?.signature;
-      // const profileImgUrl = artist.profile_img_url;
-      const html = `
+    // // Get S3 URLs for documents
+    // const aadharFrontUrl = documents?.aadhar_front;
+    // const aadharBackUrl = documents?.aadhar_back;
+    // const panFrontUrl = documents?.pan_front;
+    // // const panBackUrl = documents?.pan_back;
+    // const signatureUrl = documents?.signature;
+    // const profileImgUrl = artist.profile_img_url;
+    const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -125,9 +137,7 @@ const membershipForm = async (req, res) => {
           --turquoise: #49C7BC;
           --gray: #F7F7F7;
         }
-
-
-
+          
         .page {
           width: 210mm;
           min-height: 276mm;
@@ -415,9 +425,13 @@ const membershipForm = async (req, res) => {
     <body>
       <!-- Page 1 -->
       <div class="page">
-        ${headerImageBase64 ? `<div class="header">
+        ${
+          headerImageBase64
+            ? `<div class="header">
          <img src="${headerImageBase64}" alt="Header" class="header-image" width="223mm">
-         </div>` : ''}
+         </div>`
+            : ""
+        }
         <div class="row gap-10">
         <div class="form-group">
           <label class="field-name">Artist Membership Code</label>
@@ -1743,116 +1757,146 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
     </body>
     </html>
     `;
-      // Always return the HTML form to the client.
-      // PDF generation + upload is best-effort and should NOT block the UI.
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.status(200).send(html);
+    // Always return the HTML form to the client.
+    // PDF generation + upload is best-effort and should NOT block the UI.
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(200).send(html);
 
-      // Best-effort PDF generation in the background.
-      const pdfArtist = artist;
-      const pdfOphid = ophid;
-      setImmediate(async () => {
-        // If S3 isn't configured, skip PDF upload entirely.
-        if (!process.env.S3_BUCKET) {
-          console.warn("[membership] S3_BUCKET not set; skipping membership PDF generation/upload.");
+    // Best-effort PDF generation in the background.
+    const pdfArtist = artist;
+    const pdfOphid = ophid;
+    setImmediate(async () => {
+      // If S3 isn't configured, skip PDF upload entirely.
+      if (!process.env.S3_BUCKET) {
+        console.warn(
+          "[membership] S3_BUCKET not set; skipping membership PDF generation/upload.",
+        );
+        return;
+      }
+
+      const MAX_RETRIES = 2;
+      const PDF_TIMEOUT_MS = 90000; // 90 seconds for PDF generation
+      const PAGE_LOAD_TIMEOUT_MS = 45000; // 45 seconds for setContent (external images)
+
+      const generateAndUploadPdf = async () => {
+        let browser = null;
+        try {
+          browser = await launchChromiumBrowser({
+            logPrefix: "[membership] PDF",
+          });
+
+          const page = await browser.newPage();
+          page.setDefaultTimeout(PAGE_LOAD_TIMEOUT_MS);
+
+          // Use "load" instead of "networkidle0" - more reliable with external S3 images
+          // networkidle0 can hang if images are slow or fail to load
+          await page.setContent(html, {
+            waitUntil: "load",
+            timeout: PAGE_LOAD_TIMEOUT_MS,
+          });
+
+          const pdfPromise = page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: {
+              top: "10mm",
+              bottom: "10mm",
+              left: "10mm",
+              right: "10mm",
+            },
+          });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("PDF generation timeout (90s)")),
+              PDF_TIMEOUT_MS,
+            ),
+          );
+          let pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]);
+
+          if (!pdfBuffer || pdfBuffer.length < 1000) {
+            throw new Error(
+              `Invalid PDF buffer: size=${pdfBuffer?.length || 0}`,
+            );
+          }
+
+          // Puppeteer may return Uint8Array instead of Buffer in some environments
+          if (!Buffer.isBuffer(pdfBuffer)) {
+            pdfBuffer = Buffer.from(pdfBuffer);
+          }
+
+          const safeName =
+            (pdfArtist?.[0]?.full_name && String(pdfArtist[0].full_name)) ||
+            pdfOphid ||
+            "membership";
+          const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
+
+          const file = {
+            originalname: fileName,
+            buffer: pdfBuffer,
+            mimetype: "application/pdf",
+          };
+
+          // Retry S3 upload up to 3 times (transient network/S3 errors)
+          let lastError;
+          for (let uploadAttempt = 1; uploadAttempt <= 3; uploadAttempt++) {
+            try {
+              const s3Url = await uploadToS3Form(file, "pdfs");
+              return s3Url;
+            } catch (uploadErr) {
+              lastError = uploadErr;
+              if (uploadAttempt < 3) {
+                console.warn(
+                  `[membership] S3 upload attempt ${uploadAttempt} failed, retrying:`,
+                  uploadErr.message,
+                );
+                await new Promise((r) => setTimeout(r, 1000 * uploadAttempt));
+              }
+            }
+          }
+          throw lastError;
+        } finally {
+          if (browser) {
+            try {
+              await browser.close();
+            } catch (closeErr) {
+              console.warn(
+                "[membership] Error closing browser:",
+                closeErr.message,
+              );
+            }
+          }
+        }
+      };
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const s3Url = await generateAndUploadPdf();
+          console.log(
+            `[membership] PDF uploaded successfully: ${s3Url} (ophid=${pdfOphid})`,
+          );
           return;
-        }
-
-        const MAX_RETRIES = 2;
-        const PDF_TIMEOUT_MS = 90000;  // 90 seconds for PDF generation
-        const PAGE_LOAD_TIMEOUT_MS = 45000;  // 45 seconds for setContent (external images)
-
-        const generateAndUploadPdf = async () => {
-          let browser = null;
-          try {
-            browser = await launchChromiumBrowser({ logPrefix: "[membership] PDF" });
-
-            const page = await browser.newPage();
-            page.setDefaultTimeout(PAGE_LOAD_TIMEOUT_MS);
-
-            // Use "load" instead of "networkidle0" - more reliable with external S3 images
-            // networkidle0 can hang if images are slow or fail to load
-            await page.setContent(html, { waitUntil: "load", timeout: PAGE_LOAD_TIMEOUT_MS });
-
-            const pdfPromise = page.pdf({
-              format: "A4",
-              printBackground: true,
-              margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
-            });
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("PDF generation timeout (90s)")), PDF_TIMEOUT_MS)
-            );
-            let pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]);
-
-            if (!pdfBuffer || pdfBuffer.length < 1000) {
-              throw new Error(`Invalid PDF buffer: size=${pdfBuffer?.length || 0}`);
-            }
-
-            // Puppeteer may return Uint8Array instead of Buffer in some environments
-            if (!Buffer.isBuffer(pdfBuffer)) {
-              pdfBuffer = Buffer.from(pdfBuffer);
-            }
-
-            const safeName =
-              (pdfArtist?.[0]?.full_name && String(pdfArtist[0].full_name)) || pdfOphid || "membership";
-            const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
-
-            const file = {
-              originalname: fileName,
-              buffer: pdfBuffer,
-              mimetype: "application/pdf",
-            };
-
-            // Retry S3 upload up to 3 times (transient network/S3 errors)
-            let lastError;
-            for (let uploadAttempt = 1; uploadAttempt <= 3; uploadAttempt++) {
-              try {
-                const s3Url = await uploadToS3Form(file, "pdfs");
-                return s3Url;
-              } catch (uploadErr) {
-                lastError = uploadErr;
-                if (uploadAttempt < 3) {
-                  console.warn(`[membership] S3 upload attempt ${uploadAttempt} failed, retrying:`, uploadErr.message);
-                  await new Promise((r) => setTimeout(r, 1000 * uploadAttempt));
-                }
-              }
-            }
-            throw lastError;
-          } finally {
-            if (browser) {
-              try {
-                await browser.close();
-              } catch (closeErr) {
-                console.warn("[membership] Error closing browser:", closeErr.message);
-              }
-            }
-          }
-        };
-
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-          try {
-            const s3Url = await generateAndUploadPdf();
-            console.log(`[membership] PDF uploaded successfully: ${s3Url} (ophid=${pdfOphid})`);
-            return;
-          } catch (error) {
+        } catch (error) {
+          console.error(
+            `[membership] PDF generation/upload failed (attempt ${attempt}/${MAX_RETRIES}, ophid=${pdfOphid}):`,
+            error.message,
+          );
+          if (attempt === MAX_RETRIES) {
             console.error(
-              `[membership] PDF generation/upload failed (attempt ${attempt}/${MAX_RETRIES}, ophid=${pdfOphid}):`,
-              error.message
+              "[membership] PDF upload exhausted retries. Full error:",
+              error,
             );
-            if (attempt === MAX_RETRIES) {
-              console.error("[membership] PDF upload exhausted retries. Full error:", error);
-            } else {
-              await new Promise((r) => setTimeout(r, 2000));  // 2s delay before retry
-            }
+          } else {
+            await new Promise((r) => setTimeout(r, 2000)); // 2s delay before retry
           }
         }
-      });
+      }
+    });
   } catch (error) {
     console.error("Error generating membership form:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Error generating membership form",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -1866,18 +1910,33 @@ const getPdfDownloadUrl = async (req, res) => {
   try {
     const { ophid } = req.query;
     if (!ophid) {
-      return res.status(400).json({ success: false, message: "Missing ophid parameter" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing ophid parameter" });
     }
+
+    console.log("sdsdsd");
 
     const artist = await personal_details.getFullPersonalDetails(ophid);
     if (!artist || artist.length === 0) {
-      return res.status(404).json({ success: false, message: "Artist not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Artist not found" });
     }
 
+    console.log(artist);
+
     const safeName =
-      (artist[0]?.full_name && String(artist[0].full_name)) || ophid || "membership";
+      (artist[0]?.full_name && String(artist[0].full_name)) ||
+      ophid ||
+      "membership";
+
+    console.log(safeName);
+
     const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
+    console.log(fileName);
     const key = `pdfs/${fileName}`;
+    console.log(key);
 
     const url = getPresignedDownloadUrl(key, 900);
     res.json({ success: true, url });

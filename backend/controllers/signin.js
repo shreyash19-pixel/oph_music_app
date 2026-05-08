@@ -20,6 +20,9 @@ const signin = async (req, res) => {
     const { email, password } = req.body;
     const result = await UserService.signin(email, password);
 
+    console.log(result);
+    
+
     const step = coerceLoginStep(result.step, "/dashboard");
     console.log(step);
 

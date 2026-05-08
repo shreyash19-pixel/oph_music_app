@@ -211,7 +211,8 @@ const mapPersonalDetails = async (req, res) => {
           location: userDetails.location,
           step_status:userDetails.step_status,
           reject_reason:userDetails.reject_reason,
-          current_step: userDetails.current_step || null
+          current_step: userDetails.current_step || null,
+          artist_type: userDetails.artist_type
         },
       });
     }

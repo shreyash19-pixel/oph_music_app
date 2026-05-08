@@ -15,12 +15,15 @@ import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVi
 import SignatureCanvas from "react-signature-canvas";
 // import { fetchVideoForScreen } from "../../../../utils/fetchVideo";
 import MembershipForm from "../MembershipFrom";
+import { useLocation } from "react-router-dom";
 // Removed hardcoded banking array - now fetched from API
 
 const DocumentationDetailsForm = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { headers, ophid } = useArtist();
+  const location = useLocation();
+  const user_type = location.state?.user_type;
 
   // Only show the blocking loader while actually fetching/submitting.
   const [loading, setLoading] = useState(false);
@@ -49,7 +52,9 @@ const DocumentationDetailsForm = () => {
 
   const fetchPageMedia = async () => {
     try {
-      const response = await axiosApi.get("/page-media?page_name=documentation_details");
+      const response = await axiosApi.get(
+        "/page-media?page_name=documentation_details",
+      );
       if (response.data.success && response.data.data) {
         setVideo(response.data.data.video_url);
         setThumbnail(response.data.data.thumbnail_url);
@@ -112,47 +117,79 @@ const DocumentationDetailsForm = () => {
     try {
       const response = await getDocumentationDetails(headers, ophid);
       console.log("Documentation details response:", response);
-      
+
       if (response.success) {
         // Handle both array and single object responses
-        const data = Array.isArray(response.data) ? response.data : [response.data];
-        
+        const data = Array.isArray(response.data)
+          ? response.data
+          : [response.data];
+
         if (data.length > 0) {
           const doc = data[0];
           // BankName is now stored as string directly
           const BankName = doc.BankName || doc.bank_name || "";
 
-          const aadharFrontFile = doc.AadharFrontURL || doc.aadhar_front_url
-            ? await urlToFile(doc.AadharFrontURL || doc.aadhar_front_url, "aadhar-front.png")
-            : null;
-          const aadharBackFile = doc.AadharBackURL || doc.aadhar_back_url
-            ? await urlToFile(doc.AadharBackURL || doc.aadhar_back_url, "aadhar-back.png")
-            : null;
-          const panFrontFile = doc.PanFrontURL || doc.pan_front_url
-            ? await urlToFile(doc.PanFrontURL || doc.pan_front_url, "pan-front.png")
-            : null;
-          const signatureFile = doc.SignatureImageURL || doc.signature_image_url
-            ? await urlToFile(doc.SignatureImageURL || doc.signature_image_url, "signature.png")
-            : null;
+          const aadharFrontFile =
+            doc.AadharFrontURL || doc.aadhar_front_url
+              ? await urlToFile(
+                  doc.AadharFrontURL || doc.aadhar_front_url,
+                  "aadhar-front.png",
+                )
+              : null;
+          const aadharBackFile =
+            doc.AadharBackURL || doc.aadhar_back_url
+              ? await urlToFile(
+                  doc.AadharBackURL || doc.aadhar_back_url,
+                  "aadhar-back.png",
+                )
+              : null;
+          const panFrontFile =
+            doc.PanFrontURL || doc.pan_front_url
+              ? await urlToFile(
+                  doc.PanFrontURL || doc.pan_front_url,
+                  "pan-front.png",
+                )
+              : null;
+          const signatureFile =
+            doc.SignatureImageURL || doc.signature_image_url
+              ? await urlToFile(
+                  doc.SignatureImageURL || doc.signature_image_url,
+                  "signature.png",
+                )
+              : null;
 
           const baseForm = {
             aadharFront: aadharFrontFile
-              ? { file: aadharFrontFile, preview: doc.AadharFrontURL || doc.aadhar_front_url }
+              ? {
+                  file: aadharFrontFile,
+                  preview: doc.AadharFrontURL || doc.aadhar_front_url,
+                }
               : null,
             aadharBack: aadharBackFile
-              ? { file: aadharBackFile, preview: doc.AadharBackURL || doc.aadhar_back_url }
+              ? {
+                  file: aadharBackFile,
+                  preview: doc.AadharBackURL || doc.aadhar_back_url,
+                }
               : null,
             panFront: panFrontFile
-              ? { file: panFrontFile, preview: doc.PanFrontURL || doc.pan_front_url }
+              ? {
+                  file: panFrontFile,
+                  preview: doc.PanFrontURL || doc.pan_front_url,
+                }
               : null,
             signature: signatureFile
-              ? { file: signatureFile, preview: doc.SignatureImageURL || doc.signature_image_url }
+              ? {
+                  file: signatureFile,
+                  preview: doc.SignatureImageURL || doc.signature_image_url,
+                }
               : null,
             bankName: BankName,
-            accountHolder: doc.AccountHolderName || doc.account_holder_name || "",
+            accountHolder:
+              doc.AccountHolderName || doc.account_holder_name || "",
             accountNumber: doc.AccountNumber || doc.account_number || "",
             ifscCode: doc.IFSCCode || doc.ifsc_code || "",
-            agreementAccepted: doc.AgreementAccepted || doc.agreement_accepted || false,
+            agreementAccepted:
+              doc.AgreementAccepted || doc.agreement_accepted || false,
             step_status: doc.step_status || "",
             reject_reason: doc.reject_reason || "",
           };
@@ -167,12 +204,20 @@ const DocumentationDetailsForm = () => {
           console.log("No documentation details found for this user");
         }
       } else {
-        console.error("Failed to fetch documentation details:", response.message);
-        toast.error(response.message || "Failed to fetch documentation details");
+        console.error(
+          "Failed to fetch documentation details:",
+          response.message,
+        );
+        toast.error(
+          response.message || "Failed to fetch documentation details",
+        );
       }
     } catch (error) {
       console.error("Error fetching documentation details:", error);
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to fetch documentation details";
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch documentation details";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -195,23 +240,23 @@ const DocumentationDetailsForm = () => {
       if (signatureCanvasRef.current && signatureCanvasContainerRef.current) {
         const canvas = signatureCanvasRef.current.getCanvas();
         const container = signatureCanvasContainerRef.current;
-        
+
         if (!canvas || !container) return;
-        
+
         // Get the actual displayed size (accounting for device pixel ratio)
         const rect = container.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
         const displayWidth = Math.floor(rect.width);
         const displayHeight = 150; // Fixed height
-        
+
         // Set canvas internal dimensions to match displayed size
         // This ensures 1:1 mapping between mouse/touch coordinates and canvas coordinates
         if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
           canvas.width = displayWidth;
           canvas.height = displayHeight;
-          
+
           // Scale the context to account for device pixel ratio for crisp rendering
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext("2d");
           ctx.scale(1, 1); // Reset scale
         }
       }
@@ -219,12 +264,12 @@ const DocumentationDetailsForm = () => {
 
     // Update on mount
     const timeoutId = setTimeout(updateCanvasSize, 50);
-    
+
     // Update on window resize
-    window.addEventListener('resize', updateCanvasSize);
-    
+    window.addEventListener("resize", updateCanvasSize);
+
     return () => {
-      window.removeEventListener('resize', updateCanvasSize);
+      window.removeEventListener("resize", updateCanvasSize);
       clearTimeout(timeoutId);
     };
   }, []);
@@ -389,7 +434,7 @@ const DocumentationDetailsForm = () => {
         try {
           if (typeof formData.signature === "string") {
             const blob = await fetch(formData.signature).then((res) =>
-              res.blob()
+              res.blob(),
             );
 
             const randomString = Math.random().toString(36).substring(2, 10);
@@ -401,7 +446,7 @@ const DocumentationDetailsForm = () => {
           } else if (typeof formData.signature?.preview === "string") {
             formDataToSend.append(
               "SignatureImageURL",
-              formData.signature.preview
+              formData.signature.preview,
             );
           }
         } catch (error) {
@@ -445,7 +490,10 @@ const DocumentationDetailsForm = () => {
       formDataToSend.append("IFSCCode", formData.ifscCode);
       formDataToSend.append("AgreementAccepted", formData.agreementAccepted);
       let stepPath;
-      if (formData.step_status === "under review" || formData.step_status === null) {
+      if (
+        formData.step_status === "under review" ||
+        formData.step_status === null
+      ) {
         stepPath = "/auth/membership-form";
       } else if (formData.step_status === "rejected") {
         stepPath = `/auth/profile-status`;
@@ -459,20 +507,24 @@ const DocumentationDetailsForm = () => {
 
       const response = await updateDocumentationDetails(
         formDataToSend,
-        headers
+        headers,
       );
       const res = await axiosApi.post(`/increment-count/${ophid}`);
 
       if (response.success) {
         toast.success("Documentation details updated successfully");
         const path = `${response.step}`;
-        navigate(path);
+        navigate(path ,{
+          state: {
+            user_type: user_type
+          }
+        });
         // setShowMembershipForm(true); // Show MembershipForm
       }
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Failed to update documentation details"
+          "Failed to update documentation details",
       );
     } finally {
       setLoading(false);
@@ -585,7 +637,9 @@ const DocumentationDetailsForm = () => {
 
             {/* PAN Card Upload */}
             <div className="space-y-4  mb-4">
-              <p className="text-sm text-white">Upload PAN Card <span className="text-gray-400 text-xs"></span></p>
+              <p className="text-sm text-white">
+                Upload PAN Card <span className="text-gray-400 text-xs"></span>
+              </p>
               <div className="flex gap-4">
                 <div className="flex-1">
                   <input
@@ -669,7 +723,7 @@ const DocumentationDetailsForm = () => {
 
                 {/* Signature Canvas */}
                 {!formData.signature?.preview && (
-                  <div 
+                  <div
                     ref={signatureCanvasContainerRef}
                     className="relative flex-1"
                   >
@@ -679,8 +733,8 @@ const DocumentationDetailsForm = () => {
                         className:
                           "block w-full bg-white rounded border border-gray-600",
                         style: {
-                          touchAction: 'none',
-                        }
+                          touchAction: "none",
+                        },
                       }}
                       backgroundColor="white"
                       penColor="black"
