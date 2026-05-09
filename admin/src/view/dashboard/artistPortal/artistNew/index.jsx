@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
+import { normalizeExperienceFromProfessionalDetails } from "../../../../utils/experienceDisplay";
 
 const ArtistNew = () => {
   const { user } = useAuth();
@@ -77,17 +78,11 @@ const ArtistNew = () => {
           console.log("No photo_urls found in professionalDetails");
         }
 
-        // Use snake_case field names from API response
-        // Add null check for professionalDetails
-        const experienceMonthly =
-          professionalDetails?.experience_monthly ||
-          professionalDetails?.ExperienceMonthly ||
-          0;
-        const experienceMonths = experienceMonthly % 12 || 0;
-        const experienceYears = Math.floor(experienceMonthly / 12);
-
         const getValue = (val, fallback = "Not Provided") =>
           val && val.toString().trim() !== "" ? val : fallback;
+
+        const { years: experienceYears, months: experienceMonths } =
+          normalizeExperienceFromProfessionalDetails(professionalDetails);
 
         const newArtist = {
           ophid: getValue(userDetails.oph_id || userDetails.ophid),
@@ -127,8 +122,8 @@ const ArtistNew = () => {
             professionalDetails?.apple_music_link ||
               professionalDetails?.AppleMusicLink,
           ),
-          experience_yearly: getValue(experienceYears),
-          experience_monthly: getValue(experienceMonths),
+          experience_yearly: String(experienceYears),
+          experience_monthly: String(experienceMonths),
           songs_planning_count: getValue(
             professionalDetails?.songs_planning_count ||
               professionalDetails?.SongsPlanningCount,

@@ -5,6 +5,7 @@ import { Lock, Unlock, Download } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
+import { normalizeExperienceFromProfessionalDetails } from "../../../../utils/experienceDisplay";
 
 /** Roles that land with every field unlocked for editing. Sales members are view-only (see `isSalesMemberViewOnly`). */
 const ARTIST_ALL_DETAIL_ROLES = [
@@ -81,7 +82,12 @@ const ArtistAll = () => {
           personal_photo: userDetails.personal_photo || "",
         };
 
-        const totalMonths = professionalDetails.experience_monthly || 0;
+        const {
+          years: expYears,
+          months: expMonths,
+          totalMonths: expTotalMonths,
+        } = normalizeExperienceFromProfessionalDetails(professionalDetails);
+
         const professionalData = {
           profession:
             professionalDetails.Profession ||
@@ -94,14 +100,13 @@ const ArtistAll = () => {
           instagram: professionalDetails.instagram_link || "",
           facebook: professionalDetails.facebook_link || "",
           apple_music: professionalDetails.apple_music_link || "",
-          experience_monthly: totalMonths % 12,
-          experience_yearly: professionalDetails.experience_yearly,
+          experience_monthly: expMonths,
+          experience_yearly: expYears,
           songs_planning_count: professionalDetails.songs_planning_count || "",
           songs_planning_type: professionalDetails.songs_planning_type || "",
         };
 
-        // Store totalMonths separately for calculations without showing in UI
-        professionalData._totalMonths = totalMonths;
+        professionalData._totalMonths = expTotalMonths;
 
         const documentData = {
           aadhar_front_url: documentationDetails.aadhar_front_url || "",
