@@ -576,26 +576,30 @@ const ArtistAll = () => {
 
       const loadingToast = toast.loading("Downloading PDF...");
 
-      // Get pre-signed URL from backend (S3 bucket is private - direct URLs return 403)
-      const { data } = await axiosApi.get("/auth/membership/pdf-url", {
+      // Stream PDF through API (avoids cross-origin fetch to S3 → "Failed to fetch" when bucket CORS is tight)
+      const response = await axiosApi.get("/auth/membership/pdf", {
         params: { ophid },
+        responseType: "blob",
+        validateStatus: () => true,
       });
 
-      if (!data?.success || !data?.url) {
-        throw new Error(data?.message || "Failed to get PDF download link");
-      }
-
-      const pdfUrl = data.url;
       const pdfFileName = `${(personal.full_name || "membership").replace(/\s+/g, "_")}.pdf`;
 
-      const response = await fetch(pdfUrl);
-
-      if (!response.ok) {
-        throw new Error(`PDF not found: ${response.status} ${response.statusText}`);
+      if (response.status !== 200) {
+        let msg = "Failed to download PDF";
+        try {
+          const text = await response.data.text();
+          const j = JSON.parse(text);
+          if (j?.message) msg = j.message;
+        } catch {
+          /* use default */
+        }
+        throw new Error(msg);
       }
 
-      const blob = await response.blob();
-      const downloadBlob = new Blob([blob], { type: "application/pdf" });
+      const downloadBlob = new Blob([response.data], {
+        type: "application/pdf",
+      });
       const objectUrl = URL.createObjectURL(downloadBlob);
 
       const tempLink = window.document.createElement("a");
@@ -613,7 +617,17 @@ const ArtistAll = () => {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.dismiss();
-      toast.error(`Failed to download PDF: ${error.response?.data?.message || error.message}`);
+      const raw =
+        error.response?.data?.message ||
+        (typeof error.response?.data === "string"
+          ? error.response.data
+          : null) ||
+        error.message;
+      const networkHint =
+        /failed to fetch|network error|load failed/i.test(String(raw))
+          ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
+          : "";
+      toast.error(`Failed to download PDF: ${raw}${networkHint}`);
     }
   };
 

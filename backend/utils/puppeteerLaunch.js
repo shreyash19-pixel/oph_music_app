@@ -24,6 +24,8 @@ try {
 const DEFAULT_CHROMIUM_CANDIDATES = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
   process.env.CHROMIUM_PATH,
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
   "/usr/bin/chromium",
   "/usr/bin/chromium-browser",
   "/usr/bin/google-chrome-stable",
@@ -77,11 +79,16 @@ async function launchChromiumBrowser(options = {}) {
     });
   }
 
-  const isLinuxArm64 = process.platform === "linux" && process.arch === "arm64";
+  const isLinux = process.platform === "linux";
+  const isLinuxArm64 = isLinux && process.arch === "arm64";
   const isAwsLambda = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-  // @sparticuz/chromium targets Lambda/serverless; on ARM64 VPS it can point at wrong arch — skip unless Lambda
-  const trySparticuz = chromiumSparticuz && (!isLinuxArm64 || isAwsLambda);
+  // @sparticuz/chromium is a Linux (Lambda) build — never use it on macOS/Windows (spawn ENOEXEC / errno -8).
+  // On Linux arm64 without Lambda, use system Chromium instead.
+  const trySparticuz =
+    chromiumSparticuz &&
+    isLinux &&
+    (!isLinuxArm64 || isAwsLambda);
 
   if (trySparticuz) {
     try {

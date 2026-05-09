@@ -423,6 +423,43 @@ const getPresignedVideoPutUrl = (ophid, originalFilename, contentType) => {
   return { uploadUrl, publicUrl, key, contentType: ct };
 };
 
+/**
+ * Server-side S3 get (avoids browser fetch CORS to private buckets).
+ * @param {string} key - Object key
+ * @returns {Promise<Buffer>}
+ */
+const getS3ObjectBuffer = async (key) => {
+  if (!process.env.S3_BUCKET) {
+    throw new Error("S3_BUCKET not set");
+  }
+  const result = await s3
+    .getObject({ Bucket: process.env.S3_BUCKET, Key: key })
+    .promise();
+  return result.Body;
+};
+
+const s3ObjectExists = async (key) => {
+  if (!process.env.S3_BUCKET) {
+    return false;
+  }
+  try {
+    await s3
+      .headObject({ Bucket: process.env.S3_BUCKET, Key: key })
+      .promise();
+    return true;
+  } catch (err) {
+    if (
+      err.code === "NotFound" ||
+      err.statusCode === 404 ||
+      err.code === "NoSuchKey" ||
+      err.name === "NotFound"
+    ) {
+      return false;
+    }
+    throw err;
+  }
+};
+
 module.exports = {
   uploadToS3,
   uploadToS3Form,
@@ -431,4 +468,6 @@ module.exports = {
   deleteFromS3,
   getPresignedDownloadUrl,
   getPresignedVideoPutUrl,
+  getS3ObjectBuffer,
+  s3ObjectExists,
 };
