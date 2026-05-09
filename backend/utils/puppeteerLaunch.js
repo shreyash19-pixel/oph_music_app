@@ -5,9 +5,15 @@
  * Env:
  *   PUPPETEER_EXECUTABLE_PATH or CHROMIUM_PATH — full path to chromium/chrome binary
  *
- * Server (Ubuntu/Debian ARM64):
- *   sudo apt install -y chromium-browser  # or chromium
+ * Server (Ubuntu/Debian x86_64 or ARM64) — avoid Snap for PDF generation:
+ *   sudo apt install -y chromium-browser   # or: chromium
  *   export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ * Or Google Chrome:
+ *   wget the .deb from Google and install; then:
+ *   export PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chrome
+ *
+ * If you must use env only (PM2 ecosystem.config.js):
+ *   env: { PUPPETEER_EXECUTABLE_PATH: "/usr/bin/chromium" }
  */
 
 const fs = require("fs");
@@ -21,17 +27,21 @@ try {
   /* optional in some installs */
 }
 
+/** Snap Chromium is last — it often fails under PM2/systemd (dbus, cgroup). Prefer apt .deb Chrome/Chromium. */
 const DEFAULT_CHROMIUM_CANDIDATES = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
   process.env.CHROMIUM_PATH,
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/google-chrome",
+  "/opt/google/chrome/chrome",
   "/usr/bin/chromium",
   "/usr/bin/chromium-browser",
-  "/usr/bin/google-chrome-stable",
-  "/snap/bin/chromium",
   "/usr/lib/chromium/chromium",
+  "/usr/lib/chromium-browser/chromium-browser",
   "/usr/lib64/chromium-browser/chromium-browser",
+  "/snap/bin/chromium",
 ];
 
 function resolveLocalChromiumPath(extraCandidates = []) {
@@ -54,7 +64,26 @@ const HEADLESS_SAFE_ARGS = [
   "--disable-setuid-sandbox",
   "--disable-dev-shm-usage",
   "--disable-gpu",
+  "--disable-software-rasterizer",
+  "--disable-extensions",
+  "--no-first-run",
+  "--disable-background-networking",
+  "--mute-audio",
+  "--disable-sync",
+  "--metrics-recording-only",
 ];
+
+function buildLaunchArgs(executablePath, extra = []) {
+  const args = [...HEADLESS_SAFE_ARGS, ...extra];
+  const p = executablePath ? String(executablePath) : "";
+  if (p.includes("/snap/")) {
+    console.warn(
+      "[puppeteer] Snap Chromium detected — often crashes under PM2 (dbus/cgroup). " +
+        "Install Chromium via apt and set PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (see backend/utils/puppeteerLaunch.js header).",
+    );
+  }
+  return args;
+}
 
 /**
  * @param {object} [options]
@@ -72,7 +101,7 @@ async function launchChromiumBrowser(options = {}) {
     console.log(`${logPrefix} Using Chromium at ${localChrome} (native for this CPU)`);
     return puppeteer.launch({
       executablePath: localChrome,
-      args: HEADLESS_SAFE_ARGS,
+      args: buildLaunchArgs(localChrome),
       headless: true,
       ignoreHTTPSErrors: true,
       ...options.extraLaunchOptions,
@@ -96,7 +125,10 @@ async function launchChromiumBrowser(options = {}) {
       if (executablePath) {
         console.log(`${logPrefix} Using @sparticuz/chromium`);
         return puppeteer.launch({
-          args: [...chromiumSparticuz.args, ...HEADLESS_SAFE_ARGS],
+          args: [
+            ...(chromiumSparticuz.args || []),
+            ...HEADLESS_SAFE_ARGS,
+          ],
           defaultViewport: chromiumSparticuz.defaultViewport,
           executablePath,
           headless: chromiumSparticuz.headless ?? true,
@@ -125,7 +157,7 @@ async function launchChromiumBrowser(options = {}) {
     `${logPrefix} Falling back to Puppeteer bundled Chrome (set PUPPETEER_EXECUTABLE_PATH if this fails)`
   );
   return puppeteer.launch({
-    args: HEADLESS_SAFE_ARGS,
+    args: buildLaunchArgs(null),
     headless: true,
     ignoreHTTPSErrors: true,
     ...options.extraLaunchOptions,
@@ -136,4 +168,5 @@ module.exports = {
   launchChromiumBrowser,
   resolveLocalChromiumPath,
   HEADLESS_SAFE_ARGS,
+  buildLaunchArgs,
 };
