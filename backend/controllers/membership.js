@@ -58,6 +58,29 @@ const membershipForm = async (req, res) => {
           .split("T")[0]
       : new Date().toISOString().split("T")[0];
 
+    // Professional experience: DB stores years and months separately (see CreateProfile form).
+    // Legacy rows may only have total months in experience_monthly (>= 12).
+    const profRow = artistProf[0];
+    const expMoRaw = profRow?.ExperienceMonthly ?? profRow?.experience_monthly;
+    const expYrRaw = profRow?.ExperienceYearly ?? profRow?.experience_yearly;
+    let expMoNum =
+      expMoRaw != null && expMoRaw !== "" ? Number(expMoRaw) : NaN;
+    let expYrNum =
+      expYrRaw != null && expYrRaw !== "" ? Number(expYrRaw) : NaN;
+    if (
+      (!Number.isFinite(expYrNum) || expYrNum === 0) &&
+      Number.isFinite(expMoNum) &&
+      expMoNum >= 12
+    ) {
+      expYrNum = Math.floor(expMoNum / 12);
+      expMoNum = expMoNum % 12;
+    }
+    if (!Number.isFinite(expYrNum)) expYrNum = 0;
+    const experienceMonthlyDisplay = Number.isFinite(expMoNum)
+      ? String(Math.trunc(expMoNum))
+      : "N/A";
+    const experienceYearlyDisplay = String(Math.trunc(expYrNum));
+
     const aadharFrontUrl = artistDoc[0]?.AadharFrontURL || null;
     const aadharBackUrl = artistDoc[0]?.AadharBackURL || null;
     const panFrontUrl = artistDoc[0]?.PanFrontURL || null;
@@ -536,13 +559,13 @@ const membershipForm = async (req, res) => {
                 <span class="field-name">
                     Monthly
                 </span>
-                <div class="field-value">${parseInt(artistProf[0].ExperienceMonthly % 12) || "N/A"}</div>
+                <div class="field-value">${experienceMonthlyDisplay}</div>
             </div>
             <div>
                 <span class="field-name">
                     Yearly
                 </span>
-                <div class="field-value">${parseInt(artistProf[0].ExperienceMonthly / 12) || "0"}</div>
+                <div class="field-value">${experienceYearlyDisplay}</div>
             </div>
         </div>
         <div>
