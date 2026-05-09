@@ -1036,11 +1036,19 @@ export default function AudioMetadataForm() {
                     required
                   >
                     <option value="">Select Language</option>
-                    {languages.map((lang) => (
-                      <option key={lang.name} value={lang.id}>
-                        {lang.name}
-                      </option>
-                    ))}
+                    {languages.map((lang) => {
+                      const raw = String(lang.name || "").trim();
+                      const label =
+                        raw.length === 0
+                          ? ""
+                          : raw.charAt(0).toUpperCase() +
+                            raw.slice(1).toLowerCase();
+                      return (
+                        <option key={lang.id} value={lang.id}>
+                          {label}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
