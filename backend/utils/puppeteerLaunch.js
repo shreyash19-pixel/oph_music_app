@@ -27,11 +27,16 @@
  * x86_64 binary (chrome-linux64 / ld-linux-x86-64). Those are skipped via ELF arch detection — install
  * native Chromium/Chrome (aarch64) and set PUPPETEER_EXECUTABLE_PATH, or remove the bad cache folder.
  *
+ * Ubuntu (incl. ARM noble): `apt install chromium` often resolves to **transitional `chromium-browser`**
+ * → Snap only (`command -v chromium` → `/snap/bin/chromium` → `/usr/bin/snap`). The runnable ELF lives under
+ * `/snap/chromium/<revision>/usr/lib/chromium-browser/chrome` — we discover it automatically.
+ *
  * To force Snap anyway: ALLOW_SNAP_CHROMIUM=1 and set PUPPETEER_EXECUTABLE_PATH to the snap binary.
  */
 
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 const puppeteer = require("puppeteer");
 
 let chromiumSparticuz = null;
@@ -50,14 +55,27 @@ function realpathSafe(p) {
 }
 
 /**
- * True if this path runs Snap Chromium (directly, via symlink, or Ubuntu's wrapper script).
+ * True if we should skip this candidate — Snap **CLI shims** (`/snap/bin/chromium` → snap),
+ * not the real browser ELF under `/snap/chromium/<rev>/usr/lib/...` (those we launch directly).
  */
 function isSnapInvokingChromium(candidatePath) {
   if (process.env.ALLOW_SNAP_CHROMIUM === "1") return false;
 
   const p = String(candidatePath || "");
   const resolved = realpathSafe(p);
-  if (resolved.includes("/snap/") || p.includes("/snap/")) return true;
+
+  /* Mounted Chromium package (large ELF) — OK for Puppeteer when executed directly. */
+  if (/\/snap\/chromium\/[^/]+\//.test(resolved)) {
+    try {
+      if (fs.existsSync(p)) {
+        const st = fs.statSync(p);
+        if (st.isFile() && st.size > 200000) return false;
+      }
+    } catch (_) {}
+  }
+
+  if (/\/snap\/bin\//.test(resolved) && /chromium|chrome/i.test(resolved)) return true;
+  if (/\/usr\/bin\/snap$/i.test(resolved)) return true;
 
   try {
     if (!fs.existsSync(p)) return false;
@@ -144,22 +162,118 @@ function getPuppeteerBundledChromePath() {
   return null;
 }
 
+/**
+ * Resolve chromium/google-chrome via PATH — works across distros where install path differs.
+ */
+function chromiumCandidatesFromPathEnv() {
+  if (process.platform !== "linux") return [];
+  const names = [
+    "chromium",
+    "chromium-browser",
+    "google-chrome-stable",
+    "google-chrome",
+  ];
+  const out = [];
+  const seen = new Set();
+  for (const name of names) {
+    try {
+      let p = execSync(`command -v "${name}"`, {
+        encoding: "utf8",
+        timeout: 4000,
+        env: process.env,
+      }).trim();
+      if (!p) continue;
+      try {
+        p = fs.realpathSync(p);
+      } catch (_) {
+        /* keep p */
+      }
+      if (seen.has(p)) continue;
+      seen.add(p);
+      out.push(p);
+    } catch (_) {
+      /* not on PATH */
+    }
+  }
+  return out;
+}
+
+/**
+ * Ubuntu transitional package installs Chromium as Snap only — real ELF is under /snap/chromium/<rev>/.
+ */
+function chromiumCandidatesFromSnapMount() {
+  if (process.platform !== "linux") return [];
+  const root = "/snap/chromium";
+  if (!fs.existsSync(root)) return [];
+  const rels = [
+    path.join("usr", "lib", "chromium-browser", "chrome"),
+    path.join("usr", "lib", "chromium-browser", "chromium-browser"),
+    path.join("usr", "lib", "chromium", "chrome"),
+    path.join("usr", "lib", "chromium", "chromium"),
+  ];
+  const out = [];
+  const seen = new Set();
+  const push = (abs) => {
+    try {
+      if (!abs || !fs.existsSync(abs)) return;
+      const rp = fs.realpathSync(abs);
+      if (seen.has(rp)) return;
+      seen.add(rp);
+      out.push(rp);
+    } catch (_) {}
+  };
+
+  for (const rel of rels) {
+    push(path.join(root, "current", rel));
+  }
+
+  try {
+    for (const name of fs.readdirSync(root)) {
+      if (name === "common" || name === "current") continue;
+      const revDir = path.join(root, name);
+      let st;
+      try {
+        st = fs.statSync(revDir);
+      } catch {
+        continue;
+      }
+      if (!st.isDirectory()) continue;
+      for (const rel of rels) {
+        push(path.join(revDir, rel));
+      }
+    }
+  } catch (_) {}
+  return out;
+}
+
 function buildDefaultChromiumCandidates() {
   const bundled = getPuppeteerBundledChromePath();
+  /** Common Debian/Ubuntu locations (may or may not exist). */
+  const linuxArm64DebPaths =
+    process.platform === "linux" && process.arch === "arm64"
+      ? [
+          "/usr/lib/aarch64-linux-gnu/chromium/chromium",
+          "/usr/lib/aarch64-linux-gnu/chromium-browser/chromium-browser",
+        ]
+      : [];
+
   return [
     process.env.PUPPETEER_EXECUTABLE_PATH,
     process.env.CHROMIUM_PATH,
+    ...chromiumCandidatesFromSnapMount(),
+    ...chromiumCandidatesFromPathEnv(),
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/usr/bin/google-chrome-stable",
     "/usr/bin/google-chrome",
     "/opt/google/chrome/chrome",
-    /* Prefer Puppeteer-bundled Chrome before /usr/bin/chromium — Ubuntu often makes that a Snap wrapper. */
+    ...linuxArm64DebPaths,
+    /* Prefer Puppeteer-bundled Chrome before generic paths — Ubuntu often makes /usr/bin stubs Snap wrappers. */
     bundled,
-    "/usr/bin/chromium",
-    "/usr/bin/chromium-browser",
     "/usr/lib/chromium/chromium",
     "/usr/lib/chromium-browser/chromium-browser",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
     "/usr/lib64/chromium-browser/chromium-browser",
   ].filter(Boolean);
 }
@@ -211,10 +325,9 @@ const HEADLESS_SAFE_ARGS = [
 function buildLaunchArgs(executablePath, extra = []) {
   const args = [...HEADLESS_SAFE_ARGS, ...extra];
   const p = executablePath ? String(executablePath) : "";
-  if (p.includes("/snap/")) {
+  if (/\/snap\/bin\//.test(p) || /\/usr\/bin\/snap$/i.test(p)) {
     console.warn(
-      "[puppeteer] Snap Chromium detected — often crashes under PM2 (dbus/cgroup). " +
-        "Install Chromium via apt and set PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (see backend/utils/puppeteerLaunch.js header).",
+      "[puppeteer] Snap CLI shim detected — use the ELF under /snap/chromium/.../usr/lib/... (see puppeteerLaunch.js).",
     );
   }
   return args;
@@ -245,46 +358,45 @@ async function launchChromiumBrowser(options = {}) {
 
   const isLinux = process.platform === "linux";
   const isLinuxArm64 = isLinux && process.arch === "arm64";
-  const isAwsLambda = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-  // @sparticuz/chromium is a Linux (Lambda) build — never use it on macOS/Windows (spawn ENOEXEC / errno -8).
-  // On Linux arm64 without Lambda, use system Chromium instead.
-  const trySparticuz =
-    chromiumSparticuz &&
-    isLinux &&
-    (!isLinuxArm64 || isAwsLambda);
+  // @sparticuz/chromium: Linux server fallback (including ARM64 Graviton/OCI) — verify ELF matches host CPU.
+  const trySparticuz = chromiumSparticuz && isLinux;
 
   if (trySparticuz) {
     try {
       const executablePath = await chromiumSparticuz.executablePath().catch(() => null);
-      if (executablePath) {
-        console.log(`${logPrefix} Using @sparticuz/chromium`);
-        return puppeteer.launch({
-          args: [
-            ...(chromiumSparticuz.args || []),
-            ...HEADLESS_SAFE_ARGS,
-          ],
-          defaultViewport: chromiumSparticuz.defaultViewport,
-          executablePath,
-          headless: chromiumSparticuz.headless ?? true,
-          ignoreHTTPSErrors: true,
-          ...options.extraLaunchOptions,
-        });
+      if (executablePath && fs.existsSync(executablePath)) {
+        if (!executableMatchesHostCpu(executablePath)) {
+          console.warn(
+            `${logPrefix} @sparticuz/chromium binary is wrong architecture for ${process.arch}; skipping (${executablePath})`,
+          );
+        } else {
+          console.log(`${logPrefix} Using @sparticuz/chromium`);
+          return puppeteer.launch({
+            args: [
+              ...(chromiumSparticuz.args || []),
+              ...HEADLESS_SAFE_ARGS,
+            ],
+            defaultViewport: chromiumSparticuz.defaultViewport,
+            executablePath,
+            headless: chromiumSparticuz.headless ?? true,
+            ignoreHTTPSErrors: true,
+            ...options.extraLaunchOptions,
+          });
+        }
       }
     } catch (e) {
       console.warn(`${logPrefix} @sparticuz/chromium failed:`, e.message);
     }
-  } else if (isLinuxArm64 && chromiumSparticuz) {
-    console.warn(
-      `${logPrefix} Skipping @sparticuz/chromium on Linux ARM64 (use system Chromium or Lambda only)`
-    );
   }
 
   if (isLinuxArm64) {
     throw new Error(
-      `${logPrefix} ARM64 Linux: no usable Chromium found. Install an aarch64 browser (not Snap wrapper), e.g. ` +
-        "`sudo apt-get install -y chromium-browser` from Debian/Ubuntu repos; verify with `file $(command -v chromium)` shows aarch64. " +
-        "Set `PUPPETEER_EXECUTABLE_PATH` to that binary. If Puppeteer cached the wrong arch, run `rm -rf ~/.cache/puppeteer/chrome` on the server."
+      `${logPrefix} ARM64 Linux: no usable Chromium found. Install a native aarch64 browser: ` +
+        "`sudo apt-get install -y chromium` then run `command -v chromium` and `dpkg -L chromium | grep -E 'bin/(chromium|chrome)$'` " +
+        "to locate the ELF (paths vary — `/usr/lib/chromium/chromium` may not exist). " +
+        "Set `PUPPETEER_EXECUTABLE_PATH` to that file. Or install Google Chrome ARM64 .deb. " +
+        "`rm -rf ~/.cache/puppeteer/chrome` clears wrong-arch Puppeteer cache."
     );
   }
 
