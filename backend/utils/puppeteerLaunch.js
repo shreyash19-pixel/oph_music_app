@@ -16,8 +16,16 @@
  *   env: { PUPPETEER_EXECUTABLE_PATH: "/usr/bin/chromium" }
  *
  * Snap Chromium (/snap/bin/chromium) is NOT auto-used — it often exits under PM2 with
- * dbus/cgroup errors. Install via apt: `sudo apt install -y chromium-browser` or Google Chrome .deb,
- * then set PUPPETEER_EXECUTABLE_PATH. To force Snap anyway: set that env to /snap/bin/chromium.
+ * dbus/cgroup errors.
+ *
+ * Ubuntu often ships `/usr/bin/chromium` as a tiny shell script that runs `snap run chromium`
+ * — we detect and skip those so Puppeteer does not invoke Snap.
+ *
+ * Install a real browser .deb and set PUPPETEER_EXECUTABLE_PATH, e.g.:
+ *   Google Chrome: /opt/google/chrome/chrome or /usr/bin/google-chrome-stable
+ * Or rely on Puppeteer's bundled Chrome / @sparticuz/chromium after wrappers are skipped.
+ *
+ * To force Snap anyway: ALLOW_SNAP_CHROMIUM=1 and set PUPPETEER_EXECUTABLE_PATH to the snap binary.
  */
 
 const fs = require("fs");
@@ -31,30 +39,92 @@ try {
   /* optional in some installs */
 }
 
-/** Snap Chromium is last — it often fails under PM2/systemd (dbus, cgroup). Prefer apt .deb Chrome/Chromium. */
-const DEFAULT_CHROMIUM_CANDIDATES = [
-  process.env.PUPPETEER_EXECUTABLE_PATH,
-  process.env.CHROMIUM_PATH,
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/Applications/Chromium.app/Contents/MacOS/Chromium",
-  "/usr/bin/google-chrome-stable",
-  "/usr/bin/google-chrome",
-  "/opt/google/chrome/chrome",
-  "/usr/bin/chromium",
-  "/usr/bin/chromium-browser",
-  "/usr/lib/chromium/chromium",
-  "/usr/lib/chromium-browser/chromium-browser",
-  "/usr/lib64/chromium-browser/chromium-browser",
-];
+function realpathSafe(p) {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return p;
+  }
+}
+
+/**
+ * True if this path runs Snap Chromium (directly, via symlink, or Ubuntu's wrapper script).
+ */
+function isSnapInvokingChromium(candidatePath) {
+  if (process.env.ALLOW_SNAP_CHROMIUM === "1") return false;
+
+  const p = String(candidatePath || "");
+  const resolved = realpathSafe(p);
+  if (resolved.includes("/snap/") || p.includes("/snap/")) return true;
+
+  try {
+    if (!fs.existsSync(p)) return false;
+    const st = fs.statSync(p);
+    if (!st.isFile()) return false;
+    /* Real chrome/chromium binaries are multi‑MB; Snap wrappers are tiny shell scripts. */
+    if (st.size > 262144) return false;
+    const head = fs.readFileSync(p, { encoding: "utf8" }).slice(0, 8192);
+    if (
+      /\/snap\/bin\/chromium|snap\s+run\s+chromium|chromium\.chromium/i.test(head)
+    ) {
+      return true;
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return false;
+}
+
+/** Puppeteer's downloaded Chrome (never Snap); may be undefined if not downloaded yet. */
+function getPuppeteerBundledChromePath() {
+  try {
+    if (typeof puppeteer.executablePath === "function") {
+      const ep = puppeteer.executablePath();
+      if (ep && fs.existsSync(ep)) return ep;
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return null;
+}
+
+function buildDefaultChromiumCandidates() {
+  const bundled = getPuppeteerBundledChromePath();
+  return [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROMIUM_PATH,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/opt/google/chrome/chrome",
+    /* Prefer Puppeteer-bundled Chrome before /usr/bin/chromium — Ubuntu often makes that a Snap wrapper. */
+    bundled,
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/lib/chromium/chromium",
+    "/usr/lib/chromium-browser/chromium-browser",
+    "/usr/lib64/chromium-browser/chromium-browser",
+  ].filter(Boolean);
+}
 
 function resolveLocalChromiumPath(extraCandidates = []) {
-  const candidates = [...extraCandidates, ...DEFAULT_CHROMIUM_CANDIDATES].filter(Boolean);
+  const candidates = [...extraCandidates, ...buildDefaultChromiumCandidates()];
 
-  for (const p of candidates) {
+  for (const raw of candidates) {
     try {
-      if (!p || !fs.existsSync(p)) continue;
-      const st = fs.statSync(p);
-      if (st.isFile() || st.isSymbolicLink()) return path.resolve(p);
+      if (!raw || !fs.existsSync(raw)) continue;
+      const st = fs.statSync(raw);
+      if (!(st.isFile() || st.isSymbolicLink())) continue;
+
+      const resolvedPath = path.resolve(raw);
+      if (isSnapInvokingChromium(resolvedPath)) {
+        console.warn(
+          `[puppeteer] Skipping Chromium candidate (Snap / snap wrapper): ${resolvedPath}`,
+        );
+        continue;
+      }
+      return resolvedPath;
     } catch (_) {
       /* ignore */
     }
