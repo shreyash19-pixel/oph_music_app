@@ -14,6 +14,10 @@
  *
  * If you must use env only (PM2 ecosystem.config.js):
  *   env: { PUPPETEER_EXECUTABLE_PATH: "/usr/bin/chromium" }
+ *
+ * Snap Chromium (/snap/bin/chromium) is NOT auto-used — it often exits under PM2 with
+ * dbus/cgroup errors. Install via apt: `sudo apt install -y chromium-browser` or Google Chrome .deb,
+ * then set PUPPETEER_EXECUTABLE_PATH. To force Snap anyway: set that env to /snap/bin/chromium.
  */
 
 const fs = require("fs");
@@ -41,7 +45,6 @@ const DEFAULT_CHROMIUM_CANDIDATES = [
   "/usr/lib/chromium/chromium",
   "/usr/lib/chromium-browser/chromium-browser",
   "/usr/lib64/chromium-browser/chromium-browser",
-  "/snap/bin/chromium",
 ];
 
 function resolveLocalChromiumPath(extraCandidates = []) {
