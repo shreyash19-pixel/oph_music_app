@@ -31,6 +31,12 @@
  * → Snap only (`command -v chromium` → `/snap/bin/chromium` → `/usr/bin/snap`). The runnable ELF lives under
  * `/snap/chromium/<revision>/usr/lib/chromium-browser/chrome` — we discover it automatically.
  *
+ * Running that ELF under PM2 still needs **host** GTK/ATK stacks (Snap normally wires these via confinement).
+ * If you see `error while loading shared libraries: libatk-1.0.so.0`, install deps on the server, e.g.:
+ *   sudo apt-get install -y libatk1.0-0 libatk-bridge2.0-0 libnss3 libgbm1 libdrm2 libcups2 \\
+ *     libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libasound2t64 libpango-1.0-0 libgtk-3-0
+ * (Noble uses libasound2t64; older Ubuntu may use libasound2.)
+ *
  * To force Snap anyway: ALLOW_SNAP_CHROMIUM=1 and set PUPPETEER_EXECUTABLE_PATH to the snap binary.
  */
 
@@ -333,6 +339,54 @@ function buildLaunchArgs(executablePath, extra = []) {
   return args;
 }
 
+/** Multiarch lib dirname for Linux process.arch. */
+function linuxMultiarchTriplet() {
+  if (process.arch === "arm64") return "aarch64-linux-gnu";
+  if (process.arch === "x64" || process.arch === "amd64") return "x86_64-linux-gnu";
+  return null;
+}
+
+/**
+ * Snap-mounted chrome is started outside `snap run`; prepend the snap's usr/lib so bundled .so resolve.
+ * Host libraries (e.g. libatk) still require apt packages — see file header.
+ */
+function envForSnapMountedChrome(executablePath) {
+  const p = String(executablePath || "");
+  const m = p.match(/^(\/snap\/chromium\/[^/]+)/);
+  if (!m) return {};
+  const snapRoot = m[1];
+  const trip = linuxMultiarchTriplet();
+  const dirs = [];
+  if (trip) {
+    dirs.push(
+      `${snapRoot}/usr/lib/${trip}`,
+      `${snapRoot}/lib/${trip}`,
+    );
+  }
+  dirs.push(`${snapRoot}/usr/lib`, `${snapRoot}/lib`);
+  const ok = dirs.filter((d) => {
+    try {
+      return fs.existsSync(d);
+    } catch {
+      return false;
+    }
+  });
+  if (ok.length === 0) return {};
+  const prefix = ok.join(":");
+  const prev = process.env.LD_LIBRARY_PATH || "";
+  const LD_LIBRARY_PATH = prev ? `${prefix}:${prev}` : prefix;
+  return { LD_LIBRARY_PATH };
+}
+
+function mergeProcessEnvForChrome(executablePath, extraLaunchEnv) {
+  const snapEnv = envForSnapMountedChrome(executablePath);
+  return {
+    ...process.env,
+    ...snapEnv,
+    ...(extraLaunchEnv || {}),
+  };
+}
+
 /**
  * @param {object} [options]
  * @param {string} [options.logPrefix] - e.g. "[membership]" for log lines
@@ -347,12 +401,15 @@ async function launchChromiumBrowser(options = {}) {
   const localChrome = resolveLocalChromiumPath(extraCandidates);
   if (localChrome) {
     console.log(`${logPrefix} Using Chromium at ${localChrome} (native for this CPU)`);
+    const extra = options.extraLaunchOptions || {};
+    const { env: extraEnv, ...restExtra } = extra;
     return puppeteer.launch({
       executablePath: localChrome,
       args: buildLaunchArgs(localChrome),
       headless: true,
       ignoreHTTPSErrors: true,
-      ...options.extraLaunchOptions,
+      env: mergeProcessEnvForChrome(localChrome, extraEnv),
+      ...restExtra,
     });
   }
 
