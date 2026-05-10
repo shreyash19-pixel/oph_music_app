@@ -23,7 +23,9 @@
  *
  * Install a real browser .deb and set PUPPETEER_EXECUTABLE_PATH, e.g.:
  *   Google Chrome: /opt/google/chrome/chrome or /usr/bin/google-chrome-stable
- * Or rely on Puppeteer's bundled Chrome / @sparticuz/chromium after wrappers are skipped.
+ * ARM64 Linux: Puppeteer's cache (~/.cache/puppeteer/chrome/linux_arm/...) may still point at an
+ * x86_64 binary (chrome-linux64 / ld-linux-x86-64). Those are skipped via ELF arch detection — install
+ * native Chromium/Chrome (aarch64) and set PUPPETEER_EXECUTABLE_PATH, or remove the bad cache folder.
  *
  * To force Snap anyway: ALLOW_SNAP_CHROMIUM=1 and set PUPPETEER_EXECUTABLE_PATH to the snap binary.
  */
@@ -75,6 +77,60 @@ function isSnapInvokingChromium(candidatePath) {
   return false;
 }
 
+/** ELF e_machine (Linux common). */
+const EM_X86_64 = 62;
+const EM_AARCH64 = 183;
+
+/**
+ * Read ELF64 e_machine (little-endian). Returns null if not a Linux ELF64 binary we recognize.
+ */
+function readElf64Machine(filePath) {
+  try {
+    const fd = fs.openSync(filePath, "r");
+    const buf = Buffer.alloc(64);
+    const n = fs.readSync(fd, buf, 0, 64, 0);
+    fs.closeSync(fd);
+    if (n < 20) return null;
+    if (buf[0] !== 0x7f || buf[1] !== 0x45 || buf[2] !== 0x4c || buf[3] !== 0x46)
+      return null;
+    if (buf[4] !== 2) return null; /* ELFCLASS64 only */
+    const le = buf[5] === 1;
+    if (!le) return null;
+    return buf.readUInt16LE(18);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reject running x86_64 Chrome on ARM64 (and vice versa). Puppeteer cache paths like linux_arm/...
+ * may still ship chrome-linux64 (amd64), which shells then exec as script → "ELF: not found".
+ */
+function executableMatchesHostCpu(filePath) {
+  try {
+    const st = fs.statSync(filePath);
+    if (!st.isFile()) return true;
+    /* Tiny files are wrappers/scripts — not ELF; handled by Snap detection. */
+    if (st.size < 4096) return true;
+
+    const machine = readElf64Machine(filePath);
+    if (machine == null) return true;
+
+    const arch = process.arch;
+    if (arch === "arm64") {
+      if (machine === EM_X86_64) return false;
+      return true;
+    }
+    if (arch === "x64" || arch === "amd64") {
+      if (machine === EM_AARCH64) return false;
+      return true;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 /** Puppeteer's downloaded Chrome (never Snap); may be undefined if not downloaded yet. */
 function getPuppeteerBundledChromePath() {
   try {
@@ -121,6 +177,12 @@ function resolveLocalChromiumPath(extraCandidates = []) {
       if (isSnapInvokingChromium(resolvedPath)) {
         console.warn(
           `[puppeteer] Skipping Chromium candidate (Snap / snap wrapper): ${resolvedPath}`,
+        );
+        continue;
+      }
+      if (!executableMatchesHostCpu(resolvedPath)) {
+        console.warn(
+          `[puppeteer] Skipping Chromium candidate (wrong CPU vs ${process.arch}, e.g. x86_64 binary on ARM64): ${resolvedPath}`,
         );
         continue;
       }
@@ -220,9 +282,9 @@ async function launchChromiumBrowser(options = {}) {
 
   if (isLinuxArm64) {
     throw new Error(
-      `${logPrefix} ARM64 Linux: install native Chromium, e.g. \`sudo apt install -y chromium-browser\` ` +
-        "or `chromium`, then set PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium. " +
-        "Puppeteer's bundled Chrome is x86_64 and will not run on this CPU."
+      `${logPrefix} ARM64 Linux: no usable Chromium found. Install an aarch64 browser (not Snap wrapper), e.g. ` +
+        "`sudo apt-get install -y chromium-browser` from Debian/Ubuntu repos; verify with `file $(command -v chromium)` shows aarch64. " +
+        "Set `PUPPETEER_EXECUTABLE_PATH` to that binary. If Puppeteer cached the wrong arch, run `rm -rf ~/.cache/puppeteer/chrome` on the server."
     );
   }
 
