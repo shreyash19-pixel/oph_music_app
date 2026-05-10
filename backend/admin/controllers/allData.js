@@ -1,9 +1,11 @@
 const ExcelJS = require('exceljs');
 const allDataCont = require('../model/allData');
+const exportPolicy = require("../utils/allDataExportPolicy");
 
 const downloadApplicationStatus = async (req, res) => {
   try {
-    const rows = await allDataCont.getAllApplicationStatus();
+    let rows = await allDataCont.getAllApplicationStatus();
+    rows = exportPolicy.scopeApplicationStatusRows(rows, req);
     if(rows.length === 0){
       return res.status(404).json({ message: "No application status found" });
     }
@@ -89,7 +91,8 @@ const downloadApplicationStatus = async (req, res) => {
 
 const downloadEventParticipants = async (req, res) => {
   try {
-    const rows = await allDataCont.eventParticipantsDetails();
+    let rows = await allDataCont.eventParticipantsDetails();
+    rows = exportPolicy.scopeByOphColumns(rows, req, ["oph_id", "OPH_ID"]);
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "No event participants found" });
@@ -225,9 +228,18 @@ const downloadContactUs = async (req, res) => {
 
 const downloadSpecialArtistDetails = async (req, res) => {
   try {
-    const [detailRows, songRows] = await Promise.all([
+    const [detailRowsRaw, songRowsRaw] = await Promise.all([
       allDataCont.epkDetails(),
       allDataCont.specialistArtistSongsExport(),
+    ]);
+    const detailRows = exportPolicy.scopeByOphColumns(detailRowsRaw || [], req, [
+      "oph_id",
+      "ophid",
+      "OPH_ID",
+    ]);
+    const songRows = exportPolicy.scopeByOphColumns(songRowsRaw || [], req, [
+      "oph_id",
+      "OPH_ID",
     ]);
 
     if (
@@ -348,7 +360,11 @@ const downloadSpecialArtistDetails = async (req, res) => {
 /** Standalone export: specialist / special-artist songs only (same rows as second sheet of special-artist-details export). */
 const downloadSpecialArtistSongsExcel = async (req, res) => {
   try {
-    const songRows = await allDataCont.specialistArtistSongsExport();
+    let songRows = await allDataCont.specialistArtistSongsExport();
+    songRows = exportPolicy.scopeByOphColumns(songRows || [], req, [
+      "oph_id",
+      "OPH_ID",
+    ]);
 
     if (!songRows || songRows.length === 0) {
       return res.status(404).json({ message: "No special artist songs found" });
@@ -422,7 +438,8 @@ const downloadSpecialArtistSongsExcel = async (req, res) => {
 
 const downloadSongsRegister = async (req, res) => {
   try {
-    const rows = await allDataCont.SongRegistrationDetails(); // your DB fetch function
+    let rows = await allDataCont.SongRegistrationDetails(); // your DB fetch function
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, ["oph_id", "OPH_ID"]);
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "No songs found" });
@@ -659,7 +676,8 @@ function addGenericSheetFromRows(workbook, sheetName, rows, omitKeyList = []) {
 
 const downloadAudioDetailsExcel = async (req, res) => {
   try {
-    const rows = await allDataCont.getAllAudioDetails();
+    let rows = await allDataCont.getAllAudioDetails();
+    rows = await exportPolicy.scopeBySongId(rows || [], req);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "No audio details found" });
     }
@@ -683,7 +701,8 @@ const downloadAudioDetailsExcel = async (req, res) => {
 
 const downloadVideoDetailsExcel = async (req, res) => {
   try {
-    const rows = await allDataCont.getAllVideoDetails();
+    let rows = await allDataCont.getAllVideoDetails();
+    rows = await exportPolicy.scopeBySongId(rows || [], req);
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: "No video details found" });
     }
@@ -712,7 +731,12 @@ const downloadVideoDetailsExcel = async (req, res) => {
 
 const downloadUserDetails = async (req, res) => {
   try {
-    const rows = await allDataCont.getAllUserDetails();
+    let rows = await allDataCont.getAllUserDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+      "oph_id",
+      "OPH_ID",
+      "ophid",
+    ]);
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Personal Details");
@@ -771,7 +795,11 @@ const downloadUserDetails = async (req, res) => {
 
 const downloadProfessionalDetails = async (req, res) => {
     try {
-      const rows = await allDataCont.getAllProfessionalDetails();
+      let rows = await allDataCont.getAllProfessionalDetails();
+      rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+        "oph_id",
+        "OPH_ID",
+      ]);
   
       // Create workbook & worksheet
       const workbook = new ExcelJS.Workbook();
@@ -849,7 +877,11 @@ const downloadProfessionalDetails = async (req, res) => {
 
 const getDocumentationDetails = async (req, res) => {
   try {
-    const rows = await allDataCont.getDocumentationDetails();
+    let rows = await allDataCont.getDocumentationDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+      "oph_id",
+      "OPH_ID",
+    ]);
 
     // Create workbook
     const workbook = new ExcelJS.Workbook();
@@ -934,7 +966,11 @@ const getDocumentationDetails = async (req, res) => {
 
 const getSignUpPayments = async (req, res) => {
   try {
-    const rows = await allDataCont.paymentDetails();
+    let rows = await allDataCont.paymentDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+      "oph_id",
+      "OPH_ID",
+    ]);
 
     if (!Array.isArray(rows)) {
       console.error("Payment details query returned non-array result:", rows);
@@ -1049,7 +1085,8 @@ const getSignUpPayments = async (req, res) => {
 
 const getbookingsDetails = async (req, res) => {
   try {
-    const rows = await allDataCont.bookingsDetails();
+    let rows = await allDataCont.bookingsDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, ["oph_id", "OPH_ID"]);
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Bookings");
@@ -1139,7 +1176,8 @@ const getbookingsDetails = async (req, res) => {
 
 const getSongApplicationStatus = async (req, res) => {
   try {
-    const rows = await allDataCont.songRegistrationDetails();
+    let rows = await allDataCont.songRegistrationDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, ["oph_id", "OPH_ID"]);
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Song Application Status");
@@ -1191,7 +1229,11 @@ const getSongApplicationStatus = async (req, res) => {
 
 const getTvPublishing = async (req, res) => {
   try {
-    const rows = await allDataCont.tvpublishingDetails();
+    let rows = await allDataCont.tvpublishingDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+      "oph_id",
+      "OPH_ID",
+    ]);
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({
@@ -1254,7 +1296,12 @@ const getTvPublishing = async (req, res) => {
 
 const getWithdrawals = async (req, res) => {
   try {
-    const rows = await allDataCont.withdrawalsDetails();
+    let rows = await allDataCont.withdrawalsDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+      "oph_id",
+      "OPH_ID",
+      "ophID",
+    ]);
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Withdrawals");
@@ -1308,7 +1355,12 @@ const getWithdrawals = async (req, res) => {
 
 const getTickets = async (req, res) => {
   try {
-    const rows = await allDataCont.ticketsDetails();
+    let rows = await allDataCont.ticketsDetails();
+    rows = exportPolicy.scopeByOphColumns(rows || [], req, [
+      "oph_id",
+      "OPH_ID",
+      "ophID",
+    ]);
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Tickets");

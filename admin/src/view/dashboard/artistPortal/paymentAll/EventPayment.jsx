@@ -100,6 +100,10 @@ const EventPayment = () => {
             amount: eventId ? `Event ID: ${eventId}` : 'N/A',
             eventId: eventId, // Store event_id directly for easier access
             description: `Event Registration Payment - ${payment.from_source || payment.From || 'Event Registration'}`,
+            reject_reason:
+              payment.reject_reason ??
+              payment.Reject_reason ??
+              "",
             ophId: payment.oph_id || payment.OPH_ID,
             booking_first_name: payment.booking_first_name,
             booking_last_name: payment.booking_last_name,
@@ -470,6 +474,12 @@ const EventPayment = () => {
                       <span className="font-medium">Time:</span> {formatDateTime(payment.createdAt)}
                     </div>
                   </div>
+                  {String(payment.reject_reason || "").trim() !== "" && (
+                    <div className="text-red-700 text-sm mt-2">
+                      <span className="font-medium">Reject reason:</span>{" "}
+                      {payment.reject_reason}
+                    </div>
+                  )}
                   {payment.description && (
                     <div className="text-gray-600 text-sm mt-2">
                       <span className="font-medium">Description:</span> {payment.description}

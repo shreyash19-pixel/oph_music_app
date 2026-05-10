@@ -11,6 +11,9 @@ import {
   TICKETS_PORTAL_ROLES,
   EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
   EVENT_CREATION_AND_LIST_ROLES,
+  EVENT_WINNER_ASSIGN_ROLES,
+  WEBSITE_CONFIG_SETTINGS_ROLES,
+  ALL_DATA_DOWNLOAD_PORTAL_ROLES,
   PAYMENTS_PORTAL_ROLES,
   MY_EPK_CHANGE_AND_SONGS_ROLES,
   MY_EPK_INCOME_ROLES,
@@ -290,7 +293,7 @@ function App() {
           <Route
             path="/event-winner-assign/:event_id"
             element={
-              <ProtectedRoute allowedRoles={EVENT_MANAGEMENT_WEB_CONFIG_ROLES}>
+              <ProtectedRoute allowedRoles={EVENT_WINNER_ASSIGN_ROLES}>
                 <EventWinnerAssign />
               </ProtectedRoute>
             }
@@ -786,7 +789,7 @@ function App() {
           <Route
             path="/data"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={ALL_DATA_DOWNLOAD_PORTAL_ROLES}>
                 <Alldata />
               </ProtectedRoute>
             }
@@ -900,14 +903,7 @@ function App() {
           <Route
             path="/websiteConfig_Setting"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.SALES_MEMBER,
-                  ROLES.SALES_HEAD,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={WEBSITE_CONFIG_SETTINGS_ROLES}>
                 <WebsiteSettings />
               </ProtectedRoute>
             }

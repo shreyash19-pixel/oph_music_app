@@ -234,7 +234,10 @@ const AllData = () => {
               Data Download Portal
             </h1>
             <p className="text-gray-600">
-              Download various data exports for administrative purposes
+              Download Excel exports (same buttons for every role). Super Admin gets
+              full data; other roles receive only approved/completed onboarded
+              artists—aligned with public KPI / artist visibility—not raw internal
+              queues.
             </p>
           </div>
 
@@ -304,7 +307,10 @@ const AllData = () => {
                     <li>All downloads are in Excel (.xlsx) format</li>
                     <li>Files are automatically named with current date</li>
                     <li>Large datasets may take several minutes to process</li>
-                    <li>Ensure you have proper permissions for data access</li>
+                    <li>
+                      Super Admin: full exports. Other roles: scoped to
+                      approved/completed profiles (and special-artist OPH IDs).
+                    </li>
                   </ul>
                 </div>
               </div>
