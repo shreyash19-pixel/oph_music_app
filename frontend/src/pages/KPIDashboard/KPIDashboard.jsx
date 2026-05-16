@@ -256,7 +256,9 @@ export default function KPIDashboard() {
                 <select
                   className="bg-transparent border-none focus:ring-0 focus:outline-none w-full"
                   value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
+                  onChange={(e) => {
+                    setDuration(Number(e.target.value));
+                  }}
                 >
                   {durationOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -270,7 +272,7 @@ export default function KPIDashboard() {
           )}
 
           {/* Ranking position — hidden for special artists (no IA KPI leaderboard row) */}
-          {!isSpecialArtist && (
+          {!isSpecialArtist && kpiData && kpiData.trafficData && kpiData.trafficData.length > 0 && (
             <div className="bg-gray-800/50 rounded-lg p-4 flex justify-between items-center">
               <div>
                 <p className="text-white-400">Your Ranking Position</p>

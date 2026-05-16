@@ -137,20 +137,12 @@ class AdminPaymentService {
                 console.log("Email found, attempting to send...");
                 console.log("Sending special artist song approval email to:", userEmail);
                 
+                const { specialArtistSongApprovedEmail } = require('../../utils/emailTemplates');
                 const emailResult = await resend.emails.send({
                   from: 'OPH Community <creators@ophcommunity.org>',
                   to: userEmail,
                   subject: 'Special Artist Song Approved!',
-                  html: `
-                    <p>Hi ${userName || 'Artist'},</p>
-                    <p>Great news! Your special artist song has been approved.</p>
-                    ${songName ? `<p><strong>Song:</strong> ${songName}</p>` : ''}
-                    <p><strong>Transaction ID:</strong> ${transactionId}</p>
-                    <p>You can view your song details in your dashboard.</p>
-                    <br/>
-                    <p>Best regards,<br/>
-                    OPH Community Team<br/>
-                    <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+                  html: specialArtistSongApprovedEmail(userName, transactionId, songName)
                 });
                 console.log("✓✓✓ Special artist song approval email sent successfully!");
                 console.log("Email result:", JSON.stringify(emailResult, null, 2));

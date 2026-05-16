@@ -1,5 +1,6 @@
 const contactUsModel = require("../model/contact_us");
 const { Resend } = require('resend');
+const { contactFormConfirmationEmail } = require('../utils/emailTemplates');
 
 const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
 
@@ -20,23 +21,7 @@ const insertContactUs = async (req, res) => {
           from: 'OPH Community <creators@ophcommunity.org>',
           to: email,
           subject: 'Thank You for Contacting OPH Community!',
-          html: `
-            <p>Hi ${name || 'there'},</p>
-            <p>Thank you for reaching out to us!</p>
-            <p>We have received your message and our team will get back to you within 24 hours.</p>
-            <br/>
-            <p><strong>Your Details:</strong></p>
-            <p>Name: ${name}</p>
-            <p>Email: ${email}</p>
-            <p>Phone: ${phone}</p>
-            <p>Instagram: ${instagram_handle}</p>
-            ${description ? `<p>Message: ${description}</p>` : ''}
-            <br/>
-            <p>Stay connected with the OPH Community!</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+          html: contactFormConfirmationEmail(name, email, phone, instagram_handle, description)
         });
         console.log("✓✓✓ Contact form confirmation email sent successfully!");
         console.log("Email result:", JSON.stringify(emailResult, null, 2));
