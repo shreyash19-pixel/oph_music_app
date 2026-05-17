@@ -35,8 +35,17 @@ export default function TVPublishing() {
         console.log("[TVPublishing] contents array:", response.data.data);
 
         setContents(response.data.data);
-        if (response.data.data.length > 0) {
-          const first = response.data.data[0];
+        
+        // Filter only Open and Rejected status items
+        const availableContents = response.data.data.filter(
+          (content) => {
+            const status = content.status?.toLowerCase();
+            return status === "open" || status === "rejected";
+          }
+        );
+        
+        if (availableContents.length > 0) {
+          const first = availableContents[0];
           console.log("[TVPublishing] first item keys:", Object.keys(first));
           console.log("[TVPublishing] first item:", first);
           console.log(
@@ -51,7 +60,9 @@ export default function TVPublishing() {
           setSelectedContentId(first.song_id);
           setSelectedContent(first);
         } else {
-          console.warn("[TVPublishing] No contents returned from API");
+          console.warn("[TVPublishing] No Open or Rejected status contents available");
+          setSelectedContentId(null);
+          setSelectedContent(null);
         }
       } catch (error) {
         console.error("[TVPublishing] Error fetching content:", error);
@@ -111,13 +122,13 @@ export default function TVPublishing() {
     }
 
     const formData = new FormData();
-    formData.append("song_id", selectedContent.song_id); // or id depending on your data
+    formData.append("song_id", selectedContent.song_id);
     formData.append("audio", files.audio);
     formData.append("video", files.video);
 
     try {
       setLoading(true);
-      toast.loading("Uploading content...", { id: "upload" });
+      const toastId = toast.loading("Uploading content...");
 
       const response = await axiosApi.post("/content", formData, {
         headers: {
@@ -125,37 +136,46 @@ export default function TVPublishing() {
         },
         onUploadProgress: (e) => {
           const progress = Math.round((e.loaded * 100) / e.total);
-          // you can show overall progress or split by files if needed
-          setUploadProgress(progress);
+          setUploadProgress({ audio: progress, video: progress });
         },
       });
 
-      toast.dismiss("upload");
+      toast.dismiss(toastId);
 
       if (response.data.success) {
         toast.success("Content uploaded successfully!");
         setFiles({ audio: null, video: null });
         setAgreement(false);
-        // Optionally refresh or update state to reflect changes
-        // Refresh the content list
+        
         const refreshResponse = await axiosApi.get(`/TvUser?OPH_ID=${ophid}`);
         setContents(refreshResponse.data.data);
-        const updatedContent = refreshResponse.data.data.find(
-          (c) => c.song_id === selectedContent.song_id,
+        
+        // Filter only Open and Rejected status items after refresh
+        const availableContents = refreshResponse.data.data.filter(
+          (c) => {
+            const status = c.status?.toLowerCase();
+            return status === "open" || status === "rejected";
+          }
         );
-        if (updatedContent) {
-          setSelectedContent(updatedContent);
+        
+        if (availableContents.length > 0) {
+          // Select the first available item
+          setSelectedContentId(availableContents[0].song_id);
+          setSelectedContent(availableContents[0]);
+        } else {
+          // No available items left
+          setSelectedContentId(null);
+          setSelectedContent(null);
         }
       } else {
         toast.error("Upload failed: " + response.data.message);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.dismiss("upload");
       toast.error("Error uploading content. Please try again.");
     } finally {
       setLoading(false);
-      setUploadProgress(0);
+      setUploadProgress({ audio: 0, video: 0 });
     }
   };
 
@@ -231,11 +251,17 @@ export default function TVPublishing() {
                   }}
                   className="bg-[#191D27]/35 text-white p-2 rounded"
                 >
-                  {contents.map((content) => (
-                    <option key={content.song_id} value={content.song_id}>
-                      {content.song_name}
-                    </option>
-                  ))}
+                  {contents
+                    .filter((content) => {
+                      const status = content.status?.toLowerCase();
+                      return status === "open" || status === "rejected";
+                    })
+                    .sort((a, b) => (a.song_name || "").localeCompare(b.song_name || ""))
+                    .map((content) => (
+                      <option key={content.song_id} value={content.song_id}>
+                        {content.song_name}
+                      </option>
+                    ))}
                 </select>
                 <span
                   className={`px-4 mx-10 py-1 rounded-full text-sm border ${getStatusColor(
@@ -249,40 +275,10 @@ export default function TVPublishing() {
               {(() => {
                 const shouldShowForm = [
                   "Open",
-                  "Submitted",
                   "Rejected",
                   "open",
-                  "submitted",
                   "rejected",
                 ].includes(selectedContent?.status);
-                console.log(
-                  "[TVPublishing Render] selectedContent:",
-                  selectedContent,
-                );
-                console.log(
-                  "[TVPublishing Render] selectedContent?.status:",
-                  selectedContent?.status,
-                );
-                console.log(
-                  "[TVPublishing Render] shouldShowForm:",
-                  shouldShowForm,
-                );
-                console.log(
-                  "[TVPublishing Render] Status check - Open:",
-                  selectedContent?.status === "Open",
-                );
-                console.log(
-                  "[TVPublishing Render] Status check - Submitted:",
-                  selectedContent?.status === "Submitted",
-                );
-                console.log(
-                  "[TVPublishing Render] Status check - Rejected:",
-                  selectedContent?.status === "Rejected",
-                );
-                console.log(
-                  "[TVPublishing Render] Status check - rejected (lowercase):",
-                  selectedContent?.status === "rejected",
-                );
 
                 return (
                   shouldShowForm && (
