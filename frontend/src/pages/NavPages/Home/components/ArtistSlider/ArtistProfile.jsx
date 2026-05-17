@@ -337,7 +337,7 @@ const ArtistProfile = ({ id }) => {
                       {/* Song name - only visible on tablet and above */}
                       <td className="py-4 hidden sm:table-cell">
                         <div className="ms-5">
-                          <div className="font-medium truncate overflow-hidden whitespace-nowrap w-[150px]">
+                          <div className="font-medium">
                             {truncateText(songTitle, 20)}
                           </div>
                           {song.featuring_artists &&

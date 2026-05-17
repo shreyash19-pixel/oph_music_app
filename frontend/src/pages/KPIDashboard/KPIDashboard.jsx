@@ -243,7 +243,7 @@ export default function KPIDashboard() {
           {!isSpecialArtist && (
             <div className="flex justify-end">
               <button
-                className="flex items-center px-4 py-2 w-[150px] bg-white/10 border border-white/30 border-cyan-200 rounded-full text-sm text-white-400 appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50 shadow-lg shadow-white/20"
+                className="flex items-center px-4 py-2 w-[150px] text-sm text-white-400 appearance-none focus:outline-none"
                 onClick={(e) => {
                   e.preventDefault();
                   const selectElement = e.currentTarget.querySelector("select");
@@ -254,14 +254,14 @@ export default function KPIDashboard() {
                 }}
               >
                 <select
-                  className="bg-transparent border-none focus:ring-0 focus:outline-none w-full"
+                  className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-3 text-gray-200 focus:outline-none focus:border-[#5dc9de]"
                   value={duration}
                   onChange={(e) => {
                     setDuration(Number(e.target.value));
                   }}
                 >
                   {durationOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} className="bg-[#191D27] text-gray-200">
                       {option.label}
                     </option>
                   ))}

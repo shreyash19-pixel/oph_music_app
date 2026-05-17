@@ -727,13 +727,15 @@ const SignUpForm = () => {
             Only Per Song Registration fees{" "}
             <span className="text-[#5DC9DE]">– 799</span>
           </p>
-          <h1 className="text-center mt-16 font-bold px-4 lg:px-48 text-[32px] uppercase">
-            Now – No hassle for Anything just Make your Music Peacefully –<br />
-            Rest live on India's Only Real Music Community
+          <h1 className="text-center mt-16 font-bold px-4 lg:px-48 text-[25px] uppercase max-w-[1300px] w-full mx-auto">
+            Now – No hassle for Anything just Make your Music Peacefully – Rest
+            live on India's Only Real Music Community
           </h1>
           <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-20 text-center text-xl font-bold text-[42px]">OPH COMMUNITY</h2>
-          <p className="text-gray-400 text-center mt-4 text-[22px]">
+          <h2 className="mt-20 text-center text-xl font-bold text-[44px]">
+            OPH COMMUNITY
+          </h2>
+          <p className="text-gray-400 text-center mt-[20px] text-[22px]">
             One stop solution for artist journey to success.
           </p>
           {/* <p className="text-center px-2 py-3 rounded-full bg-cyan-300 text-black">

@@ -254,7 +254,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
             <div
               className="max-h-[300px] min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] [scrollbar-color:rgba(107,70,160,0.6)_transparent] [scrollbar-width:thin]"
             >
-              <div className="sticky top-0 z-10 mb-2 grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem_2.75rem] gap-x-3 items-center border-b border-gray-800/90 bg-black pb-2 pt-0.5 text-sm text-gray-400">
+              <div className="sticky top-0 z-10 mb-2 grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem_2.75rem] gap-x-3 items-center border-b border-gray-800/90 pb-2 pt-0.5 text-sm text-gray-400">
                 <span className="w-8 shrink-0">#</span>
                 <span className="min-w-0">SONG</span>
                 <span className="text-center">LISTEN</span>

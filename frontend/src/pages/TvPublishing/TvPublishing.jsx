@@ -234,7 +234,7 @@ export default function TVPublishing() {
               <p className="text-center text-cyan-300">You can submit your songs to request access to this section. If your song meets the eligibility criteria for TV,<br/>  the OPH Community Administration team will review your submission and unlock the section for you. Thank you.</p>
             </div>
           ) : (
-            <div className="max-w-4xl">
+            <div className="  ">
               <div className="space-y-2 mb-6 rounded-xl border px-4 py-4 sm:px-5 sm:py-5 border-[#5DC9DE]/35 bg-gray-800/50 ring-1 ring-[#5DC9DE]/25 p-4">
                 <label className="block text-gray-400">Song Name</label>
                 <select
@@ -464,11 +464,11 @@ export default function TVPublishing() {
                   Your TV publishing request is Open.
                 </p>
               )}
-              {selectedContent?.status?.toLowerCase() === "submitted" && (
+              {/* {selectedContent?.status?.toLowerCase() === "submitted" && (
                 <p className="text-gray-300 mt-6">
                   Your content has been published on TV!
                 </p>
-              )}
+              )} */}
             </div>
           )}
         </div>

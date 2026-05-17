@@ -1,21 +1,26 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import RegistrationModal from "../../../../components/registration/Registration";
 import axiosApi from "../../../../conf/axios";
-import formatDateAndAdjustMonth, { isRegistrationOpen, isRegistrationNotStartedYet, formatRegistrationStartDate, formatRegistrationEndDate, formatDateTime } from "../../../../utils/date";
+import formatDateAndAdjustMonth, {
+  isRegistrationOpen,
+  isRegistrationNotStartedYet,
+  formatRegistrationStartDate,
+  formatRegistrationEndDate, formatDateTime,
+} from "../../../../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useArtist } from "../../../auth/API/ArtistContext";
 import { changeSelectedEvent } from "../../../../slice/events";
 import SongDetails from "../../../SongDetails/SongDetails";
 import SongCard from "../../../../components/SongCard";
-import Video from '../../../../assets/videos/video.mp4'
+import Video from "../../../../assets/videos/video.mp4";
 import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
 
 const isArtistRegistered = (eventId, artistBookEvents = []) =>
   artistBookEvents.some(
     (e) =>
       Number(e.event_id) === Number(eventId) &&
-      (e.status === "under review" || e.status === "accepted")
+      (e.status === "under review" || e.status === "accepted"),
   );
 
 /** API / parent may pass a single object or an array of releases; SongCard needs one object. */
@@ -38,12 +43,15 @@ function hasValidSongReleaseForHero(upcomingSong) {
   const row = firstUpcomingRelease(upcomingSong);
   if (!row || typeof row !== "object" || Object.keys(row).length === 0)
     return false;
-  const rawDate =
-    row.dateTime ?? row.release_date ?? row.releaseDate ?? null;
+  const rawDate = row.dateTime ?? row.release_date ?? row.releaseDate ?? null;
   return parseReleaseInstant(rawDate) != null;
 }
 
-const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => {
+const HeroSection = ({
+  upcomingSong,
+  upcomingEvent,
+  artistBookEvents = [],
+}) => {
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -190,11 +198,17 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
             }
           : {})}
       >
-        {slides[currentSlide]?.type === 'song' && (() => {
-          const row = firstUpcomingRelease(slides[currentSlide].data);
-          if (!row || typeof row !== "object" || Object.keys(row).length === 0) return null;
-          return <SongCard releaseData={row} />;
-        })()}
+        {slides[currentSlide]?.type === "song" &&
+          (() => {
+            const row = firstUpcomingRelease(slides[currentSlide].data);
+            if (
+              !row ||
+              typeof row !== "object" ||
+              Object.keys(row).length === 0
+            )
+              return null;
+            return <SongCard releaseData={row} />;
+          })()}
 
         {slides[currentSlide]?.type === 'event' && (() => {
           const ev = slides[currentSlide].data;
@@ -256,21 +270,6 @@ const HeroSection = ({ upcomingSong, upcomingEvent, artistBookEvents = [] }) => 
                     </span>
                   </div>
                 </div>
-                {isArtistRegistered(ev.event_id, artistBookEvents) ? (
-                  <button
-                    disabled={true}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm mt-4"
-                  >
-                    Registered
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleClick(ev)}
-                    className="bg-[#6F4FA0] text-white px-4 py-2 rounded-full text-sm font-extrabold mt-4"
-                  >
-                    Register Now!
-                  </button>
-                )}
               </div>
               {eventImage ? (
                 <div className="w-full md:w-1/3 min-h-[140px] md:min-h-[180px] rounded-xl overflow-hidden border border-white/10 shadow-lg shrink-0 hidden sm:block">

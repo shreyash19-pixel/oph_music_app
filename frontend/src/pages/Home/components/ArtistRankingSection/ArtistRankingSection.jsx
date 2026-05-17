@@ -67,11 +67,11 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
           LEADERBOARD
         </h2>
       </div>
-      <div className="flex items-center justify-between mb-6">
+      {/* <div className="flex items-center justify-between mb-6">
         <h2 className="text-white text-3xl font-extrabold mb-4 drop-shadow-[0_0_10px_rgba(34,211,238,1)] uppercase">
           {currentMonth}
         </h2>
-      </div>
+      </div> */}
 
       {/* Header */}
       <div className="flex items-center text-gray-300 text-sm uppercase mb-4 px-4 border-b border-gray-700">

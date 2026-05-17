@@ -13,7 +13,7 @@ import NavbarRight from "../../../components/Navbar/NavbarRight";
 export default function VideoMetadataForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [payStat, setPayStat] = useState("");
 
@@ -944,7 +944,7 @@ export default function VideoMetadataForm() {
 
         {/* Payment next: same route/flow as before, but no read-only field preview — full form stays below for active submit */}
         {showReadOnlyAndPayNow ? (
-          <div className="space-y-8 max-w-4xl w-full">
+          <div className="space-y-8 max-w-[780px] w-full">
             <div className="rounded-2xl border-2 border-cyan-500/50 bg-gray-900/70 px-10 py-12 sm:px-14 sm:py-16 min-h-[220px] sm:min-h-[260px] flex flex-col justify-center shadow-[0_0_40px_rgba(34,211,238,0.12)]">
               <p className="text-xl sm:text-2xl md:text-3xl font-semibold text-cyan-300 leading-snug">
                 Video details have been submitted successfully.
@@ -976,194 +976,205 @@ export default function VideoMetadataForm() {
           </div>
         ) : (
           <>
-            {/* Full-screen loader: show progress inside loader when uploading */}
             {(isLoading ||
               isRemoving ||
               isUploading ||
               uploadProgress.isUploading) && (
-              <Loading
-                progress={
-                  uploadProgress.isUploading ? uploadProgress : undefined
-                }
-              />
+              <div className="text-center py-4 min-h-[calc(100dvh-170px)] flex justify-center items-center flex-col">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
+                <p className="mt-2 text-cyan-400">
+                  OPH Community is delighted to have you here! Joining the OPH
+                  Community will be one of the best decisions you ever make.
+                </p>
+              </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
-              {/* Song Name Display */}
-              <div className="space-y-2">
-                <label className="block text-gray-400">Song Name:</label>
-                <input
-                  disabled
-                  value={songName}
-                  className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700"
-                  type="text"
-                />
-              </div>
+            {/* 
+            <Loading
+              progress={uploadProgress.isUploading ? uploadProgress : undefined}
+            /> */}
 
-              {/* Credits */}
-              <div className="space-y-2">
-                <label className="block">
-                  Credits <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={formData.credits}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      credits: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter credits..."
-                  rows={4}
-                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-3 focus:outline-none focus:border-cyan-400"
-                  required
-                />
-              </div>
-
-              {/* Photo Upload */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Camera className="w-5 h-5 text-gray-400" />
-                  <span>
-                    Upload Maximum 3 Pictures{" "}
-                    <span className="text-red-500">*</span>
-                  </span>
+            {(!isLoading &&
+              !isRemoving &&
+              !isUploading &&
+              !uploadProgress.isUploading) && (
+              <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
+                {/* Song Name Display */}
+                <div className="space-y-2">
+                  <label className="block text-gray-400">Song Name:</label>
+                  <input
+                    disabled
+                    value={songName}
+                    className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-700"
+                    type="text"
+                  />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  {formData.existing_thumbnails?.map((url, index) => (
-                    <div
-                      key={`existing-${index}`}
-                      className="relative aspect-square"
-                    >
-                      <img
-                        src={url}
-                        alt={`Existing thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeExistingPhoto(index)}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {formData.thumbnails.map((photo, index) => (
-                    <div
-                      key={`new-${index}`}
-                      className="relative aspect-square"
-                    >
-                      <img
-                        src={URL.createObjectURL(photo)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {formData.thumbnails.length +
-                    (formData.existing_thumbnails?.length || 0) <
-                    3 && (
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                        multiple
-                      />
-                      <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
-                        <Plus className="w-8 h-8 text-gray-500" />
-                      </div>
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              {/* Video Upload */}
-              {!hasPaidForLyricalVideo && (
+                {/* Credits */}
                 <div className="space-y-2">
                   <label className="block">
-                    Upload Video File <span className="text-red-500">*</span>
+                    Credits <span className="text-red-500">*</span>
                   </label>
-                  {formData.existing_video_url && !formData.video_file && (
-                    <div className="mb-2">
-                      <p className="text-sm text-gray-400">
-                        Existing video file:
-                      </p>
-                      <CustomVideoPlayer
-                        src={formData.existing_video_url}
-                        className="w-full mt-2 rounded-lg"
-                        pauseOtherVideos={true}
-                      />
-                    </div>
-                  )}
-                  <label className="cursor-pointer block">
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleVideoUpload}
-                      className="hidden"
-                    />
-                    <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-cyan-400 transition-colors">
-                      {formData.video_file ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="text-cyan-400">
-                            {formData.video_file.name}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                video_file: null,
-                              }))
-                            }
-                            className="p-1 hover:text-red-500"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <Plus className="w-8 h-8 text-gray-500" />
-                          <span className="text-gray-500">
-                            {formData.existing_video_url
-                              ? "Upload New Video File"
-                              : "Upload Video File"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </label>
+                  <textarea
+                    value={formData.credits}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        credits: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter credits..."
+                    rows={4}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-3 focus:outline-none focus:border-cyan-400"
+                    required
+                  />
                 </div>
-              )}
 
-              {/* Submit Button - submit video first; after submit, backend redirects to payment if payment is also rejected */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
-              >
-                {isLoading ? "Loading..." : "Submit"}
-              </button>
-              {nextPage === "repayment" && formData.reject_reason && (
-                <p className="text-gray-400 text-sm text-center mt-2">
-                  After submitting, you will be redirected to complete payment
-                  if needed.
-                </p>
-              )}
-            </form>
+                {/* Photo Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Camera className="w-5 h-5 text-gray-400" />
+                    <span>
+                      Upload Maximum 3 Pictures{" "}
+                      <span className="text-red-500">*</span>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    {formData.existing_thumbnails?.map((url, index) => (
+                      <div
+                        key={`existing-${index}`}
+                        className="relative aspect-square"
+                      >
+                        <img
+                          src={url}
+                          alt={`Existing thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingPhoto(index)}
+                          className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {formData.thumbnails.map((photo, index) => (
+                      <div
+                        key={`new-${index}`}
+                        className="relative aspect-square"
+                      >
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`Upload ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {formData.thumbnails.length +
+                      (formData.existing_thumbnails?.length || 0) <
+                      3 && (
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                          multiple
+                        />
+                        <div className="aspect-square border-2 border-dashed border-gray-700 rounded-lg flex items-center justify-center hover:border-cyan-400 transition-colors">
+                          <Plus className="w-8 h-8 text-gray-500" />
+                        </div>
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Video Upload */}
+                {!hasPaidForLyricalVideo && (
+                  <div className="space-y-2">
+                    <label className="block">
+                      Upload Video File <span className="text-red-500">*</span>
+                    </label>
+                    {formData.existing_video_url && !formData.video_file && (
+                      <div className="mb-2">
+                        <p className="text-sm text-gray-400">
+                          Existing video file:
+                        </p>
+                        <CustomVideoPlayer
+                          src={formData.existing_video_url}
+                          className="w-full mt-2 rounded-lg"
+                          pauseOtherVideos={true}
+                        />
+                      </div>
+                    )}
+                    <label className="cursor-pointer block">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoUpload}
+                        className="hidden"
+                      />
+                      <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-cyan-400 transition-colors">
+                        {formData.video_file ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-cyan-400">
+                              {formData.video_file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  video_file: null,
+                                }))
+                              }
+                              className="p-1 hover:text-red-500"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <Plus className="w-8 h-8 text-gray-500" />
+                            <span className="text-gray-500">
+                              {formData.existing_video_url
+                                ? "Upload New Video File"
+                                : "Upload Video File"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                {/* Submit Button - submit video first; after submit, backend redirects to payment if payment is also rejected */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:bg-gray-400"
+                >
+                  {isLoading ? "Loading..." : "Submit"}
+                </button>
+                {nextPage === "repayment" && formData.reject_reason && (
+                  <p className="text-gray-400 text-sm text-center mt-2">
+                    After submitting, you will be redirected to complete payment
+                    if needed.
+                  </p>
+                )}
+              </form>
+            )}
           </>
         )}
       </div>

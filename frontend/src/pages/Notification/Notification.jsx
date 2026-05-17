@@ -105,9 +105,10 @@ const Notification = () => {
   const earlier = notifications.filter((n) => n.read_status);
 
   return (
-    <div className="bg-black min-h-[calc(100vh-70px)] text-white">
+    <div className="min-h-[calc(100vh-70px)] text-white relative">
+      
       <div className="px-8 py-6">
-        <div className="flex items-center justify-between mt-8 mb-8">
+        <div className="flex items-center justify-between mt-[14px] mb-[14px]">
           <h1 className="text-3xl font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             NOTIFICATION
           </h1>
