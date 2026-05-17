@@ -265,12 +265,12 @@ function ReelsSlider({ searchText, title }) {
             onClick={closeModal}
           >
             <div
-              className="relative bg-black rounded-lg shadow-2xl w-full max-w-[440px] aspect-[9/16] mx-auto"
+              className="relative bg-black rounded-lg shadow-2xl w-full max-w-[360px] aspect-[9/16] mx-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={closeModal}
-                className="absolute top-4 right-4 text-white text-3xl font-bold z-50 hover:opacity-80"
+                className="absolute top-2 right-2 text-white text-[40px] font-bold z-50 hover:opacity-80"
               >
                 &times;
               </button>

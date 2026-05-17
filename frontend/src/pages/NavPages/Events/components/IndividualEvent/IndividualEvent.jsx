@@ -404,10 +404,8 @@ const IndividualEvent = () => {
               </div>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className={`bg-[#5DC9DE] text-black text-sm lg:text-2xl px-6 py-3 rounded-full font-semibold drop-shadow-[0_0_20px_white] ${
+                className={`bg-[#5DC9DE] text-black text-sm lg:text-2xl px-6 py-3 rounded-full font-semibold drop-shadow-[0_0_15px_rgba(34,211,238,1)] ${
                   isEventInFuture && isRegistrationOpenByDateTime(singleEvent)
-                    ? "hover:font-bold transition delay-300"
-                    : "opacity-50 cursor-not-allowed"
                 }`}
                 disabled={!isEventInFuture || !isRegistrationOpenByDateTime(singleEvent)}
                 title={

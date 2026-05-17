@@ -48,19 +48,24 @@ export default function Events() {
     return dateB - dateA; // most recent past first
   };
 
-  const upcomingEvents = musicEvents
-    .filter((event) => {
-      const eventDate = new Date(event.dateTime);
-      return eventDate > new Date();
-    })
-    .sort(sortByEventDateAsc);
+  const allEvents = [...musicEvents].sort((a, b) => {
+    const now = new Date();
 
-  const previousEvents = musicEvents
-    .filter((event) => {
-      const eventDate = new Date(event.dateTime);
-      return eventDate <= new Date();
-    })
-    .sort(sortByEventDateDesc);
+    const aIsUpcoming = new Date(a.dateTime) > now;
+    const bIsUpcoming = new Date(b.dateTime) > now;
+
+    // Upcoming events first
+    if (aIsUpcoming && !bIsUpcoming) return -1;
+    if (!aIsUpcoming && bIsUpcoming) return 1;
+
+    // Upcoming → ascending
+    if (aIsUpcoming && bIsUpcoming) {
+      return new Date(a.dateTime) - new Date(b.dateTime);
+    }
+
+    // Previous → descending
+    return new Date(b.dateTime) - new Date(a.dateTime);
+  });
 
   useEffect(() => {
     if (!ophid) return; // wait for ophid to be defined
@@ -133,12 +138,12 @@ export default function Events() {
         <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-8 mb-8">
           {sectionTitle}
         </h2>
-        {sectionTitle.includes("Upcoming Events") && <NavbarRight />}
+        {sectionTitle.includes("Events") && <NavbarRight />}
       </div>
       <div className="space-y-6">
         {events.map((event, ind) => {
           const hashtagsArray = event.hashtags?.split(",") || [];
-          const isPrevious = sectionTitle === "Previous Events";
+          const isPrevious = new Date(event.dateTime) <= new Date();
           return (
             <div
               key={ind}
@@ -289,11 +294,7 @@ export default function Events() {
 
   return (
     <div className="min-h-screen text-gray-100 md:py-0 md:p-6">
-      <div className="">
-        {renderEventsSection(upcomingEvents, "Upcoming Events")}
-        {previousEvents.length > 0 &&
-          renderEventsSection(previousEvents, "Previous Events")}
-      </div>
+      <div className="">{renderEventsSection(allEvents, "Events")}</div>
       {isModalOpen && (
         <RegistrationModal id={id} setIsModalOpen={setIsModalOpen} />
       )}

@@ -516,7 +516,8 @@ const DocumentationDetailsForm = () => {
         const path = `${response.step}`;
         navigate(path ,{
           state: {
-            user_type: user_type
+            user_type: user_type,
+            backPath: "/auth/create-profile/documentation-details"
           }
         });
         // setShowMembershipForm(true); // Show MembershipForm

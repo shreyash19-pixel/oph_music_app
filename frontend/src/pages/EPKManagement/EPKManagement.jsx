@@ -162,15 +162,21 @@ const EPKManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xl text-gray-700">
-        Loading artist data...
+      <div className="text-center py-4 min-h-[calc(100dvh-170px)] flex justify-center items-center flex-col">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
+        <p className="mt-2 text-cyan-400">
+          OPH Community is delighted to have you here! Joining the OPH Community
+          will be one of the best decisions you ever make.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="ml-[63px] mr-[63px]">
-      <h1 className="mt-[55px] font-bold text-[50px] uppercase text-[#00B8D9] drop-shadow-[0_0_15px_rgba(34,211,238,1)]">EPK Management</h1>
+      <h1 className="mt-[55px] font-bold text-[35px] uppercase text-[#00B8D9] drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+        EPK Management
+      </h1>
 
       <form className="flex flex-col gap-[42px]" onSubmit={handleFormSubmit}>
         <div className="grid grid-cols-2 mt-[35px] gap-[54px]">
@@ -457,7 +463,9 @@ hover:bg-[#5A3F85] "
               {status.map((stat, index) => (
                 <tr key={index}>
                   <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
+                    {new Date(stat.date).toLocaleDateString("en-GB", {
+                      timeZone: "Asia/Kolkata",
+                    })}
                   </td>
                   <td className="py-[12px] font-bold text-[16px]">
                     {stat.field} update

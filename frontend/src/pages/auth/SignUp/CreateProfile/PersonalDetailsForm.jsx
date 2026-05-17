@@ -294,7 +294,8 @@ const PersonalDetailsForm = () => {
         const path = `${response.step}`;
         navigate(path,{
           state : {
-            user_type: formData.artist_type
+            user_type: formData.artist_type,
+            backPath: "/auth/create-profile/personal-details"
           }
         });
       }

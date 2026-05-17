@@ -78,7 +78,7 @@ const Footer = ({ userData }) => {
         <div className="w-full h-px bg-white opacity-30"></div>
 
         {/* Bottom Section: Policies and Social Icons */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-[14px]">
           <ul className="flex flex-wrap justify-center md:justify-start gap-4 text-white text-sm w-full md:w-2/3 px-2">
             {[
               { name: "Privacy Policy", path: "/privacy-policy" },

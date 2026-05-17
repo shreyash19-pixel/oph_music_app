@@ -253,15 +253,21 @@ const AddNewSong = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xl text-gray-700">
-        Loading artist data...
+      <div className="text-center py-4 min-h-[calc(100dvh-170px)] flex justify-center items-center flex-col">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
+        <p className="mt-2 text-cyan-400">
+          OPH Community is delighted to have you here! Joining the OPH Community
+          will be one of the best decisions you ever make.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="ml-[63px] mr-[63px]">
-      <h1 className="mt-[55px] font-bold text-[50px] text-[#00B8D9] drop-shadow-[0_0_15px_rgba(34,211,238,1)] uppercase">Add New Song </h1>
+      <h1 className="mt-[55px] font-bold text-[35px] text-[#00B8D9] drop-shadow-[0_0_15px_rgba(34,211,238,1)] uppercase">
+        Add New Song{" "}
+      </h1>
       <form
         className="mt-[40px] flex items-center justify-center flex-col w-full"
         onSubmit={handleSubmit}

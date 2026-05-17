@@ -482,46 +482,49 @@ export default function AnalyticsDashboard() {
           <div className="space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center  mb-4">
-              <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-                ANALYTICS
-              </h2>
-              <NavbarRight />
-            </div>
+              <div className="flex items-center justify-between w-full">
+                <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+                  ANALYTICS
+                </h2>
 
-            <div className="flex justify-end">
-              <button
-                className="flex items-center px-4 py-2 w-[150px]   text-sm text-white-400 appearance-none focus:outline-none "
-                onClick={(e) => {
-                  e.preventDefault();
-                  const selectElement = e.currentTarget.querySelector("select");
-                  if (selectElement) {
-                    selectElement.focus();
-                    selectElement.click();
-                  }
-                }}
-              >
-                <select
-                  className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-[#5dc9de]"
-                  value={selectedDuration}
-                  onChange={(e) => {
-                    setSelectedDuration(Number(e.target.value));
-                    if (streams.length > 0) {
-                      handleStreamChange(streams[0].content_stream_id);
-                    }
-                  }}
-                >
-                  {durationOptions.map((option) => (
-                    <option
-                      key={`duration-${option.value}`}
-                      value={option.value}
-                      className="bg-[#191D27] text-gray-200"
+                <div className="flex justify-end">
+                  <button
+                    className="flex items-center px-4 py-2 w-[150px]   text-sm text-white-400 appearance-none focus:outline-none "
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const selectElement =
+                        e.currentTarget.querySelector("select");
+                      if (selectElement) {
+                        selectElement.focus();
+                        selectElement.click();
+                      }
+                    }}
+                  >
+                    <select
+                      className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-3 text-gray-200 focus:outline-none focus:border-[#5dc9de]"
+                      value={selectedDuration}
+                      onChange={(e) => {
+                        setSelectedDuration(Number(e.target.value));
+                        if (streams.length > 0) {
+                          handleStreamChange(streams[0].content_stream_id);
+                        }
+                      }}
                     >
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white-400 pointer-events-none" />
-              </button>
+                      {durationOptions.map((option) => (
+                        <option
+                          key={`duration-${option.value}`}
+                          value={option.value}
+                          className="bg-[#191D27] text-gray-200"
+                        >
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white-400 pointer-events-none" />
+                  </button>
+                </div>
+              </div>
+              <NavbarRight />
             </div>
 
             {/* Song Selection and Platform */}

@@ -94,10 +94,6 @@ const CustomVideoPlayer = forwardRef(
 
     // Handle play/pause
     const togglePlayPause = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
       const video = videoRef.current;
       if (!video) return;
 
@@ -399,8 +395,6 @@ const CustomVideoPlayer = forwardRef(
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation();
-                onPlayButtonClick?.();
                 togglePlayPause(e);
               }}
               className={`z-30 transition-opacity ${

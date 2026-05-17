@@ -120,7 +120,7 @@ function HeroSection() {
       <img src={Glow} className='absolute left-0' alt="" />
       <div className="flex h-full md:px-16 lg:px-16 xl:px-16 justify-between flex-col lg:flex-row items-center w-full z-10  gap-6 mt-12">
         <div className="flex  flex-col lg:w-1/2 px-4 md:px-0">
-          <span className=" text-[24px] md:text-[34px] mt-20 md:mt-10  lg:text-[42px] text-white uppercase font-extrabold ">
+          <span className="text-[36px] text-white uppercase font-extrabold ">
             Fill out this form to get updates, detailed info, and{' '}
             <span className="text-[#5DC9DE]"> stay connected with the OPH Community</span>
           </span>

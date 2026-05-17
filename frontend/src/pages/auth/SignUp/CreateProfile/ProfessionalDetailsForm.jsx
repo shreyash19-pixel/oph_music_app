@@ -366,7 +366,8 @@ const ProfessionalDetailsForm = () => {
         const path = `${response.step}`;
         navigate(path ,{
           state:{
-            user_type: user_type
+            user_type: user_type,
+            backPath: "/auth/create-profile/professional-details"
           }
         });
       }

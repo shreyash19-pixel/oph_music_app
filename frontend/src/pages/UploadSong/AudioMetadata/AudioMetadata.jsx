@@ -21,7 +21,7 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   const [uploading, setUploading] = useState(false);
 
   const { headers } = useArtist();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   console.log(contentId);
 
@@ -986,7 +986,7 @@ export default function AudioMetadataForm() {
         <NavbarRight />
       </div>
       {isLoading && (
-        <div className="text-center py-4">
+        <div className="text-center py-4 min-h-[calc(100dvh-170px)] flex justify-center items-center flex-col">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
           <p className="mt-2 text-cyan-400">
             OPH Community is delighted to have you here! Joining the OPH
