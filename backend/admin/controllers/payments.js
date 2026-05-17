@@ -3,6 +3,13 @@ const { saveNotification } = require("../../utils/notify");
 const { updateSongStatus } = require("../model/songs");
 const AdminPaymentService = require("../services/AdminPaymentService");
 const { Resend } = require('resend');
+const { 
+  songRegistrationApprovedEmail, 
+  dateBookingApprovedEmail, 
+  paymentApprovedEmail, 
+  paymentRejectedEmail,
+  eventBookingApprovedEmail
+} = require('../../utils/emailTemplates');
 
 const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
 
@@ -130,38 +137,13 @@ const updateStatus = async (req, res) => {
         
         if (place === "Song Registration") {
           emailSubject = 'Song Successfully Registered!';
-          emailBody = `
-            <p>Hi ${userName || 'Artist'},</p>
-            <p>Great news! Your song has been successfully registered.</p>
-            <p>Transaction ID: ${transactionId}</p>
-            <p>You can view your song details in your dashboard.</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`;
+          emailBody = songRegistrationApprovedEmail(userName, transactionId, null);
         } else if (place === "Date booking") {
           const releaseDate = paymentDetails[0]?.release_date || 'your selected date';
           emailSubject = 'Date Booking Successful!';
-          emailBody = `
-            <p>Hi ${userName || 'Artist'},</p>
-            <p>Great news! Your time calendar date has been successfully booked.</p>
-            <p>Transaction ID: ${transactionId}</p>
-            <p>Release Date: ${releaseDate}</p>
-            <p>You can view your booking details in your dashboard.</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`;
+          emailBody = dateBookingApprovedEmail(userName, transactionId, releaseDate);
         } else {
-          emailBody = `
-            <p>Hi ${userName || 'Artist'},</p>
-            <p>Great news! Your payment has been approved.</p>
-            <p>Transaction ID: ${transactionId}</p>
-            <p>You can now access your dashboard and start using our services.</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`;
+          emailBody = paymentApprovedEmail(userName, transactionId);
         }
         
         console.log("Sending payment confirmation email to:", userEmail);
@@ -189,16 +171,7 @@ const updateStatus = async (req, res) => {
           from: 'OPH Community <creators@ophcommunity.org>',
           to: userEmail,
           subject: 'Payment Rejected',
-          html: `
-            <p>Hi ${userName || 'Artist'},</p>
-            <p>Unfortunately, your payment has been rejected.</p>
-            <p>Transaction ID: ${transactionId}</p>
-            <p>Reason: ${reject_reason || 'Not specified'}</p>
-            <p>Please contact us if you have any questions or need assistance.</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+          html: paymentRejectedEmail(userName, transactionId, reject_reason)
         });
         console.log("Rejection email sent successfully:", emailResult);
       }
@@ -478,16 +451,7 @@ const updateEventPaymentSp = async (req, res) => {
             from: 'OPH Community <creators@ophcommunity.org>',
             to: userEmail,
             subject: 'Event Successfully Booked!',
-            html: `
-              <p>Hi ${userName || 'Artist'},</p>
-              <p>Great news! Your event registration has been successfully approved.</p>
-              ${eventName ? `<p><strong>Event:</strong> ${eventName}</p>` : ''}
-              <p><strong>Transaction ID:</strong> ${transactionId}</p>
-              <p>You can view your event details in your dashboard.</p>
-              <br/>
-              <p>Best regards,<br/>
-              OPH Community Team<br/>
-              <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+            html: eventBookingApprovedEmail(userName, transactionId, eventName)
           });
           console.log("✓✓✓ Email sent successfully!");
           console.log("Email result:", JSON.stringify(emailResult, null, 2));
@@ -500,6 +464,80 @@ const updateEventPaymentSp = async (req, res) => {
         console.log("Summary: Checked payments joined with event_bookings and user_details, no email address found");
       }
       console.log("=== EMAIL SENDING PROCESS ENDED ===");
+    }
+
+    // Send email if payment is rejected
+    if (status === "rejected" || status === "Rejected") {
+      console.log("=== EVENT REJECTION EMAIL PROCESS STARTED ===");
+      console.log("Event ID:", eventId);
+      console.log("Transaction ID:", transactionId);
+      const db = require('../../DB/connect');
+      let userEmail = null;
+      let userName = null;
+      
+      try {
+        console.log("Fetching payment details with event booking info...");
+        const [paymentData] = await db.execute(
+          `SELECT 
+            p.oph_id,
+            p.transaction_id,
+            eb.email,
+            eb.first_name,
+            eb.last_name
+          FROM OphData.payments p
+          LEFT JOIN OphData.event_bookings eb ON p.transaction_id = eb.payment_transaction_id
+          WHERE p.transaction_id = ?
+          LIMIT 1`,
+          [transactionId]
+        );
+        
+        if (paymentData && paymentData.length > 0) {
+          const payment = paymentData[0];
+          userEmail = payment.email;
+          userName = payment.first_name && payment.last_name 
+            ? `${payment.first_name} ${payment.last_name}`.trim()
+            : payment.first_name || payment.last_name || 'Artist';
+          console.log("✓ Email found:", userEmail);
+          console.log("✓ Name found:", userName);
+        }
+        
+        // Fallback: If email not found in event_bookings, try user_details
+        if (!userEmail && paymentData && paymentData.length > 0) {
+          const ophIdFromPayment = paymentData[0].oph_id;
+          if (ophIdFromPayment) {
+            const [userDetails] = await db.execute(
+              "SELECT email, full_name FROM user_details WHERE oph_id = ?",
+              [ophIdFromPayment]
+            );
+            if (userDetails && userDetails.length > 0) {
+              userEmail = userDetails[0]?.email;
+              userName = userDetails[0]?.full_name;
+              console.log("✓ Email found in user_details:", userEmail);
+            }
+          }
+        }
+      } catch (error) {
+        console.log("✗ Error fetching payment data:", error.message);
+      }
+      
+      if (userEmail) {
+        console.log("Sending event rejection email to:", userEmail);
+        try {
+          const emailResult = await resend.emails.send({
+            from: 'OPH Community <creators@ophcommunity.org>',
+            to: userEmail,
+            subject: 'Event Registration Rejected',
+            html: paymentRejectedEmail(userName, transactionId, reject_reason)
+          });
+          console.log("✓✓✓ Event rejection email sent successfully!");
+          console.log("Email result:", JSON.stringify(emailResult, null, 2));
+        } catch (error) {
+          console.log("✗✗✗ Error sending rejection email:", error.message);
+        }
+      } else {
+        console.log("✗ No email found for rejected event payment");
+      }
+      console.log("=== EVENT REJECTION EMAIL PROCESS ENDED ===");
     }
 
     res.status(200).json({
@@ -720,15 +758,7 @@ const setPaymentVerificationController = async (req, res) => {
             from: 'OPH Community <creators@ophcommunity.org>',
             to: userEmail,
             subject: 'Date Booking Successful!',
-            html: `
-              <p>Hi ${userName || 'Artist'},</p>
-              <p>Great news! Your time calendar date has been successfully booked.</p>
-              <p>Release Date: ${release_date}</p>
-              <p>You can view your booking details in your dashboard.</p>
-              <br/>
-              <p>Best regards,<br/>
-              OPH Community Team<br/>
-              <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`
+            html: dateBookingApprovedEmail(userName, null, release_date)
           });
           console.log("Email sent successfully:", emailResult);
         }
