@@ -1,7 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const user_details = require("../model/reset_password")
+const user_details = require("../model/reset_password");
 const { Resend } = require('resend');
+const { passwordResetSuccessEmail } = require('../utils/emailTemplates');
 
 const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
 
@@ -46,20 +47,14 @@ const resetPassword = async (req, res) => {
     console.log("Updating password for ophid:", decoded.id);
 
     // Update password using ophid from token
-    await user_details.updatePassword(decoded.id, hashedPassword)
+    await user_details.updatePassword(decoded.id, hashedPassword);
 
     // Send confirmation email
     await resend.emails.send({
       from: 'OPH Community <creators@ophcommunity.org>',
       to: decoded.email,
       subject: 'Password Reset Successful',
-      html: `
-        <p>Hi,</p>
-        <p>Your password has been successfully reset.</p>
-        <p>If you didn't make this change, please contact us immediately at <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a></p>
-        <br/>
-        <p>Best regards,<br/>
-        OPH Community Team</p>`
+      html: passwordResetSuccessEmail('Artist'),
     });
 
     res.json({
