@@ -1,5 +1,17 @@
 const userDetailsModel = require("../model/newArtist");
 const AdminApplicationStatusService = require("../services/AdminApplicationStatusService");
+const { Resend } = require("resend");
+const { 
+  allDocumentsVerifiedEmail,
+  personalDetailsApprovedEmail,
+  personalDetailsRejectedEmail,
+  professionalDetailsApprovedEmail,
+  professionalDetailsRejectedEmail,
+  documentationDetailsApprovedEmail,
+  documentationDetailsRejectedEmail
+} = require('../../utils/emailTemplates');
+
+const resend = new Resend("re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5");
 
 const getAllDetailsUnderReview = async (req, res) => {
   try {
@@ -147,9 +159,6 @@ const updateStatus = async (req, res) => {
 
     if (appStatus[0]?.overall_status === "approved" || appStatus[0]?.overall_status === "completed") {
       console.log("Application approved, sending congratulations email...");
-      const { Resend } = require("resend");
-      const resend = new Resend("re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5");
-
       const userEmail = userDetails[0]?.email;
       const userName = userDetails[0]?.full_name;
 
@@ -159,15 +168,7 @@ const updateStatus = async (req, res) => {
           from: "OPH Community <creators@ophcommunity.org>",
           to: userEmail,
           subject: "Congratulations! Your Documents are Verified",
-          html: `
-            <p>Hi ${userName || "Artist"},</p>
-            <p>Congratulations! 🎉</p>
-            <p>All your documents have been successfully verified and approved.</p>
-            <p>Welcome to the OPH Community! You can now access all features in your dashboard.</p>
-            <br/>
-            <p>Best regards,<br/>
-            OPH Community Team<br/>
-            <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`,
+          html: allDocumentsVerifiedEmail(userName)
         });
         console.log("Congratulations email sent successfully:", emailResult);
       }
@@ -179,33 +180,32 @@ const updateStatus = async (req, res) => {
 
     }
 
-    // Check each table for rejection
-    const { Resend } = require("resend");
-    const resend = new Resend("re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5");
+    // Check each table for rejection and approval
     const userEmail = userDetails[0]?.email;
     const userName = userDetails[0]?.full_name;
 
-    // Check personal details rejection
+    // Check personal details
     if (userDetails[0]?.step_status === "rejected" && userEmail) {
       console.log("Personal details rejected, sending email...");
       const emailResult = await resend.emails.send({
         from: "OPH Community <creators@ophcommunity.org>",
         to: userEmail,
         subject: "Personal Details Rejected",
-        html: `
-          <p>Hi ${userName || "Artist"},</p>
-          <p>Unfortunately, your personal details have been rejected.</p>
-          <p>Reason: ${userDetails[0]?.reject_reason || "Not specified"}</p>
-          <p>Please update your information and resubmit.</p>
-          <br/>
-          <p>Best regards,<br/>
-          OPH Community Team<br/>
-          <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`,
+        html: personalDetailsRejectedEmail(userName, userDetails[0]?.reject_reason)
       });
       console.log("Personal rejection email sent:", emailResult);
+    } else if (userDetails[0]?.step_status === "approved" && userEmail) {
+      console.log("Personal details approved, sending email...");
+      const emailResult = await resend.emails.send({
+        from: "OPH Community <creators@ophcommunity.org>",
+        to: userEmail,
+        subject: "Personal Details Approved!",
+        html: personalDetailsApprovedEmail(userName)
+      });
+      console.log("Personal approval email sent:", emailResult);
     }
 
-    // Check professional details rejection
+    // Check professional details
     const [professionalDetails] = await db.execute(
       "SELECT step_status, reject_reason FROM professional_details WHERE oph_id = ?",
       [ophid],
@@ -216,20 +216,21 @@ const updateStatus = async (req, res) => {
         from: "OPH Community <creators@ophcommunity.org>",
         to: userEmail,
         subject: "Professional Details Rejected",
-        html: `
-          <p>Hi ${userName || "Artist"},</p>
-          <p>Unfortunately, your professional details have been rejected.</p>
-          <p>Reason: ${professionalDetails[0]?.reject_reason || "Not specified"}</p>
-          <p>Please update your information and resubmit.</p>
-          <br/>
-          <p>Best regards,<br/>
-          OPH Community Team<br/>
-          <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`,
+        html: professionalDetailsRejectedEmail(userName, professionalDetails[0]?.reject_reason)
       });
       console.log("Professional rejection email sent:", emailResult);
+    } else if (professionalDetails[0]?.step_status === "approved" && userEmail) {
+      console.log("Professional details approved, sending email...");
+      const emailResult = await resend.emails.send({
+        from: "OPH Community <creators@ophcommunity.org>",
+        to: userEmail,
+        subject: "Professional Details Approved!",
+        html: professionalDetailsApprovedEmail(userName)
+      });
+      console.log("Professional approval email sent:", emailResult);
     }
 
-    // Check documentation details rejection
+    // Check documentation details
     const [documentationDetails] = await db.execute(
       "SELECT step_status, reject_reason FROM documentation_details WHERE oph_id = ?",
       [ophid],
@@ -240,17 +241,18 @@ const updateStatus = async (req, res) => {
         from: "OPH Community <creators@ophcommunity.org>",
         to: userEmail,
         subject: "Documentation Details Rejected",
-        html: `
-          <p>Hi ${userName || "Artist"},</p>
-          <p>Unfortunately, your documentation details have been rejected.</p>
-          <p>Reason: ${documentationDetails[0]?.reject_reason || "Not specified"}</p>
-          <p>Please update your information and resubmit.</p>
-          <br/>
-          <p>Best regards,<br/>
-          OPH Community Team<br/>
-          <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947</p>`,
+        html: documentationDetailsRejectedEmail(userName, documentationDetails[0]?.reject_reason)
       });
       console.log("Documentation rejection email sent:", emailResult);
+    } else if (documentationDetails[0]?.step_status === "approved" && userEmail) {
+      console.log("Documentation details approved, sending email...");
+      const emailResult = await resend.emails.send({
+        from: "OPH Community <creators@ophcommunity.org>",
+        to: userEmail,
+        subject: "Documentation Details Approved!",
+        html: documentationDetailsApprovedEmail(userName)
+      });
+      console.log("Documentation approval email sent:", emailResult);
     }
 
     res.status(200).json({

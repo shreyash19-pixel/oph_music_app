@@ -44,121 +44,40 @@ class AdminPaymentService {
         place === "Date booking" || place === "Date Booking";
       const isReleaseDateChange = place === "Release date change";
 
-      if (place === "Special Artist Song Registration") {
-        console.log("in special artist");
-        console.log("Status received:", status);
-        console.log("OphId:", ophId);
-        console.log("SongId:", songId);
-        console.log("TransactionId:", transactionId);
+      // Handle special artist song payment rejection: track rejected count for free songs
+      if (
+        place === "Special Artist Song Registration" &&
+        status === "rejected"
+      ) {
+        const [resp] = await connection.execute(
+          "SELECT status FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
+          [ophId, songId],
+        );
 
-        console.log(status + "sdsdsdsdsds");
-        if (status === "rejected") {
-          
-          const [resp] = await connection.execute(
-            "SELECT status FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
-            [ophId, songId],
-          );
+        if (resp && resp.length > 0) {
+          const songStatus = resp[0].status;
 
-          console.log(resp);
-          
-
-          if (resp && resp.length > 0) {
-            const songStatus = resp[0].status;
-
-            if (songStatus !== "rejected") {
-              const [songRows] = await connection.execute(
-                "SELECT song_type FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
-                [ophId, songId],
-              );
-              if (songRows[0]?.song_type === "free") {
-                const [freeSongs] = await connection.execute(
-                  "SELECT rejected_count FROM special_artist_free_songs WHERE oph_id = ?",
-                  [ophId],
-                );
-                const rejectedCount = freeSongs.length
-                  ? Number(freeSongs[0].rejected_count)
-                  : 0;
-                await connection.execute(
-                  `INSERT INTO special_artist_free_songs (oph_id, rejected_count)
-                   VALUES (?, ?)
-                   ON DUPLICATE KEY UPDATE rejected_count = VALUES(rejected_count)`,
-                  [ophId, rejectedCount + 1],
-                );
-              }
-            }
-          }
-        }
-
-        console.log("Checking if status is approved...");
-        console.log("Status === 'approved':", status === "approved");
-        console.log("Status === 'Approved':", status === "Approved");
-        
-        // Send email if special artist song is approved
-        if (status === "approved" || status === "Approved") {
-          console.log("=== SPECIAL ARTIST SONG APPROVAL EMAIL PROCESS STARTED ===");
-          console.log("OphId for email:", ophId);
-          console.log("SongId for email:", songId);
-          console.log("TransactionId for email:", transactionId);
-          
-          const { Resend } = require('resend');
-          const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
-          
-          try {
-            console.log("Executing query to fetch user and song data...");
-            // Get user details and song details
-            const [userData] = await connection.execute(
-              `SELECT 
-                ud.email,
-                ud.full_name,
-                ud.stage_name,
-                sas.song_name,
-                sas.song_id
-              FROM user_details ud
-              LEFT JOIN special_artist_songs sas ON ud.oph_id = sas.oph_id
-              WHERE ud.oph_id = ? AND sas.song_id = ?
-              LIMIT 1`,
-              [ophId, songId]
+          if (songStatus !== "rejected") {
+            const [songRows] = await connection.execute(
+              "SELECT song_type FROM special_artist_songs WHERE oph_id = ? AND song_id = ?",
+              [ophId, songId],
             );
-            
-            console.log("Query executed successfully");
-            console.log("User data found:", userData.length > 0 ? "YES" : "NO");
-            console.log("User and song data:", JSON.stringify(userData, null, 2));
-            
-            if (userData && userData.length > 0) {
-              const userEmail = userData[0].email;
-              const userName = userData[0].full_name || userData[0].stage_name;
-              const songName = userData[0].song_name;
-              
-              console.log("Extracted email:", userEmail);
-              console.log("Extracted userName:", userName);
-              console.log("Extracted songName:", songName);
-              
-              if (userEmail) {
-                console.log("Email found, attempting to send...");
-                console.log("Sending special artist song approval email to:", userEmail);
-                
-                const { specialArtistSongApprovedEmail } = require('../../utils/emailTemplates');
-                const emailResult = await resend.emails.send({
-                  from: 'OPH Community <creators@ophcommunity.org>',
-                  to: userEmail,
-                  subject: 'Special Artist Song Approved!',
-                  html: specialArtistSongApprovedEmail(userName, transactionId, songName)
-                });
-                console.log("✓✓✓ Special artist song approval email sent successfully!");
-                console.log("Email result:", JSON.stringify(emailResult, null, 2));
-              } else {
-                console.log("✗ No email found for user");
-              }
-            } else {
-              console.log("✗ No user/song data found for ophId:", ophId, "songId:", songId);
+            if (songRows[0]?.song_type === "free") {
+              const [freeSongs] = await connection.execute(
+                "SELECT rejected_count FROM special_artist_free_songs WHERE oph_id = ?",
+                [ophId],
+              );
+              const rejectedCount = freeSongs.length
+                ? Number(freeSongs[0].rejected_count)
+                : 0;
+              await connection.execute(
+                `INSERT INTO special_artist_free_songs (oph_id, rejected_count)
+                 VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE rejected_count = VALUES(rejected_count)`,
+                [ophId, rejectedCount + 1],
+              );
             }
-          } catch (error) {
-            console.log("✗✗✗ Error sending special artist song approval email:", error.message);
-            console.log("Error stack:", error.stack);
           }
-          console.log("=== SPECIAL ARTIST SONG APPROVAL EMAIL PROCESS ENDED ===");
-        } else {
-          console.log("Status is not approved, skipping email. Status:", status);
         }
       }
 
@@ -169,7 +88,8 @@ class AdminPaymentService {
       const songIdBeforeUpdate = paymentDetailsBefore[0]?.song_id || songId;
       // Use exact DB values so UPDATE always finds the row (avoids frontend/DB mismatch)
       const ophIdFromDb = paymentDetailsBefore[0]?.oph_id ?? ophId;
-      const transactionIdFromDb = paymentDetailsBefore[0]?.transaction_id ?? transactionId;
+      const transactionIdFromDb =
+        paymentDetailsBefore[0]?.transaction_id ?? transactionId;
 
       // Handle song payment rejection: move song_id to reject_for and set song_id to NULL
       if (isSongPayment && isRejected && paymentDetailsBefore[0]?.song_id) {
