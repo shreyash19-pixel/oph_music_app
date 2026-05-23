@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
-const { sendEmail } = require("../utils/sns");
 const { Resend } = require('resend');
-const user_details = require('../model/forgot_password')
+const user_details = require('../model/forgot_password');
+const { forgotPasswordEmail } = require('../utils/emailTemplates');
 
-const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5'); // Replace with your Resend API key
+const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
 
 const forgotPassword = async (req, res) => {
   try {
@@ -36,17 +36,6 @@ const forgotPassword = async (req, res) => {
 
     // Generate reset link
     const resetLink = `https://ophcommunity.in/auth/reset-password?token=${resetToken}`;
-    const htmlContent = `
-      <p>Hi ${artistData.name || artistData.full_name || "Artist"},</p>
-      <p>Forgot your password? No worries—it happens to the best of us! Just click the button below to set a new one and get back into your account:</p>
-      <p><a href="${resetLink}" style="background:#8458B3; color:white; padding:10px 20px; border-radius:8px; text-decoration:none;">Reset Password</a></p>
-      <p>If you didn't request this, feel free to ignore this email—your account is safe.</p>
-      <p>This link will expire in 5 minutes, so be sure to reset it soon. Need help? We're happy to assist—just reach out!</p>
-      <br/>
-      <p>Best regards,<br/>
-      OPH Community Team<br/>
-      <a href="mailto:connect@ophcommunity.org">connect@ophcommunity.org</a> | 8433792947 | <a href="https://ophcommunity.com/contact/">ophcommunity.com/contact</a></p>`
-    ;
 
     console.log("Sending email to:", artistData.email);
 
@@ -55,7 +44,7 @@ const forgotPassword = async (req, res) => {
       from: 'OPH Community <creators@ophcommunity.org>',
       to: artistData.email,
       subject: 'Reset Your Password – Lets Get You Back In!',
-      html: htmlContent,
+      html: forgotPasswordEmail(artistData.name || artistData.full_name || "Artist", resetLink),
     });
 
     console.log("Email sent successfully:", emailResult);

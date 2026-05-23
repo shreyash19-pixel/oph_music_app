@@ -2,16 +2,16 @@ const payment_details = require("../model/payments");
 const { saveNotification } = require("../../utils/notify");
 const { updateSongStatus } = require("../model/songs");
 const AdminPaymentService = require("../services/AdminPaymentService");
-const { Resend } = require('resend');
-const { 
-  songRegistrationApprovedEmail, 
-  dateBookingApprovedEmail, 
-  paymentApprovedEmail, 
+const { Resend } = require("resend");
+const {
+  songRegistrationApprovedEmail,
+  dateBookingApprovedEmail,
+  paymentApprovedEmail,
   paymentRejectedEmail,
-  eventBookingApprovedEmail
-} = require('../../utils/emailTemplates');
+  eventBookingApprovedEmail,
+} = require("../../utils/emailTemplates");
 
-const resend = new Resend('re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5');
+const resend = new Resend("re_XMPVxrwG_5piBuXZ9ti12ovEuQC7RVuV5");
 
 const updateStatus = async (req, res) => {
   try {
@@ -44,11 +44,14 @@ const updateStatus = async (req, res) => {
     }
 
     if (req.user?.role === "accounts member") {
-      const rows = await payment_details.getPaymentDetailsByTransactionId(
-        transactionIdValue,
-      );
+      const rows =
+        await payment_details.getPaymentDetailsByTransactionId(
+          transactionIdValue,
+        );
       const fromSource = rows?.[0]?.from_source ?? rows?.[0]?.From;
-      const fs = String(fromSource || "").trim().toLowerCase();
+      const fs = String(fromSource || "")
+        .trim()
+        .toLowerCase();
       if (fromSource === "Registration") {
         return res.status(403).json({
           success: false,
@@ -78,11 +81,17 @@ const updateStatus = async (req, res) => {
       songId,
     });
 
-    const paymentDetails = await payment_details.getPaymentDetailsByTransactionId(transactionIdValue);
+    const paymentDetails =
+      await payment_details.getPaymentDetailsByTransactionId(
+        transactionIdValue,
+      );
     if (!paymentDetails || paymentDetails.length === 0) {
-      return res.status(404).json({ message: "Payment not found after update" });
+      return res
+        .status(404)
+        .json({ message: "Payment not found after update" });
     }
-    const place = paymentDetails[0].from_source || paymentDetails[0].From || "Payment";
+    const place =
+      paymentDetails[0].from_source || paymentDetails[0].From || "Payment";
 
     let link = null;
     if (status === "rejected") {
@@ -127,31 +136,46 @@ const updateStatus = async (req, res) => {
     if (status === "approved") {
       console.log("Payment approved, fetching user email...");
       const db = require("../../DB/connect");
-      const [userDetails] = await db.execute("SELECT email, full_name FROM user_details WHERE oph_id = ?", [ophId]);
+      const [userDetails] = await db.execute(
+        "SELECT email, full_name FROM user_details WHERE oph_id = ?",
+        [ophId],
+      );
       const userEmail = userDetails[0]?.email;
       const userName = userDetails[0]?.full_name;
-      
+
       if (userEmail) {
-        let emailSubject = 'Payment Approved!';
-        let emailBody = '';
-        
+        let emailSubject = "Payment Approved!";
+        let emailBody = "";
+
         if (place === "Song Registration") {
-          emailSubject = 'Song Successfully Registered!';
-          emailBody = songRegistrationApprovedEmail(userName, transactionId, null);
+          emailSubject = "Song Successfully Registered!";
+          emailBody = songRegistrationApprovedEmail(
+            userName,
+            transactionId,
+            null,
+          );
         } else if (place === "Date booking") {
-          const releaseDate = paymentDetails[0]?.release_date || 'your selected date';
-          emailSubject = 'Date Booking Successful!';
-          emailBody = dateBookingApprovedEmail(userName, transactionId, releaseDate);
+          const releaseDate =
+            paymentDetails[0]?.release_date || "your selected date";
+          emailSubject = "Date Booking Successful!";
+          emailBody = dateBookingApprovedEmail(
+            userName,
+            transactionId,
+            releaseDate,
+          );
+        } else if (place === "Special artist song registration") {
+          emailSubject = "Special Artist Song Payment Approved!";
+          emailBody = paymentApprovedEmail(userName, transactionId);
         } else {
           emailBody = paymentApprovedEmail(userName, transactionId);
         }
-        
+
         console.log("Sending payment confirmation email to:", userEmail);
         const emailResult = await resend.emails.send({
-          from: 'OPH Community <creators@ophcommunity.org>',
+          from: "OPH Community <creators@ophcommunity.org>",
           to: userEmail,
           subject: emailSubject,
-          html: emailBody
+          html: emailBody,
         });
         console.log("Email sent successfully:", emailResult);
       }
@@ -161,17 +185,20 @@ const updateStatus = async (req, res) => {
     if (status === "rejected") {
       console.log("Payment rejected, fetching user email...");
       const db = require("../../DB/connect");
-      const [userDetails] = await db.execute("SELECT email, full_name FROM user_details WHERE oph_id = ?", [ophId]);
+      const [userDetails] = await db.execute(
+        "SELECT email, full_name FROM user_details WHERE oph_id = ?",
+        [ophId],
+      );
       const userEmail = userDetails[0]?.email;
       const userName = userDetails[0]?.full_name;
-      
+
       if (userEmail) {
         console.log("Sending payment rejection email to:", userEmail);
         const emailResult = await resend.emails.send({
-          from: 'OPH Community <creators@ophcommunity.org>',
+          from: "OPH Community <creators@ophcommunity.org>",
           to: userEmail,
-          subject: 'Payment Rejected',
-          html: paymentRejectedEmail(userName, transactionId, reject_reason)
+          subject: "Payment Rejected",
+          html: paymentRejectedEmail(userName, transactionId, reject_reason),
         });
         console.log("Rejection email sent successfully:", emailResult);
       }
@@ -340,7 +367,10 @@ const updateEventPaymentSp = async (req, res) => {
       const event = await EventModel.getEventById(parseInt(eventId, 10));
       const eventName = event?.EventName || "Event";
 
-      const statusLabel = (status === "approved" || status === "Approved") ? "approved" : "rejected";
+      const statusLabel =
+        status === "approved" || status === "Approved"
+          ? "approved"
+          : "rejected";
       const title =
         statusLabel === "approved"
           ? `Event "${eventName}" Registration Approved`
@@ -364,7 +394,10 @@ const updateEventPaymentSp = async (req, res) => {
       const onlineUsers = req.app.get("onlineUsers");
       const userSocketId = onlineUsers?.get(ophId);
       if (io && onlineUsers && userSocketId) {
-        io.to(userSocketId).emit("Event-update", { ...notification, ...notificationPayload });
+        io.to(userSocketId).emit("Event-update", {
+          ...notification,
+          ...notificationPayload,
+        });
       }
     }
 
@@ -373,13 +406,15 @@ const updateEventPaymentSp = async (req, res) => {
       console.log("=== EMAIL SENDING PROCESS STARTED ===");
       console.log("Event ID:", eventId);
       console.log("Transaction ID:", transactionId);
-      const db = require('../../DB/connect');
+      const db = require("../../DB/connect");
       let userEmail = null;
       let userName = null;
       let eventName = null;
-      
+
       try {
-        console.log("Step 1: Fetching payment details with event booking info...");
+        console.log(
+          "Step 1: Fetching payment details with event booking info...",
+        );
         // Join payments with event_bookings using transaction_id
         const [paymentData] = await db.execute(
           `SELECT 
@@ -395,18 +430,22 @@ const updateEventPaymentSp = async (req, res) => {
           LEFT JOIN OphData.events e ON p.event_id = e.id
           WHERE p.transaction_id = ? AND p.status = 'approved'
           LIMIT 1`,
-          [transactionId]
+          [transactionId],
         );
-        
-        console.log("Payment data found:", paymentData.length > 0 ? "YES" : "NO");
+
+        console.log(
+          "Payment data found:",
+          paymentData.length > 0 ? "YES" : "NO",
+        );
         console.log("Payment data:", JSON.stringify(paymentData, null, 2));
-        
+
         if (paymentData && paymentData.length > 0) {
           const payment = paymentData[0];
           userEmail = payment.email;
-          userName = payment.first_name && payment.last_name 
-            ? `${payment.first_name} ${payment.last_name}`.trim()
-            : payment.first_name || payment.last_name || 'Artist';
+          userName =
+            payment.first_name && payment.last_name
+              ? `${payment.first_name} ${payment.last_name}`.trim()
+              : payment.first_name || payment.last_name || "Artist";
           eventName = payment.EventName;
           console.log("✓ Email found:", userEmail);
           console.log("✓ Name found:", userName);
@@ -414,20 +453,26 @@ const updateEventPaymentSp = async (req, res) => {
         } else {
           console.log("✗ No payment data found with approved status");
         }
-        
+
         // Fallback: If email not found in event_bookings, try user_details
         if (!userEmail && paymentData && paymentData.length > 0) {
           const ophId = paymentData[0].oph_id;
-          console.log("Step 2: Email not found in event_bookings, checking user_details for oph_id:", ophId);
-          
+          console.log(
+            "Step 2: Email not found in event_bookings, checking user_details for oph_id:",
+            ophId,
+          );
+
           if (ophId) {
             const [userDetails] = await db.execute(
               "SELECT email, full_name FROM user_details WHERE oph_id = ?",
-              [ophId]
+              [ophId],
             );
-            console.log("User details found:", userDetails.length > 0 ? "YES" : "NO");
+            console.log(
+              "User details found:",
+              userDetails.length > 0 ? "YES" : "NO",
+            );
             console.log("User details:", JSON.stringify(userDetails, null, 2));
-            
+
             if (userDetails && userDetails.length > 0) {
               userEmail = userDetails[0]?.email;
               userName = userDetails[0]?.full_name;
@@ -440,7 +485,7 @@ const updateEventPaymentSp = async (req, res) => {
         console.log("✗ Error fetching payment/event data:", error.message);
         console.log("Error stack:", error.stack);
       }
-      
+
       if (userEmail) {
         console.log("Step 3: Attempting to send email...");
         console.log("Recipient email:", userEmail);
@@ -448,10 +493,10 @@ const updateEventPaymentSp = async (req, res) => {
         console.log("Event name:", eventName);
         try {
           const emailResult = await resend.emails.send({
-            from: 'OPH Community <creators@ophcommunity.org>',
+            from: "OPH Community <creators@ophcommunity.org>",
             to: userEmail,
-            subject: 'Event Successfully Booked!',
-            html: eventBookingApprovedEmail(userName, transactionId, eventName)
+            subject: "Event Successfully Booked!",
+            html: eventBookingApprovedEmail(userName, transactionId, eventName),
           });
           console.log("✓✓✓ Email sent successfully!");
           console.log("Email result:", JSON.stringify(emailResult, null, 2));
@@ -461,7 +506,9 @@ const updateEventPaymentSp = async (req, res) => {
         }
       } else {
         console.log("✗✗✗ FINAL RESULT: No email found");
-        console.log("Summary: Checked payments joined with event_bookings and user_details, no email address found");
+        console.log(
+          "Summary: Checked payments joined with event_bookings and user_details, no email address found",
+        );
       }
       console.log("=== EMAIL SENDING PROCESS ENDED ===");
     }
@@ -471,10 +518,10 @@ const updateEventPaymentSp = async (req, res) => {
       console.log("=== EVENT REJECTION EMAIL PROCESS STARTED ===");
       console.log("Event ID:", eventId);
       console.log("Transaction ID:", transactionId);
-      const db = require('../../DB/connect');
+      const db = require("../../DB/connect");
       let userEmail = null;
       let userName = null;
-      
+
       try {
         console.log("Fetching payment details with event booking info...");
         const [paymentData] = await db.execute(
@@ -488,26 +535,27 @@ const updateEventPaymentSp = async (req, res) => {
           LEFT JOIN OphData.event_bookings eb ON p.transaction_id = eb.payment_transaction_id
           WHERE p.transaction_id = ?
           LIMIT 1`,
-          [transactionId]
+          [transactionId],
         );
-        
+
         if (paymentData && paymentData.length > 0) {
           const payment = paymentData[0];
           userEmail = payment.email;
-          userName = payment.first_name && payment.last_name 
-            ? `${payment.first_name} ${payment.last_name}`.trim()
-            : payment.first_name || payment.last_name || 'Artist';
+          userName =
+            payment.first_name && payment.last_name
+              ? `${payment.first_name} ${payment.last_name}`.trim()
+              : payment.first_name || payment.last_name || "Artist";
           console.log("✓ Email found:", userEmail);
           console.log("✓ Name found:", userName);
         }
-        
+
         // Fallback: If email not found in event_bookings, try user_details
         if (!userEmail && paymentData && paymentData.length > 0) {
           const ophIdFromPayment = paymentData[0].oph_id;
           if (ophIdFromPayment) {
             const [userDetails] = await db.execute(
               "SELECT email, full_name FROM user_details WHERE oph_id = ?",
-              [ophIdFromPayment]
+              [ophIdFromPayment],
             );
             if (userDetails && userDetails.length > 0) {
               userEmail = userDetails[0]?.email;
@@ -519,15 +567,15 @@ const updateEventPaymentSp = async (req, res) => {
       } catch (error) {
         console.log("✗ Error fetching payment data:", error.message);
       }
-      
+
       if (userEmail) {
         console.log("Sending event rejection email to:", userEmail);
         try {
           const emailResult = await resend.emails.send({
-            from: 'OPH Community <creators@ophcommunity.org>',
+            from: "OPH Community <creators@ophcommunity.org>",
             to: userEmail,
-            subject: 'Event Registration Rejected',
-            html: paymentRejectedEmail(userName, transactionId, reject_reason)
+            subject: "Event Registration Rejected",
+            html: paymentRejectedEmail(userName, transactionId, reject_reason),
           });
           console.log("✓✓✓ Event rejection email sent successfully!");
           console.log("Email result:", JSON.stringify(emailResult, null, 2));
@@ -589,11 +637,9 @@ const updateSongPaymentSp = async (req, res) => {
     const { ophId, transactionId, status, FormData } = req.body;
 
     if (!ophId || !transactionId || !status || !FormData) {
-      return res
-        .status(400)
-        .json({
-          message: "ophId, transactionId, status and FormData are required",
-        });
+      return res.status(400).json({
+        message: "ophId, transactionId, status and FormData are required",
+      });
     }
 
     const result = await payment_details.updateSongPaymentSp(
@@ -628,7 +674,7 @@ const getTransactionDetailsController = async (req, res) => {
     const response = await payment_details.getTransactionDetails(
       release_date,
       oph_id || null,
-      song_id || null
+      song_id || null,
     );
 
     if (response) {
@@ -684,7 +730,7 @@ const setPaymentVerificationController = async (req, res) => {
       release_date,
       from,
       song_id,
-      oph_id
+      oph_id,
     );
 
     console.log("[setPaymentVerificationController] Response:", response);
@@ -747,20 +793,46 @@ const setPaymentVerificationController = async (req, res) => {
         const db = require("../../DB/connect");
         const [userDetails] = await db.execute(
           "SELECT email, full_name FROM user_details WHERE oph_id = ?",
-          [oph_id || ophIdVal]
+          [oph_id || ophIdVal],
         );
         const userEmail = userDetails[0]?.email;
         const userName = userDetails[0]?.full_name;
-        
+
         if (userEmail) {
           console.log("Sending date booking confirmation email to:", userEmail);
           const emailResult = await resend.emails.send({
-            from: 'OPH Community <creators@ophcommunity.org>',
+            from: "OPH Community <creators@ophcommunity.org>",
             to: userEmail,
-            subject: 'Date Booking Successful!',
-            html: dateBookingApprovedEmail(userName, null, release_date)
+            subject: "Date Booking Successful!",
+            html: dateBookingApprovedEmail(userName, null, release_date),
           });
           console.log("Email sent successfully:", emailResult);
+        }
+      }
+
+      // Send email if decision is rejected and from is Date Booking
+      if (
+        (decision === "rejected" || decision === "Rejected") &&
+        (fromNorm === "Date Booking" || fromNorm === "Date booking")
+      ) {
+        console.log("Date booking rejected, sending email...");
+        const db = require("../../DB/connect");
+        const [userDetails] = await db.execute(
+          "SELECT email, full_name FROM user_details WHERE oph_id = ?",
+          [oph_id || ophIdVal],
+        );
+        const userEmail = userDetails[0]?.email;
+        const userName = userDetails[0]?.full_name;
+
+        if (userEmail) {
+          console.log("Sending date booking rejection email to:", userEmail);
+          const emailResult = await resend.emails.send({
+            from: "OPH Community <creators@ophcommunity.org>",
+            to: userEmail,
+            subject: "Date Booking Rejected",
+            html: paymentRejectedEmail(userName, null, reason),
+          });
+          console.log("Rejection email sent successfully:", emailResult);
         }
       }
 
@@ -789,12 +861,10 @@ const getPaymentDetailsByTransactionId = async (req, res) => {
     const { transactionId } = req.params;
     const response =
       await payment_details.getPaymentDetailsByTransactionId(transactionId);
-    return res
-      .status(200)
-      .json({
-        message: "Payment details fetched successfully",
-        data: response,
-      });
+    return res.status(200).json({
+      message: "Payment details fetched successfully",
+      data: response,
+    });
   } catch (error) {
     console.error("Error fetching payment details:", error);
     return res.status(500).json({ message: "Internal server error" });
