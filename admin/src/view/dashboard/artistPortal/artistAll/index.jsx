@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
-import { Lock, Unlock, Download } from "lucide-react";
+import { Lock, Unlock, Download, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
@@ -14,6 +14,8 @@ const ARTIST_ALL_DETAIL_ROLES = [
   ROLES.SALES_HEAD,
 ];
 
+
+
 const isSalesMemberViewOnly = (role) => role === ROLES.SALES_MEMBER;
 
 const ArtistAll = () => {
@@ -25,6 +27,7 @@ const ArtistAll = () => {
   const [document, setDocument] = useState({});
   const [professions, setProfessions] = useState([]);
   const [professionsLoading, setProfessionsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const [locks, setLocks] = useState({});
   const fileInputRefs = useRef({});
@@ -257,6 +260,7 @@ const ArtistAll = () => {
     }
     showConfirmationToast(async () => {
       try {
+        setLoading(true);
         if (sectionName === "Personal Details") {
           await updatePersonalDetails(currentData);
         } else if (sectionName === "Professional Details") {
@@ -269,6 +273,8 @@ const ArtistAll = () => {
       } catch (error) {
         console.error(`Error saving ${sectionName}:`, error);
         toast.error(`Failed to save ${sectionName}`);
+      } finally {
+        setLoading(false);
       }
     });
   };
@@ -323,7 +329,6 @@ const ArtistAll = () => {
       // If no new image is provided, we need to get the existing image from the database
       if (!hasNewImage) {
         try {
-          
           // Fetch existing user data to get current personal_photo
           const existingDataResponse = await axiosApi.get(
             `/auth/personal-details?ophid=${ophid}`,
@@ -586,7 +591,9 @@ const ArtistAll = () => {
       const response = await fetch(pdfUrl);
 
       if (!response.ok) {
-        throw new Error(`PDF not found: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `PDF not found: ${response.status} ${response.statusText}`,
+        );
       }
 
       const blob = await response.blob();
@@ -608,7 +615,9 @@ const ArtistAll = () => {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.dismiss();
-      toast.error(`Failed to download PDF: ${error.response?.data?.message || error.message}`);
+      toast.error(
+        `Failed to download PDF: ${error.response?.data?.message || error.message}`,
+      );
     }
   };
 
@@ -624,7 +633,6 @@ const ArtistAll = () => {
       lower.includes("aadhar") ||
       lower.includes("pan");
     const isVideo = lower.includes("video");
-
 
     if (key === "photos" && Array.isArray(value)) {
       return (
@@ -702,55 +710,57 @@ const ArtistAll = () => {
 
           {/* Add new photo button */}
           {!viewOnlyNoEdit && (
-          <div className="w-full">
-            <button
-              type="button"
-              onClick={() => {
-                if (allData.photos.length >= 5) {
-                  toast.error(
-                    "Maximum 5 images allowed. Please delete some images before adding new ones.",
-                  );
-                  return;
-                }
-                fileInputRefs.current[`add_new_${sectionIdx}_${key}`]?.click();
-              }}
-              disabled={allData.photos.length >= 5}
-              className={`mt-2 px-3 py-1 rounded ${
-                allData.photos.length >= 5
-                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-[#0d3c44] text-white hover:bg-[#0a2d33]"
-              }`}
-            >
-              {allData.photos.length >= 5
-                ? "Maximum 5 images"
-                : "Add New Photo"}
-            </button>
-
-            <input
-              ref={(ref) =>
-                (fileInputRefs.current[`add_new_${sectionIdx}_${key}`] = ref)
-              }
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={() => {
                   if (allData.photos.length >= 5) {
                     toast.error(
                       "Maximum 5 images allowed. Please delete some images before adding new ones.",
                     );
                     return;
                   }
-                  const newUrl = URL.createObjectURL(file);
-                  onChange("photos", [
-                    ...allData.photos,
-                    { url: newUrl, file },
-                  ]);
+                  fileInputRefs.current[
+                    `add_new_${sectionIdx}_${key}`
+                  ]?.click();
+                }}
+                disabled={allData.photos.length >= 5}
+                className={`mt-2 px-3 py-1 rounded ${
+                  allData.photos.length >= 5
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-[#0d3c44] text-white hover:bg-[#0a2d33]"
+                }`}
+              >
+                {allData.photos.length >= 5
+                  ? "Maximum 5 images"
+                  : "Add New Photo"}
+              </button>
+
+              <input
+                ref={(ref) =>
+                  (fileInputRefs.current[`add_new_${sectionIdx}_${key}`] = ref)
                 }
-              }}
-              className="hidden"
-            />
-          </div>
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    if (allData.photos.length >= 5) {
+                      toast.error(
+                        "Maximum 5 images allowed. Please delete some images before adding new ones.",
+                      );
+                      return;
+                    }
+                    const newUrl = URL.createObjectURL(file);
+                    onChange("photos", [
+                      ...allData.photos,
+                      { url: newUrl, file },
+                    ]);
+                  }
+                }}
+                className="hidden"
+              />
+            </div>
           )}
         </div>
       );
@@ -959,6 +969,8 @@ const ArtistAll = () => {
           showDownloadButton={true}
           isBrowser={isBrowser}
           viewOnlyNoEdit={viewOnlyNoEdit}
+          loading = {loading}
+          setLoading = {setLoading}
         />
 
         <Section
@@ -971,6 +983,8 @@ const ArtistAll = () => {
           locks={locks}
           toggleLock={toggleLock}
           viewOnlyNoEdit={viewOnlyNoEdit}
+          loading = {loading}
+          setLoading = {setLoading}
         />
 
         <Section
@@ -983,6 +997,8 @@ const ArtistAll = () => {
           locks={locks}
           toggleLock={toggleLock}
           viewOnlyNoEdit={viewOnlyNoEdit}
+          loading = {loading}
+          setLoading = {setLoading}
         />
       </div>
     </div>
@@ -1002,72 +1018,84 @@ const Section = ({
   showDownloadButton = false,
   isBrowser = false,
   viewOnlyNoEdit = false,
-}) => (
-  <div>
-    <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">
-      {title}
-    </h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {Object.entries(data)
-        .filter(([key]) => !key.startsWith("_")) // Filter out internal fields like _totalMonths
-        .map(([key, value]) => {
-          const lockKey = `${sectionIdx}_${key}`;
-          return (
-            <div key={key}>
-              <label className="block text-gray-700 text-sm font-semibold mb-1 capitalize">
-                {key.replace(/_/g, " ")}
-              </label>
-              <div className="relative">
-                {renderInput(key, value, onChange, data, lockKey, sectionIdx)}
-                {key !== "photos" && !viewOnlyNoEdit && (
-                  <button
-                    type="button"
-                    onClick={() => toggleLock(lockKey)}
-                    className="absolute top-1 right-1 p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
-                  >
-                    {locks[lockKey] ? (
-                      <Lock size={16} className="text-gray-600" />
-                    ) : (
-                      <Unlock size={16} className="text-green-600" />
-                    )}
-                  </button>
-                )}
+  loading,
+  setLoading
+}) => {
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="w-10 h-10 animate-spin text-[#0d3c44]" />
+        <p className="mt-3 text-gray-600 font-medium">Loading section...</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-[#0d3c44] mb-6 border-b pb-2">
+        {title}
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {Object.entries(data)
+          .filter(([key]) => !key.startsWith("_")) // Filter out internal fields like _totalMonths
+          .map(([key, value]) => {
+            const lockKey = `${sectionIdx}_${key}`;
+            return (
+              <div key={key}>
+                <label className="block text-gray-700 text-sm font-semibold mb-1 capitalize">
+                  {key.replace(/_/g, " ")}
+                </label>
+                <div className="relative">
+                  {renderInput(key, value, onChange, data, lockKey, sectionIdx)}
+                  {key !== "photos" && !viewOnlyNoEdit && (
+                    <button
+                      type="button"
+                      onClick={() => toggleLock(lockKey)}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
+                    >
+                      {locks[lockKey] ? (
+                        <Lock size={16} className="text-gray-600" />
+                      ) : (
+                        <Unlock size={16} className="text-green-600" />
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+      </div>
+      <div className="mt-6 flex justify-between items-center">
+        {showDownloadButton && onDownloadPDF && isBrowser && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              if (
+                typeof window !== "undefined" &&
+                typeof window.document !== "undefined"
+              ) {
+                onDownloadPDF();
+              } else {
+                console.error("Not in browser environment when button clicked");
+              }
+            }}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+          >
+            <Download size={16} />
+            Download PDF
+          </button>
+        )}
+        {!viewOnlyNoEdit && (
+          <button
+            type="button"
+            onClick={onSave}
+            className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
+          >
+            Save {title}
+          </button>
+        )}
+      </div>
     </div>
-    <div className="mt-6 flex justify-between items-center">
-      {showDownloadButton && onDownloadPDF && isBrowser && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            if (
-              typeof window !== "undefined" &&
-              typeof window.document !== "undefined"
-            ) {
-              onDownloadPDF();
-            } else {
-              console.error("Not in browser environment when button clicked");
-            }
-          }}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-        >
-          <Download size={16} />
-          Download PDF
-        </button>
-      )}
-      {!viewOnlyNoEdit && (
-        <button
-          type="button"
-          onClick={onSave}
-          className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33]"
-        >
-          Save {title}
-        </button>
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 export default ArtistAll;

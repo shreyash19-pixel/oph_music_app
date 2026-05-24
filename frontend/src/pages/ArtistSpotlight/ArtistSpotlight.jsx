@@ -425,7 +425,7 @@ export default function ArtistSpotlight() {
           <div className="max-w-8xl mx-auto space-y-8">
             {/* Artist Header */}
             <div className="flex justify-between items-center  mb-8">
-              <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 ARTIST SPOTLIGHT
               </h2>
               <NavbarRight />
