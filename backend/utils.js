@@ -402,14 +402,83 @@ const getPresignedDownloadUrl = (key, expiresIn = 900) => {
   return s3.getSignedUrl("getObject", params);
 };
 
+const ALLOWED_PRESIGNED_VIDEO_PURPOSES = [
+  "song-video",
+  "professional",
+  "admin-professional",
+  "tv-publishing",
+  "admin-tv",
+  "epk-bio",
+  "epk-story",
+  "about-us",
+  "page-media",
+  "resource-podcast",
+  "resource-stories",
+  "resource-reels",
+  "resource-learning",
+  "admin-song-video",
+];
+
 /**
- * Presigned PUT so the browser uploads the video directly to S3 (bypasses Cloudflare/nginx body limits).
- * Client must send PUT with exactly the same Content-Type header as contentType.
+ * Map presigned upload purpose → S3 key prefix (no trailing slash).
+ * @param {string} purpose
+ * @param {{ ophid?: string, song_id?: string, page_name?: string }} ctx
  */
-const getPresignedVideoPutUrl = (ophid, originalFilename, contentType) => {
-  const safeName = String(originalFilename || "video").replace(/[^a-zA-Z0-9._-]/g, "_");
-  const key = `video-meta/${ophid}/video-url/${Date.now()}-${safeName}`;
-  const ct = (contentType && String(contentType).trim()) || "application/octet-stream";
+const resolvePresignedVideoKeyPrefix = (purpose, ctx = {}) => {
+  const ophid = String(ctx.ophid || "").trim();
+  const songId = String(ctx.song_id || "").trim();
+  const pageName = String(ctx.page_name || "").trim();
+
+  switch (purpose) {
+    case "song-video":
+      if (!ophid) throw new Error("ophid required for song-video");
+      return `video-meta/${ophid}/video-url`;
+    case "professional":
+      if (!ophid) throw new Error("ophid required for professional");
+      return `allUsers/${ophid}/videos`;
+    case "admin-professional":
+      if (!ophid) throw new Error("ophid required for admin-professional");
+      return `allUsers/${ophid}/professional_videos`;
+    case "tv-publishing":
+      if (!songId) throw new Error("song_id required for tv-publishing");
+      return `contents/${songId}/video`;
+    case "admin-tv":
+      if (!songId) throw new Error("song_id required for admin-tv");
+      return `contents/${songId}/video_url`;
+    case "epk-bio":
+      if (!ophid) throw new Error("ophid required for epk-bio");
+      return `special-artist/${ophid}/bioVideo`;
+    case "epk-story":
+      if (!ophid) throw new Error("ophid required for epk-story");
+      return `special-artist/${ophid}/artistStoryVideo`;
+    case "about-us":
+      return "uploaded-videos";
+    case "page-media":
+      if (!pageName) throw new Error("page_name required for page-media");
+      return `page-media/${pageName}/videos`;
+    case "resource-podcast":
+      return "Resource/Podcast";
+    case "resource-stories":
+      return "Resource/Stories";
+    case "resource-reels":
+      return "Resource/Reels";
+    case "resource-learning":
+      return "Resource/Learning";
+    case "admin-song-video":
+      return "video-files";
+    default:
+      throw new Error(`Unknown presigned upload purpose: ${purpose}`);
+  }
+};
+
+/**
+ * Presigned PUT so the browser uploads directly to S3 (bypasses Cloudflare/nginx body limits).
+ */
+const getPresignedPutUrlForPrefix = (keyPrefix, originalFilename, contentType) => {
+  const safeName = String(originalFilename || "file").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const key = `${keyPrefix}/${Date.now()}-${safeName}`;
+  const ct =
+    (contentType && String(contentType).trim()) || "application/octet-stream";
   const params = {
     Bucket: process.env.S3_BUCKET,
     Key: key,
@@ -421,6 +490,17 @@ const getPresignedVideoPutUrl = (ophid, originalFilename, contentType) => {
   const bucket = process.env.S3_BUCKET;
   const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
   return { uploadUrl, publicUrl, key, contentType: ct };
+};
+
+/**
+ * Presigned PUT for artist song video step (same key layout as historical getPresignedVideoPutUrl).
+ */
+const getPresignedVideoPutUrl = (ophid, originalFilename, contentType) => {
+  return getPresignedPutUrlForPrefix(
+    resolvePresignedVideoKeyPrefix("song-video", { ophid }),
+    originalFilename,
+    contentType
+  );
 };
 
 /**
@@ -467,6 +547,9 @@ module.exports = {
   saveToS3,
   deleteFromS3,
   getPresignedDownloadUrl,
+  ALLOWED_PRESIGNED_VIDEO_PURPOSES,
+  resolvePresignedVideoKeyPrefix,
+  getPresignedPutUrlForPrefix,
   getPresignedVideoPutUrl,
   getS3ObjectBuffer,
   s3ObjectExists,

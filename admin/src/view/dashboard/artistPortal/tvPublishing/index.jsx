@@ -1,6 +1,7 @@
   import React, { useEffect, useState, useRef } from "react";
   import { useParams } from "react-router-dom";
   import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
   import { Lock, Unlock } from "lucide-react";
   // import { toast } from "react-toastify";
   import toast, { Toaster } from "react-hot-toast";
@@ -218,7 +219,14 @@
           formData.append("audio_url", audioInputRef.current.files[0]);
         }
         if (videoInputRef.current?.files[0]) {
-          formData.append("video_url", videoInputRef.current.files[0]);
+          const videoUrl = await uploadVideoViaPresignedPut(
+            videoInputRef.current.files[0],
+            {
+              purpose: "admin-tv",
+              params: { song_id: tvData.song_id },
+            },
+          );
+          formData.append("video_url", videoUrl);
         }
 
         if (!formData.has("audio_url") && !formData.has("video_url")) {

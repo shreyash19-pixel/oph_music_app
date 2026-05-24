@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosApi from "../../../../conf/axios";
+import { buildResourceFormData } from "../../../../utils/presignedVideoUpload";
 import toast, { Toaster } from "react-hot-toast";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 import { useParams, useNavigate } from "react-router-dom";
@@ -82,22 +83,13 @@ const UpdateStory = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const data = new FormData();
-
-    for (const key in formData) {
-      if (
-        (key === "video_url" && formData[key] === null && videoPreview) ||
-        (key === "thumbnail_url" && formData[key] === null && thumbnailPreview)
-      ) {
-        // Send original string URL if no new file was selected
-        data.append(key, key === "video_url" ? videoPreview : thumbnailPreview);
-      } else {
-        data.append(key, formData[key]);
-      }
-    }
-
     try {
       setUpdating(true);
+      const data = await buildResourceFormData(formData, {
+        videoPreview,
+        thumbnailPreview,
+        videoPurpose: "resource-stories",
+      });
       await axiosApi.put(`/update_story/${storyId}`, data, {
         headers: {
           "Content-Type": "multipart/form-data",

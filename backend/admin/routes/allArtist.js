@@ -26,10 +26,7 @@ router.put(
   "/update-professional-details",
   authMiddleware,
   forbidSalesMemberArtistEdits,
-  upload.fields([
-    { name: "photos", maxCount: 5 },
-    { name: "video", maxCount: 1 },
-  ]),
+  upload.fields([{ name: "photos", maxCount: 5 }]),
   userDetails.updateProfessionalDetailsController
 );
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Camera, Plus, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import axiosApi from "../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../utils/presignedVideoUpload";
 import { useArtist } from "../../auth/API/ArtistContext";
 import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
@@ -266,88 +266,46 @@ export default function VideoMetadataForm() {
 
       let directS3VideoUrl = null;
       if (formData.video_file) {
-        const pres = await axiosApi.get("/video-details/presigned-upload", {
-          headers,
-          params: {
-            song_id: contentId,
-            filename: formData.video_file.name,
-            content_type:
-              formData.video_file.type || "application/octet-stream",
-          },
-        });
-        if (
-          !pres.data?.success ||
-          !pres.data.uploadUrl ||
-          !pres.data.publicUrl
-        ) {
-          toast.error(pres.data?.message || "Could not prepare video upload.");
-          throw new Error("presign failed");
-        }
-        const ct =
-          pres.data.contentType ||
-          formData.video_file.type ||
-          "application/octet-stream";
         const putStart = Date.now();
-        const totalMBVideo = formData.video_file.size / (1024 * 1024);
-        if (socket?.connected && ophid) {
-          socket.emit("presigned-video-upload-progress", {
-            ophid: String(ophid).trim(),
-            song_id: contentId,
-            percentage: 0,
-            loadedMB: 0,
-            totalMB: totalMBVideo,
-            speed: 0,
-            time: 0,
-          });
-        }
         try {
-          await axios.put(pres.data.uploadUrl, formData.video_file, {
-            headers: { "Content-Type": ct },
-            timeout: 0,
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity,
-            onUploadProgress: (ev) => {
-              if (!ev.total) return;
-              const loadedMB = ev.loaded / (1024 * 1024);
-              const totalMB = ev.total / (1024 * 1024);
-              const pct = Math.round((ev.loaded / ev.total) * 100);
-              const elapsed = (Date.now() - putStart) / 1000;
-              const speed = loadedMB / (elapsed || 1);
-              setUploadProgress({
-                percentage: pct,
-                loadedMB,
-                totalMB,
-                speed,
-                time: elapsed,
-                isUploading: true,
-              });
-              if (socket?.connected && ophid) {
-                socket.emit("presigned-video-upload-progress", {
-                  ophid: String(ophid).trim(),
-                  song_id: contentId,
+          directS3VideoUrl = await uploadVideoViaPresignedPut(
+            axiosApi,
+            formData.video_file,
+            {
+              purpose: "song-video",
+              headers,
+              params: { song_id: contentId },
+              onUploadProgress: (ev) => {
+                if (!ev.total) return;
+                const loadedMB = ev.loaded / (1024 * 1024);
+                const totalMB = ev.total / (1024 * 1024);
+                const pct = Math.round((ev.loaded / ev.total) * 100);
+                const elapsed = (Date.now() - putStart) / 1000;
+                const speed = loadedMB / (elapsed || 1);
+                setUploadProgress({
                   percentage: pct,
                   loadedMB,
                   totalMB,
                   speed,
                   time: elapsed,
+                  isUploading: true,
                 });
-              }
+              },
+              onSocketProgress: (data) => {
+                if (socket?.connected && ophid) {
+                  socket.emit("presigned-video-upload-progress", {
+                    ophid: String(ophid).trim(),
+                    song_id: contentId,
+                    ...data,
+                  });
+                }
+              },
             },
-          });
-        } catch (putErr) {
-          console.error("[Video upload] S3 PUT failed:", putErr);
-          const net =
-            putErr?.message === "Network Error" ||
-            putErr?.code === "ERR_NETWORK" ||
-            !putErr?.response;
-          toast.error(
-            net
-              ? "Video upload to storage failed (network/CORS). Ensure the S3 bucket allows PUT from your website origin."
-              : `Video upload to storage failed (${putErr?.response?.status ?? "error"}).`,
           );
+        } catch (putErr) {
+          toast.error(putErr.message || "Video upload to storage failed.");
           throw putErr;
         }
-        directS3VideoUrl = pres.data.publicUrl;
       }
 
       const formDataToSend = new FormData();
@@ -368,8 +326,6 @@ export default function VideoMetadataForm() {
 
       if (directS3VideoUrl) {
         formDataToSend.append("existing_video_url", directS3VideoUrl);
-      } else if (formData.video_file) {
-        formDataToSend.append("video_file", formData.video_file);
       } else if (formData.existing_video_url) {
         // Preserve existing S3 URL when user resubmits without choosing a new file
         formDataToSend.append(

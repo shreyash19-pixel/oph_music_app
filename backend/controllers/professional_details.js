@@ -69,17 +69,15 @@ const determineNextStepAfterProfessional = (applicationStatus) => {
         });
       }
 
-      const videoFile = req.files?.video?.[0];
       const photoFiles = req.files?.photos || [];
     
       let videoFinalURL = null;
       let allPhotoURLs = [];
 
-      // Video logic
-      if (videoFile) {
-        videoFinalURL = await uploadToS3(videoFile, `allUsers/${OPH_ID}/videos`);
-      } else if (VideoURL) {
-        videoFinalURL = VideoURL;
+      // Video: client uploads via presigned PUT; server stores final S3 URL in VideoURL
+      const videoFromBody = VideoURL && String(VideoURL).trim();
+      if (videoFromBody) {
+        videoFinalURL = videoFromBody;
       }
 
       // Photos logic - upload in parallel for better performance

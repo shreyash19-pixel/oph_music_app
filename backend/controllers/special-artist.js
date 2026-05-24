@@ -89,34 +89,25 @@ const editSpecialArtistDetailsController = async (req, res) => {
       });
     }
 
-    if (req.files && req.files.bioVideo) {
-      const url = await uploadToS3(
-        req.files.bioVideo[0],
-        `special-artist/${ophid}/bioVideo`
-      );
-
-      if (url) {
-        updates.push({
-          ophid: ophid,
-          field: "Video Bio",
-          content: url,
-        });
-      }
+    const bioVideoUrl =
+      req.body.bioVideoUrl && String(req.body.bioVideoUrl).trim();
+    if (bioVideoUrl) {
+      updates.push({
+        ophid: ophid,
+        field: "Video Bio",
+        content: bioVideoUrl,
+      });
     }
 
-    if (req.files && req.files.artistStoryVideo) {
-      const url = await uploadToS3(
-        req.files.artistStoryVideo[0],
-        `special-artist/${ophid}/artistStoryVideo`
-      );
-
-      if (url) {
-        updates.push({
-          ophid: ophid,
-          field: "Artist Story Vid",
-          content: url,
-        });
-      }
+    const artistStoryVideoUrl =
+      req.body.artistStoryVideoUrl &&
+      String(req.body.artistStoryVideoUrl).trim();
+    if (artistStoryVideoUrl) {
+      updates.push({
+        ophid: ophid,
+        field: "Artist Story Vid",
+        content: artistStoryVideoUrl,
+      });
     }
 
     if (req.files && req.files.artistPhoto) {

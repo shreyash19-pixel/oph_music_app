@@ -271,32 +271,7 @@ const updateProfessionalDetailsController = async (req, res) => {
       }
     }
 
-    // Handle video file
-    if (req.files.video && req.files.video.length > 0) {
-      console.log(`Found ${req.files.video.length} video files to upload`);
-      for (const file of req.files.video) {
-        console.log("Uploading video:", {
-          originalname: file.originalname,
-          mimetype: file.mimetype,
-          size: file.size,
-          buffer: file.buffer ? "has buffer" : "no buffer",
-        });
-        try {
-          const s3Url = await bucket.uploadToS3(
-            file,
-            `allUsers/${ophid}/professional_videos`,
-          );
-          console.log("Video S3 upload successful:", s3Url);
-          if (s3Url) {
-            videoURL = s3Url;
-          }
-        } catch (uploadError) {
-          console.error("Error uploading video to S3:", uploadError);
-        }
-      }
-    }
-
-    if (!req.files.photos && !req.files.video) {
+    if (!req.files.photos) {
       console.log("No files found in request");
     }
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
 import { toast } from "react-hot-toast";
 
 const UploadVideo = () => {
@@ -36,7 +37,6 @@ const UploadVideo = () => {
     }
 
     const formData = new FormData();
-    if (videoFile) formData.append("video", videoFile);
     if (thumbnail) formData.append("thumbnail", thumbnail);
     if (description.trim()) formData.append("description", description);
 
@@ -44,14 +44,21 @@ const UploadVideo = () => {
     setProgress(0);
 
     try {
+      if (videoFile) {
+        const videoUrl = await uploadVideoViaPresignedPut(videoFile, {
+          purpose: "about-us",
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            setProgress(percentCompleted);
+          },
+        });
+        formData.append("video_url", videoUrl);
+      }
+
       const response = await axiosApi.post("/upload-video", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setProgress(percentCompleted);
-        },
       });
 
       if (response.data.success) {

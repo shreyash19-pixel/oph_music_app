@@ -34,18 +34,17 @@ const createContentFiles = async (req, res) => {
       });
     }
 
-    // Extract files from req.files
     const audio_file = req.files.audio?.[0];
-    const video_file = req.files.video?.[0];
+    const videoFromBody =
+      req.body.video_url && String(req.body.video_url).trim();
 
-    if (!audio_file || !video_file) {
+    if (!audio_file || !videoFromBody) {
       return res.status(400).json({
         success: false,
-        message: "Both audio and video files are required",
+        message: "Both audio file and video_url (presigned upload) are required",
       });
     }
 
-    // Upload audio
     const audio = await uploadToS3(audio_file, `contents/${song_id}/audio`);
     if (!audio) {
       return res.status(500).json({
@@ -54,14 +53,7 @@ const createContentFiles = async (req, res) => {
       });
     }
 
-    // Upload video
-    const video = await uploadToS3(video_file, `contents/${song_id}/video`);
-    if (!video) {
-      return res.status(500).json({
-        success: false,
-        message: "Video upload failed",
-      });
-    }
+    const video = videoFromBody;
 
     // Insert into DB
     const response = await tvModel.updateContentFiles(

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
 import { toast } from "react-hot-toast";
 
 const PageMediaUpload = () => {
@@ -64,9 +65,16 @@ const PageMediaUpload = () => {
     const formData = new FormData();
     formData.append("page_name", selectedPage);
     if (thumbnail) formData.append("thumbnail", thumbnail);
-    if (video) formData.append("video", video);
 
     try {
+      if (video) {
+        const videoUrl = await uploadVideoViaPresignedPut(video, {
+          purpose: "page-media",
+          params: { page_name: selectedPage },
+        });
+        formData.append("video_url", videoUrl);
+      }
+
       const response = await axiosApi.post("/upload-page-media", formData);
       toast.success("Media uploaded successfully");
       setThumbnail(null);

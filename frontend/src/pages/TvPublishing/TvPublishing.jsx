@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axiosApi from "../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../utils/presignedVideoUpload";
 import { useArtist } from "../auth/API/ArtistContext";
 import Loading from "../../components/Loading";
 import toast from "react-hot-toast";
@@ -124,19 +125,37 @@ export default function TVPublishing() {
     const formData = new FormData();
     formData.append("song_id", selectedContent.song_id);
     formData.append("audio", files.audio);
-    formData.append("video", files.video);
 
     try {
       setLoading(true);
-      const toastId = toast.loading("Uploading content...");
+      const toastId = toast.loading("Uploading video to storage...");
+
+      const videoUrl = await uploadVideoViaPresignedPut(
+        axiosApi,
+        files.video,
+        {
+          purpose: "tv-publishing",
+          headers,
+          params: { song_id: selectedContent.song_id },
+          onUploadProgress: (e) => {
+            if (!e.total) return;
+            const progress = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress((prev) => ({ ...prev, video: progress }));
+          },
+        },
+      );
+      formData.append("video_url", videoUrl);
+
+      toast.loading("Uploading audio...", { id: toastId });
 
       const response = await axiosApi.post("/content", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (e) => {
-          const progress = Math.round((e.loaded * 100) / e.total);
-          setUploadProgress({ audio: progress, video: progress });
+          if (!e.total) return;
+          const progress = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress((prev) => ({ ...prev, audio: progress }));
         },
       });
 

@@ -183,7 +183,8 @@ const updateTvFiles = async (req, res) => {
   try {
     const { song_id } = req.body;
     const audio_file = req.files?.audio_url?.[0];
-    const video_file = req.files?.video_url?.[0];
+    const videoFromBody =
+      req.body.video_url && String(req.body.video_url).trim();
 
     if (!song_id) {
       return res
@@ -201,12 +202,8 @@ const updateTvFiles = async (req, res) => {
       updates.audio_url = audio_url;
     }
 
-    if (video_file) {
-      const video_url = await uploadToS3(
-        video_file,
-        `contents/${song_id}/video_url`
-      );
-      updates.video_url = video_url;
+    if (videoFromBody) {
+      updates.video_url = videoFromBody;
     }
 
     if (Object.keys(updates).length === 0) {

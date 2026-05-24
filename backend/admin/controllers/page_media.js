@@ -33,7 +33,8 @@ const uploadPageMediaController = async (req, res) => {
   try {
     const { page_name } = req.body;
     const thumbnail = req.files?.thumbnail?.[0];
-    const video = req.files?.video?.[0];
+    const videoFromBody =
+      req.body.video_url && String(req.body.video_url).trim();
 
     if (!page_name) {
       return res
@@ -52,8 +53,8 @@ const uploadPageMediaController = async (req, res) => {
       );
     }
 
-    if (video) {
-      videoUrl = await uploadToS3(video, `page-media/${page_name}/videos`);
+    if (videoFromBody) {
+      videoUrl = videoFromBody;
     }
 
     await updatePageMedia(page_name, thumbnailUrl, videoUrl);

@@ -6,6 +6,7 @@ const path = require("path");
 const os = require("os");
 
 const controller = require("../controllers/video_details");
+const presignedController = require("../controllers/presigned_upload");
 
 // Disk storage: avoids buffering 1GB in RAM (OOM on small VPS / PM2). Streams to S3 from file.
 const uploadDir = path.join(os.tmpdir(), "oph-video-uploads");
@@ -92,7 +93,10 @@ const uploadVideoFields = (req, res, next) => {
 router.get(
   "/video-details/presigned-upload",
   authMiddleware,
-  controller.presignedVideoUpload
+  (req, res) => {
+    if (!req.query.purpose) req.query.purpose = "song-video";
+    presignedController.presignedVideoUpload(req, res);
+  }
 );
 
 router.post(

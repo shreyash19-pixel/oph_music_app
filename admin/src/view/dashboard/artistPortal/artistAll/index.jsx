@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
 import { Lock, Unlock, Download } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
@@ -426,26 +427,29 @@ const ArtistAll = () => {
         }
       }
 
-      // Handle video upload - convert blob URL to file and upload
       if (professionalData.video) {
-        const videoUrl =
+        const videoRef =
           typeof professionalData.video === "object"
             ? professionalData.video.url
             : professionalData.video;
-        if (videoUrl && videoUrl.startsWith("blob:")) {
+        if (videoRef && videoRef.startsWith("blob:")) {
           try {
-            console.log("Converting video blob URL to file:", videoUrl);
-            const response = await fetch(videoUrl);
+            const response = await fetch(videoRef);
             const blob = await response.blob();
             const file = new File([blob], `video_${Date.now()}.mp4`, {
               type: blob.type || "video/mp4",
             });
-            console.log("Converted video blob to file:", file);
-            formData.append("video", file);
-            fileCount++;
+            userData.video = await uploadVideoViaPresignedPut(file, {
+              purpose: "admin-professional",
+              params: { ophid },
+            });
+            formData.set("data", JSON.stringify(userData));
           } catch (error) {
-            console.error("Error converting video blob to file:", error);
+            console.error("Error uploading video via presigned PUT:", error);
           }
+        } else if (videoRef && !videoRef.startsWith("blob:")) {
+          userData.video = videoRef;
+          formData.set("data", JSON.stringify(userData));
         }
       }
 

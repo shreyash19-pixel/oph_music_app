@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Plus, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import axiosApi from "../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../utils/presignedVideoUpload";
 import { useArtist } from "../auth/API/ArtistContext";
 const EPKManagement = () => {
   const navigate = useNavigate();
@@ -113,14 +114,24 @@ const EPKManagement = () => {
       if (formData.bio !== "") {
         sendFormData.append("bio", formData.bio);
       }
-      if (formData.bioVideo !== null) {
-        sendFormData.append("bioVideo", formData.bioVideo);
+      if (formData.bioVideo instanceof File) {
+        const bioVideoUrl = await uploadVideoViaPresignedPut(
+          axiosApi,
+          formData.bioVideo,
+          { purpose: "epk-bio", headers, params: { ophid } },
+        );
+        sendFormData.append("bioVideoUrl", bioVideoUrl);
       }
       if (formData.artistStory !== "") {
         sendFormData.append("artistStory", formData.artistStory);
       }
-      if (formData.artistStoryVideo !== null) {
-        sendFormData.append("artistStoryVideo", formData.artistStoryVideo);
+      if (formData.artistStoryVideo instanceof File) {
+        const storyVideoUrl = await uploadVideoViaPresignedPut(
+          axiosApi,
+          formData.artistStoryVideo,
+          { purpose: "epk-story", headers, params: { ophid } },
+        );
+        sendFormData.append("artistStoryVideoUrl", storyVideoUrl);
       }
       if (formData.artistPhoto !== null) {
         sendFormData.append("artistPhoto", formData.artistPhoto);

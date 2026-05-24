@@ -33,10 +33,7 @@ router.post(
   "/updateTvFiles",
   authMiddleware,
   requireTvPublishingManager,
-  upload.fields([
-    { name: "audio_url", maxCount: 1 },
-    { name: "video_url", maxCount: 1 },
-  ]),
+  upload.fields([{ name: "audio_url", maxCount: 1 }]),
   updateTvFiles,
 );
 

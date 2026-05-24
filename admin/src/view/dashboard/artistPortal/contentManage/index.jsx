@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import axiosApi from "../../../../conf/axios"; // Adjust if needed
+import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload"; // Adjust if needed
 import { Lock, Unlock } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -201,9 +202,11 @@ const ContentManage = () => {
         formData.append('video_url', videoData.video);
       }
 
-      // Add video file if provided
       if (videoData.video_file) {
-        formData.append('video_file', videoData.video_file);
+        const videoUrl = await uploadVideoViaPresignedPut(videoData.video_file, {
+          purpose: "admin-song-video",
+        });
+        formData.append("video_url", videoUrl);
       }
 
       // Handle existing images - always send current list (can be empty)
