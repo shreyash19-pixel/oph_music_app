@@ -3,8 +3,14 @@ const router = express.Router();
 const allDataCont = require("../controllers/allData");
 const authMiddleware = require("../../middleware/authenticate");
 const attachExportScope = require("../middleware/attachExportScope");
+const requireAllDataExport = require("../middleware/requireAllDataExport");
 
-const scoped = (handler) => [authMiddleware, attachExportScope, handler];
+const scoped = (handler) => [
+  authMiddleware,
+  requireAllDataExport,
+  attachExportScope,
+  handler,
+];
 
 router.get("/application-status", ...scoped(allDataCont.downloadApplicationStatus));
 router.get("/user-details", ...scoped(allDataCont.downloadUserDetails));

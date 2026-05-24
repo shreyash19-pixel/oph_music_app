@@ -181,7 +181,19 @@ export const WEBSITE_CONFIG_SETTINGS_ROLES = [
   ROLES.ADMINISTRATIVE_HEAD,
 ];
 
-/** Artist Portal → All Data (/data): every assigned admin role; exports are scoped on the server by role. */
-export const ALL_DATA_DOWNLOAD_PORTAL_ROLES = Object.values(ROLES).filter(
-  (role) => role !== ROLES.NOT_ASSIGNED,
-);
+/** Artist Portal → All Data (/data): roles with at least one visible export (see allDataPermissions.js). */
+export const ALL_DATA_DOWNLOAD_PORTAL_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.SALES_HEAD,
+  ROLES.SALES_MEMBER,
+  ROLES.OPERATION_HEAD,
+  ROLES.OPERATION_MEMBER,
+  ROLES.PROJECT_HEAD,
+  ROLES.PROJECT_MEMBER,
+  ROLES.CREATIVE_HEAD,
+  ROLES.CREATIVE_MEMBER,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
+];

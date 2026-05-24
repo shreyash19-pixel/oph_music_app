@@ -1,7 +1,8 @@
+const { fetchAllowedArtistOphIdsSet } = require("../utils/allDataExportPolicy");
 const {
-  isFullExportRole,
-  fetchAllowedArtistOphIdsSet,
-} = require("../utils/allDataExportPolicy");
+  exportKeyFromRequestPath,
+  usesFullExportForRole,
+} = require("../utils/allDataRolePermissions");
 
 /**
  * After authenticate: attaches req.exportFullAccess and req.exportAllowedOphIds for All Data Excel routes.
@@ -12,7 +13,12 @@ async function attachExportScope(req, res, next) {
     if (!role) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
-    if (isFullExportRole(role)) {
+
+    const exportKey = exportKeyFromRequestPath(req);
+    if (
+      exportKey &&
+      usesFullExportForRole(role, exportKey)
+    ) {
       req.exportFullAccess = true;
       req.exportAllowedOphIds = null;
     } else {

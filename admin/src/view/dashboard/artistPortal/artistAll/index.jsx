@@ -6,6 +6,7 @@ import { Lock, Unlock, Download } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
+import { canDownloadMembershipPdf } from "../../../../utils/allDataPermissions";
 import { normalizeExperienceFromProfessionalDetails } from "../../../../utils/experienceDisplay";
 
 /** Roles that land with every field unlocked for editing. Sales members are view-only (see `isSalesMemberViewOnly`). */
@@ -979,7 +980,7 @@ const ArtistAll = () => {
           locks={locks}
           toggleLock={toggleLock}
           onDownloadPDF={downloadPDF}
-          showDownloadButton={true}
+          showDownloadButton={canDownloadMembershipPdf(user?.role)}
           isBrowser={isBrowser}
           viewOnlyNoEdit={viewOnlyNoEdit}
         />
