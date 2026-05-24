@@ -681,7 +681,7 @@ const SignUpForm = () => {
             </h3>
           </ul>
           <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <div className="bg-[url('/assets/images/music_bg.png')] bg-cover bg-center relative">
+          <div className="bg-[url('/assets/images/music_bg.png')] bg-contain bg-no-repeat bg-center relative">
             <h2 className="mt-8 text-2xl font-semibold">5. TV Release:</h2>
             <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
               <h3>
