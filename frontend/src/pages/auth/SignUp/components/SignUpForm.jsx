@@ -455,7 +455,7 @@ const SignUpForm = () => {
           </div>
 
           {/* Image Section */}
-          <div className="lg:w-1/2  mt-5 lg:mt-0 relative">
+          <div className="lg:w-[45%] mt-[40px] relative">
             <div className="aspect-[3/4] lg:aspect-[5/6] overflow-hidden rounded-lg relative">
               {thumbnail && (
                 <img
@@ -464,12 +464,13 @@ const SignUpForm = () => {
                   className="w-full h-full object-cover rounded-lg"
                 />
               )}
+
               {video && (
                 <button
                   onClick={() => setVideoModal(true)}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-transparent focus:outline-none z-10"
                 >
-                  <img src={PlayBtn} alt="Play" className="w-32 h-32" />
+                  <img src={PlayBtn} alt="Play" className="w-24 h-24" />
                 </button>
               )}
             </div>
@@ -528,6 +529,12 @@ const SignUpForm = () => {
         <img
           src={Elipse}
           className="absolute h-[600px] bottom-[650px] right-0"
+          alt=""
+        />
+
+        <img
+          src={Elipse2}
+          className="absolute h-[600px] bottom-[700px] left-0"
           alt=""
         />
 
@@ -674,63 +681,67 @@ const SignUpForm = () => {
             </h3>
           </ul>
           <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">5. TV Release:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              The artist's music video will have the opportunity to be released
-              on TV platforms across various channels.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">6. Revenue Model:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              100% of the revenue from both audio and video will go to the
-              artist.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">
-            7. Withdrawal Threshold:
-          </h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              No limit or threshold on the withdrawal amount. Artists can
-              withdraw any amount, even as low as ₹100.
-            </h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <h2 className="mt-8 text-2xl font-semibold">8. Exposure:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>
-              The artist's EPK and profile will be displayed on the official OPH
-              Community website, providing connections and networking
-              opportunities.
-            </h3>
-          </ul>
-          <h2 className="mt-8 text-2xl font-semibold">9. Support:</h2>
-          <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
-            <h3>Call Support</h3>
-            <h3>Chat Support</h3>
-            <h3>Ticket Raising System</h3>
-            <h3>Access To a Personal Port</h3>
-          </ul>
-          <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
-          <p className="underline text-[#5DC9DE] font-bold text-2xl ">
-            First Time Ever in India – Only for Limited Thousand Artist
-          </p>
-          <p className="mt-6">
-            One Time Artist Documentation Registration fees –{" "}
-            <span className="text-[#5DC9DE]">2,999 for lifetime Access</span>
-          </p>
-          <p className="mt-2">
-            Only Per Song Registration fees{" "}
-            <span className="text-[#5DC9DE]">– 799</span>
-          </p>
-          <h1 className="text-center mt-16 font-bold px-4 lg:px-48 text-[25px] uppercase max-w-[1300px] w-full mx-auto">
-            Now – No hassle for Anything just Make your Music Peacefully – Rest
-            live on India's Only Real Music Community
-          </h1>
+          <div className="bg-[url('/assets/images/music_bg.png')] bg-cover bg-center relative">
+            <h2 className="mt-8 text-2xl font-semibold">5. TV Release:</h2>
+            <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
+              <h3>
+                The artist's music video will have the opportunity to be
+                released on TV platforms across various channels.
+              </h3>
+            </ul>
+            <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
+            <h2 className="mt-8 text-2xl font-semibold">6. Revenue Model:</h2>
+            <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
+              <h3>
+                100% of the revenue from both audio and video will go to the
+                artist.
+              </h3>
+            </ul>
+            <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
+            <h2 className="mt-8 text-2xl font-semibold">
+              7. Withdrawal Threshold:
+            </h2>
+            <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
+              <h3>
+                No limit or threshold on the withdrawal amount. Artists can
+                withdraw any amount, even as low as ₹100.
+              </h3>
+            </ul>
+            <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
+
+            <h2 className="mt-8 text-2xl font-semibold">8. Exposure:</h2>
+            <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2">
+              <h3>
+                The artist's EPK and profile will be displayed on the official
+                OPH Community website, providing connections and networking
+                opportunities.
+              </h3>
+            </ul>
+
+            <h2 className="mt-8 text-2xl font-semibold">9. Support:</h2>
+            <ul className="list-disc px-5 mt-4 text-gray-400  space-y-2 ">
+              <h3>Call Support</h3>
+              <h3>Chat Support</h3>
+              <h3>Ticket Raising System</h3>
+              <h3>Access To a Personal Port</h3>
+            </ul>
+            <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
+            <p className="underline text-[#5DC9DE] font-bold text-2xl ">
+              First Time Ever in India – Only for Limited Thousand Artist
+            </p>
+            <p className="mt-6">
+              One Time Artist Documentation Registration fees –{" "}
+              <span className="text-[#5DC9DE]">2,999 for lifetime Access</span>
+            </p>
+            <p className="mt-2">
+              Only Per Song Registration fees{" "}
+              <span className="text-[#5DC9DE]">– 799</span>
+            </p>
+            <h1 className="text-center mt-16 font-bold px-4 lg:px-48 text-[25px] uppercase max-w-[1300px] w-full mx-auto">
+              Now – No hassle for Anything just Make your Music Peacefully –
+              Rest live on India's Only Real Music Community
+            </h1>
+          </div>
           <div className="container w-full h-[1px] mx-auto bg-[#666666] my-10 opacity-30 relative"></div>
           <h2 className="mt-20 text-center text-xl font-bold text-[44px]">
             OPH COMMUNITY
