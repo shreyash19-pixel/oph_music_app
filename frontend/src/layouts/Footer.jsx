@@ -1,139 +1,86 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { FaFacebook, FaLinkedin, FaSpotify, FaApple } from "react-icons/fa";
+import { Link,useNavigate } from "react-router-dom";
+import { FaFacebook, FaSpotify, FaApple } from "react-icons/fa6";
 import { AiFillInstagram } from "react-icons/ai";
+import { FaLinkedin } from "react-icons/fa";
 import { BsTwitterX } from "react-icons/bs";
 
-const Footer = ({ userData }) => {
+function Footer() {
+  const navigate = useNavigate();
+
   return (
-    <div
-      className="w-full h-auto px-4 sm:px-8 lg:px-16 flex flex-col bg-[url('/assets/images/footer.png')] bg-cover bg-center relative
-      before:content-[''] before:absolute before:inset-0 before:block
-      before:bg-gradient-to-r before:from-[#0C0C11] before:to-[#252730] before:opacity-75 before:z-5"
-    >
-      <div className="flex flex-col justify-between w-full z-10 container mx-auto mt-12 gap-8">
+    <div className="w-full h-auto lg:px-16 px-2 flex flex-col bg-[url('/assets/images/contact/footer.png')] bg-cover bg-center relative">
+      <div className="flex h-full flex-col justify-between w-full container mx-auto gap-6 sm:gap-0 sm:mt-12 mt-4">
         {/* Top Section */}
-        <div className="flex flex-col lg:flex-row items-center lg:items-start text-center lg:text-left w-full gap-8 justify-end justify-between">
-          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight uppercase w-full lg:w-1/2">
+        <div className="flex flex-col lg:flex-row w-full items-center lg:items-start">
+          <div className="xl:text-[55px] text-[30px] md:text-[40px] text-center lg:text-left w-full lg:w-1/2 uppercase font-bold leading-[3rem] sm:leading-[4rem]">
             Your Music
             <br />
             Your Rights
             <br />
             <span className="text-[#5DC9DE]">Your Stage</span>
           </div>
-
-          <div className="w-full lg:w-auto flex justify-center lg:justify-end">
-            {userData ? (
-              <Link to="/">
-                <button className="bg-primary text-black font-semibold py-2 px-6 rounded-full hover:bg-cyan-300 transition-transform hover:scale-105 duration-300 w-full sm:w-auto">
-                  Book Your Spot
-                </button>
-              </Link>
-            ) : (
-              <button
-                onClick={() => {
-                  window.location.href =
-                    import.meta.env.VITE_PORTAL_URL + "/auth/signup";
-                }}
-                className="bg-primary text-black font-semibold py-2 px-6 rounded-full hover:bg-cyan-300 transition-transform hover:scale-105 duration-300 w-full sm:w-auto"
-              >
-                Book Your Spot - Sign Up Now
-              </button>
-            )}
+          <div className="w-full flex justify-center lg:justify-end pt-3 sm:pt-12">
+            <button
+              onClick={() => {
+                navigate("/auth/signup");
+              }}
+              className="bg-primary h-14 text-black font-semibold py-3 px-6 sm:px-8 rounded-full hover:font-bold transition"
+            >
+              Book Your Spot - Sign Up Now
+            </button>
           </div>
         </div>
 
-        {/* Middle Info and Navigation */}
-        <div className="flex flex-col lg:flex-row justify-between items-center w-full text-center lg:text-left gap-6">
-          <div className="text-sm sm:text-base text-[#9BA3B7] w-full lg:w-1/3 px-2">
-            Lorem Ipsum has been the industry&apos;s standard dummy text ever
-            since the 1500s, when an unknown printer took.
+        {/* Middle Navigation Section */}
+        <div className="w-full flex flex-col lg:flex-row justify-between items-center">
+          <div className="text-md text-center lg:text-left text-[#9BA3B7] w-full lg:w-1/3 px-8 lg:px-0 py-3">
+          OPH COMMUNITY: India&apos;s First Decentralized Music Platform. A Best Platform for Independent Artists 2025
           </div>
-
-          <ul className="flex flex-wrap justify-center lg:justify-end gap-4 text-white font-semibold w-full lg:w-2/3">
-            {[
-              "Home",
-              "Events",
-              "Artists",
-              "Leaderboard",
-              "Resources",
-              "Contact",
-            ].map((text, index) => (
-              <li
-                key={index}
-                className="hover:text-gray-300 cursor-pointer"
-                onClick={() => {
-                  let url = import.meta.env.VITE_WEBSITE_URL;
-                  if (text.toLowerCase() !== "home") url += text.toLowerCase();
-                  window.location.href = url;
-                }}
-              >
-                {text}
-              </li>
-            ))}
+          <ul className="hidden lg:flex space-x-12 justify-end text-white w-1/2">
+            <li><Link to="/" className="hover:text-gray-300">Home</Link></li>
+            <li><Link to="/events/online-music-events" className="hover:text-gray-300">Events</Link></li>
+            <li><a href="/find-your-collaborator" className="hover:text-gray-300">Artists</a></li>
+            <li><a href="/leaderboard/top-music-networking-platform-for-creators/" className="hover:text-gray-300">Leaderboard</a></li>
+            <li><a href="/resources/music-learning-education" className="hover:text-gray-300">Resources</a></li>
+            <li><Link to="/contact" className="hover:text-gray-300">Contact</Link></li>
           </ul>
         </div>
 
         {/* Divider */}
-        <div className="w-full h-px bg-white opacity-30"></div>
+        <div className="container w-full h-[1px] opacity-30 mx-auto bg-white sm:my-8 my-2"></div>
 
-        {/* Bottom Section: Policies and Social Icons */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-[14px]">
-          <ul className="flex flex-wrap justify-center md:justify-start gap-4 text-white text-sm w-full md:w-2/3 px-2">
-            {[
-              { name: "Privacy Policy", path: "/privacy-policy" },
-              { name: "Terms and Conditions", path: "/terms-and-conditions" },
-              { name: "Refund Policy", path: "/refund-policy" },
-              { name: "Cancellation Policy", path: "/cancellation-policy" },
-              { name: "Disclaimer", path: "/disclaimer" },
-            ].map((item, index) => (
-              <li key={index}>
-                <Link
-                  to={`${import.meta.env.VITE_WEBSITE_URL}${item.path}`}
-                  className="hover:text-gray-300"
-                >
-                  {item.name}
-                </Link>
-              </li>
-            ))}
+        {/* Bottom Policies + Socials */}
+        <div className="w-full flex flex-col sm:flex-row sm:justify-between items-center sm:items-start gap-4 sm:gap-0 sm:my-8 text-center sm:text-left">
+          <ul className="flex flex-wrap justify-center sm:justify-start gap-x-6 gap-y-2 text-white text-sm">
+            <li><Link className="hover:text-gray-300" to="/privacy-policy">Privacy Policy</Link></li>
+            <li><Link className="hover:text-gray-300" to="/terms-and-conditions">Terms & Conditions</Link></li>
+            <li><Link className="hover:text-gray-300" to="/refund-policy">Refund Policy</Link></li>
+            <li><Link className="hover:text-gray-300" to="/cancellation-policy">Cancellation Policy</Link></li>
+            <li><Link className="hover:text-gray-300" to="/disclaimer">Disclaimer</Link></li>
           </ul>
 
-          <div className="flex gap-3 justify-center md:justify-end w-full md:w-1/3">
-            <a
-              href="/facebook"
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
-            >
-              <FaFacebook size={22} />
+          <div className="flex justify-center sm:justify-end gap-3 pt-2 sm:pt-0">
+            <a href="/facebook" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <FaFacebook size={24} />
             </a>
-            <a
-              href="/instagram"
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
-            >
-              <AiFillInstagram size={22} />
+            <a href="/instagram" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <AiFillInstagram size={24} />
             </a>
-            <a
-              href="/linkedin"
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
-            >
-              <FaLinkedin size={22} />
+            <a href="/linkedin" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <FaLinkedin size={24} />
             </a>
-            <a
-              href="/spotify"
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
-            >
-              <FaSpotify size={22} />
+            <a href="/spotify" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <FaSpotify size={24} />
             </a>
-            <a
-              href="/apple-music"
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full"
-            >
-              <FaApple size={22} />
+            <a href="/apple-music" className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors">
+              <FaApple size={24} />
             </a>
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Footer;

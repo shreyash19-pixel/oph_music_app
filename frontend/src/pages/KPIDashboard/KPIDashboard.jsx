@@ -224,7 +224,7 @@ export default function KPIDashboard() {
           {/* Header */}
           <div className="flex justify-between items-center flex-wrap gap-3">
             <div>
-              <h1 className="text-cyan-400 text-xl font-extrabold mb-1 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              <h1 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 KEY PERFORMANCE INDICATORS
               </h1>
               {/* Special artist only — monthly snapshot note (disabled)

@@ -5,7 +5,8 @@ import formatDateAndAdjustMonth, {
   isRegistrationOpen,
   isRegistrationNotStartedYet,
   formatRegistrationStartDate,
-  formatRegistrationEndDate, formatDateTime,
+  formatRegistrationEndDate,
+  formatDateTime,
 } from "../../../../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -210,80 +211,97 @@ const HeroSection = ({
             return <SongCard releaseData={row} />;
           })()}
 
-        {slides[currentSlide]?.type === 'event' && (() => {
-          const ev = slides[currentSlide].data;
-          const eventImage = String(ev?.image ?? ev?.Image ?? "")
-            .trim();
-          return (
-          <div className="relative overflow-hidden py-6 sm:ps-10 ps-6 pe-6 rounded-2xl min-h-[200px]">
-            {eventImage ? (
-              <>
-                <img
-                  src={eventImage}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-                <div
-                  className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/85 to-slate-900/70"
-                  aria-hidden
-                />
-              </>
-            ) : (
-              <div
-                className="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800 bg-cover bg-center"
-                style={{
-                  backgroundImage:
-                    "url('/assets/images/songUploadCardBg.png')",
-                }}
-              />
-            )}
-            <div className="relative z-10 flex flex-col md:flex-row gap-6 mt-6 w-full">
-              <div className="w-full md:w-2/3 space-y-4">
-                <div>
-                  <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
-                    NEW EVENT
-                  </p>
-                  <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
-                    {ev.EventName}
-                  </h2>
-                </div>
-                <div className="text-slate-300 text-sm sm:text-base space-y-2">
-                  <div className="flex flex-wrap gap-1 sm:gap-2">
-                    <span>Competition Date:</span>
-                    <span className="font-medium text-white">
-                      {formatDateAndAdjustMonth(ev.dateTime)}
-                    </span>
+        {slides[currentSlide]?.type === "event" &&
+          (() => {
+            const ev = slides[currentSlide].data;
+            const eventImage = String(ev?.image ?? ev?.Image ?? "").trim();
+            return (
+              <div className="relative overflow-hidden py-6 sm:ps-10 ps-6 pe-6 rounded-2xl min-h-[200px]">
+                {eventImage ? (
+                  <>
+                    <img
+                      src={eventImage}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/85 to-slate-900/70"
+                      aria-hidden
+                    />
+                  </>
+                ) : (
+                  <div
+                    className="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800 bg-cover bg-center"
+                    style={{
+                      backgroundImage:
+                        "url('/assets/images/songUploadCardBg.png')",
+                    }}
+                  />
+                )}
+                <div className="relative z-10 flex flex-col md:flex-row gap-6 mt-6 w-full">
+                  <div className="w-full md:w-2/3 space-y-4">
+                    <div>
+                      <p className="text-cyan-400 text-lg sm:text-xl font-extrabold">
+                        NEW EVENT
+                      </p>
+                      <h2 className="text-white text-xl sm:text-2xl font-extrabold mt-1 uppercase break-words">
+                        {ev.EventName}
+                      </h2>
+                    </div>
+                    <div className="text-slate-300 text-sm sm:text-base space-y-2">
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span>Competition Date:</span>
+                        <span className="font-medium text-white">
+                          {formatDateAndAdjustMonth(ev.dateTime)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span>Registration:</span>
+                        <span className="font-medium text-white">
+                          {formatRegistrationStartDate(ev.registrationStart)} to{" "}
+                          {formatRegistrationEndDate(ev.registrationEnd)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span>Registration Fee:</span>
+                        <span className="font-medium text-white">
+                          {ev.registrationFee_normal}/-
+                        </span>
+                      </div>
+
+                      {isArtistRegistered(ev.event_id, artistBookEvents) ? (
+                        <button
+                          disabled={true}
+                          className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm mt-[20px]"
+                        >
+                          Registered
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleClick(ev)}
+                          className="bg-[#6F4FA0] text-white px-4 py-2 rounded-full text-sm font-extrabold mt-[20px]"
+                        >
+                          Register Now!
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1 sm:gap-2">
-                    <span>Registration:</span>
-                    <span className="font-medium text-white">
-                      {formatRegistrationStartDate(ev.registrationStart)} to {formatRegistrationEndDate(ev.registrationEnd)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 sm:gap-2">
-                    <span>Registration Fee:</span>
-                    <span className="font-medium text-white">
-                      {ev.registrationFee_normal}/-
-                    </span>
-                  </div>
+                  {eventImage ? (
+                    <div className="w-full md:w-1/3 min-h-[140px] md:min-h-[180px] rounded-xl overflow-hidden border border-white/10 shadow-lg shrink-0 hidden sm:block">
+                      <img
+                        src={eventImage}
+                        alt={ev?.EventName ? `${ev.EventName} poster` : "Event"}
+                        className="w-full h-full object-cover min-h-[140px] md:min-h-[180px]"
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </div>
-              {eventImage ? (
-                <div className="w-full md:w-1/3 min-h-[140px] md:min-h-[180px] rounded-xl overflow-hidden border border-white/10 shadow-lg shrink-0 hidden sm:block">
-                  <img
-                    src={eventImage}
-                    alt={ev?.EventName ? `${ev.EventName} poster` : "Event"}
-                    className="w-full h-full object-cover min-h-[140px] md:min-h-[180px]"
-                  />
-                </div>
-              ) : null}
-            </div>
-          </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Dots */}
         {multiSlide && (
