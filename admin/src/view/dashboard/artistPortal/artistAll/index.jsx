@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
+import { Lock, Unlock, Download } from "lucide-react";
 import { Lock, Unlock, Download, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
+import { canDownloadMembershipPdf } from "../../../../utils/allDataPermissions";
+import { normalizeExperienceFromProfessionalDetails } from "../../../../utils/experienceDisplay";
 
 /** Roles that land with every field unlocked for editing. Sales members are view-only (see `isSalesMemberViewOnly`). */
 const ARTIST_ALL_DETAIL_ROLES = [
@@ -84,7 +88,12 @@ const ArtistAll = () => {
           personal_photo: userDetails.personal_photo || "",
         };
 
-        const totalMonths = professionalDetails.experience_monthly || 0;
+        const {
+          years: expYears,
+          months: expMonths,
+          totalMonths: expTotalMonths,
+        } = normalizeExperienceFromProfessionalDetails(professionalDetails);
+
         const professionalData = {
           profession:
             professionalDetails.Profession ||
@@ -97,14 +106,13 @@ const ArtistAll = () => {
           instagram: professionalDetails.instagram_link || "",
           facebook: professionalDetails.facebook_link || "",
           apple_music: professionalDetails.apple_music_link || "",
-          experience_monthly: totalMonths % 12,
-          experience_yearly: professionalDetails.experience_yearly,
+          experience_monthly: expMonths,
+          experience_yearly: expYears,
           songs_planning_count: professionalDetails.songs_planning_count || "",
           songs_planning_type: professionalDetails.songs_planning_type || "",
         };
 
-        // Store totalMonths separately for calculations without showing in UI
-        professionalData._totalMonths = totalMonths;
+        professionalData._totalMonths = expTotalMonths;
 
         const documentData = {
           aadhar_front_url: documentationDetails.aadhar_front_url || "",
@@ -426,26 +434,29 @@ const ArtistAll = () => {
         }
       }
 
-      // Handle video upload - convert blob URL to file and upload
       if (professionalData.video) {
-        const videoUrl =
+        const videoRef =
           typeof professionalData.video === "object"
             ? professionalData.video.url
             : professionalData.video;
-        if (videoUrl && videoUrl.startsWith("blob:")) {
+        if (videoRef && videoRef.startsWith("blob:")) {
           try {
-            console.log("Converting video blob URL to file:", videoUrl);
-            const response = await fetch(videoUrl);
+            const response = await fetch(videoRef);
             const blob = await response.blob();
             const file = new File([blob], `video_${Date.now()}.mp4`, {
               type: blob.type || "video/mp4",
             });
-            console.log("Converted video blob to file:", file);
-            formData.append("video", file);
-            fileCount++;
+            userData.video = await uploadVideoViaPresignedPut(file, {
+              purpose: "admin-professional",
+              params: { ophid },
+            });
+            formData.set("data", JSON.stringify(userData));
           } catch (error) {
-            console.error("Error converting video blob to file:", error);
+            console.error("Error uploading video via presigned PUT:", error);
           }
+        } else if (videoRef && !videoRef.startsWith("blob:")) {
+          userData.video = videoRef;
+          formData.set("data", JSON.stringify(userData));
         }
       }
 
@@ -576,18 +587,25 @@ const ArtistAll = () => {
 
       const loadingToast = toast.loading("Downloading PDF...");
 
-      // Get pre-signed URL from backend (S3 bucket is private - direct URLs return 403)
-      const { data } = await axiosApi.get("/auth/membership/pdf-url", {
+      // Stream PDF through API (avoids cross-origin fetch to S3 → "Failed to fetch" when bucket CORS is tight)
+      const response = await axiosApi.get("/auth/membership/pdf", {
         params: { ophid },
+        responseType: "blob",
+        validateStatus: () => true,
       });
 
-      if (!data?.success || !data?.url) {
-        throw new Error(data?.message || "Failed to get PDF download link");
-      }
-
-      const pdfUrl = data.url;
       const pdfFileName = `${(personal.full_name || "membership").replace(/\s+/g, "_")}.pdf`;
 
+      if (response.status !== 200) {
+        let msg = "Failed to download PDF";
+        try {
+          const text = await response.data.text();
+          const j = JSON.parse(text);
+          if (j?.message) msg = j.message;
+        } catch {
+          /* use default */
+        }
+        throw new Error(msg);
       const response = await fetch(pdfUrl);
 
       if (!response.ok) {
@@ -596,8 +614,9 @@ const ArtistAll = () => {
         );
       }
 
-      const blob = await response.blob();
-      const downloadBlob = new Blob([blob], { type: "application/pdf" });
+      const downloadBlob = new Blob([response.data], {
+        type: "application/pdf",
+      });
       const objectUrl = URL.createObjectURL(downloadBlob);
 
       const tempLink = window.document.createElement("a");
@@ -615,6 +634,17 @@ const ArtistAll = () => {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.dismiss();
+      const raw =
+        error.response?.data?.message ||
+        (typeof error.response?.data === "string"
+          ? error.response.data
+          : null) ||
+        error.message;
+      const networkHint =
+        /failed to fetch|network error|load failed/i.test(String(raw))
+          ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
+          : "";
+      toast.error(`Failed to download PDF: ${raw}${networkHint}`);
       toast.error(
         `Failed to download PDF: ${error.response?.data?.message || error.message}`,
       );
@@ -966,7 +996,7 @@ const ArtistAll = () => {
           locks={locks}
           toggleLock={toggleLock}
           onDownloadPDF={downloadPDF}
-          showDownloadButton={true}
+          showDownloadButton={canDownloadMembershipPdf(user?.role)}
           isBrowser={isBrowser}
           viewOnlyNoEdit={viewOnlyNoEdit}
           loading = {loading}

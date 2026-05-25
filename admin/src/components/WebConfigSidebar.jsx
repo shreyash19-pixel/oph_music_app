@@ -1,6 +1,10 @@
 import React from "react";
 import Sidebar from "./Sidebar";
-import { ROLES, EVENT_MANAGEMENT_WEB_CONFIG_ROLES } from "../utils/roles";
+import {
+  ROLES,
+  EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
+  WEBSITE_CONFIG_SETTINGS_ROLES,
+} from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -109,12 +113,7 @@ const WebConfigSidebar = ({ children }) => {
     {
       label: "Setting",
       route: "/websiteConfig_Setting",
-      roles: [
-        ROLES.SUPER_ADMIN,
-        ROLES.ADMINISTRATIVE_HEAD,
-        ROLES.SALES_HEAD,
-        ROLES.SALES_MEMBER,
-      ],
+      roles: WEBSITE_CONFIG_SETTINGS_ROLES,
     },
   ];
 

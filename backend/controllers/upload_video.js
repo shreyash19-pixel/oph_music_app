@@ -4,28 +4,19 @@ const { uploadToS3 } = require("../utils");
 exports.uploadVideo = async (req, res) => {
   try {
     const { description } = req.body;
-    const videoFile = req.files?.video?.[0];
     const thumbnailFile = req.files?.thumbnail?.[0];
+    const videoFromBody =
+      req.body.video_url && String(req.body.video_url).trim();
 
-    if (!videoFile && !thumbnailFile && (!description || !description.trim())) {
+    if (!videoFromBody && !thumbnailFile && (!description || !description.trim())) {
       return res.status(400).json({
         success: false,
         message: "Please provide at least a video, thumbnail, or description"
       });
     }
 
-    let videoUrl = null;
+    let videoUrl = videoFromBody || null;
     let thumbnailUrl = null;
-
-    if (videoFile) {
-      videoUrl = await uploadToS3(videoFile, "uploaded-videos");
-      if (!videoUrl) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to upload video to S3"
-        });
-      }
-    }
 
     if (thumbnailFile) {
       thumbnailUrl = await uploadToS3(thumbnailFile, "uploaded-videos/thumbnails");

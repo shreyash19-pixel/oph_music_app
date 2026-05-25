@@ -9,6 +9,7 @@ import {
   TICKETS_PORTAL_ROLES,
   PAYMENTS_PORTAL_ROLES,
   MY_EPK_CHANGE_AND_SONGS_ROLES,
+  ALL_DATA_DOWNLOAD_PORTAL_ROLES,
 } from "../utils/roles";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -108,7 +109,11 @@ const artistLinks = [
       },
     ],
   },
-  { label: "All Data", route: "/data" },
+  {
+    label: "All Data",
+    route: "/data",
+    roles: ALL_DATA_DOWNLOAD_PORTAL_ROLES,
+  },
   {
     label: "Time Calendar",
     route: "/calendar",

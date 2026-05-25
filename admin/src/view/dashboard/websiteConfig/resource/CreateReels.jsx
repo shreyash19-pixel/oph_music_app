@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
+import { resolveVideoUrlForUpload } from "../../../../utils/presignedVideoUpload";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 
 const CreateReels = () => {
@@ -51,12 +52,26 @@ const CreateReels = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const data = new FormData();
-    for (const key in formData) {
-      data.append(key, formData[key]);
-    }
-
     try {
+      const videoUrl = await resolveVideoUrlForUpload(
+        formData.video_url,
+        "resource-reels",
+      );
+      if (!videoUrl) {
+        alert("Video is required");
+        setIsLoading(false);
+        return;
+      }
+
+      const data = new FormData();
+      for (const key in formData) {
+        if (key === "video_url") {
+          data.append("video_url", videoUrl);
+        } else {
+          data.append(key, formData[key]);
+        }
+      }
+
       await axiosApi.post("/createReels", data, {
         headers: {
           "Content-Type": "multipart/form-data",

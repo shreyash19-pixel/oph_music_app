@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../../middleware/authenticate');
-const forbidProjectMemberAssignWinner = require('../middleware/forbidSalesMemberArtistEdits');
+const forbidProjectMemberAssignWinner = require('../../middleware/forbidProjectMemberAssignWinner');
 const eventWinnerController = require('../controllers/eventWinner');
 // const eventWinnerController = require('../controllers/eventWinner');
 

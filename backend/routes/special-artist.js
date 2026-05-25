@@ -17,8 +17,6 @@ router.post(
   "/edit-special-artist-details",
   authMiddleware,
   upload.fields([
-    { name: "bioVideo", maxCount: 1 },
-    { name: "artistStoryVideo", maxCount: 1 },
     { name: "artistPhoto", maxCount: 1 },
     { name: "updateImages", maxCount: 1 },
   ]),

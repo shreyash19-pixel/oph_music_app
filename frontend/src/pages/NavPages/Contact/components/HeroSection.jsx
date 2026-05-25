@@ -6,9 +6,10 @@ import { Link } from 'react-router-dom';
 import ContactBG from '../../../../../public/assets/images/music_bg.png'
 import Glow from '../../../../../public/assets/images/contact-elipise.png'
 
-const instagramRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
-// Username, optional trailing slash, and optional query params (e.g. ?igsh=...) from share links
-const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
+// Same rules as Events HeroSection / IndividualEvent registration (username or profile URL)
+const instagramUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
+const instagramUrlRegex =
+  /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
 
 function HeroSection() {
   const [modal,setModal] = useState(false)
@@ -46,13 +47,15 @@ function HeroSection() {
       toast.error("Invalid Email Address!", { position: "top-right", theme: "dark" });
       return;
     }
-    console.log(formData.instagram_handle);
-    console.log(instagramRegex.test(formData.instagram_handle));
-    console.log(instagramUrlRegex.test(formData.instagram_handle));
-    
-    // Check if it's either a valid Instagram username or Instagram URL
-    const isValidInstagram = instagramRegex.test(formData.instagram_handle) || 
-                           instagramUrlRegex.test(formData.instagram_handle);
+
+    const igTrimmed = formData.instagram_handle?.trim() ?? "";
+    const usernameCandidate =
+      igTrimmed.startsWith("@") && !instagramUrlRegex.test(igTrimmed)
+        ? igTrimmed.slice(1).trim()
+        : igTrimmed;
+    const isValidInstagram =
+      instagramUrlRegex.test(igTrimmed) ||
+      instagramUsernameRegex.test(usernameCandidate);
     
     if (!isValidInstagram) {
       toast.error(
@@ -76,15 +79,14 @@ function HeroSection() {
       return;
     }
 
-    // Create FormData object
-    const data = new FormData();
-    for (const [key, value] of Object.entries(formData)) {
-      data.append(key, value);
-    }
+    const payload = {
+      ...formData,
+      instagram_handle: instagramUrlRegex.test(igTrimmed)
+        ? igTrimmed
+        : usernameCandidate,
+    };
 
-    // Log form data
-    console.log('Form Data:', formData);
-    const response = await axiosApi.post('/contact_us',formData)
+    const response = await axiosApi.post("/contact_us", payload);
     if(response.status == 201){
       setModal(true)
       setFormData({

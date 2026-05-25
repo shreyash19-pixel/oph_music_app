@@ -16,10 +16,7 @@ router.get("/page-media", getPageMediaController);
 router.get("/all-page-media", getAllPageMediaController);
 router.post(
   "/upload-page-media",
-  upload.fields([
-    { name: "thumbnail", maxCount: 1 },
-    { name: "video", maxCount: 1 },
-  ]),
+  upload.fields([{ name: "thumbnail", maxCount: 1 }]),
   uploadPageMediaController,
 );
 

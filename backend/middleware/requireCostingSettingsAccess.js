@@ -1,13 +1,8 @@
 /**
  * After authMiddleware. Who may create/update Website Config costing (QR) rows.
- * Administrative members are excluded (view Website Config elsewhere, not Setting).
+ * Sales roles cannot modify costing (matches admin Setting page).
  */
-const ALLOWED = new Set([
-  "super admin",
-  "administrative head",
-  "sales head",
-  "sales member",
-]);
+const ALLOWED = new Set(["super admin", "administrative head"]);
 
 module.exports = function requireCostingSettingsAccess(req, res, next) {
   const role = req.user?.role;

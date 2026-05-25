@@ -1,12 +1,14 @@
-/** Roles that may view event winning but must not assign winners. */
+/** Roles that may view event winning but must not assign or change winners. */
 const FORBIDDEN_ASSIGN_WINNER_ROLES = new Set([
   "project member",
+  "sales head",
+  "sales member",
   "accounts head",
   "accounts member",
 ]);
 
 /**
- * Use after authMiddleware. Project members and accounts roles may view event winning data but not assign winners.
+ * Use after authMiddleware. View-only roles may read winning data but not POST assign-winner.
  */
 function forbidProjectMemberAssignWinner(req, res, next) {
   const role = String(req.user?.role ?? "")

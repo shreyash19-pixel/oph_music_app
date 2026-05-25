@@ -19,17 +19,9 @@ const parseVideoImageUrl = (raw) => {
 
 /**
  * Top approved platform songs by YouTube views (from song_social_metrics).
- * @param {string|null|undefined} excludeOphId — logged-in artist; their songs are omitted
  */
-const newReleases = async (excludeOphId = null) => {
+const newReleases = async () => {
   try {
-    const exclude =
-      excludeOphId != null && String(excludeOphId).trim() !== ""
-        ? String(excludeOphId).trim()
-        : null;
-    const excludeClause = exclude ? "AND sr.oph_id <> ?" : "";
-    const params = exclude ? [exclude] : [];
-
     const [rows] = await db.execute(
       `SELECT
         b.song_id,
@@ -59,13 +51,11 @@ const newReleases = async (excludeOphId = null) => {
           AND vd.status = 'approved'
           AND ad.audio_url IS NOT NULL
           AND TRIM(ad.audio_url) <> ''
-          ${excludeClause}
         ORDER BY COALESCE(ssm.youtube_views, 0) DESC, sr.song_id ASC
         LIMIT 60
       ) b
       LEFT JOIN secondary_artist sa ON b.song_id = sa.song_id
       ORDER BY b.youtube_views DESC, b.song_id ASC`,
-      params,
     );
 
     const songMap = {};

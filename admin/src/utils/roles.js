@@ -29,10 +29,11 @@ export const ANALYTICS_PORTAL_ROLES = [
   ROLES.OPERATION_MEMBER,
 ];
 
-/** Event payments nav + `/EventPayments` route (Artist Portal). */
+/** Event payments nav + `/EventPayments` route (Artist Portal). Includes rejected rows in lists/detail; approve/reject stays gated in UI/API. */
 export const EVENT_PAYMENTS_SIDEBAR_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.SALES_HEAD,
+  ROLES.SALES_MEMBER,
   ROLES.PROJECT_HEAD,
   ROLES.PROJECT_MEMBER,
   ROLES.ACCOUNTS_HEAD,
@@ -87,11 +88,12 @@ export const EVENT_CREATION_AND_LIST_ROLES = [
   ROLES.PROJECT_MEMBER,
 ];
 
-/** Assign winner on Event Winning — not project member or accounts (view-only for those). */
+/**
+ * Assign / change event winner (`/event-winner-assign/...`, POST /assign-winner).
+ * Sales head & sales member are view-only on Event Winning (same as accounts / project member).
+ */
 export const EVENT_WINNER_ASSIGN_ROLES = [
   ROLES.SUPER_ADMIN,
-  ROLES.SALES_HEAD,
-  ROLES.SALES_MEMBER,
   ROLES.PROJECT_HEAD,
 ];
 
@@ -169,6 +171,29 @@ export const WEBSITE_CONFIG_HUB_ROLES = [
   ROLES.OPERATION_MEMBER,
   ROLES.PROJECT_HEAD,
   ROLES.PROJECT_MEMBER,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
+];
+
+/** Website Config → Setting (costing / QR codes). Sales roles cannot access UI or POST/PUT costing. */
+export const WEBSITE_CONFIG_SETTINGS_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+];
+
+/** Artist Portal → All Data (/data): roles with at least one visible export (see allDataPermissions.js). */
+export const ALL_DATA_DOWNLOAD_PORTAL_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.SALES_HEAD,
+  ROLES.SALES_MEMBER,
+  ROLES.OPERATION_HEAD,
+  ROLES.OPERATION_MEMBER,
+  ROLES.PROJECT_HEAD,
+  ROLES.PROJECT_MEMBER,
+  ROLES.CREATIVE_HEAD,
+  ROLES.CREATIVE_MEMBER,
   ROLES.ACCOUNTS_HEAD,
   ROLES.ACCOUNTS_MEMBER,
 ];

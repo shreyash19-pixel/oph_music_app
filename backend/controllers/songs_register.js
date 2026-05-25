@@ -2,6 +2,7 @@ const songRegModel = require("../model/songs_register");
 const db = require("../DB/connect");
 const SongApplicationStatusService = require("../services/song/SongApplicationStatusService");
 const SongRegistrationService = require("../services/song/SongRegistrationService");
+const DateBookingService = require("../services/dateBooking/DateBookingService");
 
 
 exports.insertNewSongRegDetails = async (req, res) => {
@@ -29,6 +30,15 @@ exports.insertNewSongRegDetails = async (req, res) => {
       normalizedProjectType = "Hybrid Project"; // Should not happen for regular songs, but normalize if it does
     } else if (lowerProjectType === "paid in advance") {
       normalizedProjectType = "Paid in Advance";
+    }
+
+    const dateFree = await DateBookingService.isReleaseDateFreeForOph(connection, oph_id, release_date);
+    if (!dateFree) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: "This release date is no longer available. Please choose another date.",
+      });
     }
 
     const RegSongRes = await songRegModel.insertNewSong(
@@ -110,6 +120,15 @@ exports.insertHybridSongRegDetails = async (req, res) => {
       normalizedProjectType = "Hybrid Project";
     } else if (lowerProjectType === "paid in advance") {
       normalizedProjectType = "Paid in Advance";
+    }
+
+    const dateFreeHybrid = await DateBookingService.isReleaseDateFreeForOph(connection, oph_id, release_date);
+    if (!dateFreeHybrid) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: "This release date is no longer available. Please choose another date.",
+      });
     }
 
     const RegSongRes = await songRegModel.insertHybridSong(

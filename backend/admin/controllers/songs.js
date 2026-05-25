@@ -340,42 +340,11 @@ const updateVideoSection = async (req, res) => {
       });
     }
 
-    // Handle video file upload
-    let videoUrl = videoData.video_url; // Keep existing URL if no new file uploaded
-    
-    if (files && files.video_file && files.video_file[0]) {
-      const videoFile = files.video_file[0];
-      
-      // Validate video file type
-      const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'];
-      if (!allowedVideoTypes.includes(videoFile.mimetype)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid video file type. Allowed types: MP4, AVI, MOV, WMV, WEBM"
-        });
-      }
-
-      // Validate video file size (max 1GB)
-      const maxSize = 1024 * 1024 * 1024; // 1GB
-      if (videoFile.size > maxSize) {
-        return res.status(400).json({
-          success: false,
-          message: "Video file too large. Maximum size: 1GB"
-        });
-      }
-
-      try {
-        // Upload video to S3
-        videoUrl = await uploadToS3(videoFile, 'video-files');
-        console.log("Video file uploaded to S3:", videoUrl);
-      } catch (uploadError) {
-        console.error("S3 upload error:", uploadError);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to upload video file"
-        });
-      }
-    }
+    // Video URL from presigned PUT (client sends video_url in body)
+    let videoUrl =
+      videoData.video_url && String(videoData.video_url).trim()
+        ? String(videoData.video_url).trim()
+        : null;
 
     // Handle thumbnail images upload
     let imageUrls = [];

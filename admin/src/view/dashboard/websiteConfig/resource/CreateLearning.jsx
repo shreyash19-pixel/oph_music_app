@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axiosApi from "../../../../conf/axios";
+import { resolveVideoUrlForUpload } from "../../../../utils/presignedVideoUpload";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 
 const CreateLearning = () => {
@@ -53,12 +54,26 @@ const CreateLearning = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const data = new FormData();
-    for (const key in formData) {
-      data.append(key, formData[key]);
-    }
-
     try {
+      const videoUrl = await resolveVideoUrlForUpload(
+        formData.video_url,
+        "resource-learning",
+      );
+      if (!videoUrl) {
+        toast.error("Video is required");
+        setIsLoading(false);
+        return;
+      }
+
+      const data = new FormData();
+      for (const key in formData) {
+        if (key === "video_url") {
+          data.append("video_url", videoUrl);
+        } else {
+          data.append(key, formData[key]);
+        }
+      }
+
       await axiosApi.post("/createLearning", data, {
         headers: {
           "Content-Type": "multipart/form-data",

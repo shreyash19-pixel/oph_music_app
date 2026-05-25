@@ -10,7 +10,6 @@ router.post(
   "/content",
   upload.fields([
     { name: "audio", maxCount: 1 },
-    { name: "video", maxCount: 1 },
   ]),
   createContentFiles
 );

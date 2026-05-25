@@ -1,6 +1,82 @@
 const db = require('../../DB/connect');
 
+function normalizeBookingDate(bookingDate) {
+  if (bookingDate == null || bookingDate === "") return "";
+  const s = String(bookingDate).trim();
+  return s.length >= 10 ? s.slice(0, 10) : s;
+}
+
 class DateBookingService {
+  /**
+   * Same rules as createBooking but uses caller's connection (no begin/commit).
+   * Blocks if another oph_id holds current_booking_date; same user gets UPDATE or INSERT.
+   * Call inside an existing transaction (e.g. PaymentService).
+   */
+  async upsertCalendarBookingInConnection(connection, ophId, bookingDate, songName = null, projectType = null, songId = null, song_id = null) {
+    const resolvedSongId = songId ?? song_id ?? null;
+    const ophNorm = String(ophId).trim();
+    const dateStr = normalizeBookingDate(bookingDate);
+    if (!dateStr || dateStr === "0000-00-00") {
+      return;
+    }
+
+    const [existingBookings] = await connection.query(
+      `SELECT * FROM calender WHERE current_booking_date = ? AND oph_id != ?`,
+      [dateStr, ophNorm]
+    );
+
+    if (existingBookings.length > 0) {
+      throw new Error("Date is already booked by another user");
+    }
+
+    const [userBookings] = await connection.query(
+      `SELECT * FROM calender WHERE oph_id = ? AND current_booking_date = ?`,
+      [ophNorm, dateStr]
+    );
+
+    if (userBookings.length > 0) {
+      await connection.query(
+        `UPDATE calender 
+         SET song_id = ?, song_name = ?, project_type = ?, updated_at = NOW()
+         WHERE oph_id = ? AND current_booking_date = ?`,
+        [resolvedSongId, songName, projectType, ophNorm, dateStr]
+      );
+    } else {
+      await connection.query(
+        `INSERT INTO calender 
+         (oph_id, current_booking_date, previous_booking_date, original_booking_date, song_id, song_name, project_type, created_at, updated_at)
+         VALUES (?, ?, NULL, ?, ?, ?, ?, NOW(), NOW())`,
+        [ophNorm, dateStr, dateStr, resolvedSongId, songName, projectType]
+      );
+    }
+
+    if (resolvedSongId) {
+      await connection.query(
+        `UPDATE songs_register sr
+         JOIN calender c ON c.song_id = sr.song_id
+         SET sr.release_date = c.current_booking_date,
+             sr.updated_at = NOW()
+         WHERE sr.song_id = ?
+         AND c.oph_id = ?`,
+        [resolvedSongId, ophNorm]
+      );
+    }
+  }
+
+  /**
+   * True if no other artist holds this date on the calendar (same semantics as checkReleaseDateAvailable).
+   */
+  async isReleaseDateFreeForOph(connection, ophId, releaseDate) {
+    const dateStr = normalizeBookingDate(releaseDate);
+    if (!dateStr || dateStr === "0000-00-00") return true;
+    const ophNorm = String(ophId).trim();
+    const [rows] = await connection.query(
+      "SELECT 1 FROM calender WHERE current_booking_date = ? AND (oph_id IS NULL OR oph_id != ?) LIMIT 1",
+      [dateStr, ophNorm]
+    );
+    return rows.length === 0;
+  }
+
   /**
    * Create a calendar booking entry
    * Handles application logic for date booking
@@ -13,64 +89,24 @@ class DateBookingService {
    */
   async createBooking(ophId, bookingDate, songName = null, projectType = null, songId = null, song_id = null) {
     const connection = await db.getConnection();
-    
+
     try {
       await connection.beginTransaction();
-
-      // Check if date is already booked by another user
-      const [existingBookings] = await connection.query(
-        `SELECT * FROM calender WHERE current_booking_date = ? AND oph_id != ?`,
-        [bookingDate, ophId]
+      await this.upsertCalendarBookingInConnection(
+        connection,
+        ophId,
+        bookingDate,
+        songName,
+        projectType,
+        songId,
+        song_id
       );
-
-      if (existingBookings.length > 0) {
-        throw new Error('Date is already booked by another user');
-      }
-
-      // Check if user already has a booking for this date
-      const [userBookings] = await connection.query(
-        `SELECT * FROM calender WHERE oph_id = ? AND current_booking_date = ?`,
-        [ophId, bookingDate]
-      );
-
-      if (userBookings.length > 0) {
-        // Update existing booking
-        await connection.query(
-          `UPDATE calender 
-           SET song_id = ?, song_name = ?, project_type = ?, updated_at = NOW()
-           WHERE oph_id = ? AND current_booking_date = ?`,
-          [songId, songName, projectType, ophId, bookingDate]
-        );
-      } else {
-        // Create new booking
-        await connection.query(
-          `INSERT INTO calender 
-           (oph_id, current_booking_date, previous_booking_date, original_booking_date, song_id, song_name, project_type, created_at, updated_at)
-           VALUES (?, ?, NULL, ?, ?, ?, ?, NOW(), NOW())`,
-          [ophId, bookingDate, bookingDate, songId, songName, projectType]
-        );
-      }
-
-      // Sync songs_register.release_date from calender if song_id exists
-      if (songId) {
-        await connection.query(
-          `UPDATE songs_register sr
-           JOIN calender c ON c.song_id = sr.song_id
-           SET sr.release_date = c.current_booking_date,
-               sr.updated_at = NOW()
-           WHERE sr.song_id = ?
-           AND c.oph_id = ?`,
-          [songId, ophId]
-        );
-      }
-
       await connection.commit();
 
       return {
         success: true,
         message: "Release date has been booked successfully"
       };
-
     } catch (error) {
       await connection.rollback();
       throw error;

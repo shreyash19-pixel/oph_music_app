@@ -15,6 +15,8 @@ const getIncome = async (ophid) => {
             IFNULL(SUM(sm.youtube_revenue), 0) AS metrics_youtube,
             IFNULL(am.total_audio_revenue, 0) AS metrics_audio
          FROM song_social_metrics sm
+         INNER JOIN song_application_status sas ON sm.song_id = sas.song_id
+            AND LOWER(TRIM(COALESCE(sas.overall_status, ''))) = 'approved'
          LEFT JOIN (
             SELECT OPH_ID, SUM(audio_platform_revenue) AS total_audio_revenue
             FROM song_audio_metrics

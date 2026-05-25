@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import axiosApi from "../../../conf/axios";
 import getToken from "../../../utils/getToken";
 import { useArtist } from "../../auth/API/ArtistContext";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Bounce, ToastContainer } from "react-toastify";
 import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
@@ -13,12 +13,47 @@ import NavbarRight from "../../../components/Navbar/NavbarRight";
 const REGISTER_SONG_STATE_KEY = "registerSongState";
 const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionStorage
 
+/** Normalize API / form date values to YYYY-MM-DD (local calendar day). */
+function bookingDateToYMD(value) {
+  if (value == null || value === "") return "";
+  const s = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+  }
+  if (s.includes("/")) {
+    const parts = s.split("/").map((p) => p.trim());
+    if (parts.length === 3) {
+      const [a, b, c] = parts;
+      if (c.length === 4)
+        return `${c}-${String(b).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+    }
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export default function RegisterSongForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [blockedDates, setBlockedDates] = useState([]); // Add state for blocked dates
   const [artistBlockedDates, setArtistBlockedDates] = useState([]); // Add state for blocked dates
+  /** YYYY-MM-DD that /check-release-date-available last reported as taken for this artist */
+  const [releaseDateTakenYmd, setReleaseDateTakenYmd] = useState(null);
+  const [releaseDateCheckLoading, setReleaseDateCheckLoading] = useState(false);
+  const releaseDateDebounceRef = useRef(null);
+  const releaseDateCheckSeqRef = useRef(0);
   const [songReg, setSongReg] = useState(true);
   const [lyrical_services, setLyricalVid] = useState(false);
   const [selectedPlans, setSelectedPlans] = useState([]);
@@ -208,12 +243,11 @@ export default function RegisterSongForm() {
 
         if (response.data.success) {
           setIsLoading(false);
-          // Extract just the dates from the response
-          const dates = response.data.data.map(
-            (item) => item.current_booking_date,
-          );
-
-          setBlockedDates(dates);
+          const dates = (response.data.data || [])
+            .map((item) => bookingDateToYMD(item.current_booking_date))
+            .filter(Boolean);
+          const seen = new Set();
+          setBlockedDates(dates.filter((d) => !seen.has(d) && seen.add(d)));
         }
       } catch (error) {
         console.error("Error fetching blocked dates:", error);
@@ -221,7 +255,7 @@ export default function RegisterSongForm() {
     };
 
     fetchBlockedDates();
-  }, []);
+  }, [headers]);
 
   useEffect(() => {
     const fetchBlockedDatesByOPHID = async () => {
@@ -263,6 +297,77 @@ export default function RegisterSongForm() {
     };
     fetchBlockedDatesByOPHID();
   }, [ophid, headers]);
+
+  const runReleaseDateAvailabilityCheck = useCallback(
+    async (rawValue) => {
+      const dateStr = bookingDateToYMD(rawValue);
+      const seq = ++releaseDateCheckSeqRef.current;
+      if (!dateStr || !ophid || !headers?.Authorization) {
+        if (seq === releaseDateCheckSeqRef.current) {
+          setReleaseDateTakenYmd(null);
+          setReleaseDateCheckLoading(false);
+        }
+        return true;
+      }
+      setReleaseDateCheckLoading(true);
+      try {
+        const res = await axiosApi.get("/check-release-date-available", {
+          headers,
+          params: { release_date: dateStr, ophid },
+        });
+        if (seq !== releaseDateCheckSeqRef.current) {
+          return true;
+        }
+        const available =
+          res.data?.success === true && res.data?.available !== false;
+        setReleaseDateTakenYmd(available ? null : dateStr);
+        setReleaseDateCheckLoading(false);
+        return available;
+      } catch {
+        if (seq !== releaseDateCheckSeqRef.current) {
+          return true;
+        }
+        setReleaseDateTakenYmd(null);
+        setReleaseDateCheckLoading(false);
+        return true;
+      }
+    },
+    [ophid, headers],
+  );
+
+  const scheduleReleaseDateAvailabilityCheck = useCallback(
+    (rawValue) => {
+      if (releaseDateDebounceRef.current) {
+        clearTimeout(releaseDateDebounceRef.current);
+      }
+      const dateStr = bookingDateToYMD(rawValue);
+      if (!dateStr) {
+        setReleaseDateTakenYmd(null);
+        setReleaseDateCheckLoading(false);
+        return;
+      }
+      setReleaseDateCheckLoading(true);
+      setReleaseDateTakenYmd(null);
+      releaseDateDebounceRef.current = setTimeout(() => {
+        runReleaseDateAvailabilityCheck(rawValue).then((available) => {
+          if (!available) {
+            toast.error(
+              "This release date is already booked. Please choose another date.",
+            );
+          }
+        });
+      }, 350);
+    },
+    [runReleaseDateAvailabilityCheck],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (releaseDateDebounceRef.current) {
+        clearTimeout(releaseDateDebounceRef.current);
+      }
+    };
+  }, []);
 
   // Modified useEffect to handle initial payment plan selection
   // useEffect(() => {
@@ -320,16 +425,30 @@ export default function RegisterSongForm() {
       [name]: type === "checkbox" ? checked : value,
     };
     setFormData(newFormData);
+    if (name === "release_date") {
+      if (value) {
+        scheduleReleaseDateAvailabilityCheck(value);
+      } else {
+        if (releaseDateDebounceRef.current) {
+          clearTimeout(releaseDateDebounceRef.current);
+        }
+        setReleaseDateTakenYmd(null);
+        setReleaseDateCheckLoading(false);
+      }
+    }
   };
 
   const isBlockedDate = (date) => {
-    if (!date && blockedDates.length === 0) return false;
-
-    const parsedDate = new Date(date);
-    if (isNaN(parsedDate.getTime())) return false;
-
-    const formattedDate = parsedDate.toISOString().split("T")[0];
-    // return
+    const formattedDate = bookingDateToYMD(date);
+    if (!formattedDate) {
+      return false;
+    }
+    if (releaseDateTakenYmd === formattedDate) {
+      return true;
+    }
+    if (blockedDates.length === 0) {
+      return false;
+    }
     return blockedDates.some(
       (blockedDate) =>
         blockedDate === formattedDate && formattedDate !== formData.oldDate,
@@ -365,6 +484,18 @@ export default function RegisterSongForm() {
       }
     } catch (error) {
       console.error("Error booking date", error);
+      const msg = error?.response?.data?.message;
+      if (error?.response?.status === 409) {
+        toast.error(
+          msg || "This release date is no longer available. Please pick another date.",
+        );
+        const y = bookingDateToYMD(updatedFormData.release_date);
+        if (y) setReleaseDateTakenYmd(y);
+      } else if (msg) {
+        toast.error(msg);
+      } else {
+        toast.error("Failed to register song. Please try again.");
+      }
     }
   };
 
@@ -399,6 +530,18 @@ export default function RegisterSongForm() {
       }
     } catch (error) {
       console.error("Error booking date", error);
+      const msg = error?.response?.data?.message;
+      if (error?.response?.status === 409) {
+        toast.error(
+          msg || "This release date is no longer available. Please pick another date.",
+        );
+        const y = bookingDateToYMD(updatedFormData.release_date);
+        if (y) setReleaseDateTakenYmd(y);
+      } else if (msg) {
+        toast.error(msg);
+      } else {
+        toast.error("Failed to register song. Please try again.");
+      }
     }
   };
 
@@ -434,6 +577,18 @@ export default function RegisterSongForm() {
       }
     } catch (error) {
       console.error("Error booking date", error);
+      const msg = error?.response?.data?.message;
+      if (error?.response?.status === 409) {
+        toast.error(
+          msg || "This release date is no longer available. Please pick another date.",
+        );
+        const y = bookingDateToYMD(updatedFormData.release_date);
+        if (y) setReleaseDateTakenYmd(y);
+      } else if (msg) {
+        toast.error(msg);
+      } else {
+        toast.error("Failed to register song. Please try again.");
+      }
     }
   };
 
@@ -449,6 +604,17 @@ export default function RegisterSongForm() {
       const dateStr = String(newReleaseDate).includes("/")
         ? newReleaseDate.split("/").reverse().join("-")
         : String(newReleaseDate).slice(0, 10);
+      if (releaseDateDebounceRef.current) {
+        clearTimeout(releaseDateDebounceRef.current);
+        releaseDateDebounceRef.current = null;
+      }
+      const dateOk = await runReleaseDateAvailabilityCheck(dateStr);
+      if (!dateOk) {
+        toast.error(
+          "This release date is already booked. Please choose another date.",
+        );
+        return;
+      }
       try {
         const res = await axiosApi.post(
           "/update-song-release-date",
@@ -501,6 +667,25 @@ export default function RegisterSongForm() {
       (videoType !== "Music Video" && videoType !== "Lyrical Video")
     ) {
       toast.error("Please select either Music Video or Lyrical Video.");
+      return;
+    }
+
+    const releaseYmd = bookingDateToYMD(formData.release_date);
+    if (!releaseYmd) {
+      toast.error("Please select a release date.");
+      return;
+    }
+    if (releaseDateDebounceRef.current) {
+      clearTimeout(releaseDateDebounceRef.current);
+      releaseDateDebounceRef.current = null;
+    }
+    const releaseOk = await runReleaseDateAvailabilityCheck(
+      formData.release_date,
+    );
+    if (!releaseOk) {
+      toast.error(
+        "This release date is already booked. Please choose another date before continuing.",
+      );
       return;
     }
 
@@ -711,12 +896,16 @@ export default function RegisterSongForm() {
             colorScheme: "dark",
           }}
         />
+        {releaseDateCheckLoading && formData.release_date && (
+          <span className="text-gray-400 text-sm">Checking date availability…</span>
+        )}
         {isBlockedDate(formData.release_date) && (
           <span className="text-red-500 text-sm">
-            Selected date is blocked. Please choose another date.
+            This date is not available (already on the release calendar). Please
+            choose another date.
             <Link to={"/dashboard/time-calendar"}>
               <span className="underline ms-2">
-                Click to See Available Dates
+                View calendar
               </span>
             </Link>
           </span>
@@ -1049,7 +1238,12 @@ export default function RegisterSongForm() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors"
+              disabled={
+                releaseDateCheckLoading ||
+                isBlockedDate(formData.release_date) ||
+                (!isUpdateReleaseDateOnly && !agreement)
+              }
+              className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUpdateReleaseDateOnly
                 ? "Update release date & continue"

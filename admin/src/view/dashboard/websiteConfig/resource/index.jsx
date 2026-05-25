@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import axiosApi from "../../../../conf/axios";
+import { resolveVideoUrlForUpload } from "../../../../utils/presignedVideoUpload";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
 
 const CreateResource = () => {
@@ -63,12 +64,26 @@ const CreateResource = () => {
 
     setIsLoading(true);
 
-    const data = new FormData();
-    for (const key in formData) {
-      data.append(key, formData[key]);
-    }
-
     try {
+      const videoUrl = await resolveVideoUrlForUpload(
+        formData.video_url,
+        "resource-podcast",
+      );
+      if (!videoUrl) {
+        toast.error("Video upload failed");
+        setIsLoading(false);
+        return;
+      }
+
+      const data = new FormData();
+      for (const key in formData) {
+        if (key === "video_url") {
+          data.append("video_url", videoUrl);
+        } else {
+          data.append(key, formData[key]);
+        }
+      }
+
       await axiosApi.post("/createPodcast", data, {
         headers: {
           "Content-Type": "multipart/form-data",

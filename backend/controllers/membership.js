@@ -7,6 +7,8 @@ const {
   uploadToS3,
   uploadToS3Form,
   getPresignedDownloadUrl,
+  getS3ObjectBuffer,
+  s3ObjectExists,
 } = require("../utils");
 const { launchChromiumBrowser } = require("../utils/puppeteerLaunch");
 
@@ -55,6 +57,29 @@ const membershipForm = async (req, res) => {
           .toISOString()
           .split("T")[0]
       : new Date().toISOString().split("T")[0];
+
+    // Professional experience: DB stores years and months separately (see CreateProfile form).
+    // Legacy rows may only have total months in experience_monthly (>= 12).
+    const profRow = artistProf[0];
+    const expMoRaw = profRow?.ExperienceMonthly ?? profRow?.experience_monthly;
+    const expYrRaw = profRow?.ExperienceYearly ?? profRow?.experience_yearly;
+    let expMoNum =
+      expMoRaw != null && expMoRaw !== "" ? Number(expMoRaw) : NaN;
+    let expYrNum =
+      expYrRaw != null && expYrRaw !== "" ? Number(expYrRaw) : NaN;
+    if (
+      (!Number.isFinite(expYrNum) || expYrNum === 0) &&
+      Number.isFinite(expMoNum) &&
+      expMoNum >= 12
+    ) {
+      expYrNum = Math.floor(expMoNum / 12);
+      expMoNum = expMoNum % 12;
+    }
+    if (!Number.isFinite(expYrNum)) expYrNum = 0;
+    const experienceMonthlyDisplay = Number.isFinite(expMoNum)
+      ? String(Math.trunc(expMoNum))
+      : "N/A";
+    const experienceYearlyDisplay = String(Math.trunc(expYrNum));
 
     const aadharFrontUrl = artistDoc[0]?.AadharFrontURL || null;
     const aadharBackUrl = artistDoc[0]?.AadharBackURL || null;
@@ -534,13 +559,13 @@ const membershipForm = async (req, res) => {
                 <span class="field-name">
                     Monthly
                 </span>
-                <div class="field-value">${parseInt(artistProf[0].ExperienceMonthly % 12) || "N/A"}</div>
+                <div class="field-value">${experienceMonthlyDisplay}</div>
             </div>
             <div>
                 <span class="field-name">
                     Yearly
                 </span>
-                <div class="field-value">${parseInt(artistProf[0].ExperienceMonthly / 12) || "0"}</div>
+                <div class="field-value">${experienceYearlyDisplay}</div>
             </div>
         </div>
         <div>
@@ -1901,6 +1926,47 @@ Agreement shall be subject to arbitration in accordance with the Arbitration and
   }
 };
 
+/** Match upload naming in this controller + legacy keys (e.g. first-name-only). */
+function buildMembershipPdfCandidates(userRow, ophid) {
+  const row = userRow || {};
+  const seen = new Set();
+  /** @type {{ key: string, fileName: string }[]} */
+  const out = [];
+
+  const pushLabel = (label) => {
+    if (label == null) return;
+    const s = String(label).trim();
+    if (!s) return;
+    const fileName = `${s.replace(/[^\w.-]+/g, "_")}.pdf`;
+    const key = `pdfs/${fileName}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ key, fileName });
+  };
+
+  pushLabel(row.full_name);
+  const full = row.full_name && String(row.full_name).trim();
+  if (full) {
+    const first = full.split(/\s+/)[0];
+    if (first && first !== full) pushLabel(first);
+  }
+  pushLabel(row.stage_name);
+  pushLabel(ophid);
+
+  return out;
+}
+
+/**
+ * Ordered list of S3 keys to try (full name, first name, stage, oph_id).
+ */
+const resolveMembershipPdfCandidates = async (ophid) => {
+  const artist = await personal_details.getFullPersonalDetails(ophid);
+  if (!artist || artist.length === 0) {
+    return { error: "not_found", message: "Artist not found" };
+  }
+  return { candidates: buildMembershipPdfCandidates(artist[0], ophid) };
+};
+
 /**
  * GET /auth/membership/pdf-url?ophid=xxx
  * Returns a pre-signed S3 URL for downloading the membership PDF.
@@ -1915,31 +1981,25 @@ const getPdfDownloadUrl = async (req, res) => {
         .json({ success: false, message: "Missing ophid parameter" });
     }
 
-    console.log("sdsdsd");
-
-    const artist = await personal_details.getFullPersonalDetails(ophid);
-    if (!artist || artist.length === 0) {
+    const resolved = await resolveMembershipPdfCandidates(ophid);
+    if (resolved.error) {
       return res
         .status(404)
-        .json({ success: false, message: "Artist not found" });
+        .json({ success: false, message: resolved.message });
     }
 
-    console.log(artist);
+    for (const { key } of resolved.candidates) {
+      if (await s3ObjectExists(key)) {
+        const url = getPresignedDownloadUrl(key, 900);
+        return res.json({ success: true, url });
+      }
+    }
 
-    const safeName =
-      (artist[0]?.full_name && String(artist[0].full_name)) ||
-      ophid ||
-      "membership";
-
-    console.log(safeName);
-
-    const fileName = `${safeName.replace(/[^\w.-]+/g, "_")}.pdf`;
-    console.log(fileName);
-    const key = `pdfs/${fileName}`;
-    console.log(key);
-
-    const url = getPresignedDownloadUrl(key, 900);
-    res.json({ success: true, url });
+    return res.status(404).json({
+      success: false,
+      message:
+        "Membership PDF not found in storage for this artist (tried common name variants).",
+    });
   } catch (error) {
     console.error("[membership] getPdfDownloadUrl error:", error);
     res.status(500).json({
@@ -1950,5 +2010,61 @@ const getPdfDownloadUrl = async (req, res) => {
   }
 };
 
+/**
+ * GET /auth/membership/pdf?ophid=xxx
+ * Streams the PDF from S3 through the API so the admin SPA avoids cross-origin fetch/CORS to S3.
+ */
+const downloadMembershipPdf = async (req, res) => {
+  try {
+    const { ophid } = req.query;
+    if (!ophid) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing ophid parameter" });
+    }
+
+    const resolved = await resolveMembershipPdfCandidates(ophid);
+    if (resolved.error) {
+      return res
+        .status(404)
+        .json({ success: false, message: resolved.message });
+    }
+
+    const isMissing = (err) =>
+      err.code === "NoSuchKey" ||
+      err.statusCode === 404 ||
+      err.name === "NoSuchKey";
+
+    for (const { key, fileName } of resolved.candidates) {
+      try {
+        const body = await getS3ObjectBuffer(key);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${fileName.replace(/"/g, "")}"`,
+        );
+        return res.send(body);
+      } catch (err) {
+        if (isMissing(err)) continue;
+        throw err;
+      }
+    }
+
+    return res.status(404).json({
+      success: false,
+      message:
+        "Membership PDF not found in storage (tried full name, first name, stage name, and OPH ID filenames). Generate it via the membership form or upload to pdfs/…",
+    });
+  } catch (error) {
+    console.error("[membership] downloadMembershipPdf error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to download PDF",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = membershipForm;
 module.exports.getPdfDownloadUrl = getPdfDownloadUrl;
+module.exports.downloadMembershipPdf = downloadMembershipPdf;

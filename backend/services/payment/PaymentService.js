@@ -5,6 +5,7 @@ const SongApplicationStatusService = require('../song/SongApplicationStatusServi
 const songRegModel = require('../../model/songs_register');
 const userModel = require('../../model/user');
 const costingModel = require('../../admin/model/costing');
+const DateBookingService = require('../dateBooking/DateBookingService');
 // Lazy load EventBookingService to avoid potential circular dependencies
 // const EventBookingService = require('../../admin/services/EventBookingService');
 
@@ -425,29 +426,29 @@ class PaymentService {
         }
       }
 
-      // When user submits transaction ID for Song Registration/Repayment: add date to calendar (source of truth)
+      // When user submits transaction ID for Song Registration/Repayment: calendar (same rules as /date-booking)
       if ((isSongReg || isSongRepay) && song_id && finalReleaseDate && String(finalReleaseDate).slice(0, 10) !== '0000-00-00') {
-        try {
-          const [srRows] = await connection.execute(
-            `SELECT Song_name, project_type FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
-            [song_id, paymentOphId, paymentOphId],
+        const [srRowsCal] = await connection.execute(
+          `SELECT Song_name, project_type FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+          [song_id, paymentOphId, paymentOphId],
+        );
+        const rowCal = srRowsCal?.[0];
+        const songNameCal = rowCal?.Song_name ?? null;
+        const projectTypeCal = rowCal?.project_type ?? null;
+        const dateStrCal =
+          finalReleaseDate instanceof Date
+            ? finalReleaseDate.toISOString().slice(0, 10)
+            : String(finalReleaseDate).slice(0, 10);
+        if (songNameCal != null || projectTypeCal != null) {
+          await DateBookingService.upsertCalendarBookingInConnection(
+            connection,
+            paymentOphId,
+            dateStrCal,
+            songNameCal,
+            projectTypeCal,
+            song_id,
           );
-          const row = srRows?.[0];
-          const songName = row?.Song_name ?? null;
-          const projectType = row?.project_type ?? null;
-          const dateStr = finalReleaseDate instanceof Date ? finalReleaseDate.toISOString().slice(0, 10) : String(finalReleaseDate).slice(0, 10);
-          if (songName != null || projectType != null) {
-            await connection.execute(
-              `INSERT INTO calender (oph_id, current_booking_date, original_booking_date, song_id, song_name, project_type, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-              [paymentOphId, dateStr, dateStr, song_id, songName, projectType],
-            );
-            console.log('[PaymentService] Calendar entry created for song_id=%s, date=%s', song_id, dateStr);
-          }
-        } catch (e) {
-          if (e.code !== 'ER_DUP_ENTRY' && e.errno !== 1062) {
-            console.warn('[PaymentService] Calendar insert on payment submit:', e.message);
-          }
+          console.log('[PaymentService] Calendar upsert for song_id=%s, date=%s', song_id, dateStrCal);
         }
       }
 
@@ -863,29 +864,29 @@ class PaymentService {
         }
       }
 
-      // Add date to calendar when user submits transaction ID (source of truth)
+      // Add date to calendar when user submits transaction ID (same conflict rules as date booking)
       if (song_id && finalReleaseDate && String(finalReleaseDate).slice(0, 10) !== '0000-00-00') {
-        try {
-          const [srRows] = await connection.execute(
-            `SELECT Song_name, project_type FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
-            [song_id, oph_id, oph_id],
+        const [srRowsRep] = await connection.execute(
+          `SELECT Song_name, project_type FROM songs_register WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?) LIMIT 1`,
+          [song_id, oph_id, oph_id],
+        );
+        const rowRep = srRowsRep?.[0];
+        const songNameRep = rowRep?.Song_name ?? null;
+        const projectTypeRep = rowRep?.project_type ?? null;
+        const dateStrRep =
+          finalReleaseDate instanceof Date
+            ? finalReleaseDate.toISOString().slice(0, 10)
+            : String(finalReleaseDate).slice(0, 10);
+        if (songNameRep != null || projectTypeRep != null) {
+          await DateBookingService.upsertCalendarBookingInConnection(
+            connection,
+            oph_id,
+            dateStrRep,
+            songNameRep,
+            projectTypeRep,
+            song_id,
           );
-          const row = srRows?.[0];
-          const songName = row?.Song_name ?? null;
-          const projectType = row?.project_type ?? null;
-          const dateStr = finalReleaseDate instanceof Date ? finalReleaseDate.toISOString().slice(0, 10) : String(finalReleaseDate).slice(0, 10);
-          if (songName != null || projectType != null) {
-            await connection.execute(
-              `INSERT INTO calender (oph_id, current_booking_date, original_booking_date, song_id, song_name, project_type, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-              [oph_id, dateStr, dateStr, song_id, songName, projectType],
-            );
-            console.log('[PaymentService] songRepayment: calendar entry created for song_id=%s', song_id);
-          }
-        } catch (e) {
-          if (e.code !== 'ER_DUP_ENTRY' && e.errno !== 1062) {
-            console.warn('[PaymentService] songRepayment calendar insert:', e.message);
-          }
+          console.log('[PaymentService] songRepayment: calendar upsert for song_id=%s', song_id);
         }
       }
 

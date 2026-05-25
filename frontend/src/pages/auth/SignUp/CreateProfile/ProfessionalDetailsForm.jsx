@@ -13,6 +13,7 @@ import { useArtist } from "../../API/ArtistContext";
 import MusicBg from "../../../../../public/assets/images/music_bg.png";
 import Elipse from "../../../../../public/assets/images/elipse2.png";
 import axiosApi from "../../../../conf/axios";
+import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
 import { data, useNavigate, useSearchParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import CustomVideoPlayer from "../../../../components/CustomVideoPlayer/CustomVideoPlayer";
@@ -349,16 +350,19 @@ const ProfessionalDetailsForm = () => {
         }
       });
 
-      if (typeof videoBio === "string") {
-        formDataToSend.append("VideoURL", formData.url); // send as body field
-      } else {
-        formDataToSend.append("video", videoBio); // will go to multer
+      let videoFinalUrl = null;
+      if (typeof videoBio === "string" && videoBio && !videoBio.startsWith("blob:")) {
+        videoFinalUrl = videoBio;
+      } else if (videoBio instanceof File) {
+        videoFinalUrl = await uploadVideoViaPresignedPut(axiosApi, videoBio, {
+          purpose: "professional",
+          headers,
+        });
+      }
+      if (videoFinalUrl) {
+        formDataToSend.append("VideoURL", videoFinalUrl);
       }
 
-      // Append video bio if it exists
-      // if (videoBio) {
-      //   formDataToSend.append("video", videoBio);
-      // }
       const response = await updateProfessionalDetails(formDataToSend, headers);
       const res = await axiosApi.post(`/increment-count/${ophid}`);
       if (response.success) {

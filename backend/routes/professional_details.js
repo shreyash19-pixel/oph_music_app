@@ -15,10 +15,7 @@ router.get("/auth/professional-details", authMiddleware, controller.getProfessio
 router.post(
   "/auth/professional-details",
   authMiddleware,
-  upload.fields([
-    { name: "video", maxCount: 1 },
-    { name: "photos", maxCount: 5 }, // support multiple images
-  ]),
+  upload.fields([{ name: "photos", maxCount: 5 }]),
   controller.insertProfessionalDetails
 );
 
