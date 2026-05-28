@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../../middleware/authenticate");
-const forbidSalesMemberApprovals = require("../../middleware/forbidSalesMemberApprovals");
+const requireWithdrawApprovalRole = require("../../middleware/requireWithdrawApprovalRole");
 const {
   getWithdrawSummaries,
   updateWithdrawStatus,
@@ -12,8 +12,8 @@ router.get("/getAllWithdraw", getWithdrawSummaries);
 router.post(
   "/updateWithdrawStatus",
   authMiddleware,
-  forbidSalesMemberApprovals,
-  updateWithdrawStatus
+  requireWithdrawApprovalRole,
+  updateWithdrawStatus,
 );
 router.get("/getWithdrawAdmin", getWithdraw);
 

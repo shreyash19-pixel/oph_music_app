@@ -4,8 +4,12 @@ import axiosApi from "../../../../conf/axios";
 import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload"; // Adjust if needed
 import { Lock, Unlock } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { canManageContent } from "../../../../utils/roles";
 
 const ContentManage = () => {
+  const { user } = useAuth();
+  const viewOnly = !canManageContent(user?.role);
   const { ophid, songId } = useParams();
 
   const [loading, setLoading] = useState(true);
@@ -270,12 +274,19 @@ const ContentManage = () => {
           <strong>SongID:</strong> {songId}
         </div>
 
+        {viewOnly && (
+          <p className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            View only. You can review content but cannot edit fields or save changes.
+          </p>
+        )}
+
         <SectionBlock
           section="Content"
           data={content}
           fields={["project_type", "CP_Line", "PLine", "release_date"]}
           onChange={handleSectionChange("Content", setContent)}
           updateFunction={null}
+          viewOnly={viewOnly}
         />
 
         <SectionBlock
@@ -294,6 +305,7 @@ const ContentManage = () => {
           onChange={handleSectionChange("Audio", setAudio)}
           updateFunction={updateAudioSection}
           languages={languages}
+          viewOnly={viewOnly}
           renderExtra={() => (
             <div className="mt-4 space-y-4">
               <h3 className="text-lg font-semibold text-gray-800">Secondary Artists</h3>
@@ -354,16 +366,18 @@ const ContentManage = () => {
                                   >
                                     {url}
                                   </a>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(url);
-                                      toast.success("Link copied");
-                                    }}
-                                    className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-                                  >
-                                    Copy
-                                  </button>
+                                  {!viewOnly && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(url);
+                                        toast.success("Link copied");
+                                      }}
+                                      className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                                    >
+                                      Copy
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                           </div>
@@ -385,6 +399,7 @@ const ContentManage = () => {
           fields={["credits"]}
           onChange={handleSectionChange("Video", setVideo)}
           updateFunction={updateVideoSection}
+          viewOnly={viewOnly}
           renderExtra={() => (
             <div className="space-y-4">
               {/* Multiple Images Display */}
@@ -400,19 +415,21 @@ const ContentManage = () => {
                         alt={`Thumbnail ${index + 1}`}
                         className="w-full h-24 object-cover rounded shadow"
                       />
-                      <button
-                        onClick={() => {
-                          const newImages = video.images.filter((_, i) => i !== index);
-                          setVideo(prev => ({ ...prev, images: newImages }));
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                        title="Remove image"
-                      >
-                        ×
-                      </button>
+                      {!viewOnly && (
+                        <button
+                          onClick={() => {
+                            const newImages = video.images.filter((_, i) => i !== index);
+                            setVideo(prev => ({ ...prev, images: newImages }));
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                   ))}
-                  {video.images?.length < 3 && (
+                  {!viewOnly && video.images?.length < 3 && (
                     <div className="relative">
                       <input
                         type="file"
@@ -449,7 +466,7 @@ const ContentManage = () => {
                 )}
                 
                 {/* New Image Files Preview */}
-                {video.image_files && video.image_files.length > 0 && (
+                {!viewOnly && video.image_files && video.image_files.length > 0 && (
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">New Images Selected:</h4>
                     <div className="grid grid-cols-3 gap-2">
@@ -488,7 +505,7 @@ const ContentManage = () => {
                   />
                 )}
                 
-                {/* Custom File Upload Button */}
+                {!viewOnly && (
                 <div className="relative">
                   <input
                     type="file"
@@ -512,8 +529,9 @@ const ContentManage = () => {
                     {video.video_file ? 'Change Video File' : 'Upload Video File'}
                   </label>
                 </div>
+                )}
                 
-                {video.video_file && (
+                {!viewOnly && video.video_file && (
                   <div className="mt-3 space-y-3">
                     {/* Video Preview */}
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -568,7 +586,7 @@ const ContentManage = () => {
   );
 };
 
-const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderExtra, languages = [] }) => {
+const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderExtra, languages = [], viewOnly = false }) => {
   const [unlockFields, setunlockFields] = useState({
     Content: {},
     Audio: {},
@@ -707,6 +725,7 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
 
       {fields.map((field) => {
         const isReadOnly =
+          viewOnly ||
           field === "release_date" ||
           (section === "Audio" && field === "secondary_artists") ||
           !unlockFields?.[section]?.[field];
@@ -731,7 +750,7 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
                     Your browser does not support the audio element.
                   </audio>
                   
-                  {/* Custom Audio File Upload Button */}
+                  {!viewOnly && (
                   <div className="relative">
                     <input
                       type="file"
@@ -755,8 +774,9 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
                       {data.audio_file ? 'Change Audio File' : 'Upload Audio File'}
                     </label>
                   </div>
+                  )}
                   
-                  {data.audio_file && (
+                  {!viewOnly && data.audio_file && (
                     <div className="mt-3 space-y-3">
                       {/* Audio Preview */}
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -825,7 +845,7 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
                 )
               )}
 
-              {field !== "release_date" && (
+              {!viewOnly && field !== "release_date" && (
                 <button
                   onClick={() => toggleLock(field)}
                   type="button"
@@ -842,14 +862,16 @@ const SectionBlock = ({ section, data, fields, onChange, updateFunction, renderE
 
       {renderExtra && renderExtra()}
 
-      <div className="pt-4 text-right">
-        <button
-          onClick={handleSubmit}
-          className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
-        >
-          Save {section} Details
-        </button>
-      </div>
+      {!viewOnly && updateFunction && (
+        <div className="pt-4 text-right">
+          <button
+            onClick={handleSubmit}
+            className="bg-[#0d3c44] text-white px-6 py-2 rounded-md hover:bg-[#0a2d33] transition"
+          >
+            Save {section} Details
+          </button>
+        </div>
+      )}
     </div>
   );
 };

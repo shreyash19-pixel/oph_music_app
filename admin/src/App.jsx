@@ -17,6 +17,8 @@ import {
   PAYMENTS_PORTAL_ROLES,
   MY_EPK_CHANGE_AND_SONGS_ROLES,
   MY_EPK_INCOME_ROLES,
+  COLLAB_VIEW_ROLES,
+  TIME_CALENDAR_VIEW_ROLES,
 } from "./utils/roles";
 // import { ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
@@ -617,13 +619,7 @@ function App() {
           <Route
             path="/Collab/:ophid"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={COLLAB_VIEW_ROLES}>
                 <CollabArtistDetail />
               </ProtectedRoute>
             }
@@ -631,13 +627,7 @@ function App() {
           <Route
             path="/Collab"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={COLLAB_VIEW_ROLES}>
                 <Collab />
               </ProtectedRoute>
             }
@@ -761,13 +751,7 @@ function App() {
           <Route
             path="/calendar"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={TIME_CALENDAR_VIEW_ROLES}>
                 <TimeCalender />
               </ProtectedRoute>
             }
@@ -775,13 +759,7 @@ function App() {
           <Route
             path="/verify-booking-dates"
             element={
-              <ProtectedRoute
-                allowedRoles={[
-                  ROLES.SUPER_ADMIN,
-                  ROLES.ADMINISTRATIVE_HEAD,
-                  ROLES.ADMINISTRATIVE_MEMBER,
-                ]}
-              >
+              <ProtectedRoute allowedRoles={TIME_CALENDAR_VIEW_ROLES}>
                 <VerifyBookingDates />
               </ProtectedRoute>
             }

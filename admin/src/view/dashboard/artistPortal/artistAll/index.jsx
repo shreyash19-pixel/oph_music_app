@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
-import { Lock, Unlock, Download } from "lucide-react";
 import { Lock, Unlock, Download, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
@@ -569,6 +568,7 @@ const ArtistAll = () => {
   };
 
   const downloadPDF = async () => {
+    let loadingToast;
     try {
       // Check if we're in a browser environment
       if (
@@ -585,7 +585,7 @@ const ArtistAll = () => {
         return;
       }
 
-      const loadingToast = toast.loading("Downloading PDF...");
+      loadingToast = toast.loading("Downloading PDF...");
 
       // Stream PDF through API (avoids cross-origin fetch to S3 → "Failed to fetch" when bucket CORS is tight)
       const response = await axiosApi.get("/auth/membership/pdf", {
@@ -606,12 +606,6 @@ const ArtistAll = () => {
           /* use default */
         }
         throw new Error(msg);
-      const response = await fetch(pdfUrl);
-
-      if (!response.ok) {
-        throw new Error(
-          `PDF not found: ${response.status} ${response.statusText}`,
-        );
       }
 
       const downloadBlob = new Blob([response.data], {
@@ -633,7 +627,7 @@ const ArtistAll = () => {
       toast.success("PDF downloaded successfully!");
     } catch (error) {
       console.error("Error downloading PDF:", error);
-      toast.dismiss();
+      toast.dismiss(loadingToast);
       const raw =
         error.response?.data?.message ||
         (typeof error.response?.data === "string"
@@ -645,9 +639,6 @@ const ArtistAll = () => {
           ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
           : "";
       toast.error(`Failed to download PDF: ${raw}${networkHint}`);
-      toast.error(
-        `Failed to download PDF: ${error.response?.data?.message || error.message}`,
-      );
     }
   };
 

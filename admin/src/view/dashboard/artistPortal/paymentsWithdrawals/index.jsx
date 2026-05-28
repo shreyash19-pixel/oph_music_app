@@ -2,13 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { useAuth } from "../../../../auth/AuthProvider";
-import { ROLES } from "../../../../utils/roles";
+import { canApproveRejectWithdrawals } from "../../../../utils/roles";
 
 export default function Withdraw(){
   const { user } = useAuth();
-  const canApproveReject =
-    user?.role !== ROLES.ADMINISTRATIVE_MEMBER &&
-    user?.role !== ROLES.SALES_MEMBER;
+  const canApproveReject = canApproveRejectWithdrawals(user?.role);
   const { withdrawal_id , ophID} = useParams();
   const [withdrawData, setWithdrawData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,11 +94,11 @@ useEffect(() => {
                   <strong>Withdraw ID:</strong> {withdraw.withdrawal_id}
                 </p>
 
-                {/* Approve / reject — not available for administrative member, sales member */}
+                {/* Approve / reject — accounts head (and super admin) only */}
                 <div style={{ marginTop: "10px" }}>
                   {!canApproveReject ? (
                     <p style={{ fontSize: "14px", color: "#4b5563", marginTop: "8px" }}>
-                      You can review this withdrawal; approving or rejecting is not available for your role.
+                      View only. Only the accounts head can approve or reject withdrawals.
                     </p>
                   ) : summaryMap[withdrawalId]?.action === "reject" ? (
                     <div

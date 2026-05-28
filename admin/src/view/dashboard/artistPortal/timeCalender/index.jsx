@@ -4,8 +4,12 @@ import axiosApi from "../../../../conf/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import ArtistSidebar from "../../../../components/ArtistSidebar";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { canManageBookingVerification } from "../../../../utils/roles";
 
 export default function TimeCalendar() {
+  const { user } = useAuth();
+  const viewOnly = !canManageBookingVerification(user?.role);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(
     new Date().getMonth(),
   );
@@ -401,6 +405,11 @@ export default function TimeCalendar() {
     <div className="min-h-[calc(100vh-70px)] text-gray-100">
       <ArtistSidebar>
         <div className="space-y-6">
+          {viewOnly && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              View only. You can browse the calendar and open booking details, but cannot approve or reject payments.
+            </div>
+          )}
           {isLoading && (
             <div className="text-center py-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
