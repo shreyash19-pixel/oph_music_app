@@ -3,18 +3,30 @@ import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosApi from "../../../../../conf/axios";
 import { Bounce, toast, ToastContainer } from "react-toastify";
-import { isRegistrationOpenByDateTime, isRegistrationNotStartedYetByDateTime, formatRegistrationStartDate, formatRegistrationEndDate } from "../../../../../utils/date";
+import {
+  isRegistrationOpenByDateTime,
+  isRegistrationNotStartedYetByDateTime,
+  formatRegistrationStartDate,
+  formatRegistrationEndDate,
+} from "../../../../../utils/date";
 
 // Accept either Instagram username or full profile URL (same as HeroSection RegistrationModal)
 // URL regex allows optional query params (e.g. ?igsh=...) from share links
 const instagramUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{0,29})$/;
-const instagramUrlRegex = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
+const instagramUrlRegex =
+  /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9._]+\/?(?:\?[^#\s]*)?$/;
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPhoneNumber = (phone) => /^\d{10}$/.test(phone);
 
 // Extracted to prevent re-mount on parent re-renders (e.g. countdown timer) - preserves form input
-function EventRegistrationModal({ singleEvent, professions, eventId, onClose, onSuccess }) {
+function EventRegistrationModal({
+  singleEvent,
+  professions,
+  eventId,
+  onClose,
+  onSuccess,
+}) {
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -40,25 +52,45 @@ function EventRegistrationModal({ singleEvent, professions, eventId, onClose, on
       instagramUsernameRegex.test(formData.instagram_handle?.trim()) ||
       instagramUrlRegex.test(formData.instagram_handle?.trim());
     if (!isValidInstagram) {
-      toast.error("Invalid Instagram! Please enter a valid Instagram username or profile link.", {
-        position: "top-right", autoClose: 4000, theme: "dark", transition: Bounce,
-      });
+      toast.error(
+        "Invalid Instagram! Please enter a valid Instagram username or profile link.",
+        {
+          position: "top-right",
+          autoClose: 4000,
+          theme: "dark",
+          transition: Bounce,
+        },
+      );
       return;
     }
     if (!isValidEmail(formData.email)) {
-      toast.error("Invalid Email Address!", { position: "top-right", theme: "dark" });
+      toast.error("Invalid Email Address!", {
+        position: "top-right",
+        theme: "dark",
+      });
       return;
     }
     if (!isValidPhoneNumber(formData.phone)) {
-      toast.error("Invalid Phone Number! Must be 10 digits.", { position: "top-right", theme: "dark" });
+      toast.error("Invalid Phone Number! Must be 10 digits.", {
+        position: "top-right",
+        theme: "dark",
+      });
       return;
     }
     if (!isRegistrationOpen()) {
-      toast.error("Registration is closed for this event.", { position: "top-right", theme: "dark" });
+      toast.error("Registration is closed for this event.", {
+        position: "top-right",
+        theme: "dark",
+      });
       return;
     }
 
-    toast.success("Proceeding to payment...", { position: "top-right", autoClose: 2000, theme: "dark", transition: Bounce });
+    toast.success("Proceeding to payment...", {
+      position: "top-right",
+      autoClose: 2000,
+      theme: "dark",
+      transition: Bounce,
+    });
     onClose();
     onSuccess({
       amount: singleEvent.fees,
@@ -86,34 +118,102 @@ function EventRegistrationModal({ singleEvent, professions, eventId, onClose, on
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-white">Register for Event</h2>
-            <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
           </div>
           <div className="flex gap-4">
-            <input type="text" name="first_name" placeholder="First Name*" required className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.first_name} onChange={handleChange} />
-            <input type="text" name="last_name" placeholder="Last Name*" required className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.last_name} onChange={handleChange} />
+            <input
+              type="text"
+              name="first_name"
+              placeholder="First Name*"
+              required
+              className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              value={formData.first_name}
+              onChange={handleChange}
+            />
+            <input
+              type="text"
+              name="last_name"
+              placeholder="Last Name*"
+              required
+              className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              value={formData.last_name}
+              onChange={handleChange}
+            />
           </div>
           <div>
-            <input type="email" name="email" placeholder="Email Address*" required className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.email} onChange={handleChange} />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address*"
+              required
+              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              value={formData.email}
+              onChange={handleChange}
+            />
           </div>
           <div>
-            <input type="text" name="instagram_handle" placeholder="username or https://instagram.com/username" required className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.instagram_handle} onChange={handleChange} />
+            <input
+              type="text"
+              name="instagram_handle"
+              placeholder="username or https://instagram.com/username"
+              required
+              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              value={formData.instagram_handle}
+              onChange={handleChange}
+            />
           </div>
           <div className="flex gap-2">
-            <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white"><option value="+91">+91</option></select>
-            <input type="tel" name="phone" placeholder="Phone Number*" required className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.phone} onChange={handleChange} />
+            <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white">
+              <option value="+91">+91</option>
+            </select>
+            <input
+              type="tel"
+              name="phone"
+              placeholder="Phone Number*"
+              required
+              className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              value={formData.phone}
+              onChange={handleChange}
+            />
           </div>
           <div>
-            <select name="profession_id" required className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" value={formData.profession_id || ""} onChange={handleChange}>
+            <select
+              name="profession_id"
+              required
+              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              value={formData.profession_id || ""}
+              onChange={handleChange}
+            >
               <option value="">Select profession</option>
               {professions?.map((profession, ind) => (
-                <option key={profession.id ?? ind} value={profession.id}>{profession.name}</option>
+                <option key={profession.id ?? ind} value={profession.id}>
+                  {profession.name}
+                </option>
               ))}
             </select>
           </div>
           {isRegistrationOpen() ? (
-            <button type="submit" className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit"}</button>
+            <button
+              type="submit"
+              className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </button>
           ) : (
-            <button type="submit" disabled className="w-full bg-cyan-400 text-black font-medium py-2 px-4 rounded opacity-50 cursor-not-allowed">Registration Expired</button>
+            <button
+              type="submit"
+              disabled
+              className="w-full bg-cyan-400 text-black font-medium py-2 px-4 rounded opacity-50 cursor-not-allowed"
+            >
+              Registration Expired
+            </button>
           )}
         </form>
       </div>
@@ -304,15 +404,15 @@ const IndividualEvent = () => {
         <div className="relative px-4 md:px-10 xl:px-16  text-white h-auto min-h-screen overflow-hidden">
           {/* Background with gradient */}
           <div
-            className="absolute  inset-0 bg-black"
+            className="absolute inset-0 bg-black"
             style={{
               background: `linear-gradient(to bottom,
-                rgba(0, 0, 0, 0) 0%,
-                rgba(0, 0, 0, 0) 60%,
-                rgba(0, 0, 0, 1) 100%),
-                url(${singleEvent.thumbnail_url})`,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 60%,
+      rgba(0, 0, 0, 1) 100%),
+      url(${singleEvent.thumbnail_url})`,
               backgroundSize: "cover",
-              backgroundPosition: "center",
+              backgroundPosition: "top center",
               height: "70vh",
             }}
           />
@@ -376,7 +476,13 @@ const IndividualEvent = () => {
               <div className="text-amber-400">
                 Registration:{" "}
                 <span className="text-white">
-                  {formatRegistrationStartDate(singleEvent.registrationStart || singleEvent.regn_start)} to {formatRegistrationEndDate(singleEvent.registrationEnd || singleEvent.regn_end)}
+                  {formatRegistrationStartDate(
+                    singleEvent.registrationStart || singleEvent.regn_start,
+                  )}{" "}
+                  to{" "}
+                  {formatRegistrationEndDate(
+                    singleEvent.registrationEnd || singleEvent.regn_end,
+                  )}
                 </span>
               </div>
               <div className="text-gray-300">
@@ -407,7 +513,9 @@ const IndividualEvent = () => {
                 className={`bg-[#5DC9DE] text-black text-sm lg:text-2xl px-6 py-3 rounded-full font-semibold drop-shadow-[0_0_15px_rgba(34,211,238,1)] ${
                   isEventInFuture && isRegistrationOpenByDateTime(singleEvent)
                 }`}
-                disabled={!isEventInFuture || !isRegistrationOpenByDateTime(singleEvent)}
+                disabled={
+                  !isEventInFuture || !isRegistrationOpenByDateTime(singleEvent)
+                }
                 title={
                   !isEventInFuture
                     ? "Event has ended"

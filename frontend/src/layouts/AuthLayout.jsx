@@ -14,7 +14,7 @@ const AuthLayout = () => {
           <Outlet />
         </div>
       </div>
-      <Footer></Footer>
+      <Footer/>
     </>
   );
 };

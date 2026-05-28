@@ -135,7 +135,7 @@ export default function Events() {
   const renderEventsSection = (events, sectionTitle) => (
     <>
       <div className="flex justify-between items-center  mb-8">
-        <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-8 mb-8">
+        <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-8 mb-8">
           {sectionTitle}
         </h2>
         {sectionTitle.includes("Events") && <NavbarRight />}

@@ -469,7 +469,7 @@ const ProfessionalDetailsForm = () => {
                 poster={thumbnail || undefined}
                 className="w-full h-[50vh] rounded-lg overflow-hidden bg-black"
                 pauseOtherVideos={true}
-                allowFullscreen={false}
+                allowFullscreen={true}
                 showPlayButtonOverlay
                 playOverlayVariant="purple"
               />

@@ -384,7 +384,7 @@ export default function TimeCalendar() {
         {!isLoading && !error && (
           <>
             <div className="flex items-center justify-between">
-              <h2 className="text-[#00B8D9] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 
                 TIME CALENDAR
               </h2>
