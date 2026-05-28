@@ -129,6 +129,13 @@ function Leaderboard({ leaderboardData, artistId }) {
                   )}
                 </span>
               </span>
+              <button
+                type="button"
+                onClick={() => goToArtistProfile(myOphId)}
+                className="shrink-0 rounded-lg border border-[#5DC9DE]/35 bg-[#5DC9DE]/10 px-4 py-2 text-sm font-medium text-[#5DC9DE] ring-1 ring-[#5DC9DE]/25 transition-colors hover:border-[#5DC9DE]/50 hover:bg-[#5DC9DE]/20 hover:text-white"
+              >
+                View Profile
+              </button>
             </div>
           )}
         </div>
