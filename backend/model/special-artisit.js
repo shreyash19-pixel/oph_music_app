@@ -30,21 +30,21 @@ const editSpecialArtistDetails = async (updates, len) => {
     if (existRows.length === 0 || existRows[0].status === "approved") {
       rows.push(
         await db.execute(
-          "INSERT INTO special_artist_details (ophid, field, content) VALUES (?,?,?)",
+          "INSERT INTO special_artist_details (ophid, field, content, updated_at) VALUES (?,?,?, NOW())",
           [updates[i].ophid, updates[i].field, updates[i].content]
         )
       );
     } else if (existRows[0].status === "under review") {
       rows.push(
         await db.execute(
-          "UPDATE special_artist_details SET content = ? WHERE ophid = ? AND field = ?",
+          "UPDATE special_artist_details SET content = ?, updated_at = NOW() WHERE ophid = ? AND field = ?",
           [updates[i].content, updates[i].ophid, updates[i].field]
         )
       );
     } else if (existRows[0].status === "rejected") {
       rows.push(
         await db.execute(
-          "UPDATE special_artist_details SET content = ?, status = ?, reason = ? WHERE ophid = ? AND field = ?",
+          "UPDATE special_artist_details SET content = ?, status = ?, reason = ?, updated_at = NOW() WHERE ophid = ? AND field = ?",
           [
             updates[i].content,
             "under review",

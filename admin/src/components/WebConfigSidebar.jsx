@@ -2,6 +2,7 @@ import React from "react";
 import Sidebar from "./Sidebar";
 import {
   ROLES,
+  COLLAB_VIEW_ROLES,
   EVENT_MANAGEMENT_WEB_CONFIG_ROLES,
   WEBSITE_CONFIG_SETTINGS_ROLES,
 } from "../utils/roles";
@@ -73,11 +74,7 @@ const WebConfigSidebar = ({ children }) => {
     {
       label: "Collab",
       route: "/Collab",
-      roles: [
-        ROLES.SUPER_ADMIN,
-        ROLES.ADMINISTRATIVE_HEAD,
-        ROLES.ADMINISTRATIVE_MEMBER,
-      ],
+      roles: COLLAB_VIEW_ROLES,
     },
     {
       label: "Event Management",

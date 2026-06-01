@@ -29,6 +29,20 @@ export const ANALYTICS_PORTAL_ROLES = [
   ROLES.OPERATION_MEMBER,
 ];
 
+/**
+ * Approve/reject payment transactions (event, song, general status updates).
+ * Project members may view event payments but cannot approve or reject.
+ */
+export const PAYMENT_APPROVE_REJECT_DENY_ROLES = [
+  ROLES.SALES_MEMBER,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.ACCOUNTS_MEMBER,
+  ROLES.PROJECT_MEMBER,
+];
+
+export const canApproveRejectPayments = (role) =>
+  Boolean(role && !PAYMENT_APPROVE_REJECT_DENY_ROLES.includes(role));
+
 /** Event payments nav + `/EventPayments` route (Artist Portal). Includes rejected rows in lists/detail; approve/reject stays gated in UI/API. */
 export const EVENT_PAYMENTS_SIDEBAR_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -39,6 +53,15 @@ export const EVENT_PAYMENTS_SIDEBAR_ROLES = [
   ROLES.ACCOUNTS_HEAD,
   ROLES.ACCOUNTS_MEMBER,
 ];
+
+/** Withdrawals: approve/reject pending requests (accounts member is view-only). */
+export const WITHDRAWAL_APPROVE_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ACCOUNTS_HEAD,
+];
+
+export const canApproveRejectWithdrawals = (role) =>
+  Boolean(role && WITHDRAWAL_APPROVE_ROLES.includes(role));
 
 /** Artist Portal Payments → `/PaymentAll`, `/PaymentWithdraw` (matches Sidebar "Payments"). */
 export const PAYMENTS_PORTAL_ROLES = [
@@ -108,6 +131,18 @@ export const CONTENT_PORTAL_ROLES = [
   ROLES.ACCOUNTS_MEMBER,
 ];
 
+/** Content → New & Manage: approve/reject, edit, upload (accounts roles are view-only). */
+export const CONTENT_MANAGE_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.CREATIVE_HEAD,
+  ROLES.CREATIVE_MEMBER,
+];
+
+export const canManageContent = (role) =>
+  Boolean(role && CONTENT_MANAGE_ROLES.includes(role));
+
 /** TV Publishing routes + nav — not available to creative member. */
 export const TV_PUBLISHING_PORTAL_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -140,6 +175,27 @@ export const canApproveTvPublishing = (role) =>
 
 /** @deprecated Use canLockUnlockTvPublishing */
 export const canManageTvPublishing = canLockUnlockTvPublishing;
+
+/** Collab (Website Config / Artist Portal) — view for accounts; no edit actions on these pages. */
+export const COLLAB_VIEW_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
+];
+
+/** Time Calendar + verify-booking-dates — view for accounts; approve/reject uses BOOKING_VERIFICATION_MANAGE_ROLES. */
+export const TIME_CALENDAR_VIEW_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMINISTRATIVE_HEAD,
+  ROLES.ADMINISTRATIVE_MEMBER,
+  ROLES.ACCOUNTS_HEAD,
+  ROLES.ACCOUNTS_MEMBER,
+];
+
+export const isAccountsPortalViewOnlyRole = (role) =>
+  role === ROLES.ACCOUNTS_HEAD || role === ROLES.ACCOUNTS_MEMBER;
 
 /**
  * Time Calendar → /verify-booking-dates: approve/reject date booking & release date change payments.

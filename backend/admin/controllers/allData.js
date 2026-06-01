@@ -1,6 +1,11 @@
 const ExcelJS = require('exceljs');
 const allDataCont = require('../model/allData');
 const exportPolicy = require("../utils/allDataExportPolicy");
+const {
+  formatDateTimeIST,
+  formatDateOnlyIST,
+  formatSongDurationForExcel,
+} = require("../utils/dateIST");
 
 const downloadApplicationStatus = async (req, res) => {
   try {
@@ -261,32 +266,20 @@ const downloadSpecialArtistDetails = async (req, res) => {
       { header: "Content", key: "content", width: 50 },
       { header: "Status", key: "status", width: 20 },
       { header: "Reason", key: "reason", width: 40 },
+      { header: "Updated At", key: "updated_at", width: 22 },
     ];
-
-    const formatDate = (date) => {
-      if (!date) return "";
-      return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(new Date(date));
-    };
-
-    const formatDateTime = (date) => {
-      if (!date) return "";
-      return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(date));
-    };
 
     (detailRows || []).forEach((row) => {
       const newRow = worksheet.addRow({
-        ...row,
-        date: formatDate(row.date),
+        date: row.date ? formatDateOnlyIST(row.date) : "",
+        ophid: row.ophid ?? row.oph_id ?? "",
+        field: row.field ?? "",
+        content: row.content ?? "",
+        status: row.status ?? "",
+        reason: row.reason ?? "",
+        updated_at: formatDateTimeIST(
+          row.updated_at ?? row.updatedAt,
+        ),
       });
 
       const statusCell = newRow.getCell("status");
@@ -321,10 +314,20 @@ const downloadSpecialArtistDetails = async (req, res) => {
 
     (songRows || []).forEach((row) => {
       const newRow = songsSheet.addRow({
-        ...row,
-        created_at: formatDateTime(row.created_at),
-        updated_at: formatDateTime(row.updated_at),
+        song_id: row.song_id,
+        oph_id: row.oph_id ?? "",
+        song_name: row.song_name ?? "",
+        song_type: row.song_type ?? "",
+        status: row.status ?? "",
+        views: row.views,
+        credits: row.credits ?? "",
+        duration: formatSongDurationForExcel(row.duration),
+        proof: row.proof ?? "",
+        reject_reason: row.reject_reason ?? "",
+        created_at: formatDateTimeIST(row.created_at),
+        updated_at: formatDateTimeIST(row.updated_at),
       });
+      newRow.getCell("duration").numFmt = "@";
 
       const statusCell = newRow.getCell("status");
       if (row.status === "rejected") {
@@ -388,23 +391,22 @@ const downloadSpecialArtistSongsExcel = async (req, res) => {
       { header: "Updated At", key: "updated_at", width: 22 },
     ];
 
-    const formatDateTime = (date) => {
-      if (!date) return "";
-      return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(date));
-    };
-
     songRows.forEach((row) => {
       const newRow = worksheet.addRow({
-        ...row,
-        created_at: formatDateTime(row.created_at),
-        updated_at: formatDateTime(row.updated_at),
+        song_id: row.song_id,
+        oph_id: row.oph_id ?? "",
+        song_name: row.song_name ?? "",
+        song_type: row.song_type ?? "",
+        status: row.status ?? "",
+        views: row.views,
+        credits: row.credits ?? "",
+        duration: formatSongDurationForExcel(row.duration),
+        proof: row.proof ?? "",
+        reject_reason: row.reject_reason ?? "",
+        created_at: formatDateTimeIST(row.created_at),
+        updated_at: formatDateTimeIST(row.updated_at),
       });
+      newRow.getCell("duration").numFmt = "@";
 
       const statusCell = newRow.getCell("status");
       if (row.status === "rejected") {
@@ -531,16 +533,6 @@ const downloadSongsRegister = async (req, res) => {
     console.error("Error downloading Songs Register Excel:", error);
     res.status(500).json({ error: "Failed to download Excel file" });
   }
-};
-
-const formatDateOnlyIST = (date) => {
-  if (!date) return "";
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  }).format(new Date(date));
 };
 
 const isDateColumnKey = (key) => {
@@ -977,21 +969,6 @@ const getSignUpPayments = async (req, res) => {
       return res.status(500).json({ error: "Failed to fetch payment details" });
     }
 
-    const formatDateTimeIST = (val) => {
-      if (!val) return "";
-      const d = new Date(val);
-      if (Number.isNaN(d.getTime())) return "";
-      return d.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-    };
-
     const formatDateIST = (val) => {
       if (!val) return "";
       const d = new Date(val);
@@ -1098,6 +1075,8 @@ const getbookingsDetails = async (req, res) => {
       { header: "Current Date", key: "current_date", width: 22 },
       { header: "Song Name", key: "song_name", width: 20 },
       { header: "Project Type", key: "project_type", width: 20 },
+      { header: "Created At", key: "created_at", width: 22 },
+      { header: "Updated At", key: "updated_at", width: 22 },
     ];
 
     rows.forEach((row) => {
@@ -1151,6 +1130,8 @@ const getbookingsDetails = async (req, res) => {
         current_date: formatDate(row.current_booking_date),
         song_name: row.song_name ?? "",
         project_type: row.project_type ?? "",
+        created_at: formatDateTimeIST(row.created_at),
+        updated_at: formatDateTimeIST(row.updated_at),
       });
     });
 
@@ -1192,6 +1173,8 @@ const getSongApplicationStatus = async (req, res) => {
       { header: "Status Video", key: "status_video", width: 20 },
       { header: "Status Payment", key: "status_payment", width: 20 },
       { header: "Overall Status", key: "overall_status", width: 20 },
+      { header: "Created At", key: "created_at", width: 22 },
+      { header: "Updated At", key: "updated_at", width: 22 },
     ];
 
     // Add data
@@ -1205,6 +1188,8 @@ const getSongApplicationStatus = async (req, res) => {
         status_video: row.status_video,
         status_payment: row.status_payment,
         overall_status: row.overall_status,
+        created_at: formatDateTimeIST(row.created_at ?? row.createdAt),
+        updated_at: formatDateTimeIST(row.updated_at ?? row.updatedAt),
       });
     });
 
@@ -1312,6 +1297,7 @@ const getWithdrawals = async (req, res) => {
       { header: "Withdraw Amount", key: "withdraw_amount", width: 18 },
       { header: "Status", key: "status", width: 18 },
       { header: "Created At", key: "created_at", width: 14 },
+      { header: "Updated At", key: "updated_at", width: 14 },
     ];
 
     rows.forEach((row) => {
@@ -1328,7 +1314,8 @@ const getWithdrawals = async (req, res) => {
         oph_id: oph,
         withdraw_amount: row.withdraw_amount,
         status: row.status,
-        created_at: row.created_at ? formatDateOnlyIST(row.created_at) : "",
+        created_at: formatDateTimeIST(row.created_at ?? row.createdAt),
+        updated_at: formatDateTimeIST(row.updated_at ?? row.updatedAt),
       });
     });
 
@@ -1377,6 +1364,7 @@ const getTickets = async (req, res) => {
       { header: "Status", key: "status", width: 15 },
       { header: "Notes", key: "notes", width: 30 },
       { header: "Created At", key: "created_at", width: 14 },
+      { header: "Updated At", key: "updated_at", width: 14 },
     ];
 
     rows.forEach((row) => {
@@ -1388,7 +1376,6 @@ const getTickets = async (req, res) => {
             : row.oph_id != null && row.oph_id !== ""
               ? row.oph_id
               : "";
-      const createdRaw = row.createdAt ?? row.created_at;
       worksheet.addRow({
         ticketNumber: row.ticketNumber,
         oph_id: oph,
@@ -1399,7 +1386,8 @@ const getTickets = async (req, res) => {
         category: row.category,
         status: row.status,
         notes: row.notes,
-        created_at: createdRaw ? formatDateOnlyIST(createdRaw) : "",
+        created_at: formatDateTimeIST(row.createdAt ?? row.created_at),
+        updated_at: formatDateTimeIST(row.updatedAt ?? row.updated_at),
       });
     });
 

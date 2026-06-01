@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axiosApi from "../../../../conf/axios";
 import SearchableDynamicTable from "../../../../components/SearchableDynamicTable";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { isAccountsPortalViewOnlyRole } from "../../../../utils/roles";
 function formatSecondsAsHms(totalSec) {
   const s = Math.max(0, Math.floor(Number(totalSec) || 0));
   const h = Math.floor(s / 3600);
@@ -11,6 +13,8 @@ function formatSecondsAsHms(totalSec) {
 }
 
 const Collab = () => {
+  const { user } = useAuth();
+  const viewOnly = isAccountsPortalViewOnlyRole(user?.role);
   const [tableData, setTableData] = useState([]);
   const [lastKpiRun, setLastKpiRun] = useState(null);
   const [Loading, setLoading] = useState(true);
@@ -62,6 +66,11 @@ const Collab = () => {
 
   return (
     <WebConfigSidebar>
+        {viewOnly && (
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            View only. Collab KPI data is read-only for accounts roles.
+          </div>
+        )}
         {lastKpiRun && (
           <div className="mb-6 rounded-xl border border-[#0d3c44]/30 bg-white px-5 py-4 shadow-sm text-gray-800">
             <p className="text-sm font-semibold text-[#0d3c44] uppercase tracking-wide">

@@ -4,14 +4,11 @@ import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
 import { formatDateTimeIST } from "../../../../utils/date";
 import { useAuth } from "../../../../auth/AuthProvider";
-import { ROLES } from "../../../../utils/roles";
+import { canApproveRejectPayments } from "../../../../utils/roles";
 
 const EventPayment = () => {
   const { user } = useAuth();
-  const canApproveReject =
-    user?.role !== ROLES.SALES_MEMBER &&
-    user?.role !== ROLES.ADMINISTRATIVE_MEMBER &&
-    user?.role !== ROLES.ACCOUNTS_MEMBER;
+  const canApproveReject = canApproveRejectPayments(user?.role);
   const { ophid, eventId: eventIdFromUrl, transactionId: transactionIdFromUrl } = useParams();
   const [artist, setArtist] = useState(null);
   const [paymentList, setPaymentList] = useState([]);

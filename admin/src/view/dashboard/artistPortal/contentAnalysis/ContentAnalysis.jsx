@@ -152,9 +152,11 @@ const ContentAnalysis = () => {
             />
             <EditableField
               label="YouTube Avg. View Duration (Add to Current)"
+              hint="Format: HH:MM:SS (hours, minutes, seconds) — e.g. 00:02:30 for 2 min 30 sec"
               name="youtube_avg_view_duration"
               value={metrics.youtube_avg_view_duration}
               onChange={handleChange}
+              placeholder="00:00:00"
             />
             <EditableField
               label="YouTube Revenue (Add to Current)"
@@ -198,16 +200,27 @@ const ReadOnlyField = ({ label, value }) => (
   </div>
 );
 
-const EditableField = ({ label, name, value, onChange }) => (
+const EditableField = ({
+  label,
+  name,
+  value,
+  onChange,
+  hint,
+  placeholder,
+}) => (
   <div>
     <label className="block text-gray-700 text-sm font-semibold mb-1">
       {label}
     </label>
+    {hint ? (
+      <p className="text-xs text-gray-500 mb-1">{hint}</p>
+    ) : null}
     <input
       type="text"
       name={name}
       value={value}
       onChange={onChange}
+      placeholder={placeholder}
       className="w-full p-2 border rounded-md text-black bg-white"
     />
   </div>
