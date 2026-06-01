@@ -12,8 +12,8 @@ const createTicket = async (
 ) => {
   const query = `
     INSERT INTO tickets
-    (ophID, name, email, subject, description, category, ticketNumber, imageURL)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (ophID, name, email, subject, description, category, ticketNumber, imageURL, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
   `;
   const [result] = await db.execute(query, [
     ophID,
@@ -37,17 +37,26 @@ const getAllTickets = async (ophID) => {
 
 const getTicketSummaries = async () => {
   const [rows] = await db.execute(
-    `SELECT ophID, name, email, subject, description, category, imageURL, ticketNumber FROM tickets WHERE status != 'Resolved'  `
+    `SELECT ophID, name, email, subject, description, category, imageURL, ticketNumber,
+            status, notes, createdAt, updatedAt
+     FROM tickets
+     WHERE status != 'Resolved'`
   );
   return rows;
 };
 
 const updateResolvedSummary = async (ticketNumber, notes) => {
-  const [rows] = await db.execute(
-    `UPDATE tickets SET notes = ?, status = 'Resolved' WHERE ticketNumber = ?`,
-    [notes, ticketNumber]
+  await db.execute(
+    `UPDATE tickets
+     SET notes = ?, status = 'Resolved', updatedAt = NOW()
+     WHERE ticketNumber = ?`,
+    [notes, ticketNumber],
   );
-   return rows[0];
+  const [rows] = await db.execute(
+    "SELECT * FROM tickets WHERE ticketNumber = ?",
+    [ticketNumber],
+  );
+  return rows[0] ?? null;
 };
 
 const getTicket = async (ticketNumber) => {
@@ -60,7 +69,10 @@ const getTicket = async (ticketNumber) => {
 
 const getResolveSummaries = async () => {
   const [rows] = await db.execute(
-    `SELECT ophID, name, email, subject, description, category, imageURL, ticketNumber FROM tickets WHERE status = 'Resolved'  `
+    `SELECT ophID, name, email, subject, description, category, imageURL, ticketNumber,
+            status, notes, createdAt, updatedAt
+     FROM tickets
+     WHERE status = 'Resolved'`
   );
   return rows;
 };

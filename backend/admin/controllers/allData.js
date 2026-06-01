@@ -278,7 +278,7 @@ const downloadSpecialArtistDetails = async (req, res) => {
         status: row.status ?? "",
         reason: row.reason ?? "",
         updated_at: formatDateTimeIST(
-          row.updated_at ?? row.updatedAt ?? row.date,
+          row.updated_at ?? row.updatedAt,
         ),
       });
 
