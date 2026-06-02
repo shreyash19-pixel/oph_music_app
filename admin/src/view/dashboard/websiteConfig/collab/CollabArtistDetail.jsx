@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import WebConfigSidebar from "../../../../components/WebConfigSidebar";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { isAccountsPortalViewOnlyRole } from "../../../../utils/roles";
 
 function formatSecondsAsHms(totalSec) {
   const s = Math.max(0, Math.floor(Number(totalSec) || 0));
@@ -24,6 +26,8 @@ function fmtMoney(v) {
 }
 
 const CollabArtistDetail = () => {
+  const { user } = useAuth();
+  const viewOnly = isAccountsPortalViewOnlyRole(user?.role);
   const { ophid } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -73,6 +77,12 @@ const CollabArtistDetail = () => {
         >
           ← Back to Collab
         </Link>
+
+        {viewOnly && (
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            View only. Collab artist KPI details are read-only for accounts roles.
+          </div>
+        )}
 
         {loading && (
           <p className="text-gray-600 text-center py-16">Loading…</p>

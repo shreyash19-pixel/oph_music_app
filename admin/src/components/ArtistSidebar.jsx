@@ -5,6 +5,8 @@ import {
   ANALYTICS_PORTAL_ROLES,
   EVENT_PAYMENTS_SIDEBAR_ROLES,
   CONTENT_PORTAL_ROLES,
+  COLLAB_VIEW_ROLES,
+  TIME_CALENDAR_VIEW_ROLES,
   TV_PUBLISHING_PORTAL_ROLES,
   TICKETS_PORTAL_ROLES,
   PAYMENTS_PORTAL_ROLES,
@@ -115,13 +117,14 @@ const artistLinks = [
     roles: ALL_DATA_DOWNLOAD_PORTAL_ROLES,
   },
   {
+    label: "Collab",
+    route: "/Collab",
+    roles: COLLAB_VIEW_ROLES,
+  },
+  {
     label: "Time Calendar",
     route: "/calendar",
-    roles: [
-      ROLES.SUPER_ADMIN,
-      ROLES.ADMINISTRATIVE_HEAD,
-      ROLES.ADMINISTRATIVE_MEMBER,
-    ],
+    roles: TIME_CALENDAR_VIEW_ROLES,
   },
   {
     label: "Tickets",

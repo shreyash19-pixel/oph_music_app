@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
 import Sidebar from "../../../components/Sidebar";
-import { ROLES, WEBSITE_CONFIG_SETTINGS_ROLES } from "./../../../utils/roles";
+import { ROLES, WEBSITE_CONFIG_SETTINGS_ROLES, COLLAB_VIEW_ROLES } from "./../../../utils/roles";
 import { useAuth } from "../../../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import WebConfigSidebar from "../../../components/WebConfigSidebar";
@@ -74,11 +74,7 @@ const WebsiteConfig = () => {
     {
       label: "Collab",
       route: "/Collab",
-      roles: [
-        ROLES.SUPER_ADMIN,
-        ROLES.ADMINISTRATIVE_HEAD,
-        ROLES.ADMINISTRATIVE_MEMBER,
-      ],
+      roles: COLLAB_VIEW_ROLES,
     },
     {
       label: "Event Management",

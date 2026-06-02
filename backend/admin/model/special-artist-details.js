@@ -39,7 +39,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
       );
 
       [rows] = await db.execute(
-        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
         [type, null, ophid, section],
       );
     } else if (section === "Artist Story") {
@@ -48,7 +48,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
         [content, ophid],
       );
       [rows] = await db.execute(
-        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
         [type, null, ophid, section],
       );
     } else if (section === "Video Bio") {
@@ -58,7 +58,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
       );
 
       [rows] = await db.execute(
-        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
         [type, null, ophid, section],
       );
     } else if (section === "Artist Story Vid") {
@@ -68,7 +68,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
       );
 
       [rows] = await db.execute(
-        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
         [type, null, ophid, section],
       );
     } else if (section === "Artist Photo") {
@@ -78,7 +78,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
       );
 
       [rows] = await db.execute(
-        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
         [type, null, ophid, section],
       );
     } else if (section === "Image update") {
@@ -97,7 +97,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
       );
 
       [rows] = await db.execute(
-        "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+        "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
         [type, null, ophid, section],
       );
     }
@@ -105,7 +105,7 @@ const setArtistDetails = async (ophid, section, type, reason, content) => {
 
   if (type === "rejected") {
     [rows] = await db.execute(
-      "UPDATE special_artist_details SET status = ? , reason = ? WHERE ophid = ? AND field = ?",
+      "UPDATE special_artist_details SET status = ? , reason = ? , updated_at = NOW() WHERE ophid = ? AND field = ?",
       [type, reason, ophid, section],
     );
   }

@@ -2,8 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../../../auth/AuthProvider";
+import { canManageContent } from "../../../../utils/roles";
 
 const ContentNew = () => {
+  const { user } = useAuth();
+  const canEdit = canManageContent(user?.role);
   const { ophid, songId } = useParams();
 
   const languages = [
@@ -194,6 +198,12 @@ const ContentNew = () => {
           <strong>OphID:</strong> {ophid} &nbsp; | &nbsp; <strong>SongID:</strong> {songId}
         </div>
 
+        {!canEdit && (
+          <p className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            View only. You can review content but cannot approve, reject, or edit.
+          </p>
+        )}
+
         <SectionBlock
           section="Content"
           data={content}
@@ -215,6 +225,7 @@ const ContentNew = () => {
             "song_name", "language", "genre", "sub_genre", "mood", "lyrics", "primary_artist",
             "audio_url",
           ]}
+          showActions={canEdit}
           languages={languages}
           statuses={statuses}
           reasons={reasons}
@@ -283,16 +294,18 @@ const ContentNew = () => {
                                   >
                                     {url}
                                   </a>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(url);
-                                      toast.success("Link copied");
-                                    }}
-                                    className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-                                  >
-                                    Copy
-                                  </button>
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(url);
+                                        toast.success("Link copied");
+                                      }}
+                                      className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                                    >
+                                      Copy
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                           </div>
@@ -312,6 +325,7 @@ const ContentNew = () => {
           section="Video"
           data={video}
           fields={["credits"]}
+          showActions={canEdit}
           renderExtra={() => (
             <>
               <div className="grid grid-cols-3 gap-4 mb-4">

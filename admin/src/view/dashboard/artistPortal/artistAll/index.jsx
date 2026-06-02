@@ -566,6 +566,7 @@ const ArtistAll = () => {
   };
 
   const downloadPDF = async () => {
+    let loadingToast;
     try {
       // Check browser environment
       if (
@@ -582,7 +583,7 @@ const ArtistAll = () => {
         return;
       }
 
-      const loadingToast = toast.loading("Downloading PDF...");
+      loadingToast = toast.loading("Downloading PDF...");
 
       // API request
       const response = await axiosApi.get("/auth/membership/pdf", {
@@ -610,8 +611,13 @@ const ArtistAll = () => {
         } catch {
           // ignore parsing error
         }
-
         throw new Error(msg);
+      const response = await fetch(pdfUrl);
+
+      if (!response.ok) {
+        throw new Error(
+          `PDF not found: ${response.status} ${response.statusText}`,
+        );
       }
 
       // Create downloadable blob
@@ -638,9 +644,7 @@ const ArtistAll = () => {
       toast.success("PDF downloaded successfully!");
     } catch (error) {
       console.error("Error downloading PDF:", error);
-
       toast.dismiss();
-
       const raw =
         error.response?.data?.message ||
         (typeof error.response?.data === "string"
