@@ -564,486 +564,99 @@ const ArtistAll = () => {
       toast.error("Failed to update documentation details. Please try again.");
     }
   };
+}
+const downloadPDF = async () => {
+  let loadingToast;
 
-  const downloadPDF = async () => {
-    let loadingToast;
-    try {
-      // Check browser environment
-      if (
-        typeof window === "undefined" ||
-        typeof window.document === "undefined"
-      ) {
-        console.error("Not in browser environment");
-        toast.error("Download feature is not available in this environment");
-        return;
-      }
+  try {
+    // Check browser environment
+    if (
+      typeof window === "undefined" ||
+      typeof window.document === "undefined"
+    ) {
+      console.error("Not in browser environment");
+      toast.error("Download feature is not available in this environment");
+      return;
+    }
 
-      if (!ophid) {
-        toast.error("No artist ID available for PDF download");
-        return;
-      }
+    if (!ophid) {
+      toast.error("No artist ID available for PDF download");
+      return;
+    }
 
-      loadingToast = toast.loading("Downloading PDF...");
+    loadingToast = toast.loading("Downloading PDF...");
 
-      // API request
-      const response = await axiosApi.get("/auth/membership/pdf", {
-        params: { ophid },
-        responseType: "blob",
-        validateStatus: () => true,
-      });
+    const response = await axiosApi.get("/auth/membership/pdf", {
+      params: { ophid },
+      responseType: "blob",
+      validateStatus: () => true,
+    });
 
-      const pdfFileName = `${(personal.full_name || "membership").replace(
-        /\s+/g,
-        "_",
-      )}.pdf`;
+    const pdfFileName = `${(personal.full_name || "membership")
+      .replace(/\s+/g, "_")
+      .trim()}.pdf`;
 
-      // Handle API errors
-      if (response.status !== 200) {
-        let msg = "Failed to download PDF";
+    // Handle API errors
+    if (response.status !== 200) {
+      let msg = "Failed to download PDF";
 
-        try {
-          const text = await response.data.text();
-          const j = JSON.parse(text);
+      try {
+        const text = await response.data.text();
+        const json = JSON.parse(text);
 
-          if (j?.message) {
-            msg = j.message;
-          }
-        } catch {
-          // ignore parsing error
+        if (json?.message) {
+          msg = json.message;
         }
-        throw new Error(msg);
-      const response = await fetch(pdfUrl);
-
-      if (!response.ok) {
-        throw new Error(
-          `PDF not found: ${response.status} ${response.statusText}`,
-        );
+      } catch {
+        // Ignore parsing errors
       }
 
-      // Create downloadable blob
-      const downloadBlob = new Blob([response.data], {
-        type: "application/pdf",
-      });
+      throw new Error(msg);
+    }
 
-      const objectUrl = URL.createObjectURL(downloadBlob);
+    // Create downloadable blob
+    const downloadBlob = new Blob([response.data], {
+      type: "application/pdf",
+    });
 
-      // Create temp link
-      const tempLink = window.document.createElement("a");
-      tempLink.href = objectUrl;
-      tempLink.download = pdfFileName;
-      tempLink.style.display = "none";
+    const objectUrl = URL.createObjectURL(downloadBlob);
 
-      window.document.body.appendChild(tempLink);
-      tempLink.click();
-      window.document.body.removeChild(tempLink);
+    // Create temporary link
+    const tempLink = document.createElement("a");
+    tempLink.href = objectUrl;
+    tempLink.download = pdfFileName;
 
-      // Cleanup
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+    document.body.appendChild(tempLink);
+    tempLink.click();
+    document.body.removeChild(tempLink);
 
+    // Cleanup
+    setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 100);
+
+    toast.dismiss(loadingToast);
+    toast.success("PDF downloaded successfully!");
+  } catch (error) {
+    console.error("Error downloading PDF:", error);
+
+    if (loadingToast) {
       toast.dismiss(loadingToast);
-      toast.success("PDF downloaded successfully!");
-    } catch (error) {
-      console.error("Error downloading PDF:", error);
-      toast.dismiss();
-      const raw =
-        error.response?.data?.message ||
-        (typeof error.response?.data === "string"
-          ? error.response.data
-          : null) ||
-        error.message;
-
-      const networkHint = /failed to fetch|network error|load failed/i.test(
-        String(raw),
-      )
-        ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
-        : "";
-
-      toast.error(`Failed to download PDF: ${raw}${networkHint}`);
-    }
-  };
-
-  const renderInput = (key, value, onChange, allData, lockKey, sectionIdx) => {
-    const fieldLocked = (k) => viewOnlyNoEdit || locks[k];
-
-    const lower = key.toLowerCase();
-    const isPhoto =
-      lower.includes("photo") ||
-      lower.includes("image") ||
-      lower.includes("front") ||
-      lower.includes("signature") ||
-      lower.includes("aadhar") ||
-      lower.includes("pan");
-    const isVideo = lower.includes("video");
-
-    if (key === "photos" && Array.isArray(value)) {
-      return (
-        <div className="flex flex-wrap gap-4">
-          {value.map((photoUrl, index) => {
-            const photoKey = `${sectionIdx}_${key}_${index}`;
-            const locked = fieldLocked(photoKey);
-
-            return (
-              <div key={index} className="relative">
-                <div
-                  className={locked ? "" : "cursor-pointer"}
-                  onClick={() => {
-                    if (!locked) fileInputRefs.current[photoKey]?.click();
-                  }}
-                >
-                  <img
-                    src={typeof photoUrl === "object" ? photoUrl.url : photoUrl}
-                    alt={`photo-${index}`}
-                    className="w-32 h-32 rounded object-cover border mb-2"
-                  />
-                  {!locked && (
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                      Click to replace
-                    </div>
-                  )}
-                </div>
-                <input
-                  ref={(ref) => (fileInputRefs.current[photoKey] = ref)}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleFileUpload(
-                      e,
-                      key,
-                      (field, updater) => {
-                        onChange(field, updater);
-                      },
-                      index,
-                    )
-                  }
-                  className="hidden"
-                />
-                {!viewOnlyNoEdit && (
-                  <div className="absolute top-1 right-1 flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onChange(
-                          "photos",
-                          allData.photos.filter((_, idx) => idx !== index),
-                        );
-                      }}
-                      className="p-1 bg-red-500 text-white rounded-full border shadow hover:bg-red-600 transition"
-                      title="Delete photo"
-                    >
-                      ×
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleLock(photoKey)}
-                      className="p-1 bg-white rounded-full border shadow hover:bg-gray-100 transition"
-                    >
-                      {locks[photoKey] ? (
-                        <Lock size={16} className="text-gray-600" />
-                      ) : (
-                        <Unlock size={16} className="text-green-600" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Add new photo button */}
-          {!viewOnlyNoEdit && (
-            <div className="w-full">
-              <button
-                type="button"
-                onClick={() => {
-                  if (allData.photos.length >= 5) {
-                    toast.error(
-                      "Maximum 5 images allowed. Please delete some images before adding new ones.",
-                    );
-                    return;
-                  }
-                  fileInputRefs.current[
-                    `add_new_${sectionIdx}_${key}`
-                  ]?.click();
-                }}
-                disabled={allData.photos.length >= 5}
-                className={`mt-2 px-3 py-1 rounded ${
-                  allData.photos.length >= 5
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-[#0d3c44] text-white hover:bg-[#0a2d33]"
-                }`}
-              >
-                {allData.photos.length >= 5
-                  ? "Maximum 5 images"
-                  : "Add New Photo"}
-              </button>
-
-              <input
-                ref={(ref) =>
-                  (fileInputRefs.current[`add_new_${sectionIdx}_${key}`] = ref)
-                }
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    if (allData.photos.length >= 5) {
-                      toast.error(
-                        "Maximum 5 images allowed. Please delete some images before adding new ones.",
-                      );
-                      return;
-                    }
-                    const newUrl = URL.createObjectURL(file);
-                    onChange("photos", [
-                      ...allData.photos,
-                      { url: newUrl, file },
-                    ]);
-                  }
-                }}
-                className="hidden"
-              />
-            </div>
-          )}
-        </div>
-      );
     }
 
-    const locked = fieldLocked(lockKey);
+    const raw =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Unknown error";
 
-    // Special handling for signature field
-    if (key === "signature") {
-      return (
-        <div className="space-y-4">
-          {value && (
-            <div className="relative">
-              <img
-                src={typeof value === "object" ? value.url : value}
-                alt="Signature"
-                className="w-40 h-20 rounded border mb-2 object-contain bg-gray-50"
-              />
-              <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                Current signature
-              </div>
-            </div>
-          )}
+    const networkHint = /failed to fetch|network error|load failed/i.test(
+      String(raw)
+    )
+      ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
+      : "";
 
-          {!locked && !viewOnlyNoEdit && (
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h4 className="text-sm font-medium mb-2">Draw your signature:</h4>
-              <div className="w-full max-w-md mx-auto">
-                <canvas
-                  ref={signatureCanvasRef}
-                  width={400}
-                  height={200}
-                  className="w-full max-w-full h-auto border border-gray-300 rounded cursor-crosshair bg-white"
-                  style={{
-                    touchAction: "none",
-                    maxWidth: "100%",
-                    height: "auto",
-                  }}
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                />
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={clearSignature}
-                  className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => saveSignature(onChange)}
-                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Save Signature
-                </button>
-              </div>
-            </div>
-          )}
-
-          {locked && !value && !viewOnlyNoEdit && (
-            <div className="text-gray-400 border border-dashed p-4 rounded text-center">
-              Click the unlock button to add a signature
-            </div>
-          )}
-          {viewOnlyNoEdit && !value && (
-            <div className="text-gray-400 border border-dashed p-4 rounded text-center text-sm">
-              No signature on file
-            </div>
-          )}
-
-          <input
-            ref={(ref) => (fileInputRefs.current[lockKey] = ref)}
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e, key, onChange)}
-            className="hidden"
-          />
-        </div>
-      );
-    }
-
-    if (isPhoto || isVideo) {
-      return (
-        <div className="relative">
-          <div
-            className={`${locked ? "" : "cursor-pointer"}`}
-            onClick={() => {
-              if (!locked) fileInputRefs.current[lockKey]?.click();
-            }}
-          >
-            {isPhoto && value && (
-              <>
-                <img
-                  src={typeof value === "object" ? value.url : value}
-                  alt={key}
-                  className="w-40 h-40 rounded object-cover border mb-2"
-                />
-                {!locked && (
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                    Click to replace
-                  </div>
-                )}
-              </>
-            )}
-            {isVideo && value && (
-              <>
-                <video
-                  className="w-full max-w-xs rounded border mb-2"
-                  controls
-                  src={typeof value === "object" ? value.url : value}
-                />
-                {!locked && (
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
-                    Click to replace
-                  </div>
-                )}
-              </>
-            )}
-            {!value && (
-              <div className="text-gray-400 border border-dashed p-4 rounded">
-                {viewOnlyNoEdit ? "—" : "Click to upload"}
-              </div>
-            )}
-          </div>
-          <input
-            ref={(ref) => (fileInputRefs.current[lockKey] = ref)}
-            type="file"
-            accept={isPhoto ? "image/*" : "video/*"}
-            onChange={(e) => handleFileUpload(e, key, onChange)}
-            className="hidden"
-          />
-        </div>
-      );
-    }
-
-    // Handle profession dropdown
-    if (key === "profession") {
-      // Check if the current value exists in the professions list
-      const currentProfessionExists = professions.some(
-        (prof) => prof.name === value,
-      );
-
-      return (
-        <select
-          value={value}
-          onChange={(e) => onChange(key, e.target.value)}
-          className="w-full p-2 border rounded-md text-black"
-          disabled={locked || professionsLoading}
-        >
-          <option value="">
-            {professionsLoading
-              ? "Loading professions..."
-              : "Select a profession"}
-          </option>
-          {professions.map((profession) => (
-            <option key={profession.id} value={profession.name}>
-              {profession.name}
-            </option>
-          ))}
-          {/* Show current value as an option if it doesn't exist in the list */}
-          {value && !currentProfessionExists && !professionsLoading && (
-            <option value={value} disabled>
-              {value} (Current - not in list)
-            </option>
-          )}
-        </select>
-      );
-    }
-
-    return (
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(key, e.target.value)}
-        className="w-full p-2 border rounded-md text-black"
-        disabled={locked}
-      />
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <Toaster />
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-10">
-        {viewOnlyNoEdit && (
-          <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            View-only access: you can review this artist&apos;s details and
-            download the membership PDF, but you cannot edit fields or save
-            changes.
-          </p>
-        )}
-        <Section
-          title="Personal Details"
-          data={personal}
-          onChange={handleChange(setPersonal)}
-          onSave={() => handleSaveSection("Personal Details", personal)}
-          renderInput={renderInput}
-          sectionIdx={0}
-          locks={locks}
-          toggleLock={toggleLock}
-          onDownloadPDF={downloadPDF}
-          showDownloadButton={canDownloadMembershipPdf(user?.role)}
-          isBrowser={isBrowser}
-          viewOnlyNoEdit={viewOnlyNoEdit}
-          loading={loading}
-          setLoading={setLoading}
-        />
-
-        <Section
-          title="Professional Details"
-          data={professional}
-          onChange={handleChange(setProfessional)}
-          onSave={() => handleSaveSection("Professional Details", professional)}
-          renderInput={renderInput}
-          sectionIdx={1}
-          locks={locks}
-          toggleLock={toggleLock}
-          viewOnlyNoEdit={viewOnlyNoEdit}
-          loading={loading}
-          setLoading={setLoading}
-        />
-
-        <Section
-          title="Document Details"
-          data={document}
-          onChange={handleChange(setDocument)}
-          onSave={() => handleSaveSection("Document Details", document)}
-          renderInput={renderInput}
-          sectionIdx={2}
-          locks={locks}
-          toggleLock={toggleLock}
-          viewOnlyNoEdit={viewOnlyNoEdit}
-          loading={loading}
-          setLoading={setLoading}
-        />
-      </div>
-    </div>
-  );
+    toast.error(`Failed to download PDF: ${raw}${networkHint}`);
+  }
 };
 
 const Section = ({
