@@ -275,14 +275,14 @@ const HeroSection = ({
                       {isArtistRegistered(ev.event_id, artistBookEvents) ? (
                         <button
                           disabled={true}
-                          className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm mt-[20px]"
+                          className="bg-cyan-400 text-gray-900 px-4 py-2 rounded-full text-sm mt-[20px] font-semibold"
                         >
                           Registered
                         </button>
                       ) : (
                         <button
                           onClick={() => handleClick(ev)}
-                          className="bg-[#6F4FA0] text-white px-4 py-2 rounded-full text-sm font-extrabold mt-[20px]"
+                          className="bg-cyan-400 text-gray-900 px-4 py-2 rounded-full text-sm font-extrabold mt-[20px]"
                         >
                           Register Now!
                         </button>

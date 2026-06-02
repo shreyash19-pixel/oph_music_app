@@ -27,6 +27,7 @@ import axiosApi from "../../conf/axios";
 const SidebarNav = ({ onClose, contents, setContents }) => {
   const navigate = useNavigate();
   const { logout } = useArtist();
+  const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState(null);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(false); // State to check if screen width is narrow
@@ -34,8 +35,53 @@ const SidebarNav = ({ onClose, contents, setContents }) => {
   const { ophid, headers } = useArtist();
   const [artistType, setArtistType] = useState("");
 
-  console.log(contents);
-  
+  useEffect(() => {
+    const fetchContent = async () => {
+      console.log("[TVPublishing] ophid:", ophid);
+      if (!ophid) return;
+      try {
+        const response = await axiosApi.get(`/TvUser?OPH_ID=${ophid}`);
+        console.log("[TVPublishing] API response:", response.data);
+        console.log("[TVPublishing] contents array:", response.data.data);
+        console.log(
+          "[TVPublishing] contents array:",
+          response.data.data.length,
+        );
+
+        setContents(response.data.data);
+
+        // Filter only Open and Rejected status items
+        const availableContents = response.data.data.filter((content) => {
+          const status = content.status?.toLowerCase();
+          return status === "open" || status === "rejected";
+        });
+
+        if (availableContents.length > 0) {
+          const first = availableContents[0];
+          console.log("[TVPublishing] first item keys:", Object.keys(first));
+          console.log("[TVPublishing] first item:", first);
+          console.log(
+            "[TVPublishing] first.id:",
+            first.id,
+            "| first.song_id:",
+            first.song_id,
+            "| first.status:",
+            first.status,
+          );
+          console.log("[TVPublishing] first.reason:", first.reason);
+        } else {
+          console.warn(
+            "[TVPublishing] No Open or Rejected status contents available",
+          );
+        }
+      } catch (error) {
+        console.error("[TVPublishing] Error fetching content:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, [ophid]);
 
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
@@ -196,6 +242,8 @@ const SidebarNav = ({ onClose, contents, setContents }) => {
     },
   ];
 
+  console.log(contents);
+
   return (
     <div className="w-30 lg:w-[300px] fixed top-0 flex flex-col h-full bg-[#181B24] text-gray-300 items-start">
       {/* Only show the X button if it's a mobile screen */}
@@ -248,12 +296,9 @@ const SidebarNav = ({ onClose, contents, setContents }) => {
                       {item.label}
                     </span>
 
-                    {
-                      contents?.length === 0 && 
-                      (<span className="ml-auto">
-                        {item.lock}
-                      </span>)
-                    }
+                    {contents?.length === 0 && (
+                      <span className="ml-auto">{item.lock}</span>
+                    )}
                   </button>
                 </li>
               ))}

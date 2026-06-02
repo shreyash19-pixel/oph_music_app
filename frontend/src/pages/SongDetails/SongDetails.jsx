@@ -221,12 +221,12 @@ const SongDetails = () => {
             <div className="py-4 px-2 text-center border-r border-gray-700">
               <span
                 className={`font-medium ${
-                  item.status === "completed"
+                  item.status === 1
                     ? "text-green-400"
                     : "text-gray-400"
                 }`}
               >
-                {item.status === "completed" ? "Completed" : "In-Progress"}
+                {item.status === 1 ? "Completed" : "In-Progress"}
               </span>
             </div>
 

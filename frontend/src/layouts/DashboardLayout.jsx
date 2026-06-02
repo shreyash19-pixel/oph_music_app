@@ -23,6 +23,8 @@ const ArtistLayout = () => {
   const dispatch = useDispatch();
   const [contents, setContents] = useState([]);
 
+  
+
   // Add effect to handle body scrolling
   useEffect(() => {
     if (isSidebarOpen) {
@@ -65,7 +67,7 @@ const ArtistLayout = () => {
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar contents = {contents} setContents = {setContents}  onClose={() => setIsSidebarOpen(false)} />
       </div>
 
       {/* Backdrop - only shows when mobile sidebar is open */}
@@ -78,7 +80,7 @@ const ArtistLayout = () => {
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-[300px]">
-        <Sidebar contents = {contents} />
+        <Sidebar contents = {contents} setContents = {setContents} />
       </div>
 
       {/* Main Content */}

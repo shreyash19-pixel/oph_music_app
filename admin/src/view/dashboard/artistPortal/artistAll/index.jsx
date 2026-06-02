@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import axiosApi from "../../../../conf/axios";
 import { uploadVideoViaPresignedPut } from "../../../../utils/presignedVideoUpload";
 import { Lock, Unlock, Download } from "lucide-react";
-import { Lock, Unlock, Download, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { ROLES } from "../../../../utils/roles";
@@ -17,8 +16,6 @@ const ARTIST_ALL_DETAIL_ROLES = [
   ROLES.ADMINISTRATIVE_MEMBER,
   ROLES.SALES_HEAD,
 ];
-
-
 
 const isSalesMemberViewOnly = (role) => role === ROLES.SALES_MEMBER;
 
@@ -570,7 +567,7 @@ const ArtistAll = () => {
 
   const downloadPDF = async () => {
     try {
-      // Check if we're in a browser environment
+      // Check browser environment
       if (
         typeof window === "undefined" ||
         typeof window.document === "undefined"
@@ -587,67 +584,77 @@ const ArtistAll = () => {
 
       const loadingToast = toast.loading("Downloading PDF...");
 
-      // Stream PDF through API (avoids cross-origin fetch to S3 → "Failed to fetch" when bucket CORS is tight)
+      // API request
       const response = await axiosApi.get("/auth/membership/pdf", {
         params: { ophid },
         responseType: "blob",
         validateStatus: () => true,
       });
 
-      const pdfFileName = `${(personal.full_name || "membership").replace(/\s+/g, "_")}.pdf`;
+      const pdfFileName = `${(personal.full_name || "membership").replace(
+        /\s+/g,
+        "_",
+      )}.pdf`;
 
+      // Handle API errors
       if (response.status !== 200) {
         let msg = "Failed to download PDF";
+
         try {
           const text = await response.data.text();
           const j = JSON.parse(text);
-          if (j?.message) msg = j.message;
-        } catch {
-          /* use default */
-        }
-        throw new Error(msg);
-      const response = await fetch(pdfUrl);
 
-      if (!response.ok) {
-        throw new Error(
-          `PDF not found: ${response.status} ${response.statusText}`,
-        );
+          if (j?.message) {
+            msg = j.message;
+          }
+        } catch {
+          // ignore parsing error
+        }
+
+        throw new Error(msg);
       }
 
+      // Create downloadable blob
       const downloadBlob = new Blob([response.data], {
         type: "application/pdf",
       });
+
       const objectUrl = URL.createObjectURL(downloadBlob);
 
+      // Create temp link
       const tempLink = window.document.createElement("a");
       tempLink.href = objectUrl;
       tempLink.download = pdfFileName;
       tempLink.style.display = "none";
+
       window.document.body.appendChild(tempLink);
       tempLink.click();
       window.document.body.removeChild(tempLink);
 
+      // Cleanup
       setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
 
       toast.dismiss(loadingToast);
       toast.success("PDF downloaded successfully!");
     } catch (error) {
       console.error("Error downloading PDF:", error);
+
       toast.dismiss();
+
       const raw =
         error.response?.data?.message ||
         (typeof error.response?.data === "string"
           ? error.response.data
           : null) ||
         error.message;
-      const networkHint =
-        /failed to fetch|network error|load failed/i.test(String(raw))
-          ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
-          : "";
+
+      const networkHint = /failed to fetch|network error|load failed/i.test(
+        String(raw),
+      )
+        ? " Ensure VITE_API_URL points to your API (use HTTPS when the admin app is served over HTTPS)."
+        : "";
+
       toast.error(`Failed to download PDF: ${raw}${networkHint}`);
-      toast.error(
-        `Failed to download PDF: ${error.response?.data?.message || error.message}`,
-      );
     }
   };
 
@@ -999,8 +1006,8 @@ const ArtistAll = () => {
           showDownloadButton={canDownloadMembershipPdf(user?.role)}
           isBrowser={isBrowser}
           viewOnlyNoEdit={viewOnlyNoEdit}
-          loading = {loading}
-          setLoading = {setLoading}
+          loading={loading}
+          setLoading={setLoading}
         />
 
         <Section
@@ -1013,8 +1020,8 @@ const ArtistAll = () => {
           locks={locks}
           toggleLock={toggleLock}
           viewOnlyNoEdit={viewOnlyNoEdit}
-          loading = {loading}
-          setLoading = {setLoading}
+          loading={loading}
+          setLoading={setLoading}
         />
 
         <Section
@@ -1027,8 +1034,8 @@ const ArtistAll = () => {
           locks={locks}
           toggleLock={toggleLock}
           viewOnlyNoEdit={viewOnlyNoEdit}
-          loading = {loading}
-          setLoading = {setLoading}
+          loading={loading}
+          setLoading={setLoading}
         />
       </div>
     </div>
@@ -1049,7 +1056,7 @@ const Section = ({
   isBrowser = false,
   viewOnlyNoEdit = false,
   loading,
-  setLoading
+  setLoading,
 }) => {
   if (loading) {
     return (
