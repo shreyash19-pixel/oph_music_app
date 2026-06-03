@@ -6,6 +6,21 @@ function normalizeBookingDate(bookingDate) {
   return s.length >= 10 ? s.slice(0, 10) : s;
 }
 
+/** reason_history may be a JSON string or already parsed by mysql2 */
+function parseReasonHistory(val) {
+  if (val == null) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 class DateBookingService {
   /**
    * Same rules as createBooking but uses caller's connection (no begin/commit).
@@ -222,7 +237,7 @@ class DateBookingService {
       }
 
       const songId = oldBookings[0].song_id;
-      const existingHistory = oldBookings[0].reason_history ? JSON.parse(oldBookings[0].reason_history) : [];
+      const existingHistory = parseReasonHistory(oldBookings[0].reason_history);
 
       // Check if new date is already booked by another user
       const [existingBookings] = await connection.query(

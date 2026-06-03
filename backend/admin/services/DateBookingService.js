@@ -1,5 +1,19 @@
 const db = require('../../DB/connect');
 
+function parseReasonHistory(val) {
+  if (val == null) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 class DateBookingService {
   /**
    * Create a calendar booking entry
@@ -184,7 +198,7 @@ class DateBookingService {
       }
 
       const songId = oldBookings[0].song_id;
-      const existingHistory = oldBookings[0].reason_history ? JSON.parse(oldBookings[0].reason_history) : [];
+      const existingHistory = parseReasonHistory(oldBookings[0].reason_history);
 
       // Check if new date is already booked by another user
       const [existingBookings] = await connection.query(

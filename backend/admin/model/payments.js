@@ -482,6 +482,140 @@ const getTransactionDetails = async (release_date, oph_id, song_id) => {
   }
 };
 
+function normalizeCalendarDateOnly(val) {
+  if (val == null || val === "") return null;
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return val.toISOString().slice(0, 10);
+  }
+  const s = String(val).trim();
+  if (!s || s === "0000-00-00") return null;
+  return s.length >= 10 ? s.slice(0, 10) : s;
+}
+
+const RELEASE_DATE_CHANGE_FROM_SQL = `(LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change')`;
+
+/**
+ * On reject: move calender back to the original date so the requested (new) date is free to book again.
+ */
+async function restoreCalendarAfterReleaseDateChangeReject(
+  connection,
+  { release_date, oph_id, rejectReason, parseReasonHistory },
+) {
+  const newDate = normalizeCalendarDateOnly(release_date);
+  if (!newDate) return { restored: false };
+
+  const ophNorm = oph_id ? String(oph_id).trim() : null;
+  let calendarEntries = [];
+
+  if (ophNorm) {
+    const [rows] = await connection.execute(
+      `SELECT song_id, previous_booking_date, oph_id, reason_history, current_booking_date
+       FROM calender
+       WHERE oph_id = ?
+         AND (
+           DATE(current_booking_date) = DATE(?)
+           OR current_booking_date = ?
+           OR (previous_booking_date IS NOT NULL AND (
+             DATE(previous_booking_date) = DATE(?)
+             OR previous_booking_date = ?
+           ))
+         )
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+      [ophNorm, newDate, newDate, newDate, newDate],
+    );
+    calendarEntries = rows;
+  }
+
+  if (calendarEntries.length === 0) {
+    const [rows] = await connection.execute(
+      `SELECT song_id, previous_booking_date, oph_id, reason_history, current_booking_date
+       FROM calender
+       WHERE DATE(current_booking_date) = DATE(?)
+          OR current_booking_date = ?
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+      [newDate, newDate],
+    );
+    calendarEntries = rows;
+  }
+
+  if (calendarEntries.length === 0) {
+    return { restored: false };
+  }
+
+  const entry = calendarEntries[0];
+  const ophId = entry.oph_id;
+  const songId = entry.song_id;
+  let previousDate = normalizeCalendarDateOnly(entry.previous_booking_date);
+
+  if (!previousDate && ophId) {
+    const [payRows] = await connection.execute(
+      `SELECT old_release_date FROM payments
+       WHERE oph_id = ?
+         AND ${RELEASE_DATE_CHANGE_FROM_SQL}
+         AND (release_date = ? OR DATE(release_date) = DATE(?))
+         AND old_release_date IS NOT NULL
+       ORDER BY updated_at DESC, created_at DESC
+       LIMIT 1`,
+      [ophId, newDate, newDate],
+    );
+    previousDate = normalizeCalendarDateOnly(payRows[0]?.old_release_date);
+  }
+
+  if (!previousDate) {
+    console.warn(
+      `[release date change reject] No previous_booking_date for oph ${ophId}; calender may still hold ${newDate}`,
+    );
+    return { restored: false, ophId, songId };
+  }
+
+  const existingHistory = parseReasonHistory(entry.reason_history);
+  const updatedHistory = existingHistory.map((item, index) => {
+    if (
+      index === existingHistory.length - 1 &&
+      item.status === "pending"
+    ) {
+      return {
+        ...item,
+        status: "rejected",
+        rejected_at: new Date().toISOString(),
+        admin_reject_reason: rejectReason,
+      };
+    }
+    return item;
+  });
+
+  await connection.execute(
+    `UPDATE calender
+     SET current_booking_date = ?,
+         previous_booking_date = NULL,
+         reason = NULL,
+         reason_history = ?,
+         updated_at = NOW()
+     WHERE oph_id = ?
+       AND (
+         DATE(current_booking_date) = DATE(?)
+         OR current_booking_date = ?
+       )`,
+    [previousDate, JSON.stringify(updatedHistory), ophId, newDate, newDate],
+  );
+
+  if (songId) {
+    await connection.execute(
+      `UPDATE songs_register sr
+       JOIN calender c ON c.song_id = sr.song_id AND (c.oph_id = sr.oph_id OR c.oph_id = sr.OPH_ID)
+       SET sr.release_date = c.current_booking_date,
+           sr.updated_at = NOW()
+       WHERE sr.song_id = ?
+         AND (sr.oph_id = ? OR sr.OPH_ID = ?)`,
+      [songId, ophId, ophId],
+    );
+  }
+
+  return { restored: true, ophId, songId };
+}
+
 const setPaymentVerification = async (decision, reason, release_date, from, song_id, oph_id) => {
   const connection = await db.getConnection();
 
@@ -664,81 +798,25 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
       }
     } else if (isReleaseDateChange) {
       if (decision === "rejected") {
-        // When rejecting a date change, restore previous date in calender
-        // Get the calendar entry to find song_id, previous_booking_date, reason, and reason_history
-        const [calendarEntries] = await connection.execute(
-          `SELECT song_id, previous_booking_date, oph_id, reason, reason_history 
-           FROM calender 
-           WHERE current_booking_date = ? 
-           AND oph_id = (SELECT oph_id FROM payments WHERE (release_date = ? OR DATE(release_date) = ?) AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change') LIMIT 1)`,
-          [release_date, release_date, release_date],
-        );
+        await restoreCalendarAfterReleaseDateChangeReject(connection, {
+          release_date,
+          oph_id,
+          rejectReason: isReasonEmpty,
+          parseReasonHistory,
+        });
 
-        if (calendarEntries.length > 0) {
-          const entry = calendarEntries[0];
-          const songId = entry.song_id;
-          const ophId = entry.oph_id;
-          if (songId && ophId) {
-            statusUpdatesToRun.push({ songId, ophId, reason: isReasonEmpty, decision });
-          }
-          const previousDate = entry.previous_booking_date;
-          const existingHistory = parseReasonHistory(entry.reason_history);
-
-          if (previousDate) {
-            // Update reason_history - mark the latest pending entry as rejected
-            const updatedHistory = existingHistory.map((item, index) => {
-              if (
-                index === existingHistory.length - 1 &&
-                item.status === "pending"
-              ) {
-                return {
-                  ...item,
-                  status: "rejected",
-                  rejected_at: new Date().toISOString(),
-                  admin_reject_reason: isReasonEmpty || null,
-                };
-              }
-              return item;
-            });
-
-            // Restore previous date in calender (master) and clear reason
-            await connection.execute(
-              `UPDATE calender 
-               SET current_booking_date = previous_booking_date,
-                   previous_booking_date = NULL,
-                   reason = NULL,
-                   reason_history = ?,
-                   updated_at = NOW()
-               WHERE current_booking_date = ? 
-               AND oph_id = ?`,
-              [JSON.stringify(updatedHistory), release_date, ophId],
-            );
-
-            // Sync songs_register.release_date from calender if song_id exists
-            if (songId) {
-              await connection.execute(
-                `UPDATE songs_register sr
-                 JOIN calender c ON c.song_id = sr.song_id
-                 SET sr.release_date = c.current_booking_date,
-                     sr.updated_at = NOW()
-                 WHERE sr.song_id = ?
-                 AND c.oph_id = ?`,
-                [songId, ophId],
-              );
-            }
-          }
-        }
-
-        // Update payment status
-        const [updateResult] = await connection.execute(
-          `UPDATE payments 
-           SET status = ?, 
+        const payParams = [decision, isReasonEmpty, release_date, release_date];
+        let paySql = `UPDATE payments
+           SET status = ?,
                reject_reason = ?,
                updated_at = NOW()
            WHERE (release_date = ? OR DATE(release_date) = ?)
-           AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change')`,
-          [decision, isReasonEmpty, release_date, release_date],
-        );
+           AND ${RELEASE_DATE_CHANGE_FROM_SQL}`;
+        if (oph_id) {
+          paySql += " AND oph_id = ?";
+          payParams.push(String(oph_id).trim());
+        }
+        const [updateResult] = await connection.execute(paySql, payParams);
         affectedRows += updateResult.affectedRows;
       } else if (decision === "approved") {
         // When approving a date change, sync songs_register from calender.

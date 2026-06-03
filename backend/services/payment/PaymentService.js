@@ -514,7 +514,6 @@ class PaymentService {
         applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, oph_id);
         
         if (user && user.length > 0) {
-          console.log(user[0] + "assasa");
           navTo = this.determineNavigationPath(user[0], applicationStatus, step);
         }
       } else {
