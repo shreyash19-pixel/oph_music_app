@@ -33,6 +33,22 @@ function normalizeLeaderboardArtistRow(r) {
 }
 
 const LEADERBOARD_TOP_PER_MONTH = 10;
+const LEADERBOARD_MAX_MONTHS = 3;
+
+const MONTH_INDEX = {
+  January: 0,
+  February: 1,
+  March: 2,
+  April: 3,
+  May: 4,
+  June: 5,
+  July: 6,
+  August: 7,
+  September: 8,
+  October: 9,
+  November: 10,
+  December: 11,
+};
 
 function monthNameFromDate(value) {
   if (!value) return null;
@@ -124,6 +140,44 @@ function mergeLeaderboardHistory(s3Data, dbData) {
   return merged;
 }
 
+/** Keep only the latest N calendar months that have at least one artist row. */
+function trimLeaderboardToLatestMonths(payload, maxMonths = LEADERBOARD_MAX_MONTHS) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return {};
+  }
+
+  const slots = [];
+  for (const yearKey of Object.keys(payload)) {
+    if (!/^\d{4}$/.test(String(yearKey))) continue;
+    const year = Number(yearKey);
+    const months = payload[yearKey];
+    if (!months || typeof months !== "object") continue;
+
+    for (const month of Object.keys(months)) {
+      const rows = months[month];
+      if (!Array.isArray(rows) || rows.length === 0) continue;
+      slots.push({
+        year,
+        month,
+        sortIndex: MONTH_INDEX[month] ?? -1,
+      });
+    }
+  }
+
+  slots.sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return b.sortIndex - a.sortIndex;
+  });
+
+  const trimmed = {};
+  for (const { year, month } of slots.slice(0, maxMonths)) {
+    const yk = String(year);
+    if (!trimmed[yk]) trimmed[yk] = {};
+    trimmed[yk][month] = payload[yk]?.[month] ?? payload[year]?.[month];
+  }
+  return trimmed;
+}
+
 const getLeaderBoardData = async (req, res) => {
   try {
     const response = await readFromS3("monthly_kpi/leaderboard.json");
@@ -147,6 +201,8 @@ const getLeaderBoardData = async (req, res) => {
     } catch (dbErr) {
       console.error("[leaderboard/history] DB month buckets failed:", dbErr.message);
     }
+
+    data = trimLeaderboardToLatestMonths(data);
 
     return res.status(200).json({
       success: true,
