@@ -7,6 +7,21 @@ import ArtistSidebar from "../../../../components/ArtistSidebar";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { canManageBookingVerification } from "../../../../utils/roles";
 
+function normalizeCalendarDateStr(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
+    return value.trim().slice(0, 10);
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function paymentStatusIsPending(status) {
+  const s = String(status || "").toLowerCase();
+  return s.includes("under review") || s.includes("pending");
+}
+
 export default function TimeCalendar() {
   const { user } = useAuth();
   const viewOnly = !canManageBookingVerification(user?.role);
@@ -33,23 +48,24 @@ export default function TimeCalendar() {
           const dateMap = {};
           setData(response.data.data);
           response.data.data.forEach((item) => {
-            const raw = item.current_booking_date;
-            const localDateStr =
-              typeof raw === "string" && /^\d{4}-\d{2}-\d{2}/.test(raw)
-                ? raw.slice(0, 10)
-                : (() => {
-                    const d = new Date(raw);
-                    if (isNaN(d.getTime())) return null;
-                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-                  })();
+            const localDateStr = normalizeCalendarDateStr(item.current_booking_date);
             if (!localDateStr) return;
-            // Prefer existing entry (calendar) when same date has both calendar and Release date change payment
-            if (!dateMap[localDateStr]) {
+
+            const isPending = paymentStatusIsPending(item.payment_status);
+            const existing = dateMap[localDateStr];
+            if (
+              !existing ||
+              isPending ||
+              item.pending_release_date_change === true
+            ) {
               dateMap[localDateStr] = {
                 content: item.oph_id,
                 artist: item.full_name,
                 songId: item.song_id,
                 fromSource: item.from_source,
+                paymentStatus: item.payment_status,
+                pendingReleaseDateChange:
+                  item.pending_release_date_change === true,
               };
             }
           });
@@ -319,17 +335,29 @@ export default function TimeCalendar() {
     )}-${String(d.getDate()).padStart(2, "0")}`;
     const artist = blockedDatesInfo[dateStr];
 
-    const getCurrentGridStatus = data.find(
-      (d) => d.current_booking_date === dateStr,
-    );
+    const getCurrentGridStatus =
+      data.find(
+        (row) =>
+          normalizeCalendarDateStr(row.current_booking_date) === dateStr &&
+          (paymentStatusIsPending(row.payment_status) ||
+            row.pending_release_date_change === true),
+      ) ||
+      data.find(
+        (row) => normalizeCalendarDateStr(row.current_booking_date) === dateStr,
+      );
 
     const fromSource = getCurrentGridStatus?.from_source || "";
     const isDateBooking =
       fromSource.includes("Date booking") || fromSource.includes("Date Booking");
-    const isReleaseDateChange =
-      fromSource.toLowerCase().includes("release date change");
-    const hasUnderReview = (getCurrentGridStatus?.payment_status || "").includes("under review");
-    const hasApproved = (getCurrentGridStatus?.payment_status || "").includes("approved");
+    const isReleaseDateChange = fromSource
+      .toLowerCase()
+      .includes("release date change");
+    const hasUnderReview =
+      paymentStatusIsPending(getCurrentGridStatus?.payment_status) ||
+      getCurrentGridStatus?.pending_release_date_change === true;
+    const hasApproved = String(getCurrentGridStatus?.payment_status || "")
+      .toLowerCase()
+      .includes("approved");
 
     return (
       <div

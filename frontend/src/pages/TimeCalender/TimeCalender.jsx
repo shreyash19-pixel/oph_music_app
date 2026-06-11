@@ -1,10 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
-// Removed unused imports: Lock, ChevronLeft, ChevronRight
 import axiosApi from "../../conf/axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useArtist } from "../auth/API/ArtistContext";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+
+function toLocalDateStr(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function normalizeBookingDateFromApi(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
+    return value.trim().slice(0, 10);
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export default function TimeCalendar() {
   const { headers, ophid } = useArtist();
@@ -17,7 +30,7 @@ export default function TimeCalendar() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const toastShownRef = useRef(false); // Ref to track if toast has been shown
+  const toastShownRef = useRef(false);
   const [data, setData] = useState([]);
 
   useEffect(() => {
@@ -25,41 +38,33 @@ export default function TimeCalendar() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await axiosApi.get(
-          "/bookings",
-          // "/date-block/blocked-dates-with-artists",
-          {
-            headers: headers,
-          },
-        );
+        const response = await axiosApi.get("/bookings", { headers });
 
         if (response.data.success === true) {
           const dateMap = {};
-          setData(response.data.data);
-          response.data.data.forEach((item) => {
-            const d = new Date(item.current_booking_date);
-            const localDateStr = `${d.getFullYear()}-${String(
-              d.getMonth() + 1,
-            ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          const rows = response.data.data || [];
+          setData(rows);
+          rows.forEach((item) => {
+            const localDateStr = normalizeBookingDateFromApi(
+              item.current_booking_date,
+            );
+            if (!localDateStr) return;
+            const anonymous =
+              item.anonymous_blocked === true ||
+              item.pending_release_date_change === true ||
+              !item.oph_id;
             dateMap[localDateStr] = {
-              content: item.oph_id,
-              artist: item.full_name,
+              content: anonymous ? null : item.oph_id,
+              artist: anonymous ? "" : item.full_name || "",
+              anonymous,
             };
-
-            // const date = item.current_booking_date.split("T")[0];
-            // dateMap[date] = {
-            //   content: item.content,
-            //   artist: item.artist,
-            // };
           });
-
           setBlockedDatesInfo(dateMap);
         } else {
-          console.error("API did not return success:", response.data);
           setError("Failed to load data from server");
         }
-      } catch (error) {
-        console.error("Error fetching blocked dates:", error);
+      } catch (err) {
+        console.error("Error fetching blocked dates:", err);
         setError("Failed to fetch data. Please try again later.");
       } finally {
         setIsLoading(false);
@@ -69,46 +74,26 @@ export default function TimeCalendar() {
     fetchBlockedDates();
   }, [headers]);
 
-  // check for toast notification from payment screen
   useEffect(() => {
-    // Check if we have success toast parameters AND haven't shown the toast yet
     if (
       location.state?.showSuccessToast &&
       location.state?.successMessage &&
       !toastShownRef.current
     ) {
-      // Set our ref to true to prevent showing again
       toastShownRef.current = true;
-
-      // Show the success toast
       toast.success(location.state.successMessage, {
         duration: 4000,
         position: "top-right",
       });
-
-      // Clear the state to prevent duplicate toasts
-      const currentPath = location.pathname;
-      navigate(currentPath, { replace: true });
+      navigate(location.pathname, { replace: true });
     }
   }, [location.state, location.pathname, navigate]);
 
-  // Helper function to check if a date is blocked
   const isDateBlocked = (year, month, day) => {
-    const d = new Date(year, month, day);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(d.getDate()).padStart(2, "0")}`;
-
+    const dateStr = toLocalDateStr(year, month, day);
     return Object.prototype.hasOwnProperty.call(blockedDatesInfo, dateStr);
-
-    // const dateStr = new Date(Date.UTC(year, month, day))
-    //   .toISOString()
-    //   .split("T")[0];
-    // return blockedDatesInfo.hasOwnProperty(dateStr);
   };
 
-  // Helper function to check if a date is in the past
   const isDateInPast = (year, month, day) => {
     const today = new Date();
     const checkDate = new Date(year, month, day);
@@ -118,7 +103,6 @@ export default function TimeCalendar() {
     );
   };
 
-  // Helper function to check if a date is within one year from now
   const isWithinOneYear = (year, month, day) => {
     const today = new Date();
     const oneYearFromNow = new Date(
@@ -130,16 +114,14 @@ export default function TimeCalendar() {
     return checkDate <= oneYearFromNow;
   };
 
-  // Helper function to check if a date is within 5 days of today
   const isWithinFiveDays = (year, month, day) => {
     const today = new Date();
     const checkDate = new Date(year, month, day);
     const timeDiff = checkDate.getTime() - today.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    return daysDiff <= 5 && daysDiff >= 0; // Only future dates within 5 days
+    return daysDiff <= 5 && daysDiff >= 0;
   };
 
-  // Month and day mappings
   const months = [
     "January",
     "February",
@@ -155,11 +137,9 @@ export default function TimeCalendar() {
     "December",
   ];
 
-  const daysInMonth = (month, year) => {
-    return new Date(year, month + 1, 0).getDate(); // Get the last day of the month
-  };
+  const daysInMonth = (month, year) =>
+    new Date(year, month + 1, 0).getDate();
 
-  // Get the first day of the current month
   const firstDayOfMonth = new Date(currentYear, currentMonthIndex, 1).getDay();
 
   const generateCalendarDays = () => {
@@ -168,39 +148,22 @@ export default function TimeCalendar() {
       (currentMonthIndex - 1 + 12) % 12,
       currentMonthIndex === 0 ? currentYear - 1 : currentYear,
     );
-
     const days = [];
-
-    // Add days from the previous month
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-      days.push({
-        day: prevMonthDays - i,
-        isCurrentMonth: false,
-      });
+      days.push({ day: prevMonthDays - i, isCurrentMonth: false });
     }
-
-    // Add days from the current month
     for (let i = 1; i <= totalDays; i++) {
-      days.push({
-        day: i,
-        isCurrentMonth: true,
-      });
+      days.push({ day: i, isCurrentMonth: true });
     }
-
-    // Add days from the next month to fill the remaining cells
     while (days.length % 7 !== 0) {
       days.push({
         day: days.length - totalDays - firstDayOfMonth + 1,
         isCurrentMonth: false,
       });
     }
-
     return days;
   };
 
-  // Removed unused handlePrevMonth and handleNextMonth functions
-
-  // Initialize to current month on component mount
   useEffect(() => {
     const today = new Date();
     setCurrentMonthIndex(today.getMonth());
@@ -208,7 +171,6 @@ export default function TimeCalendar() {
   }, [data]);
 
   const calendarDays = generateCalendarDays();
-
   const weekDays = [
     "Sunday",
     "Monday",
@@ -219,74 +181,44 @@ export default function TimeCalendar() {
     "Saturday",
   ];
 
-  const UserAvatar = ({ fullName }) => (
-    <div className="flex items-center gap-2 mb-2">
-      {/* Circle with Initial */}
-      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-400 text-gray-900 font-bold">
-        {fullName?.charAt(0)?.toUpperCase() || "?"}
-      </div>
-
-      {/* Full name only on larger screens */}
-      <span className="text-sm hidden lg:block">{fullName}</span>
-    </div>
-  );
-
   const handleDateCellClick = (year, month, day, isCurrentMonth) => {
-    if (!isCurrentMonth) return; // Don't handle clicks on non-current month days
+    if (!isCurrentMonth) return;
 
-    // const dateStr = new Date(Date.UTC(year, month, day))
-    //   .toISOString()
-    //   .split("T")[0];
-    // const dateInfo = blockedDatesInfo[dateStr];
-    const d = new Date(year, month, day);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(d.getDate()).padStart(2, "0")}`;
-
-    const isCurrentOwnerOfDate = data.find((da) => {
-      if (da.current_booking_date === dateStr) {
-        return da;
-      }
-    });
-
+    const dateStr = toLocalDateStr(year, month, day);
     const dateInfo = blockedDatesInfo[dateStr];
 
-    if (dateInfo) {
-      // if (dateInfo.artist.id === currentArtistId.artist.id) {
-      if (isCurrentOwnerOfDate.oph_id === ophid) {
-        // Check if the date is within 5 days of today
-        if (isWithinFiveDays(year, month, day)) {
-          toast.error(
-            "You cannot change dates that are within 5 days of today",
-          );
-          return;
-        }
-
-        // It's the current artist's date - navigate to date change
-        // const artistId = currentArtistId.artist.id;
-
-        navigate("/dashboard/date-change", {
-          state: {
-            date: dateStr,
-          },
-        });
-      } else {
-        // It's another artist's date
-        toast.error("You can only update your own release dates");
-      }
-    } else {
-      // Date is not blocked - navigate to block date form
-      navigate("/dashboard/block-date", {
-        state: { selectedDate: dateStr },
-      });
+    if (dateInfo?.anonymous) {
+      toast.error("This date is reserved pending admin approval");
+      return;
     }
+
+    const ownerRow = data.find(
+      (da) =>
+        normalizeBookingDateFromApi(da.current_booking_date) === dateStr &&
+        da.oph_id === ophid,
+    );
+
+    if (dateInfo && ownerRow) {
+      if (isWithinFiveDays(year, month, day)) {
+        toast.error(
+          "You cannot change dates that are within 5 days of today",
+        );
+        return;
+      }
+      navigate("/dashboard/date-change", { state: { date: dateStr } });
+      return;
+    }
+
+    if (dateInfo) {
+      toast.error("You can only update your own release dates");
+      return;
+    }
+
+    navigate("/dashboard/block-date", { state: { selectedDate: dateStr } });
   };
 
-  // Update renderCalendarCell to include click handler
-  const renderCalendarCell = ({ day, isCurrentMonth }, index, weekindex) => {
+  const renderCalendarCell = ({ day, isCurrentMonth }, index) => {
     const isBlocked = isDateBlocked(currentYear, currentMonthIndex, day);
-
     const isPast = isDateInPast(currentYear, currentMonthIndex, day);
     const isValidFutureDate = isWithinOneYear(
       currentYear,
@@ -298,12 +230,11 @@ export default function TimeCalendar() {
       currentMonthIndex,
       day,
     );
-    // Removed unused variables: d, dateStr, artist
-
-    const dateStr = new Date(Date.UTC(currentYear, currentMonthIndex, day))
-      .toISOString()
-      .split("T")[0];
-    const artist = blockedDatesInfo[dateStr];
+    const dateStr = toLocalDateStr(currentYear, currentMonthIndex, day);
+    const slot = blockedDatesInfo[dateStr];
+    const showAnonymous = isBlocked && isCurrentMonth && slot?.anonymous;
+    const showNamed =
+      isBlocked && isCurrentMonth && slot?.artist && !slot?.anonymous;
 
     return (
       <div
@@ -322,7 +253,9 @@ export default function TimeCalendar() {
           isBlocked && isCurrentMonth
             ? isWithinFiveDaysRestriction
               ? "bg-[#FF6B6B]/30 border-[#FF6B6B] shadow-[#FF6B6B]/20 shadow-inner"
-              : "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
+              : showAnonymous
+                ? "bg-[#4B5563]/40 border-[#6B7280] shadow-inner"
+                : "bg-[#6F4FA0]/30 border-[#6F4FA0] shadow-[#6F4FA0]/20 shadow-inner"
             : isCurrentMonth
               ? "bg-[#2DDA89]/10 border-[#2DDA89] shadow-[#2DDA89]/20 shadow-inner"
               : "bg-gray-900/40 border-gray-700"
@@ -355,10 +288,18 @@ export default function TimeCalendar() {
             </svg>
           )}
         </div>
-        {isBlocked && isCurrentMonth && <UserAvatar fullName={artist.artist} />}
+        {showNamed && (
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-cyan-400 text-gray-900 font-bold">
+              {slot.artist?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+            <span className="text-sm hidden lg:block">{slot.artist}</span>
+          </div>
+        )}
       </div>
     );
   };
+
   return (
     <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6 ">
       <div className="space-y-6">
@@ -385,16 +326,19 @@ export default function TimeCalendar() {
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-                
                 TIME CALENDAR
               </h2>
               <NavbarRight />
             </div>
 
-            <div className="flex items-center  justify-end gap-6">
+            <div className="flex items-center justify-end gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
                 <span>Booked</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#6B7280]"></div>
+                <span>Reserved (pending approval)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#FF6B6B]"></div>
@@ -407,10 +351,9 @@ export default function TimeCalendar() {
             </div>
 
             <div className="border border-gray-800 rounded-lg overflow-hidden">
-              {/* Calendar Header */}
               <div className="grid grid-cols-7  bg-cyan-400  text-xs lg:text-lg">
-                {weekDays.map((day, index) => (
-                  <React.Fragment key={index}>
+                {weekDays.map((day, idx) => (
+                  <React.Fragment key={idx}>
                     <div className="lg:p-6 text-center border border-gray-500 py-3 hidden lg:block font-bold text-gray-900">
                       {day}
                     </div>
@@ -421,7 +364,6 @@ export default function TimeCalendar() {
                 ))}
               </div>
 
-              {/* Calendar Grid */}
               <div className="divide-y divide-gray-800">
                 {Array.from(
                   { length: calendarDays.length / 7 },
@@ -429,44 +371,38 @@ export default function TimeCalendar() {
                     <div key={weekIndex} className="grid grid-cols-7">
                       {calendarDays
                         .slice(weekIndex * 7, weekIndex * 7 + 7)
-                        .map((dayData, index) =>
-                          renderCalendarCell(dayData, index),
+                        .map((dayData, idx) =>
+                          renderCalendarCell(dayData, idx),
                         )}
                     </div>
                   ),
                 )}
               </div>
             </div>
+
             <div className="flex justify-end items-center mt-4 gap-4">
-              {/* LEFT ARROW */}
               <button
-                onClick={() => {
-                  setCurrentMonthIndex((prev) => (prev === 0 ? 11 : prev - 1));
-                }}
+                onClick={() =>
+                  setCurrentMonthIndex((prev) => (prev === 0 ? 11 : prev - 1))
+                }
                 className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
               >
                 {"<"}
               </button>
-
-              {/* MONTH DISPLAY */}
               <div className="text-white text-lg font-semibold min-w-[120px] text-center">
                 {months[currentMonthIndex]}
               </div>
-
-              {/* RIGHT ARROW */}
               <button
-                onClick={() => {
-                  setCurrentMonthIndex((prev) => (prev === 11 ? 0 : prev + 1));
-                }}
+                onClick={() =>
+                  setCurrentMonthIndex((prev) => (prev === 11 ? 0 : prev + 1))
+                }
                 className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
               >
                 {">"}
               </button>
-
-              {/* YEAR DROPDOWN */}
               <select
                 value={currentYear}
-                onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+                onChange={(e) => setCurrentYear(parseInt(e.target.value, 10))}
                 className="bg-gray-800 text-white rounded px-4 py-2 ml-2"
               >
                 {Array.from(

@@ -1,5 +1,9 @@
 const db = require("../DB/connect");
 const moment = require("moment-timezone");
+const {
+  getPendingReleaseDateChangeBlocks,
+  getActivePendingReleaseDateChanges,
+} = require("../utils/releaseDateChangeQueries");
 
 const insertBooking = async (oph_id, booking_date, song_name, project_type, song_id = null) => {
   const [result] = await db.execute(
@@ -115,27 +119,81 @@ const getAllBookings = async () => {
       LEFT JOIN user_details ud ON c.oph_id = ud.oph_id`
     );
 
+    const formatCalDate = (val) =>
+      val
+        ? moment.utc(val).tz("Asia/Kolkata").format("YYYY-MM-DD")
+        : null;
+
     const rowsWithIST = rows.map((row) => ({
       ...row,
-      current_booking_date: row.current_booking_date
-        ? moment
-            .utc(row.current_booking_date)
-            .tz("Asia/Kolkata")
-            .format("YYYY-MM-DD")
-        : null,
-      previous_booking_date: row.previous_booking_date
-        ? moment
-            .utc(row.previous_booking_date)
-            .tz("Asia/Kolkata")
-            .format("YYYY-MM-DD")
-        : null,
-      original_booking_date: row.original_booking_date
-        ? moment
-            .utc(row.original_booking_date)
-            .tz("Asia/Kolkata")
-            .format("YYYY-MM-DD")
-        : null,
+      current_booking_date: formatCalDate(row.current_booking_date),
+      previous_booking_date: formatCalDate(row.previous_booking_date),
+      original_booking_date: formatCalDate(row.original_booking_date),
+      anonymous_blocked: false,
     }));
+
+    const calendarDates = new Set(
+      rowsWithIST.map((r) => r.current_booking_date).filter(Boolean),
+    );
+
+    const pendingChanges = await getActivePendingReleaseDateChanges(db);
+    for (const pending of pendingChanges) {
+      const targetDate = pending.target_date;
+      if (!targetDate) continue;
+
+      const existingRow = rowsWithIST.find(
+        (r) => r.current_booking_date === targetDate,
+      );
+      if (existingRow) {
+        existingRow.pending_release_date_change = true;
+        existingRow.anonymous_blocked = true;
+      } else if (!calendarDates.has(targetDate)) {
+        rowsWithIST.push({
+          id: null,
+          oph_id: null,
+          song_id: null,
+          current_booking_date: targetDate,
+          previous_booking_date: null,
+          original_booking_date: null,
+          song_name: null,
+          project_type: null,
+          created_at: null,
+          updated_at: null,
+          full_name: "",
+          anonymous_blocked: true,
+          pending_release_date_change: true,
+        });
+        calendarDates.add(targetDate);
+      }
+    }
+
+    // Legacy fallback: distinct target dates not covered above
+    const pendingBlocks = await getPendingReleaseDateChangeBlocks();
+    for (const blockDate of pendingBlocks) {
+      if (!blockDate || calendarDates.has(blockDate)) continue;
+      rowsWithIST.push({
+        id: null,
+        oph_id: null,
+        song_id: null,
+        current_booking_date: blockDate,
+        previous_booking_date: null,
+        original_booking_date: null,
+        song_name: null,
+        project_type: null,
+        created_at: null,
+        updated_at: null,
+        full_name: "",
+        anonymous_blocked: true,
+        pending_release_date_change: true,
+      });
+      calendarDates.add(blockDate);
+    }
+
+    rowsWithIST.sort((a, b) => {
+      if (!a.current_booking_date) return 1;
+      if (!b.current_booking_date) return -1;
+      return a.current_booking_date.localeCompare(b.current_booking_date);
+    });
 
     return rowsWithIST;
   } catch (error) {

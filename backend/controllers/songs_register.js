@@ -305,19 +305,46 @@ exports.checkReleaseDateAvailable = async (req, res) => {
     if (dateStr === "0000-00-00" || !dateStr) {
       return res.status(200).json({ success: true, available: true });
     }
-    // Date is taken only when ANOTHER artist (different oph_id) has it.
-    // User's own pre-booked dates (paid in advance, same oph_id) are available for them.
-    const [rows] = oph_id
-      ? await db.execute(
-          "SELECT 1 FROM calender WHERE current_booking_date = ? AND (oph_id IS NULL OR oph_id != ?) LIMIT 1",
-          [dateStr, String(oph_id).trim()]
-        )
-      : await db.execute(
-          "SELECT 1 FROM calender WHERE current_booking_date = ? LIMIT 1",
-          [dateStr]
+    const ophNorm = oph_id ? String(oph_id).trim() : null;
+    const {
+      isNewDateBlockedForReleaseDateChange,
+    } = require("../utils/releaseDateChangeQueries");
+
+    const connection = await db.getConnection();
+    try {
+      let available = true;
+      if (ophNorm) {
+        available = !(await isNewDateBlockedForReleaseDateChange(
+          connection,
+          ophNorm,
+          dateStr,
+          { excludeOphPending: true },
+        ));
+      } else {
+        const [rows] = await connection.query(
+          `SELECT 1 FROM calender
+           WHERE (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)
+           LIMIT 1`,
+          [dateStr, dateStr],
         );
-    const available = rows.length === 0;
-    return res.status(200).json({ success: true, available });
+        if (rows.length > 0) available = false;
+        if (available) {
+          const { RELEASE_DATE_CHANGE_FROM_SQL } = require("../utils/calendarDateUtils");
+          const [pending] = await connection.query(
+            `SELECT 1 FROM payments
+             WHERE (release_date = ? OR DATE(release_date) = DATE(?))
+               AND ${RELEASE_DATE_CHANGE_FROM_SQL}
+               AND LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'pending')
+             LIMIT 1`,
+            [dateStr, dateStr],
+          );
+          if (pending.length > 0) available = false;
+        }
+      }
+      return res.status(200).json({ success: true, available });
+    } finally {
+      connection.release();
+    }
   } catch (err) {
     console.error("Error in checkReleaseDateAvailable:", err);
     return res.status(500).json({ success: false, available: false });

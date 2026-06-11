@@ -325,11 +325,16 @@ const PaymentScreen = () => {
         song_id: song_id,
         event_id: event_id,
         release_date:
-          location?.state?.date ||
-          location?.state?.booking_date ||
-          null ||
-          location?.state?.new_booking_date,
+          from === "Release date change"
+            ? location?.state?.new_booking_date ||
+              location?.state?.release_date ||
+              null
+            : location?.state?.date ||
+              location?.state?.booking_date ||
+              location?.state?.new_booking_date ||
+              null,
         old_release_date: location?.state?.old_booking_date || null,
+        change_reason: location?.state?.reason || null,
         lyricalVid: lyrical_services,
         amount: getDisplayAmount(),
       };
@@ -384,28 +389,15 @@ const PaymentScreen = () => {
           }
         }
       } else if (response.data.success && from == "Release date change") {
-        {
-          const CalenderRes = await axiosApi.post(
-            "/change-release-date",
-            {
-              oph_id: oph_id,
-              old_booking_date: location.state.old_booking_date,
-              new_booking_date: location.state.new_booking_date,
-              reason: location.state.reason,
-            },
-            { headers: headers },
-          );
-
-          if (CalenderRes.data.success) {
-            navigate("/dashboard/success", {
-              state: {
-                heading: "Date Changed Successfully",
-                btnText: "View Calendar",
-                redirectTo: "/dashboard/time-calendar",
-              },
-            });
-          }
-        }
+        // PaymentService already records the pending calendar change on payment insert.
+        navigate("/dashboard/success", {
+          state: {
+            heading:
+              "Release date change submitted — pending admin approval",
+            btnText: "View Calendar",
+            redirectTo: "/dashboard/time-calendar",
+          },
+        });
       } else if (
         response.data.success &&
         from == "Song Registration" &&

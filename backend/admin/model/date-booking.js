@@ -1,5 +1,10 @@
 const db = require("../../DB/connect");
 const moment = require("moment-timezone");
+const {
+  getActivePendingReleaseDateChanges,
+  mergePaymentStatus,
+  mergeFromSource,
+} = require("../../utils/releaseDateChangeQueries");
 
 const insertBooking = async (oph_id, booking_date, song_name, project_type, song_id = null) => {
   const [result] = await db.execute(
@@ -147,61 +152,74 @@ const getAllBookings = async () => {
   );
   const rows = Array.isArray(rawRows) ? rawRows : [];
 
-  // Include Release date change payments that may not have a calendar row yet (e.g. payment submitted, calendar not yet updated)
-  const [releaseDateChangePayments] = await db.query(
-    `SELECT p.oph_id, p.release_date as current_booking_date, p.song_id, p.status as payment_status, p.from_source, COALESCE(ud.full_name, '') as full_name
-     FROM payments p
-     LEFT JOIN user_details ud ON (p.oph_id = ud.oph_id OR p.oph_id = ud.OPH_ID)
-     WHERE (p.from_source = 'Release date change' OR p.from_source = 'Release Date Change')
-     AND p.release_date IS NOT NULL
-     AND NOT EXISTS (
-       SELECT 1 FROM calender c
-       WHERE c.oph_id = p.oph_id
-       AND (DATE(c.current_booking_date) = DATE(p.release_date) OR c.current_booking_date = p.release_date)
-     )`
-  );
-  const rdcRows = Array.isArray(releaseDateChangePayments) ? releaseDateChangePayments : [];
-  rdcRows.forEach((r) => {
-    rows.push({
-      id: null,
-      oph_id: r.oph_id,
-      song_id: r.song_id,
-      current_booking_date: r.current_booking_date,
-      previous_booking_date: null,
-      original_booking_date: null,
-      song_name: null,
-      project_type: null,
-      created_at: null,
-      updated_at: null,
-      payment_status: r.payment_status,
-      from_source: r.from_source,
-      full_name: r.full_name,
-    });
-  });
+  const formatCalDate = (val) =>
+    val
+      ? moment.utc(val).tz("Asia/Kolkata").format("YYYY-MM-DD")
+      : null;
 
   const rowsWithIST = rows.map((row) => ({
     ...row,
-    current_booking_date: row.current_booking_date
-      ? moment
-          .utc(row.current_booking_date)
-          .tz("Asia/Kolkata")
-          .format("YYYY-MM-DD")
-      : null,
-    previous_booking_date: row.previous_booking_date
-      ? moment
-          .utc(row.previous_booking_date)
-          .tz("Asia/Kolkata")
-          .format("YYYY-MM-DD")
-      : null,
-    original_booking_date: row.original_booking_date
-      ? moment
-          .utc(row.original_booking_date)
-          .tz("Asia/Kolkata")
-          .format("YYYY-MM-DD")
-      : null,
+    current_booking_date: formatCalDate(row.current_booking_date),
+    previous_booking_date: formatCalDate(row.previous_booking_date),
+    original_booking_date: formatCalDate(row.original_booking_date),
+    pending_release_date_change: false,
   }));
 
-  // Sort by date; for same date put calendar rows (id != null) before Release date change–only rows (id == null)
+  const pendingChanges = await getActivePendingReleaseDateChanges(db);
+  for (const pending of pendingChanges) {
+    const { oph_id, target_date, old_date, song_id, payment_status, from_source, full_name } =
+      pending;
+
+    let targetRow = rowsWithIST.find(
+      (r) => r.current_booking_date === target_date && r.oph_id === oph_id,
+    );
+    if (!targetRow) {
+      targetRow = rowsWithIST.find((r) => r.current_booking_date === target_date);
+    }
+    if (targetRow) {
+      targetRow.payment_status = mergePaymentStatus(
+        targetRow.payment_status,
+        payment_status || "under review",
+      );
+      targetRow.from_source = mergeFromSource(targetRow.from_source, from_source);
+      targetRow.pending_release_date_change = true;
+      if (!targetRow.oph_id) targetRow.oph_id = oph_id;
+      if (!targetRow.full_name) targetRow.full_name = full_name;
+      if (!targetRow.song_id && song_id) targetRow.song_id = song_id;
+    } else {
+      rowsWithIST.push({
+        id: null,
+        oph_id,
+        song_id,
+        current_booking_date: target_date,
+        previous_booking_date: old_date,
+        original_booking_date: null,
+        song_name: null,
+        project_type: null,
+        created_at: null,
+        updated_at: null,
+        payment_status: payment_status || "under review",
+        from_source,
+        full_name,
+        pending_release_date_change: true,
+      });
+    }
+
+    if (old_date) {
+      const oldRow = rowsWithIST.find(
+        (r) => r.current_booking_date === old_date && r.oph_id === oph_id,
+      );
+      if (oldRow) {
+        oldRow.payment_status = mergePaymentStatus(
+          oldRow.payment_status,
+          payment_status || "under review",
+        );
+        oldRow.from_source = mergeFromSource(oldRow.from_source, from_source);
+        oldRow.pending_release_date_change = true;
+      }
+    }
+  }
+
   rowsWithIST.sort((a, b) => {
     if (!a.current_booking_date) return 1;
     if (!b.current_booking_date) return -1;

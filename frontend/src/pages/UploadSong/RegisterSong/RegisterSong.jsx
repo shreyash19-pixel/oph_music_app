@@ -446,6 +446,13 @@ export default function RegisterSongForm() {
     if (releaseDateTakenYmd === formattedDate) {
       return true;
     }
+    // Paid-in-advance artists pick from their own pre-booked calendar slots.
+    if (
+      projectType === "paid in advance" &&
+      artistBlockedDates.includes(formattedDate)
+    ) {
+      return false;
+    }
     if (blockedDates.length === 0) {
       return false;
     }
@@ -1219,7 +1226,7 @@ export default function RegisterSongForm() {
                 <input
                   type="checkbox"
                   name="agreement"
-                  checked={formData.agreement}
+                  checked={agreement}
                   onChange={agreementHandler}
                   className="text-cyan-400 bg-gray-800 border-gray-700 focus:ring-cyan-400 rounded"
                 />

@@ -85,7 +85,7 @@ export default function DateChangeForm() {
           new_booking_date: formData.newDate,
           returnPath: "/dashboard/time-calendar",
           amount: 100,
-          heading: "Payment Required",
+          heading: "Payment Required (admin approval needed after payment)",
           from: "Release date change",
           reason: formData.reason,
         },

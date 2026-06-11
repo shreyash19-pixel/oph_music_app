@@ -1,18 +1,5 @@
 const db = require('../../DB/connect');
-
-function parseReasonHistory(val) {
-  if (val == null) return [];
-  if (Array.isArray(val)) return val;
-  if (typeof val === "string") {
-    try {
-      const parsed = JSON.parse(val);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
+const CoreDateBookingService = require('../../services/dateBooking/DateBookingService');
 
 class DateBookingService {
   /**
@@ -182,86 +169,12 @@ class DateBookingService {
    * @param {string|null} reason - Reason for change
    */
   async updateBookingDate(ophId, oldDate, newDate, reason = null) {
-    const connection = await db.getConnection();
-    
-    try {
-      await connection.beginTransaction();
-
-      // Check if old booking exists and get song_id, existing reason_history
-      const [oldBookings] = await connection.query(
-        `SELECT * FROM calender WHERE oph_id = ? AND current_booking_date = ?`,
-        [ophId, oldDate]
-      );
-
-      if (oldBookings.length === 0) {
-        throw new Error('No booking found for the old date');
-      }
-
-      const songId = oldBookings[0].song_id;
-      const existingHistory = parseReasonHistory(oldBookings[0].reason_history);
-
-      // Check if new date is already booked by another user
-      const [existingBookings] = await connection.query(
-        `SELECT * FROM calender WHERE current_booking_date = ? AND oph_id != ?`,
-        [newDate, ophId]
-      );
-
-      if (existingBookings.length > 0) {
-        throw new Error('New date is already booked by another user');
-      }
-
-      // Prepare reason history - add current reason to history if provided
-      let updatedHistory = [...existingHistory];
-      if (reason && reason.trim()) {
-        updatedHistory.push({
-          reason: reason.trim(),
-          timestamp: new Date().toISOString(),
-          old_date: oldDate,
-          new_date: newDate,
-          status: 'pending'
-        });
-      }
-
-      // Update calender (master) - single source of truth
-      // Store reason and update reason_history
-      const [result] = await connection.query(
-        `UPDATE calender 
-         SET previous_booking_date = ?, 
-             current_booking_date = ?, 
-             reason = ?,
-             reason_history = ?,
-             updated_at = NOW()
-         WHERE oph_id = ? AND current_booking_date = ?`,
-        [
-          oldDate, 
-          newDate, 
-          reason && reason.trim() ? reason.trim() : null,
-          JSON.stringify(updatedHistory),
-          ophId, 
-          oldDate
-        ]
-      );
-
-      if (result.affectedRows === 0) {
-        throw new Error('Failed to update booking');
-      }
-
-      // Do NOT update songs_register here. For release date change, songs_register is updated
-      // only when admin approves the payment (setPaymentVerification in admin/model/payments.js).
-
-      await connection.commit();
-
-      return {
-        success: true,
-        message: "Booking date updated successfully"
-      };
-
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
+    return CoreDateBookingService.updateBookingDate(
+      ophId,
+      oldDate,
+      newDate,
+      reason,
+    );
   }
 
   /**
