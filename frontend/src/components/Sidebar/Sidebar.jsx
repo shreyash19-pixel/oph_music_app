@@ -24,7 +24,7 @@ const LockIcon = pubImg("lock.png");
 import { X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 
-const SidebarNav = ({ onClose, contents, setContents }) => {
+const SidebarNav = ({ onClose, contents, setContents, showNav, setShowNav }) => {
   const navigate = useNavigate();
   const { logout } = useArtist();
   const [loading, setLoading] = useState(false);
@@ -245,12 +245,18 @@ const SidebarNav = ({ onClose, contents, setContents }) => {
   console.log(contents);
 
   return (
-    <div className="w-30 lg:w-[300px] fixed top-0 flex flex-col h-full bg-[#181B24] text-gray-300 items-start">
+    <div
+      className={`fixed top-0 left-0 h-full bg-[#181B24] text-gray-300 flex flex-col items-start
+    w-[300px] z-50 transition-transform duration-300 ease-in-out
+    ${showNav ? "translate-x-0" : "-translate-x-full"}
+    lg:translate-x-0
+  `}
+    >
       {/* Only show the X button if it's a mobile screen */}
       {isMobile && (
         <button
           className="absolute top-4 right-4 z-40 text-white p-2"
-          onClick={onClose}
+          onClick={() => setShowNav(false)}
         >
           <X className="w-6 h-6" />
         </button>

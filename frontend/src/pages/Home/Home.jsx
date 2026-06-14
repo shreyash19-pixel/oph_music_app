@@ -6,13 +6,15 @@ import axiosApi from "../../conf/axios";
 import { isRegistrationOpen } from "../../utils/date";
 import { useArtist } from "../auth/API/ArtistContext";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 function Home() {
   const artistsdata = {};
   const [isLoading, setIsLoading] = useState(true);
   const [upcomingSong, setUpcomingSong] = useState([]);
   const [upcomingEventHero, setUpcomingEventHero] = useState(false);
-  const [upcomingEventNewReleases, setUpcomingEventNewReleases] = useState(false);
+  const [upcomingEventNewReleases, setUpcomingEventNewReleases] =
+    useState(false);
   const [artistBookEvents, setArtistBookEvents] = useState([]);
   const [error, setError] = useState(null);
   const { headers, ophid } = useArtist();
@@ -70,7 +72,8 @@ function Home() {
             return dateA - dateB; // soonest upcoming first
           });
         // Only events whose registration window is active (IST day bounds, same as HeroSection buttons)
-        const registrationOpenSorted = upcomingSorted.filter(isRegistrationOpen);
+        const registrationOpenSorted =
+          upcomingSorted.filter(isRegistrationOpen);
         const heroEvent = registrationOpenSorted[0] || false;
         const secondSlotEvent =
           registrationOpenSorted.length >= 2
@@ -101,7 +104,9 @@ function Home() {
     if (!ophid || !headers?.Authorization) return;
     const fetchArtistBookEvents = async () => {
       try {
-        const response = await axiosApi.get(`/event_part/${ophid}`, { headers });
+        const response = await axiosApi.get(`/event_part/${ophid}`, {
+          headers,
+        });
         const data = response.data;
         const normalized = Array.isArray(data) ? data : data ? [data] : [];
         setArtistBookEvents(normalized);
@@ -116,7 +121,8 @@ function Home() {
   return (
     <div>
       {/* ✅ Navbar placed at the top */}
-      <div className="flex justify-end items-center p-4">
+      <div className="flex items-center justify-between lg:justify-end p-4">
+        <NavbarLeft />
         <NavbarRight />
       </div>
 
