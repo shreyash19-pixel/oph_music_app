@@ -93,7 +93,7 @@ const ArtistLayout = () => {
 
       {/* Mobile Sidebar */}
       {showNav && (
-        <div className="lg:hidden w-[300px] md:relative">
+        <div className="lg:hidden md:relative">
           <Sidebar
             contents={contents}
             setContents={setContents}

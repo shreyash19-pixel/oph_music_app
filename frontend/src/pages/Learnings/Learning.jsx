@@ -3,6 +3,7 @@ import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const Learnings = () => {
   const [learnings, setLearnings] = useState([]);
@@ -44,12 +45,18 @@ const Learnings = () => {
   };
 
   return (
-    <div className="px-8">
+    <div className="px-[16px] md:px-8">
+      <div className="flex items-center justify-between lg:justify-end py-4 block md:hidden">
+        <NavbarLeft />
+        <NavbarRight />
+      </div>
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold mt-8 mb-12 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           LEARNINGS
         </h2>
-        <NavbarRight />
+        <div className="hidden md:block">
+          <NavbarRight />
+        </div>
       </div>
       {loadError && (
         <p className="text-amber-300/90 text-sm mb-4">{loadError}</p>
@@ -57,15 +64,15 @@ const Learnings = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {learnings.length > 0 &&
           learnings.map((learning) => (
-            <div key={learning.id} className="rounded-lg overflow-hidden">
+            <div key={learning.id} className="overflow-hidden">
               <div className="relative">
                 <img
                   src={learning.thumbnail_url}
                   alt="Thumbnail"
-                  className="w-full h-60 object-cover"
+                  className="w-full h-60 object-cover rounded-[30px]"
                 />
                 <button
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-2"
+                  className="absolute inset-0 flex items-center justify-center"
                   onClick={() => openModal(learning.video_url)}
                 >
                   <img
@@ -75,8 +82,8 @@ const Learnings = () => {
                   />
                 </button>
               </div>
-              <div className="text-center p-4">
-                <h3 className="text-lg font-medium text-white">
+              <div className="text-left md:text-center p-2 md:p-4">
+                <h3 className="text-[16px] md:text-lg font-medium text-white">
                   {learning.title}
                 </h3>
               </div>
