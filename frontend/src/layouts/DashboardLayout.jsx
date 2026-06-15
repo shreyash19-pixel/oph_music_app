@@ -22,8 +22,7 @@ const ArtistLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const dispatch = useDispatch();
   const [contents, setContents] = useState([]);
-
-  
+  const [showNav, setShowNav] = useState(false);
 
   // Add effect to handle body scrolling
   useEffect(() => {
@@ -49,7 +48,7 @@ const ArtistLayout = () => {
     // dispatch(getProfile());
     // dispatch(fetchNotifications());
     // dispatch(fetchIncome(headers));
-  },[headers]);
+  }, [headers]);
 
   return (
     <div className="flex relative">
@@ -67,7 +66,11 @@ const ArtistLayout = () => {
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <Sidebar contents = {contents} setContents = {setContents}  onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar
+          contents={contents}
+          setContents={setContents}
+          onClose={() => setIsSidebarOpen(false)}
+        />
       </div>
 
       {/* Backdrop - only shows when mobile sidebar is open */}
@@ -79,15 +82,32 @@ const ArtistLayout = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-[300px]">
-        <Sidebar contents = {contents} setContents = {setContents} />
+      <div className="hidden lg:block w-[300px] md:relative">
+        <Sidebar
+          contents={contents}
+          setContents={setContents}
+          showNav={showNav}
+          setShowNav={setShowNav}
+        />
       </div>
+
+      {/* Mobile Sidebar */}
+      {showNav && (
+        <div className="lg:hidden md:relative">
+          <Sidebar
+            contents={contents}
+            setContents={setContents}
+            showNav={showNav}
+            setShowNav={setShowNav}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1">
         {/* <Navbar onMenuClick={() => setIsSidebarOpen(true)} /> */}
         <main>
-          <Outlet context={{ contents, setContents }} />
+          <Outlet context={{ contents, setContents, showNav, setShowNav }} />
         </main>
       </div>
     </div>

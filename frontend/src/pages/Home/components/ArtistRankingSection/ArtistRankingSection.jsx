@@ -26,11 +26,12 @@ const months = [
 ];
 
 const ArtistRankingSection = ({ data, selectedMonth }) => {
-  const leaderboard = useSelector((state) => state.newRelease?.leaderboard) || [];
+  const leaderboard =
+    useSelector((state) => state.newRelease?.leaderboard) || [];
 
   const [currentMonth, setCurrentMonth] = useState("");
-  const {headers} = useArtist()
-  const navigate = useNavigate()
+  const { headers } = useArtist();
+  const navigate = useNavigate();
 
   function getCurrentMonth() {
     const date = new Date();
@@ -74,83 +75,179 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
       </div> */}
 
       {/* Header */}
-      <div className="flex items-center text-gray-300 text-sm uppercase mb-4 px-4 border-b border-gray-700">
+      <div className="hidden md:flex items-center text-gray-300 text-sm uppercase mb-4 px-4 border-b border-gray-700">
         <div className="flex-1">#</div>
         <div className="flex-1">Artist</div>
         <div className="flex-1">Stage Name</div>
-        <div className="flex-1 hidden sm:block">Location</div>
+        <div className="flex-1">Location</div>
         <div className="flex-1 text-center">Songs</div>
         <div className="flex-1 text-center">Reach</div>
-        <div className="flex-1 hidden sm:block text-center">Profile</div>
+        <div className="flex-1 text-center">Profile</div>
       </div>
 
-      {/* Rows */}
-      <div className="space-y-2">
-        {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
-          leaderboard.slice(0, LEADERBOARD_HOME_MAX_ROWS).map((artist, index) => (
+      <div className="sm:hidden space-y-6">
+        {leaderboard
+          ?.slice(0, LEADERBOARD_HOME_MAX_ROWS)
+          .map((artist, index) => (
             <div
               key={resolveLeaderboardOphId(artist) || index}
-              className="flex items-center px-4 py-3 rounded-lg hover:bg-gray-900/30 transition-colors"
+              className="border-b border-gray-800 pb-6"
               onClick={() => handleProfileClick(artist)}
             >
-              <div className="flex-1">
-                {artist.ranks === 1 ? (
-                  <span className="bg-[#ECAB43] text-black font-bold px-2 py-1">
-                    {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
-                  </span>
-                ) : artist.ranks === 2 ? (
-                  <span className="bg-[#2DDA89] text-black font-bold px-2 py-1">
-                    {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
-                  </span>
-                ) : artist.ranks === 3 ? (
-                  <span className="bg-[#5DC9DE] text-black font-bold px-2 py-1">
-                    {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
-                  </span>
-                ) : (
-                  <span className="text-base px-2 py-1 font-bold">
-                    {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
-                  </span>
-                )}
-              </div>
+              <div className="flex gap-3">
+                {/* Rank */}
+                <div className="flex flex-col">
+                  <span>#</span>
+                  <div>
+                    {artist.ranks === 1 ? (
+                      <span className="bg-[#ECAB43] text-black font-bold px-2 py-1">
+                        {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                      </span>
+                    ) : artist.ranks === 2 ? (
+                      <span className="bg-[#2DDA89] text-black font-bold px-2 py-1">
+                        {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                      </span>
+                    ) : artist.ranks === 3 ? (
+                      <span className="bg-[#5DC9DE] text-black font-bold px-2 py-1">
+                        {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                      </span>
+                    ) : (
+                      <span className="text-base font-bold">
+                        {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              <div className="flex-1">
-                <div className="w-10 h-10 rounded-full overflow-hidden">
+                {/* Image */}
+                <div className="w-14 h-14 rounded-full overflow-hidden">
                   <img
                     src={artist.personal_photo}
                     alt={artist.stage_name}
                     className="w-full h-full object-cover"
                   />
                 </div>
-              </div>
 
-              <div className="flex-1 text-gray-300 truncate">
-                {artist.stage_name}
-              </div>
-              <div className="flex-1 text-gray-300 hidden sm:block">
-                {artist.location}
-              </div>
-              <div className="flex-1 text-center text-gray-300">
-                {artist.song_count}
-              </div>
-              <div className="flex-1 text-center text-gray-300">
-                {formatReach(
-                  artist.total_views ?? artist.Total_views ?? artist.totalViews
-                )}
-              </div>
-              {/* Hidden on small screens */}
-              <div className="flex-1 items-center justify-center sm:flex hidden">
-                <button
-                  className="px-4 py-2 text-sm text-white rounded-full bg-[#6F4FA0] hover:text-black transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleProfileClick(artist);
-                  }}
-                >
-                  View Profile
-                </button>
+                {/* Details */}
+                <div className="flex-1 grid grid-cols-2 gap-y-3 text-xs">
+                  <div>
+                    <p className="text-gray-500 uppercase">Artist</p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 uppercase">Stage Name</p>
+                    <p className="font-semibold">{artist.stage_name}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 uppercase">Location</p>
+                    <p className="font-semibold">{artist.location}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 uppercase">Songs</p>
+                    <p className="font-semibold">{artist.song_count}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 uppercase">Reach</p>
+                    <p className="font-semibold">
+                      {formatReach(
+                        artist.total_views ??
+                          artist.Total_views ??
+                          artist.totalViews,
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      className="px-4 py-2 text-xs text-white rounded-full bg-[#6F4FA0]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProfileClick(artist);
+                      }}
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          ))
+          ))}
+      </div>
+
+      {/* Rows */}
+      <div className="space-y-2 hidden sm:block">
+        {leaderboard && Array.isArray(leaderboard) && leaderboard.length > 0 ? (
+          leaderboard
+            .slice(0, LEADERBOARD_HOME_MAX_ROWS)
+            .map((artist, index) => (
+              <div
+                key={resolveLeaderboardOphId(artist) || index}
+                className="flex items-center px-4 py-3 rounded-lg hover:bg-gray-900/30 transition-colors"
+                onClick={() => handleProfileClick(artist)}
+              >
+                <div className="flex-1">
+                  {artist.ranks === 1 ? (
+                    <span className="bg-[#ECAB43] text-black font-bold px-2 py-1">
+                      {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                    </span>
+                  ) : artist.ranks === 2 ? (
+                    <span className="bg-[#2DDA89] text-black font-bold px-2 py-1">
+                      {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                    </span>
+                  ) : artist.ranks === 3 ? (
+                    <span className="bg-[#5DC9DE] text-black font-bold px-2 py-1">
+                      {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                    </span>
+                  ) : (
+                    <span className="text-base px-2 py-1 font-bold">
+                      {artist.ranks < 10 ? "0" + artist.ranks : artist.ranks}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                    <img
+                      src={artist.personal_photo}
+                      alt={artist.stage_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex-1 text-gray-300 truncate">
+                  {artist.stage_name}
+                </div>
+                <div className="flex-1 text-gray-300 hidden sm:block">
+                  {artist.location}
+                </div>
+                <div className="flex-1 text-center text-gray-300">
+                  {artist.song_count}
+                </div>
+                <div className="flex-1 text-center text-gray-300">
+                  {formatReach(
+                    artist.total_views ??
+                      artist.Total_views ??
+                      artist.totalViews,
+                  )}
+                </div>
+                {/* Hidden on small screens */}
+                <div className="flex-1 items-center justify-center sm:flex hidden">
+                  <button
+                    className="px-4 py-2 text-sm text-white rounded-full bg-[#6F4FA0] hover:text-black transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProfileClick(artist);
+                    }}
+                  >
+                    View Profile
+                  </button>
+                </div>
+              </div>
+            ))
         ) : (
           <p className="text-gray-400 text-center">
             No data available for this month.
