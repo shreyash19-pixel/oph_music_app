@@ -11,6 +11,7 @@ import {
   formatRegistrationEndDate,
 } from "../../utils/date";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 export default function Events() {
   const { headers, ophid } = useArtist();
@@ -134,26 +135,36 @@ export default function Events() {
 
   const renderEventsSection = (events, sectionTitle) => (
     <>
-      <div className="flex justify-between items-center  mb-8">
-        <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-8 mb-8">
-          {sectionTitle}
-        </h2>
-        {sectionTitle.includes("Events") && <NavbarRight />}
+      <div className="w-full flex flex-col md:flex-row justify-between lg:items-center mb-8">
+        <div className="flex items-center justify-between lg:justify-end py-4 block md:hidden px-[16px]">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
+        <div className="w-full flex justify-between items-center mt-0 md:mt-8 px-[16px] md:px-0">
+         <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-0 mb-0">
+            {sectionTitle}
+          </h2>
+          {sectionTitle.includes("Events") && (
+            <div className="hidden md:block">
+              <NavbarRight />
+            </div>
+          )}
+        </div>
       </div>
-      <div className="space-y-6">
+      <div className="space-y-6 mb-[8px]">
         {events.map((event, ind) => {
           const hashtagsArray = event.hashtags?.split(",") || [];
           const isPrevious = new Date(event.dateTime) <= new Date();
           return (
             <div
               key={ind}
-              className={`flex md:mb-0 mb-5 gap-6 flex-col md:flex-row rounded-lg p-2 md:p-4 transition-colors ${
+              className={`flex md:mb-0 mb-5 gap-6 flex-col md:flex-row rounded-lg p-0 md:p-2 transition-colors ${
                 isPrevious
-                  ? "bg-gray-800 opacity-50 cursor-not-allowed grayscale"
+                  ? "bg-none md:bg-gray-800 opacity-50 cursor-not-allowed grayscale"
                   : "hover:bg-gray-900 hover:cursor-pointer"
               }`}
             >
-              <div className="md:w-[340px] px-6 md:px-0 w-[96vw] h-[250px] flex-shrink-0">
+              <div className="md:w-[340px] px-[16px] md:px-0 w-[100vw] h-[250px] flex-shrink-0">
                 <img
                   src={event.image}
                   alt={event.competitionName}
@@ -222,19 +233,19 @@ export default function Events() {
                 </div>
                 <div>
                   {isPrevious ? (
-                    <button className="px-6 py-2 bg-gray-700 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed">
+                    <button className="px-6 py-2 bg-gray-700 text-gray-300 rounded-full text-sm font-bold md:font-medium cursor-not-allowed w-full md:w-fit">
                       Closed
                     </button>
                   ) : isArtistRegistered(event.event_id) ? (
-                    <button
-                      className="px-6 py-2 bg-cyan-400 text-gray-900 hover:bg-cyan-200 rounded-full text-sm font-medium cursor-not-allowed"
+                    <button 
+                      className="px-6 py-2 bg-cyan-400 text-gray-900 hover:bg-cyan-200 rounded-full text-sm font-bold md:font-medium cursor-not-allowed w-full md:w-fit"
                       disabled
                     >
                       Registered
                     </button>
                   ) : isRegistrationNotStartedYetByDateTime(event) ? (
                     <button
-                      className="px-6 py-2 bg-gray-600 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed"
+                      className="px-6 py-2 bg-gray-600 text-gray-300 rounded-full text-sm font-bold md:font-medium cursor-not-allowed w-full md:w-fit"
                       disabled
                       title={`Registration opens at ${formatRegistrationStartDate(event.registrationStart)}`}
                     >
@@ -247,13 +258,13 @@ export default function Events() {
                         e.preventDefault();
                         handleReg(event);
                       }}
-                      className="px-6 py-2 bg-cyan-400 text-gray-900 rounded-full text-sm font-medium hover:bg-cyan-200 transition-colors"
+                      className="px-6 py-2 bg-cyan-400 text-gray-900 rounded-full text-sm font-bold md:font-medium hover:bg-cyan-200 transition-colors w-full md:w-fit"
                     >
                       Register
                     </button>
                   ) : (
                     <button
-                      className="px-6 py-2 bg-gray-700 text-gray-300 rounded-full text-sm font-medium cursor-not-allowed"
+                      className="px-6 py-2 bg-gray-700 text-gray-300 rounded-full text-sm font-bold md:font-medium cursor-not-allowed w-full md:w-fit"
                       title={`Registration closed at ${formatRegistrationEndDate(event.registrationEnd)}`}
                     >
                       Closed
