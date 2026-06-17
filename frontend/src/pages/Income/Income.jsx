@@ -4,6 +4,7 @@ import axiosApi from "../../conf/axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 export default function IncomeWithdrawal() {
   const { headers, ophid } = useArtist();
@@ -299,17 +300,23 @@ export default function IncomeWithdrawal() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6">
-      <div className="container space-y-6">
-        <div className="flex justify-between items-center  mb-8">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] md:px-8 py-[16px] md:py-6">
+      <div className="container">
+        <div className="flex items-center justify-between lg:justify-end mb-[16px] block md:hidden">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
+        <div className="flex justify-between items-center mb-[12px] md:mb-8">
           <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             INCOME
           </h2>
-          <NavbarRight />
+          <div className="hidden md:block">
+            <NavbarRight />
+          </div>
         </div>
 
         {/* Available Amount Card */}
-        <div className="bg-[#6F4FA0] rounded-lg p-6">
+        <div className="bg-[#6F4FA0] rounded-lg p-6 mb-[16px]">
           <div className="space-y-1">
             <p className="text-sm text-purple-200">Available Amount:</p>
             <p className="text-2xl font-bold">
@@ -341,7 +348,7 @@ export default function IncomeWithdrawal() {
         </div>
 
         {/* Bank Details */}
-        <div className="space-y-4">
+        <div className="space-y-4 mb-[16px]">
           <h3 className="text-lg font-semibold text-cyan-400">Bank Details</h3>
           <div className="flex gap-2">
             <label className="text-sm text-gray-400">Bank Name:</label>
@@ -382,8 +389,8 @@ export default function IncomeWithdrawal() {
         </div>
 
         {/* Withdrawal Form */}
-        <form onSubmit={submitWithdraw} className="max-w-2xl space-y-6">
-          <div className="flex gap-4">
+        <form onSubmit={submitWithdraw} className="max-w-2xl space-y-6 mb-[16px]">
+          <div className="flex gap-4 flex flex-col md:flex-row">
             <div className="flex-1">
               <label className="block text-sm text-gray-400 mb-2">
                 Withdraw Amount: <span className="text-red-500">*</span>
@@ -425,7 +432,7 @@ export default function IncomeWithdrawal() {
                 parseFloat(withdrawAmount) >
                   (income.availableAmount ?? income.income)
               }
-              className={`self-end px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={` self-start w-full md:self-end md:w-fit rounded-full px-6 py-3 md:rounded-lg font-bold md:font-medium transition-colors ${
                 withdrawAmount &&
                 income &&
                 parseFloat(withdrawAmount) >
