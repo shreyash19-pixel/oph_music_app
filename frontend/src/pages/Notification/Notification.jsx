@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import Noti from "../../../public/assets/images/noti.png";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const Notification = () => {
   const { headers, ophid, setHasNewNotification } = useArtist();
@@ -106,14 +107,18 @@ const Notification = () => {
 
   return (
     <div className="min-h-[calc(100vh-70px)] text-white relative">
-      
-      <div className="px-8 py-6">
-        <div className="flex items-center justify-between mt-[14px] mb-[14px]">
-          <h1 className="text-3xl font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-            NOTIFICATION
-          </h1>
-
+      <div className="px-[16px] md:px-8">
+        <div className="flex items-center justify-between lg:justify-end py-4 block md:hidden">
+          <NavbarLeft />
           <NavbarRight />
+        </div>
+        <div className="flex justify-between items-center">
+          <h2 className="text-3xl font-bold mt-8 mb-12 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+            NOTIFICATION
+          </h2>
+          <div className="hidden md:block">
+            <NavbarRight />
+          </div>
         </div>
 
         {/* NEW NOTIFICATIONS */}
