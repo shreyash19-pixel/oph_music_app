@@ -147,8 +147,8 @@ const TipsSlider = () => {
           </p>
         </div>
 
-        {/* Slider */}
-        <div className="relative px-4 mb-16">
+        {/* Desktop - Original Slider */}
+        <div className="hidden md:block relative px-4 mb-16">
           <Slider ref={sliderRef} {...settings} className="tips-slider">
             {tips.map((tip) => (
               <div key={tip.id} className="px-2">
@@ -183,7 +183,7 @@ const TipsSlider = () => {
                     src={
                       tip.thumbnail_url ||
                       "https://via.placeholder.com/300x400?text=No+Image"
-                    } // ✅ safe fallback
+                    }
                     fallback={<Shimmer width={300} height={400} />}
                     alt={tip.title || "Podcast"}
                     NativeImgProps={{
@@ -195,6 +195,45 @@ const TipsSlider = () => {
               </div>
             ))}
           </Slider>
+        </div>
+
+        {/* Mobile - Reels Grid */}
+        <div className="block md:hidden relative px-4 mb-16">
+          <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
+            {tips.map((tip) => (
+              <div key={tip.id} className="relative group flex-shrink-0">
+                <div
+                  className="relative rounded-xl overflow-hidden aspect-[9/16] cursor-pointer hover:scale-[1.02] transition-all duration-300 bg-gray-900 w-[200px]"
+                  onClick={() => openModal(tip.video_url)}
+                >
+                  {/* Video Thumbnail */}
+                  <Image
+                    src={
+                      tip.thumbnail_url ||
+                      "https://via.placeholder.com/200x355/1a1a1a/5DC9DE?text=Video"
+                    }
+                    fallback={<Shimmer width={200} height={355} />}
+                    alt={tip.title || "Reel"}
+                    NativeImgProps={{
+                      className: "w-full h-full object-cover",
+                    }}
+                  />
+                  
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                  
+                  {/* Play Button Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-[#5DC9DE]/90 rounded-full p-4 backdrop-blur-sm">
+                      <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -208,8 +247,9 @@ const TipsSlider = () => {
             className="relative bg-black rounded-lg shadow-lg max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close Button - Mobile Only */}
             <button
-              className="absolute top-4 right-4 text-white text-3xl font-bold z-50 hover:opacity-80"
+              className="md:hidden absolute -top-20 right-12 w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-full text-white text-3xl font-bold z-[70] hover:bg-white/30 transition-all border border-white/30"
               onClick={closeModal}
             >
               &times;

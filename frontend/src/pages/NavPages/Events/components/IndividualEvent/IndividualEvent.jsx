@@ -113,26 +113,20 @@ function EventRegistrationModal({
   };
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg max-w-md w-full mx-4 overflow-visible">
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="relative bg-gray-800 rounded-lg w-[90%] sm:w-full sm:max-w-md max-h-[85vh] overflow-y-auto mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-3 p-5">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">Register for Event</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
+            <h2 className="text-sm sm:text-xl font-bold text-white">Register for Event</h2>
+            <button type="button" onClick={onClose} className="text-gray-400 hover:text-white text-sm">✕</button>
           </div>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
               name="first_name"
               placeholder="First Name*"
               required
-              className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              className="w-full px-3 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white"
               value={formData.first_name}
               onChange={handleChange}
             />
@@ -141,35 +135,31 @@ function EventRegistrationModal({
               name="last_name"
               placeholder="Last Name*"
               required
-              className="flex-1 w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              className="w-full px-3 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white"
               value={formData.last_name}
               onChange={handleChange}
             />
           </div>
-          <div>
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address*"
-              required
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              name="instagram_handle"
-              placeholder="username or https://instagram.com/username"
-              required
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
-              value={formData.instagram_handle}
-              onChange={handleChange}
-            />
-          </div>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email Address*"
+            required
+            className="w-full px-3 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white"
+            value={formData.email}
+            onChange={handleChange}
+          />
+          <input
+            type="text"
+            name="instagram_handle"
+            placeholder="username or https://instagram.com/username"
+            required
+            className="w-full px-3 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white"
+            value={formData.instagram_handle}
+            onChange={handleChange}
+          />
           <div className="flex gap-2">
-            <select className="w-16 p-2 border border-gray-600 rounded bg-gray-700 text-white">
+            <select className="w-16 px-2 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white appearance-none text-center">
               <option value="+91">+91</option>
             </select>
             <input
@@ -177,31 +167,34 @@ function EventRegistrationModal({
               name="phone"
               placeholder="Phone Number*"
               required
-              className="flex-1 p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              className="flex-1 px-3 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white"
               value={formData.phone}
               onChange={handleChange}
             />
           </div>
-          <div>
+          <div className="relative w-full">
             <select
               name="profession_id"
               required
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              className="w-full px-3 py-2 text-sm border border-gray-600 rounded-md bg-[#2d3748] text-white appearance-none pr-8"
               value={formData.profession_id || ""}
               onChange={handleChange}
             >
               <option value="">Select profession</option>
               {professions?.map((profession, ind) => (
-                <option key={profession.id ?? ind} value={profession.id}>
-                  {profession.name}
-                </option>
+                <option key={profession.id ?? ind} value={profession.id}>{profession.name}</option>
               ))}
             </select>
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
           {isRegistrationOpen() ? (
             <button
               type="submit"
-              className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 px-4 rounded"
+              className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium py-2 text-sm px-4 rounded-md"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Submitting..." : "Submit"}
@@ -210,7 +203,7 @@ function EventRegistrationModal({
             <button
               type="submit"
               disabled
-              className="w-full bg-cyan-400 text-black font-medium py-2 px-4 rounded opacity-50 cursor-not-allowed"
+              className="w-full bg-cyan-400 text-black font-medium py-2 text-sm px-4 rounded-md opacity-50 cursor-not-allowed"
             >
               Registration Expired
             </button>
@@ -508,26 +501,14 @@ const IndividualEvent = () => {
                   ₹{singleEvent.fees}
                 </div>
               </div>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className={`bg-[#5DC9DE] text-black text-sm lg:text-2xl px-6 py-3 rounded-full font-semibold drop-shadow-[0_0_15px_rgba(34,211,238,1)] ${
-                  isEventInFuture && isRegistrationOpenByDateTime(singleEvent)
-                }`}
-                disabled={
-                  !isEventInFuture || !isRegistrationOpenByDateTime(singleEvent)
-                }
-                title={
-                  !isEventInFuture
-                    ? "Event has ended"
-                    : isRegistrationNotStartedYetByDateTime(singleEvent)
-                      ? `Registration opens at ${formatRegistrationStartDate(singleEvent.registrationStart || singleEvent.regn_start)}`
-                      : !isRegistrationOpenByDateTime(singleEvent)
-                        ? `Registration closed at ${formatRegistrationEndDate(singleEvent.registrationEnd || singleEvent.regn_end)}`
-                        : undefined
-                }
-              >
-                Book Your Spot Now
-              </button>
+              {isRegistrationOpenByDateTime(singleEvent) && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-[#5DC9DE] text-black text-sm lg:text-2xl px-6 py-3 rounded-full font-semibold drop-shadow-[0_0_15px_rgba(34,211,238,1)]"
+                >
+                  Book Your Spot Now
+                </button>
+              )}
             </div>
           </div>
 

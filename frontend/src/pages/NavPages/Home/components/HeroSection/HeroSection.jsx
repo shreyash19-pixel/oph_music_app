@@ -17,7 +17,7 @@ function HeroSection() {
     }
   }, []);
   return (
-    <div className="w-full relative sm:pt-0 py-5 md:py-10 lg:py-20 flex items-center justify-start bg-cover bg-center ps-8 min-h-screen">
+    <div className="w-full relative sm:pt-0 py-10 md:py-20 flex items-center justify-center sm:justify-start bg-cover bg-center px-6 sm:px-8 md:px-16 min-h-screen">
       {/* Backdrop should be here */}
       <span className="absolute inset-0 z-0">
         <img
@@ -28,50 +28,39 @@ function HeroSection() {
       </span>
 
       {/* Content container */}
-      <div className="container pt-5 mx-auto mt-24 mb-24 relative z-10">
-        <div className="max-w-2xl px-4 md:px-0 pt-4 md:pt-0">
-          <p className="text-lg opacity-75 text-[#9BA3B7] mb-1">
-            Now you don’t need to change your career in music
+      <div className="container pt-5 mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 relative z-10">
+        <div className="max-w-2xl w-full text-center sm:text-left pt-4 md:pt-0">
+          <p className="text-sm sm:text-base md:text-lg opacity-75 text-[#9BA3B7] mb-2 tracking-wide uppercase">
+            We support independent artists.
           </p>
 
           <div className="relative">
-            {/* Background Text */}
-            <h1 className="absolute inset-0 text-[#6F4FA0] top-1 left-1 text-4xl lg:text-7xl leading-tight font-bold">
-              YOUR MUSIC <br />
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl text-white leading-tight font-black mb-6 relative z-10 tracking-tight">
               YOUR RIGHTS <br />
-              YOUR STAGES
-            </h1>
-
-            {/* Foreground Text */}
-            <h1 className="text-4xl lg:text-7xl text-white leading-tight font-bold mb-6 relative z-10">
               YOUR MUSIC <br />
-              YOUR RIGHTS <br />
               YOUR STAGES
             </h1>
           </div>
 
-          <p className="text-sm lg:text-lg opacity-90 text-[#9BA3B7] mb-8">
-            OPH Community is a technology-driven platform that empowers artists
-            with direct access to networking and collaboration. A trusted
-            community platform that provides everything an artist needs to grow
-            – all by simply joining the online music community. This opportunity
-            is exclusively available to the first 1,000 artists.
+          <p className="text-sm sm:text-base md:text-lg opacity-90 text-[#9BA3B7] mb-8 max-w-lg mx-auto sm:mx-0">
+            We are a community that supports independent artists to grow,
+            collaborate, and turn their music dreams into reality.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start relative z-10">
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-4 relative z-10 w-full max-w-md mx-auto sm:mx-0">
             <button
               onClick={() => navigate("/find-your-collaborator")}
-              className="bg-[#5DC9DE] hover:font-bold transition delay-300 w-full lg:w-[300px] m-1 text-sm lg:text-base h-[40px] lg:h-[50px] text-black font-semibold py-3 px-8 rounded-full"
+              className="bg-[#5DC9DE] hover:bg-[#4db8cc] hover:scale-105 active:scale-95 transition-all duration-300 w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base text-black font-bold rounded-full text-center shadow-lg"
             >
-              FIND TO COLLABORATE
+              Grab the Opportunity Now
             </button>
             <button
               onClick={() => {
                 window.location.href = "/auth/signup";
               }}
-              className="bg-[#5DC9DE] hover:font-bold transition delay-300 w-full lg:w-[300px] m-1 text-sm lg:text-base h-[40px] lg:h-[50px] text-black font-semibold py-3 px-8 rounded-full"
+              className="bg-[#22252A] hover:bg-[#2c3037] border border-gray-700 hover:scale-105 active:scale-95 transition-all duration-300 w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base text-white font-bold rounded-full text-center shadow-lg"
             >
-              START MY JOURNEY
+              Sign Up
             </button>
           </div>
         </div>

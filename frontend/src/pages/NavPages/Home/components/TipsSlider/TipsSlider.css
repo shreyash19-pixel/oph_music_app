@@ -3,10 +3,36 @@
   padding: 20px 0;
   transform: rotate(-2.5deg);
 }
+/* Mobile optimization - remove tilt on small screens */
+@media (max-width: 768px) {
+  .tips-slider {
+    transform: rotate(0deg);
+    margin: 0;
+    padding: 16px 0;
+  }
+}
 
+/* Tablet optimization */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tips-slider {
+    transform: rotate(-1.5deg);
+    margin: 0 -4px;
+  }
+}
+
+/* Large screen optimization */
+@media (min-width: 1025px) {
+  .tips-slider {
+    transform: rotate(-2.5deg);
+    margin: 0 -8px;
+  }
+}
+
+@media (max-width: 768px) {
 .tips-slider .slick-track {
   display: flex;
   gap: 2px;
+}
 }
 
 .tips-slider .slick-slide {
@@ -24,6 +50,12 @@
   transform: scale(1.05);
 }
 
-video {
-  border-radius: 8px;
+/* Hide scrollbars for clean slider look */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
