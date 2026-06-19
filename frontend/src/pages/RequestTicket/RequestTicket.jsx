@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useArtist } from "../auth/API/ArtistContext";
 import axios from "axios";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const TICKET_KEY = "ticket_state";
 const STATUS_MAP = {
@@ -303,17 +304,23 @@ export default function RequestTicketForm() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-6 p-6">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] lg:px-6 lg:p-6">
       <div className="w-full">
-        <div className="flex justify-between items-center  mb-8">
+        <div className="flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
+        <div className="flex justify-between items-center mb-[16px] mb-8">
           <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             REQUEST TICKET
           </h2>
-          <NavbarRight />
+          <div className="hidden lg:block">
+            <NavbarRight />
+          </div>
         </div>
 
         {/* Submitted Requests List */}
-        <div className=" p-4 mb-6">
+        <div className="px-0 mb-[24px] lg:p-4 lg:mb-6">
           <h2 className="text-lg font-semibold mb-4">Submitted Requests</h2>
           {tickets?.length > 0 ? (
             <div className="space-y-3">
@@ -359,7 +366,7 @@ export default function RequestTicketForm() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-full lg:max-w-xl">
           {/* Profile Code */}
           <div className="space-y-2">
             <label className="block">

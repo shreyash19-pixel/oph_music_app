@@ -45,8 +45,8 @@ const Learnings = () => {
   };
 
   return (
-    <div className="px-[16px] md:px-8">
-      <div className="flex items-center justify-between lg:justify-end py-4 block md:hidden">
+    <div className="px-[16px] lg:px-8">
+      <div className="flex items-center justify-between lg:justify-end py-4 block lg:hidden">
         <NavbarLeft />
         <NavbarRight />
       </div>
@@ -54,7 +54,7 @@ const Learnings = () => {
         <h2 className="text-3xl font-bold mt-8 mb-12 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           LEARNINGS
         </h2>
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <NavbarRight />
         </div>
       </div>

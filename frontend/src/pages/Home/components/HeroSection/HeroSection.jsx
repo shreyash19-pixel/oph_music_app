@@ -164,7 +164,7 @@ const HeroSection = ({
   // }, [location.state]);
 
   return (
-    <div className="space-y-6 px-8 p-4">
+    <div className="px-[16px] py-[16px] space-y-6 md:px-8 md:p-4">
       {/* Video Preview */}
       <div className="relative h-[30vh] lg:h-[50vh] w-full rounded-lg overflow-hidden">
         {thumbnail && (

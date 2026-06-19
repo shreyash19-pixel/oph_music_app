@@ -9,6 +9,7 @@ import {
 } from "../../utils/artistHash";
 
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const ARTIST_SPOTLIGHT_EMPTY_NOTE = "No Note Provided Yet.";
 const LEADERBOARD_UI_MAX_ROWS = 10;
@@ -428,14 +429,20 @@ export default function ArtistSpotlight() {
         </div>
       )}
       {!isLoading && !error && (
-        <div className="min-h-[calc(100vh-70px)] text-gray-100 p-0 lg:p-6">
+        <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] lg:p-6">
           <div className="max-w-8xl mx-auto space-y-8">
             {/* Artist Header */}
-            <div className="flex justify-between items-center  mb-8">
+            <div className="flex justify-between flex-col lg:flex-row mb-8">
+              <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+                <NavbarLeft />
+                <NavbarRight />
+              </div>
               <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 ARTIST SPOTLIGHT
               </h2>
-              <NavbarRight />
+              <div className="hidden lg:block">
+                <NavbarRight />
+              </div>
             </div>
             <div className="flex justify-start items-center gap-4 px-6">
               {/* Artist Image with Rank Badge */}
@@ -539,12 +546,14 @@ export default function ArtistSpotlight() {
             )}
 
             {/* Note Section */}
-            {activeTab === "leaderboard" && <div className="space-y-4 lg:px-0 px-6">
-              <h3 className="text-xl font-semibold text-cyan-400">
-                Note (How to improve ranking):
-              </h3>
-              <p className="text-gray-500 whitespace-pre-line">{notes}</p>
-            </div>}
+            {activeTab === "leaderboard" && (
+              <div className="space-y-4 lg:px-0 px-6">
+                <h3 className="text-xl font-semibold text-cyan-400">
+                  Note (How to improve ranking):
+                </h3>
+                <p className="text-gray-500 whitespace-pre-line">{notes}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

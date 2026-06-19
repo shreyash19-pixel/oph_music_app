@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import NavbarRight from "../../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../../components/Navbar/NavbarLeft";
 
 const REGISTER_SONG_STATE_KEY = "registerSongState";
 const SONG_DATA_KEY = "songData"; // New key for storing song data in sessionStorage
@@ -487,7 +488,8 @@ export default function RegisterSongForm() {
       const msg = error?.response?.data?.message;
       if (error?.response?.status === 409) {
         toast.error(
-          msg || "This release date is no longer available. Please pick another date.",
+          msg ||
+            "This release date is no longer available. Please pick another date.",
         );
         const y = bookingDateToYMD(updatedFormData.release_date);
         if (y) setReleaseDateTakenYmd(y);
@@ -533,7 +535,8 @@ export default function RegisterSongForm() {
       const msg = error?.response?.data?.message;
       if (error?.response?.status === 409) {
         toast.error(
-          msg || "This release date is no longer available. Please pick another date.",
+          msg ||
+            "This release date is no longer available. Please pick another date.",
         );
         const y = bookingDateToYMD(updatedFormData.release_date);
         if (y) setReleaseDateTakenYmd(y);
@@ -580,7 +583,8 @@ export default function RegisterSongForm() {
       const msg = error?.response?.data?.message;
       if (error?.response?.status === 409) {
         toast.error(
-          msg || "This release date is no longer available. Please pick another date.",
+          msg ||
+            "This release date is no longer available. Please pick another date.",
         );
         const y = bookingDateToYMD(updatedFormData.release_date);
         if (y) setReleaseDateTakenYmd(y);
@@ -897,16 +901,16 @@ export default function RegisterSongForm() {
           }}
         />
         {releaseDateCheckLoading && formData.release_date && (
-          <span className="text-gray-400 text-sm">Checking date availability…</span>
+          <span className="text-gray-400 text-sm">
+            Checking date availability…
+          </span>
         )}
         {isBlockedDate(formData.release_date) && (
           <span className="text-red-500 text-sm">
             This date is not available (already on the release calendar). Please
             choose another date.
             <Link to={"/dashboard/time-calendar"}>
-              <span className="underline ms-2">
-                View calendar
-              </span>
+              <span className="underline ms-2">View calendar</span>
             </Link>
           </span>
         )}
@@ -924,7 +928,7 @@ export default function RegisterSongForm() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] lg:px-8 lg:p-6">
       {showSuccessMessage ? (
         <div className="min-h-[calc(100vh-70px)] bg-opacity-70 z-10 text-white flex flex-col items-center justify-center p-6">
           <div className="text-center flex justify-center items-center flex-col space-y-6">
@@ -947,13 +951,19 @@ export default function RegisterSongForm() {
         </div>
       ) : (
         <div className="w-full">
-          <div className="flex justify-between items-center  mb-8">
+          <div className="flex justify-between flex-col lg:flex-row mb-8">
+            <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+              <NavbarLeft />
+              <NavbarRight />
+            </div>
             <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
               {isUpdateReleaseDateOnly
                 ? "UPDATE RELEASE DATE"
                 : "REGISTER YOUR SONG"}
             </h2>
-             <NavbarRight />
+            <div className="hidden lg:block">
+              <NavbarRight />
+            </div>
           </div>
           {isUpdateReleaseDateOnly && (
             <div className="mb-6 p-4 rounded-lg bg-amber-900/30 border border-amber-500/50 text-amber-200">

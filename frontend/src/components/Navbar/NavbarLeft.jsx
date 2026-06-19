@@ -7,7 +7,7 @@ const NavbarLeft = () => {
   const { showNav, setShowNav } = useOutletContext();
 
   return (
-    <div className="flex items-center justify-center gap-[10px] md:hidden">
+    <div className="flex items-center justify-center gap-[10px] lg:hidden">
       <button onClick={() => setShowNav(!showNav)}>
         <img src={Menu} />
       </button>

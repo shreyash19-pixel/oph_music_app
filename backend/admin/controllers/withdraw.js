@@ -49,7 +49,7 @@ const getWithdraw = async (req, res) => {
       res.status(200).json({ success: true, data: tv });
     } catch (error) {
       console.error("Error fetching tv based on withdrawal_id:", error);
-      console.log("Controller - withdrawal_id:", withdrawal_id);
+      // console.log("Controller - withdrawal_id:", withdrawal_id);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });

@@ -135,17 +135,17 @@ export default function Events() {
 
   const renderEventsSection = (events, sectionTitle) => (
     <>
-      <div className="w-full flex flex-col md:flex-row justify-between lg:items-center mb-8">
-        <div className="flex items-center justify-between lg:justify-end py-4 block md:hidden px-[16px]">
+      <div className="w-full flex flex-col lg:flex-row justify-between lg:items-center mb-8">
+        <div className="flex items-center justify-between lg:justify-end py-4 block lg:hidden px-[16px]">
           <NavbarLeft />
           <NavbarRight />
         </div>
-        <div className="w-full flex justify-between items-center mt-0 md:mt-8 px-[16px] md:px-0">
+        <div className="w-full flex justify-between items-center mt-0 lg:mt-8 px-[16px] lg:px-0">
          <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-0 mb-0">
             {sectionTitle}
           </h2>
           {sectionTitle.includes("Events") && (
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <NavbarRight />
             </div>
           )}

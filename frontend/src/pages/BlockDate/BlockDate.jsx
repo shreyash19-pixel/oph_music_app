@@ -6,6 +6,7 @@ import getToken from "../../utils/getToken";
 import { useArtist } from "../auth/API/ArtistContext";
 import { use } from "react";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 export default function BlockDateForm() {
   const { headers, ophid } = useArtist();
@@ -112,13 +113,19 @@ export default function BlockDateForm() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] lg:px-8 lg:py-6">
       <div className="w-full">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col lg:flex-row justify-between mb-8">
+          <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+            <NavbarLeft />
+            <NavbarRight />
+          </div>
           <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             BLOCK DATE
           </h2>
-          <NavbarRight />
+          <div className="hidden lg:block">
+            <NavbarRight />
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
           <div className="space-y-2">

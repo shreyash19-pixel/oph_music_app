@@ -11,8 +11,8 @@ const TvUser = async (req, res) => {
     try {
       const Tv = await tvModel.TvUser(OPH_ID);
       res.status(200).json({ success: true, data: Tv });
-      console.log("req.query:", Tv);
-      console.log("Controller - ophID:", OPH_ID);
+      // console.log("req.query:", Tv);
+      // console.log("Controller - ophID:", OPH_ID);
     } catch (error) {
       console.error("Error fetching Tv:", error);
       console.log("Controller - ophID:", OPH_ID);

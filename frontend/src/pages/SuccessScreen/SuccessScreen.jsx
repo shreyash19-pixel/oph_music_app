@@ -20,7 +20,7 @@ const SuccessScreen = () => {
         <div className="rounded-full w-32 h-32 flex items-center justify-center mb-4">
           <img src={successIcon} alt="Success" />
         </div>
-        <h2 className="text-4xl font-bold mb-8">{heading || "Success!"}</h2>
+        <h2 className="px-[12px] text-center text-3xl md:text-4xl font-bold mb-8">{heading || "Success!"}</h2>
         {btnText && btnText != "" && <PrimaryBtn onClick={handleButtonClick}>
           {btnText }
         </PrimaryBtn>}

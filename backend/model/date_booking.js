@@ -110,7 +110,8 @@ const getAllBookings = async () => {
         c.project_type,
         c.created_at,
         c.updated_at,
-        COALESCE(ud.full_name, '') as full_name
+        COALESCE(ud.full_name, '') as full_name,
+        COALESCE(ud.personal_photo, '') as personal_photo
       FROM calender c 
       LEFT JOIN user_details ud ON c.oph_id = ud.oph_id`
     );

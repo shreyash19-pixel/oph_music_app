@@ -191,7 +191,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
   }, [location.state]);
 
   return (
-    <div className=" text-white overflow-hidden px-8 py-6 sm:my-10">
+    <div className=" text-white overflow-hidden px-[16px] py-[0] md:px-8 md:py-6 my-[14px] md:my-10">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Events Section */}
         <div className="flex flex-col min-w-0">

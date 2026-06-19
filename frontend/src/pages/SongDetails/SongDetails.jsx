@@ -10,6 +10,8 @@ import { isTomorrow, differenceInDays } from "date-fns";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 import { useArtist } from "../auth/API/ArtistContext";
+import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const SongDetails = () => {
   const [data, setData] = useState(null);
@@ -137,28 +139,37 @@ const SongDetails = () => {
     : `Your Song Is Gonna Release In ${daysUntilRelease} Days`;
 
   return (
-    <div className="text-white mt-[14px] mt-[14px] px-4 py-4 sm:px-5 sm:py-5 ml-[16px] mr-[16px]  p-8 sm:p-12 max-w-[1500px]">
+    <div className="text-white  px-[16px] py-[16px]  lg:px-8 lg:py-7 max-w-[1500px]">
       {/* SONG DETAILS */}
 
-      <h2 className="text-3xl mb-8 font-bold text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-        SONG DETAILS
-      </h2>
+      <div className="flex flex-col lg:flex-row justify-between mb-[20px] lg:mb-8">
+        <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
+        <h2 className="text-[#5DC9DE] text-xl md:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          SONG DETAILS
+        </h2>
+        <div className="hidden lg:block">
+          <NavbarRight />
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-10">
         {/* LEFT SECTION */}
         <div className="flex gap-8 items-start">
           <img
-            src={JSON.parse(content.image_url)}
+            src={JSON.parse(content.image_url)[0]}
             alt="Album"
             className="w-48 h-48 sm:w-56 sm:h-56 object-cover rounded-md shadow-lg"
           />
 
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4">
+            <h1 className="text-2xl md:text-4xl font-bold mb-4">
               {content.song_name.toUpperCase()}
             </h1>
 
-            <div className="space-y-2 text-gray-300 text-base">
+            <div className="space-y-2 text-gray-300 text-base hidden md:flex md:flex-col">
               <p>
                 <span className="text-gray-400">Artist Name:</span>{" "}
                 {content.stage_name}
@@ -184,54 +195,116 @@ const SongDetails = () => {
         </div>
       </div>
 
+      <div className="space-y-2 text-gray-300 text-base flex flex-col md:hidden mt-[28px]">
+        <p>
+          <span className="text-gray-400">Artist Name:</span>{" "}
+          {content.stage_name}
+        </p>
+        <p>
+          <span className="text-gray-400">Lyrics:</span> {content.stage_name}
+        </p>
+        <p>
+          <span className="text-gray-400">Music:</span> {content.stage_name}
+        </p>
+        <p>
+          <span className="text-gray-400">Produced By:</span>{" "}
+          {secondary_artists?.producer?.join(", ") || "N/A"}
+        </p>
+        <p>
+          <span className="text-gray-400">Secondary Artist:</span>{" "}
+          {secondary_artists?.featuring?.join(", ") || "N/A"}
+        </p>
+      </div>
+
       {/* RELEASE DETAILS */}
-      <div className="mt-12">
-        <h2 className="text-3xl font-bold mb-8 text-cyan-300 font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+      <div className="mt-[24px] md:mt-12">
+        <h2 className="text-xl md:text-3xl font-bold mb-8 text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           RELEASE DETAILS:
         </h2>
 
-        {/* HEADER */}
-        <div className="grid grid-cols-3 text-gray-500 text-sm uppercase border-b border-gray-600">
-          <div className="py-3 px-2 border-r border-gray-700">Details</div>
-          <div className="py-3 px-2 text-center border-r border-gray-700">
-            Status
+        {/* Desktop */}
+        <div className="hidden md:block">
+          {/* Header */}
+          <div className="grid grid-cols-3 text-gray-500 text-sm uppercase border-b border-gray-600">
+            <div className="py-3 px-2 border-r border-gray-700">Details</div>
+            <div className="py-3 px-2 text-center border-r border-gray-700">
+              Status
+            </div>
+            <div className="py-3 px-2 text-center">Share</div>
           </div>
-          <div className="py-3 px-2 text-center border-r border-gray-700">
-            Share
-          </div>
+
+          {release_details?.map((item, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-3 items-center border-b border-gray-800"
+            >
+              <div className="py-4 px-2 border-r border-gray-700">
+                <p className="text-gray-300">
+                  {item.stream_name} Timing:{" "}
+                  <span className="text-white font-semibold">
+                    {item.release_time ? formatTime(item.release_time) : "TBD"}
+                  </span>
+                </p>
+              </div>
+
+              <div className="py-4 px-2 text-center border-r border-gray-700">
+                <span
+                  className={`font-medium ${
+                    item.status === 1 ? "text-green-400" : "text-gray-400"
+                  }`}
+                >
+                  {item.status === 1 ? "Completed" : "In-Progress"}
+                </span>
+              </div>
+
+              <div className="py-4 px-2 flex justify-center">
+                <button
+                  onClick={() => {
+                    if (item.link) {
+                      navigator.clipboard.writeText(item.link);
+                      toast.success("Link copied!!!");
+                    }
+                  }}
+                  className="flex items-center gap-2 text-gray-300 hover:text-white"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="flex-shrink-0"
+                  >
+                    <path
+                      d="M21.4354 2.58198C20.9352 2.0686 20.1949 1.87734 19.5046 2.07866L3.408 6.75952C2.6797 6.96186 2.16349 7.54269 2.02443 8.28055C1.88237 9.0315 2.37858 9.98479 3.02684 10.3834L8.0599 13.4768C8.57611 13.7939 9.24238 13.7144 9.66956 13.2835L15.4329 7.4843C15.723 7.18231 16.2032 7.18231 16.4934 7.4843C16.7835 7.77623 16.7835 8.24935 16.4934 8.55134L10.72 14.3516C10.2918 14.7814 10.2118 15.4508 10.5269 15.9702L13.6022 21.0538C13.9623 21.6577 14.5826 22 15.2628 22C15.3429 22 15.4329 22 15.513 21.9899C16.2933 21.8893 16.9135 21.3558 17.1436 20.6008L21.9156 4.52479C22.1257 3.84028 21.9356 3.09537 21.4354 2.58198Z"
+                      fill="#9BA3B7"
+                    />
+                  </svg>
+                  Share Link
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* ROWS */}
-        {release_details?.map((item, i) => (
-          <div
-            key={i}
-            className="grid grid-cols-3 items-center text-base border-b border-gray-800"
-          >
-            {/* DETAILS */}
-            <div className="py-4 px-2 border-r border-gray-700">
-              <p className="text-gray-300">
-                {item.stream_name} Timing:{" "}
-                <span className="text-white font-semibold">
-                  {item.release_time ? formatTime(item.release_time) : "TBD"}
-                </span>
-              </p>
-            </div>
+        {/* Mobile */}
+        <div className="md:hidden">
+          {release_details?.map((item, i) => (
+            <div key={i} className="py-5 border-b border-gray-800">
+              <p className="text-gray-300">{item.stream_name} Timing:</p>
 
-            {/* STATUS */}
-            <div className="py-4 px-2 text-center border-r border-gray-700">
-              <span
-                className={`font-medium ${
-                  item.status === 1
-                    ? "text-green-400"
-                    : "text-gray-400"
+              <p className="text-white text-xl font-bold mt-1">
+                {item.release_time ? formatTime(item.release_time) : "TBD"}
+              </p>
+
+              <p
+                className={`mt-3 ${
+                  item.status === 1 ? "text-green-400" : "text-gray-400"
                 }`}
               >
                 {item.status === 1 ? "Completed" : "In-Progress"}
-              </span>
-            </div>
+              </p>
 
-            {/* SHARE */}
-            <div className="py-4 px-2 text-center border-r border-gray-700">
               <button
                 onClick={() => {
                   if (item.link) {
@@ -239,7 +312,7 @@ const SongDetails = () => {
                     toast.success("Link copied!!!");
                   }
                 }}
-                className="text-gray-300 hover:text-white transition flex items-center justify-center gap-2 mx-auto"
+                className="flex items-center gap-2 mt-3 text-gray-400"
               >
                 <svg
                   width="18"
@@ -255,13 +328,11 @@ const SongDetails = () => {
                   />
                 </svg>
 
-                <span className="whitespace-nowrap">Share Link</span>
+                <span>Share Link</span>
               </button>
             </div>
-
-            <div></div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -7,6 +7,9 @@ import { toast } from "react-hot-toast";
 import axiosApi from "../../conf/axios";
 import { uploadVideoViaPresignedPut } from "../../utils/presignedVideoUpload";
 import { useArtist } from "../auth/API/ArtistContext";
+import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
+
 const EPKManagement = () => {
   const navigate = useNavigate();
   const { ophid, headers } = useArtist();
@@ -184,13 +187,25 @@ const EPKManagement = () => {
   }
 
   return (
-    <div className="ml-[63px] mr-[63px]">
-      <h1 className="mt-[55px] font-bold text-[35px] uppercase text-[#5DC9DE] drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-        EPK Management
-      </h1>
+    <div className="ml-[16px] mr-[16px] lg:ml-[63px] lg:mr-[63px] mt-[20px] lg:mt-[55px]">
+      <div className="flex flex-col lg:flex-row justify-between md:mb-8">
+        <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
+        <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+          EPK Management
+        </h2>
+        <div className="hidden lg:block">
+          <NavbarRight />
+        </div>
+      </div>
 
-      <form className="flex flex-col gap-[42px]" onSubmit={handleFormSubmit}>
-        <div className="grid grid-cols-2 mt-[35px] gap-[54px]">
+      <form
+        className="flex flex-col gap-[20px] md:gap-[42px]"
+        onSubmit={handleFormSubmit}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 mt-[30px] lg:mt-[35px] gap-[32px] md:gap-[54px]">
           <div className="flex flex-col">
             <div className="flex flex-col gap-[12px]">
               <p className="text-[17px] font-semibold text-white">Bio</p>
@@ -208,7 +223,7 @@ const EPKManagement = () => {
               />
             </div>
 
-            <div className="flex flex-col gap-[12px] mt-[36px]">
+            <div className="flex flex-col gap-[12px] mt-[24px] lg:mt-[36px]">
               <p className="text-[17px] font-semibold text-white">
                 Bio video :
               </p>
@@ -251,7 +266,7 @@ const EPKManagement = () => {
             </div>
 
             <div>
-              <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
+              <p className="text-[17px] font-semibold text-white mt-[24px] md:mt-[32px] mb-[12px]">
                 Change Artist Story :
               </p>
               <input
@@ -311,31 +326,9 @@ const EPKManagement = () => {
                 )}
               </div>
             </div>
-
-            <div className="mt-[50px] flex items-center">
-              <input
-                type="checkbox"
-                id="terms"
-                name="terms"
-                className="w-[20px] h-[20px]"
-                checked={formData.terms}
-                onChange={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    terms: !prev.terms,
-                  }))
-                }
-              />
-              <label
-                className="ml-[33px] text-[20px] font-semibold text-white"
-                for="terms"
-              >
-                Agree to terms and conditions{" "}
-              </label>
-            </div>
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-[43px]">
+            <div className="flex items-center gap-[16px] md:gap-[43px]">
               {pic != "" && (
                 <img
                   src={pic}
@@ -344,16 +337,19 @@ const EPKManagement = () => {
               )}
 
               <div className="flex flex-col gap-[17px]">
-                <p className="text-white font-medium text-[35px]">
+                <p className="text-white font-bold md:font-medium text-[28px] md:text-[35px]">
                   Your Profile Photo
                 </p>
-                <p className="text-white font-medium text-[20px]">
+                <p className="text-white font-medium text-[20px] hidden md:flex">
                   This image wil appear on your profile Upload a high qualty
                   image{" "}
                 </p>
               </div>
             </div>
-
+            <p className="text-white font-medium text-[18px] flex md:hidden mt-[16px]">
+              This image wil appear on your profile Upload a high qualty
+              image{" "}
+            </p>
             <div
               className="
                 w-[100%]
@@ -361,8 +357,8 @@ const EPKManagement = () => {
                 opacity-100
                 p-6 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-400 transition-colors
                 flex items-center justify-center 
-                
-                mt-[60px]
+                mt-[20px]
+                md:mt-[60px]
                 "
               onClick={() => document.getElementById("artistPhoto").click()}
             >
@@ -392,7 +388,7 @@ const EPKManagement = () => {
                 </div>
               )}
             </div>
-            <p className="text-white font-medium text-[40px] mt-[35px] mb-[25px]">
+            <p className="text-white font-medium text-[32px] md:text-[40px] mt-[20px] md:mt-[35px] mb-[6px] md:mb-[25px]">
               Your Profile feed
             </p>
 
@@ -440,17 +436,38 @@ const EPKManagement = () => {
               </div>
             </div>
 
-            <p className="text-white font-medium text-[35px] mt-[35px]">
+            <p className="text-white font-medium text-[24px] md:text-[35px] mt-[20px] md:mt-[35px]">
               Add New Song
             </p>
             <Link
               to="/dashboard/add-new-song"
-              className="bg-[#6F4FA0] text-white text-center px-[36px] py-[17px] rounded-[42px] mt-[30px] max-w-[300px] 
+              className="bg-[#6F4FA0] text-white text-center px-[36px] py-[17px] rounded-[42px] mt-[15px] md:mt-[30px] w-full md:max-w-[300px] 
 hover:bg-[#5A3F85] "
             >
               Add Your Song
             </Link>
           </div>
+        </div>
+        <div className="mt-[16px] md:mt-[30px] flex items-center">
+          <input
+            type="checkbox"
+            id="terms"
+            name="terms"
+            className="w-[20px] h-[20px]"
+            checked={formData.terms}
+            onChange={() =>
+              setFormData((prev) => ({
+                ...prev,
+                terms: !prev.terms,
+              }))
+            }
+          />
+          <label
+            className="ml-[33px] text-[20px] font-semibold text-white"
+            for="terms"
+          >
+            Agree to terms and conditions{" "}
+          </label>
         </div>
         <button className="w-[374px] mx-auto bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors mb-[20px]">
           SUBMIT
@@ -459,38 +476,48 @@ hover:bg-[#5A3F85] "
 
       {status.length > 0 && (
         <section className="mb-[20px]">
-          <h1 className="font-extrabold text-[55px] mt-[55px]">Status</h1>
+          <h1 className="font-extrabold text-[55px] mt-[20px] md:mt-[55px]">
+            Status
+          </h1>
 
-          <table className="w-full border-collapse mt-[41px]">
-            <thead>
-              <tr className="border-b border-b-[#FFFFFF33] text-left">
-                <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
-                <th className="pb-[14px] text-[15px] font-semibold">REQUEST</th>
-                <th className="pb-[14px] text-[15px] font-semibold">STATUS</th>
-                <th className="pb-[14px] text-[15px] font-semibold">REASON</th>
-              </tr>
-            </thead>
-            <tbody>
-              {status.map((stat, index) => (
-                <tr key={index}>
-                  <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.date).toLocaleDateString("en-GB", {
-                      timeZone: "Asia/Kolkata",
-                    })}
-                  </td>
-                  <td className="py-[12px] font-bold text-[16px]">
-                    {stat.field} update
-                  </td>
-                  <td className="py-[12px] font-bold text-[16px]">
-                    {stat.status}
-                  </td>
-                  <td className="py-[12px] font-bold text-[16px]">
-                    {stat.reason || "-"}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse mt-[41px]">
+              <thead>
+                <tr className="border-b border-b-[#FFFFFF33] text-left">
+                  <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    REQUEST
+                  </th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    STATUS
+                  </th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    REASON
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {status.map((stat, index) => (
+                  <tr key={index}>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {new Date(stat.date).toLocaleDateString("en-GB", {
+                        timeZone: "Asia/Kolkata",
+                      })}
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.field} update
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.status}
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.reason || "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
     </div>
