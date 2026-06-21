@@ -229,13 +229,12 @@ const EPKManagement = () => {
               </p>
 
               <div
-                className="
-                w-[100%]
-                w-[100%] min-h-[290px] 
-               p-6 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-400 transition-colors
-                flex items-center justify-center 
-                "
-                onClick={() => document.getElementById("bioVideo").click()}
+                className="w-full min-h-[290px] p-6 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-cyan-400 transition-colors flex items-center justify-center"
+                onClick={() => {
+                  if (!formData.bioVideo) {
+                    document.getElementById("bioVideo").click();
+                  }
+                }}
               >
                 <input
                   type="file"
@@ -244,7 +243,8 @@ const EPKManagement = () => {
                   onChange={(e) => handleUploads(e, "bioVideo")}
                   className="hidden"
                 />
-                {formData.bioVideo === null ? (
+
+                {!formData.bioVideo ? (
                   <div className="flex items-center flex-col gap-3">
                     <Plus className="w-8 h-8 text-gray-500" />
                     <p className="font-medium text-[#666B76] text-[21px]">
@@ -252,19 +252,33 @@ const EPKManagement = () => {
                     </p>
                   </div>
                 ) : (
-                  <div
-                    className="flex items-center justify-center gap-3"
-                    onClick={() => document.getElementById("bioVideo").click()}
-                  >
-                    <p className="font-medium text-white text-[21px]">
-                      {formData.bioVideo.name}
-                    </p>
-                    <X className="w-4 h-4 hover:text-red-500" />
+                  <div className="flex flex-col items-center gap-4">
+                    <video
+                      controls
+                      className="max-h-[250px] rounded-lg"
+                      src={URL.createObjectURL(formData.bioVideo)}
+                    />
+
+                    <div className="flex items-center gap-3">
+                      <p className="font-medium text-white">
+                        {formData.bioVideo.name}
+                      </p>
+
+                      <X
+                        className="w-4 h-4 hover:text-red-500 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFormData((prev) => ({
+                            ...prev,
+                            bioVideo: null,
+                          }));
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-
             <div>
               <p className="text-[17px] font-semibold text-white mt-[24px] md:mt-[32px] mb-[12px]">
                 Change Artist Story :
@@ -408,7 +422,7 @@ const EPKManagement = () => {
               >
                 <input
                   id="updateImages"
-                  accept="images/*"
+                  accept="image/*"
                   type="file"
                   className="hidden"
                   onChange={(e) => handleUploads(e, "updateImages")}
@@ -480,7 +494,10 @@ hover:bg-[#5A3F85] "
             Status
           </h1>
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table className="border-collapse mt-[41px]" style={{ minWidth: "600px", width: "100%" }}>
+            <table
+              className="border-collapse mt-[41px]"
+              style={{ minWidth: "600px", width: "100%" }}
+            >
               <thead>
                 <tr className="border-b border-b-[#FFFFFF33] text-left">
                   <th className="pb-[14px] text-[15px] font-semibold">DATE</th>

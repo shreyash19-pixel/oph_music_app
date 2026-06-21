@@ -176,15 +176,15 @@ const SongDetails = () => {
               </p>
               <p>
                 <span className="text-gray-400">Lyrics:</span>{" "}
-                {content.stage_name}
+                {secondary_artists?.lyrics?.join(", ") || content.stage_name}
               </p>
               <p>
                 <span className="text-gray-400">Music:</span>{" "}
-                {content.stage_name}
+                {secondary_artists?.music?.join(", ") || content.stage_name}
               </p>
               <p>
                 <span className="text-gray-400">Produced By:</span>{" "}
-                {secondary_artists?.producer?.join(", ") || "N/A"}
+                {secondary_artists?.producer?.join(", ") || content.stage_name}
               </p>
               <p>
                 <span className="text-gray-400">Secondary Artist:</span>{" "}
@@ -201,14 +201,16 @@ const SongDetails = () => {
           {content.stage_name}
         </p>
         <p>
-          <span className="text-gray-400">Lyrics:</span> {content.stage_name}
+          <span className="text-gray-400">Lyrics:</span>{" "}
+          {secondary_artists?.lyrics?.join(", ") || content.stage_name}
         </p>
         <p>
-          <span className="text-gray-400">Music:</span> {content.stage_name}
+          <span className="text-gray-400">Music:</span>{" "}
+          {secondary_artists?.music?.join(", ") || content.stage_name}
         </p>
         <p>
           <span className="text-gray-400">Produced By:</span>{" "}
-          {secondary_artists?.producer?.join(", ") || "N/A"}
+          {secondary_artists?.producer?.join(", ") || content.stage_name}
         </p>
         <p>
           <span className="text-gray-400">Secondary Artist:</span>{" "}
