@@ -479,9 +479,8 @@ hover:bg-[#5A3F85] "
           <h1 className="font-extrabold text-[55px] mt-[20px] md:mt-[55px]">
             Status
           </h1>
-
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse mt-[41px]">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table className="border-collapse mt-[41px]" style={{ minWidth: "600px", width: "100%" }}>
               <thead>
                 <tr className="border-b border-b-[#FFFFFF33] text-left">
                   <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
