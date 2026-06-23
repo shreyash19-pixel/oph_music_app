@@ -15,6 +15,7 @@ const PaymentScreen = () => {
   const [trans, setTrans] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingReleaseDateChange, setPendingReleaseDateChange] = useState(null);
   const [costingData, setCostingData] = useState([]);
   const [matchedCosting, setMatchedCosting] = useState(null);
   const event_id = location.state?.event_id;
@@ -261,6 +262,24 @@ const PaymentScreen = () => {
     fetchCostingData();
   }, [fetchCostingData]);
 
+  useEffect(() => {
+    if (from !== "Release date change" || !headers?.Authorization) return;
+
+    let cancelled = false;
+    axiosApi
+      .get("/pending-release-date-change", { headers })
+      .then((res) => {
+        if (!cancelled && res.data?.pending) {
+          setPendingReleaseDateChange(res.data.pending);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [from, headers]);
+
   // Sync song navigation when entering payment page for a song (e.g. after browser back from another tab).
   // Backend sets status to draft when not fixing a rejected step.
   useEffect(() => {
@@ -362,6 +381,13 @@ const PaymentScreen = () => {
 
       const response = await axiosApi.post(apiPath, formData);
 
+      if (!response.data?.success) {
+        setError(
+          response.data?.message || "Payment processing failed. Please try again.",
+        );
+        return;
+      }
+
       if (response.data.success && from == "Date booking") {
         {
           // For Date Booking repayment with linked song, pass song_id and song_name
@@ -389,11 +415,13 @@ const PaymentScreen = () => {
           }
         }
       } else if (response.data.success && from == "Release date change") {
-        // PaymentService already records the pending calendar change on payment insert.
         navigate("/dashboard/success", {
           state: {
             heading:
-              "Release date change submitted — pending admin approval",
+              response.data.message ||
+              (response.data.alreadyPending
+                ? "Your release date change is already submitted and pending admin approval."
+                : "Release date change submitted — pending admin approval"),
             btnText: "View Calendar",
             redirectTo: "/dashboard/time-calendar",
           },
@@ -613,7 +641,11 @@ const PaymentScreen = () => {
       }
     } catch (err) {
       console.error("Payment error:", err);
-      setError("Payment processing failed. Please try again.");
+      const serverMessage =
+        err.response?.data?.message || err.response?.data?.error;
+      setError(
+        serverMessage || "Payment processing failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -666,6 +698,16 @@ const PaymentScreen = () => {
     }
   };
 
+  const requestedNewDate =
+    location?.state?.new_booking_date?.slice?.(0, 10) ||
+    location?.state?.new_booking_date ||
+    null;
+  const pendingBlocksDifferentChange =
+    from === "Release date change" &&
+    pendingReleaseDateChange?.release_date &&
+    requestedNewDate &&
+    pendingReleaseDateChange.release_date !== requestedNewDate;
+
   return (
     <div className="relative">
       {loading && <Loading />}
@@ -676,6 +718,19 @@ const PaymentScreen = () => {
         </h1>
 
         <div className="flex flex-col items-center gap-6 max-w-md w-full">
+          {from === "Release date change" && pendingReleaseDateChange && (
+            <div
+              className={`w-full rounded-md px-4 py-3 text-sm text-center ${
+                pendingBlocksDifferentChange
+                  ? "bg-amber-500/15 text-amber-200 border border-amber-500/40"
+                  : "bg-cyan-500/10 text-cyan-200 border border-cyan-500/30"
+              }`}
+            >
+              {pendingBlocksDifferentChange
+                ? `You already have a release date change to ${pendingReleaseDateChange.release_date} pending admin approval. Wait for review before requesting another change.`
+                : `A change to ${pendingReleaseDateChange.release_date} is already pending. Submitting the same transaction again will confirm your existing request.`}
+            </div>
+          )}
           <img
             src={getQRCodeImage()}
             alt="QR Code"
@@ -716,7 +771,7 @@ const PaymentScreen = () => {
               <button
                 type="submit"
                 className="w-full bg-cyan-400 text-black py-3 rounded-md flex items-center justify-center gap-2 disabled:opacity-50"
-                disabled={loading}
+                disabled={loading || pendingBlocksDifferentChange}
               >
                 {loading ? "Processing..." : "Confirm Payment"}
               </button>

@@ -97,10 +97,23 @@ const payment = async (req, res) => {
       });
     }
 
+    const releaseDateChangeBlockedMessages = [
+      "A release date change is already pending admin approval. Please wait for admin to review it before requesting another change.",
+      "A release date change is already pending admin approval",
+      "New date is already booked or reserved pending approval",
+    ];
+    if (releaseDateChangeBlockedMessages.includes(error.message)) {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+        code: "RELEASE_DATE_CHANGE_BLOCKED",
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Payment - server Error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: error.message || "Payment - server Error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };

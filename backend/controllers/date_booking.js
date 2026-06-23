@@ -1,5 +1,6 @@
 const bookingModel = require("../model/date_booking");
 const DateBookingService = require("../services/dateBooking/DateBookingService");
+const db = require("../DB/connect");
 
 exports.createBooking = async (req, res) => {
   try {
@@ -104,6 +105,49 @@ exports.getAllBookings = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: error.message || "Internal server error" 
+    });
+  }
+};
+
+exports.getPendingReleaseDateChange = async (req, res) => {
+  try {
+    const oph_id =
+      req.user?.userData?.artist?.id ||
+      req.user?.userData?.artist?.OPH_ID ||
+      req.user?.ophid ||
+      req.user?.oph_id ||
+      req.query.ophid ||
+      req.query.oph_id;
+
+    if (!oph_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing artist id",
+      });
+    }
+
+    const { getPendingReleaseDateChangeForOph } = require("../utils/releaseDateChangeQueries");
+    const { normalizeCalendarDateOnly } = require("../utils/calendarDateUtils");
+    const pending = await getPendingReleaseDateChangeForOph(db, oph_id);
+
+    if (!pending) {
+      return res.status(200).json({ success: true, pending: null });
+    }
+
+    return res.status(200).json({
+      success: true,
+      pending: {
+        release_date: normalizeCalendarDateOnly(pending.release_date),
+        old_release_date: normalizeCalendarDateOnly(pending.old_release_date),
+        status: pending.status,
+        transaction_id: pending.transaction_id,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching pending release date change:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
     });
   }
 };

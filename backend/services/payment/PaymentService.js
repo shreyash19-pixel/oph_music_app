@@ -294,15 +294,32 @@ class PaymentService {
           const pendingNew = normalizeCalendarDateOnly(pending.release_date);
           const reqOld = normalizeCalendarDateOnly(oldReleaseDateOnly);
           const reqNew = normalizeCalendarDateOnly(finalReleaseDate);
-          const sameRequest =
-            pendingNew === reqNew &&
-            (pendingOld === reqOld || (!pendingOld && reqOld));
+          // Same target new date = idempotent retry (e.g. user resubmits after a generic UI error)
+          const isRetryOfPending =
+            pendingNew && reqNew && pendingNew === reqNew;
 
-          if (sameRequest) {
+          if (isRetryOfPending) {
+            let effectiveOld = reqOld || pendingOld;
+            if (!effectiveOld) {
+              const [calRows] = await connection.query(
+                `SELECT current_booking_date FROM calender
+                 WHERE oph_id = ? ORDER BY updated_at DESC LIMIT 1`,
+                [paymentOphId],
+              );
+              effectiveOld = normalizeCalendarDateOnly(
+                calRows[0]?.current_booking_date,
+              );
+            }
+            if (!effectiveOld) {
+              throw new Error(
+                "Current release date is required for release date change",
+              );
+            }
+
             await DateBookingService.updateBookingDateInConnection(
               connection,
               paymentOphId,
-              oldReleaseDateOnly,
+              effectiveOld,
               finalReleaseDate,
               change_reason || null,
               { excludeTransactionId: pending.transaction_id },
