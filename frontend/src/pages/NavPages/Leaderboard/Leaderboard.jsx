@@ -9,6 +9,9 @@ import {
   resolveLeaderboardOphId,
 } from "../../../utils/artistHash";
 
+/** Public leaderboard shows only the most recent N months (latest first). */
+const LEADERBOARD_MAX_MONTHS = 3;
+
 /** Full month names as stored in monthly_kpi/leaderboard.json */
 const MONTH_INDEX = {
   January: 0,
@@ -25,37 +28,51 @@ const MONTH_INDEX = {
   December: 11,
 };
 
-function sortMonthEntriesLatestFirst(entries) {
-  return [...entries].sort((a, b) => {
-    const ia = MONTH_INDEX[a[0]];
-    const ib = MONTH_INDEX[b[0]];
-    const va = ia === undefined ? -1 : ia;
-    const vb = ib === undefined ? -1 : ib;
-    return vb - va;
-  });
-}
-
-/** S3 payload is `{ [year]: { January: [...], ... } }`. Pick current year or latest year with data. */
-function pickLeaderboardYearBlock(full, year) {
-  if (!full || typeof full !== "object" || Array.isArray(full)) return {};
-  const block = full[year] ?? full[String(year)];
-  if (block && typeof block === "object" && !Array.isArray(block)) {
-    return block;
-  }
+/**
+ * S3 payload: `{ [year]: { January: [...], ... } }`.
+ * Flatten all years/months (not only current year) so historical months appear.
+ */
+function flattenLeaderboardHistory(full) {
+  if (!full || typeof full !== "object" || Array.isArray(full)) return [];
   const yearKeys = Object.keys(full)
     .filter((k) => /^\d{4}$/.test(String(k)))
     .map((k) => Number(k))
     .sort((a, b) => b - a);
+
+  const entries = [];
   for (const yk of yearKeys) {
-    const b = full[yk] ?? full[String(yk)];
-    if (b && typeof b === "object" && !Array.isArray(b)) return b;
+    const block = full[yk] ?? full[String(yk)];
+    if (!block || typeof block !== "object" || Array.isArray(block)) continue;
+
+    const monthKeys = Object.keys(block).filter(
+      (m) => Array.isArray(block[m]) && block[m].length > 0,
+    );
+
+    for (const month of monthKeys) {
+      const title =
+        yearKeys.length > 1 || monthKeys.length > 1 ? `${month} ${yk}` : month;
+      entries.push({ title, month, year: yk, artists: block[month] });
+    }
   }
-  return {};
+
+  entries.sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    const ia = MONTH_INDEX[a.month];
+    const ib = MONTH_INDEX[b.month];
+    return (ib ?? -1) - (ia ?? -1);
+  });
+
+  return entries
+    .slice(0, LEADERBOARD_MAX_MONTHS)
+    .map((e) => [e.title, e.artists]);
 }
 
-function asMonthArtistMap(v) {
-  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
-  return v;
+function asMonthArtistMapFromHistory(full) {
+  const map = {};
+  for (const [title, artists] of flattenLeaderboardHistory(full)) {
+    map[title] = artists;
+  }
+  return map;
 }
 
 const LEADERBOARD_TOP_PER_MONTH = 10;
@@ -91,26 +108,23 @@ function Leaderboard() {
   const [uniqueStageNames, setUniqueStageNames] = useState([]);
   const [uniqueRanks, setUniqueRanks] = useState([]);
   // const [uniqueProfessions, setUniqueProfessions] = useState([]);
-  const getCurrentYear = new Date().getFullYear();
-
-  const leaderboardMonthEntries = useMemo(() => {
-    const data = asMonthArtistMap(artistsData);
-    const entries = Object.entries(data).filter(([, artists]) =>
-      Array.isArray(artists),
-    );
-    return sortMonthEntriesLatestFirst(entries);
-  }, [artistsData]);
+  const leaderboardMonthEntries = useMemo(
+    () => flattenLeaderboardHistory(artistsData),
+    [artistsData],
+  );
 
   useEffect(() => {
     const fetchArtist = async () => {
       try {
         const response = await axiosApi.get("/leaderboard/history");
         if (response.data?.success) {
-          const monthMap = pickLeaderboardYearBlock(
-            response.data.data,
-            getCurrentYear,
+          setArtistData(
+            response.data.data &&
+              typeof response.data.data === "object" &&
+              !Array.isArray(response.data.data)
+              ? response.data.data
+              : {},
           );
-          setArtistData(monthMap);
         } else {
           setArtistData({});
         }
@@ -135,7 +149,7 @@ function Leaderboard() {
     console.log(normalizedArtistName);
 
     setSearchArtist(normalizedArtistName);
-    const data = asMonthArtistMap(artistsData);
+    const data = asMonthArtistMapFromHistory(artistsData);
     const exists = Object.values(data).map((month) =>
       Array.isArray(month)
         ? month.map((artist) =>
@@ -164,7 +178,7 @@ function Leaderboard() {
     const stageNames = new Set();
     const ranks = new Set();
 
-    const data = asMonthArtistMap(artistsData);
+    const data = asMonthArtistMapFromHistory(artistsData);
     Object.values(data)
       .flat()
       .forEach((artist) => {
@@ -199,7 +213,7 @@ function Leaderboard() {
   };
 
   const applyFilters = () => {
-    const data = asMonthArtistMap(artistsData);
+    const data = asMonthArtistMapFromHistory(artistsData);
     const filteredArtists = Object.values(data)
       .flat()
       .filter((artist) => {

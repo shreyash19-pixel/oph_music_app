@@ -11,14 +11,20 @@ const payment = async (req, res) => {
     const step = req.body.step;
     const song_id = req.body.song_id;
     const event_id = req.body.event_id;
-    let release_date = req.body.release_date ?? req.body.booking_date ?? req.body.date;
+    let release_date =
+      req.body.release_date ??
+      req.body.new_booking_date ??
+      req.body.booking_date ??
+      req.body.date;
     if (release_date != null && typeof release_date === 'string') {
       const s = release_date.trim().toLowerCase();
       if (s === '' || s === 'null' || s === 'undefined' || s === '0000-00-00' || s.startsWith('0000-00-00')) {
         release_date = null;
       }
     }
-    const old_release_date = req.body.old_release_date;
+    const old_release_date =
+      req.body.old_release_date ?? req.body.old_booking_date ?? null;
+    const change_reason = req.body.change_reason ?? req.body.reason ?? null;
     const amount = req.body.amount;
 
     // For external event registrations, oph_id contains the participant name
@@ -51,6 +57,7 @@ const payment = async (req, res) => {
       event_id,
       release_date,
       old_release_date,
+      change_reason,
       amount,
       step,
       booking_details // Pass booking details if available

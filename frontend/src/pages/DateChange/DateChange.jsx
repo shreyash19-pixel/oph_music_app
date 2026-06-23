@@ -11,7 +11,8 @@ export default function DateChangeForm() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [blockedDates, setBlockedDates] = useState([]);
+  const [newDateTaken, setNewDateTaken] = useState(false);
+  const [checkingNewDate, setCheckingNewDate] = useState(false);
   const [formData, setFormData] = useState({
     contentId: location.state?.contentId || "",
     oldDate: location.state?.date || "",
@@ -21,50 +22,42 @@ export default function DateChangeForm() {
   const { headers, ophid } = useArtist();
 
   useEffect(() => {
-    const fetchBlockedDates = async () => {
+    const dateStr = formData.newDate?.slice?.(0, 10) || formData.newDate;
+    if (!dateStr || !ophid) {
+      setNewDateTaken(false);
+      return;
+    }
+
+    let cancelled = false;
+    const checkAvailability = async () => {
+      setCheckingNewDate(true);
       try {
-        const response = await axiosApi.get("/bookings", {
-          headers: headers,
+        const response = await axiosApi.get("/check-release-date-available", {
+          params: { release_date: dateStr, ophid },
+          headers,
         });
-
-        if (response.data.success) {
-          // Extract just the dates from the response
-          const dates = response.data.data.map(
-            (item) => item.current_booking_date?.split("T")[0],
-          );
-
-          setBlockedDates(dates);
+        if (!cancelled) {
+          setNewDateTaken(response.data?.available === false);
         }
       } catch (error) {
-        console.error("Error fetching blocked dates:", error);
+        console.error("Error checking date availability:", error);
+        if (!cancelled) setNewDateTaken(true);
+      } finally {
+        if (!cancelled) setCheckingNewDate(false);
       }
     };
 
-    fetchBlockedDates();
-  }, []);
-
-  const isBlockedDate = (date) => {
-    if (!date && blockedDates.length === 0) return false;
-
-    const parsedDate = new Date(date);
-    if (isNaN(parsedDate.getTime())) return false;
-
-    console.log(parsedDate);
-
-    const formattedDate = parsedDate.toISOString().split("T")[0];
-    // Exclude the current date being changed from blocked dates check
-
-    return blockedDates.some(
-      (blockedDate) =>
-        blockedDate === formattedDate && formattedDate !== formData.oldDate,
-    );
-  };
+    checkAvailability();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.newDate, ophid, headers]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (isBlockedDate(formData.newDate)) {
-      toast.error("Date already booked");
+    if (newDateTaken) {
+      toast.error("This date is already booked by another artist");
       return;
     }
     if (formData.newDate === formData.oldDate) {
@@ -93,7 +86,7 @@ export default function DateChangeForm() {
           new_booking_date: formData.newDate,
           returnPath: "/dashboard/time-calendar",
           amount: 100,
-          heading: "Payment Required",
+          heading: "Payment Required (admin approval needed after payment)",
           from: "Release date change",
           reason: formData.reason,
         },
@@ -173,16 +166,19 @@ export default function DateChangeForm() {
                 onKeyDown={(e) => e.preventDefault()}
                 className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
                 style={{
-                  backgroundColor: isBlockedDate(formData.newDate)
+                  backgroundColor: newDateTaken
                     ? "rgba(255,0,0,0.1)"
                     : "transparent",
                   colorScheme: "dark",
                 }}
               />
             </div>
-            {isBlockedDate(formData.newDate) && (
+            {checkingNewDate && (
+              <span className="text-gray-400 text-sm">Checking availability…</span>
+            )}
+            {!checkingNewDate && newDateTaken && (
               <span className="text-red-500 text-sm">
-                Selected date is blocked. Please choose another date.
+                This date is taken by another artist. Please choose another date.
                 <Link to="/dashboard/time-calendar">
                   <span className="underline ms-2">
                     Click to See Available Dates
@@ -207,7 +203,7 @@ export default function DateChangeForm() {
 
           <button
             type="submit"
-            disabled={isProcessing || isBlockedDate(formData.newDate)}
+            disabled={isProcessing || checkingNewDate || newDateTaken}
             className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors mt-8 disabled:opacity-50"
           >
             {isProcessing ? "Processing..." : "Change Date"}

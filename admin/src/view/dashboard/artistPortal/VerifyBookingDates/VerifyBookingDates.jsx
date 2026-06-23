@@ -28,7 +28,9 @@ const TransactionBlock = ({
   const hasPreviousDate = previousDate && previousDate !== "" && new Date(previousDate).getTime() > 0;
   const displayReason = tx.reason ?? tx.Reason ?? tx.reject_reason ?? tx.rejectReason ?? null;
   const status = tx.Status ?? tx.status ?? "";
-  const isActionable = status === "under review" || status === "pending";
+  const statusNorm = String(status).toLowerCase();
+  const isActionable =
+    statusNorm.includes("under review") || statusNorm === "pending";
   const showRejectFlow = confirmReject && rejectingForTxId === txId;
 
   return (
@@ -87,7 +89,12 @@ const TransactionBlock = ({
           )}
         </>
       )}
-      {!isActionable && status && <p className="text-sm text-gray-500">Status: {status}</p>}
+      {!isActionable && status && (
+        <p className="text-sm text-gray-500">
+          Status: {status}
+          {tx.reject_reason && !displayReason ? ` — ${tx.reject_reason}` : ""}
+        </p>
+      )}
     </div>
   );
 };
@@ -98,6 +105,7 @@ const VerifyBookingDates = () => {
   const location = useLocation();
   const release_date = location.state?.selectedDate;
   const [transactions, setTransactions] = useState(null);
+  const [pendingRdcApprovalDate, setPendingRdcApprovalDate] = useState(null);
   const [confirmReject, setConfirmReject] = useState(false);
   const [rejectingForTxId, setRejectingForTxId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -112,15 +120,22 @@ const VerifyBookingDates = () => {
       if (location.state?.song_id != null) params.song_id = location.state.song_id;
       const response = await axiosApi.get("/get-transaction-details", { params });
 
-      if (response.data.success && response.data.data && response.data.data.length > 0) {
+      if (response.data.success) {
         const data = response.data.data;
-        setTransactions(Array.isArray(data) ? data : [data]);
+        if (data && data.length > 0) {
+          setTransactions(Array.isArray(data) ? data : [data]);
+        } else {
+          setTransactions(null);
+        }
+        setPendingRdcApprovalDate(response.data.pending_rdc_approval_date || null);
       } else {
         setTransactions(null);
+        setPendingRdcApprovalDate(null);
       }
     } catch (err) {
       console.error(err.message);
       setTransactions(null);
+      setPendingRdcApprovalDate(null);
     } finally {
       setLoading(false);
     }
@@ -136,10 +151,15 @@ const VerifyBookingDates = () => {
       return;
     }
     const fromSource = tx?.From ?? tx?.from ?? tx?.from_source ?? "Date booking";
+    const isReleaseDateChange = String(fromSource).toLowerCase().includes("release date change");
+    const txReleaseDate = tx?.release_date ?? tx?.current_booking_date;
+    const verifyReleaseDate = isReleaseDateChange && txReleaseDate
+      ? String(txReleaseDate).slice(0, 10)
+      : release_date;
     const requestData = {
       decision: dec,
       reason: reason || null,
-      release_date,
+      release_date: verifyReleaseDate,
       from: fromSource,
       song_id: tx?.calendar_song_id ?? tx?.song_id,
       oph_id: tx?.OPH_ID ?? tx?.oph_id,
@@ -161,6 +181,12 @@ const VerifyBookingDates = () => {
     }
   };
 
+  const formatDisplayDate = (ymd) => {
+    if (!ymd) return "";
+    const d = new Date(`${String(ymd).slice(0, 10)}T12:00:00`);
+    return d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" });
+  };
+
   if (loading) return <div className="p-10 text-center">Loading...</div>;
 
   const list = Array.isArray(transactions) ? transactions : transactions ? [transactions] : [];
@@ -175,30 +201,62 @@ const VerifyBookingDates = () => {
               administrative head.
             </div>
           )}
+          {pendingRdcApprovalDate && (
+            <div className="w-full max-w-[450px] rounded-lg border border-[#6F4FA0]/40 bg-[#6F4FA0]/10 px-4 py-3 text-sm text-[#0d3c44]">
+              <p className="font-medium">Release date change pending approval</p>
+              <p className="mt-1 text-gray-700">
+                To approve or reject, open {formatDisplayDate(pendingRdcApprovalDate)} from the Time Calendar.
+              </p>
+            </div>
+          )}
           {list.length > 0 ? (
-            list.map((tx) => (
-              <TransactionBlock
-                key={tx.Transaction_ID ?? tx.transaction_id ?? tx.song_id ?? Math.random()}
-                tx={tx}
-                release_date={release_date}
-                confirmReject={confirmReject}
-                setConfirmReject={(v) => { setConfirmReject(v); if (!v) setRejectingForTxId(null); }}
-                reason={reason}
-                setReason={setReason}
-                onDecision={handleDecision}
-                rejectingForTxId={rejectingForTxId}
-                onRejectClick={(txId) => { setRejectingForTxId(txId); setConfirmReject(true); setReason(""); }}
-                canAct={canAct}
-              />
-            ))
-          ) : (
+            list.map((tx, index) => {
+              const fromSource = tx.From ?? tx.from_source ?? tx.from ?? "";
+              const statusNorm = String(tx.Status ?? tx.status ?? "").toLowerCase();
+              const isRdc = String(fromSource).toLowerCase().includes("release date change");
+              const isPending =
+                statusNorm.includes("under review") || statusNorm === "pending";
+              const isDateBooking = String(fromSource).toLowerCase().includes("date booking");
+              let sectionLabel = null;
+              if (isRdc && isPending) {
+                sectionLabel = "Release date change — pending approval";
+              } else if (isRdc && statusNorm.includes("reject")) {
+                sectionLabel = "Previous release date change (rejected)";
+              } else if (isRdc) {
+                sectionLabel = `Release date change (${tx.Status ?? tx.status})`;
+              } else if (isDateBooking) {
+                sectionLabel = "Original date booking";
+              } else if (list.length > 1) {
+                sectionLabel = "Previous transaction";
+              }
+              return (
+                <div key={tx.Transaction_ID ?? tx.transaction_id ?? tx.song_id ?? index} className="flex flex-col gap-2">
+                  {sectionLabel && (
+                    <p className="text-sm font-semibold text-[#0d3c44]">{sectionLabel}</p>
+                  )}
+                  <TransactionBlock
+                    tx={tx}
+                    release_date={release_date}
+                    confirmReject={confirmReject}
+                    setConfirmReject={(v) => { setConfirmReject(v); if (!v) setRejectingForTxId(null); }}
+                    reason={reason}
+                    setReason={setReason}
+                    onDecision={handleDecision}
+                    rejectingForTxId={rejectingForTxId}
+                    onRejectClick={(txId) => { setRejectingForTxId(txId); setConfirmReject(true); setReason(""); }}
+                    canAct={canAct}
+                  />
+                </div>
+              );
+            })
+          ) : !pendingRdcApprovalDate ? (
             <div className="w-full max-w-[450px] space-y-2 border border-gray-300 shadow-sm rounded-lg p-4">
               <p className="text-gray-600">No payment data found for this slot.</p>
               {location.state?.oph_id && <p><strong>OPHID # : </strong>{location.state.oph_id}</p>}
               {location.state?.song_id != null && <p><strong>Song ID : </strong>{location.state.song_id}</p>}
               <p><strong>Date : </strong>{release_date}</p>
             </div>
-          )}
+          ) : null}
         </div>
       </ArtistSidebar>
     </div>

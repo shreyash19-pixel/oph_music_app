@@ -1,9 +1,16 @@
 const db = require('../../DB/connect');
+const {
+  normalizeCalendarDateOnly,
+  parseReasonHistory,
+  isWithinFiveDaysOfToday,
+} = require('../../utils/calendarDateUtils');
+const {
+  isNewDateBlockedForReleaseDateChange,
+  hasPendingReleaseDateChangeForOph,
+} = require('../../utils/releaseDateChangeQueries');
 
 function normalizeBookingDate(bookingDate) {
-  if (bookingDate == null || bookingDate === "") return "";
-  const s = String(bookingDate).trim();
-  return s.length >= 10 ? s.slice(0, 10) : s;
+  return normalizeCalendarDateOnly(bookingDate) || "";
 }
 
 class DateBookingService {
@@ -68,13 +75,8 @@ class DateBookingService {
    */
   async isReleaseDateFreeForOph(connection, ophId, releaseDate) {
     const dateStr = normalizeBookingDate(releaseDate);
-    if (!dateStr || dateStr === "0000-00-00") return true;
-    const ophNorm = String(ophId).trim();
-    const [rows] = await connection.query(
-      "SELECT 1 FROM calender WHERE current_booking_date = ? AND (oph_id IS NULL OR oph_id != ?) LIMIT 1",
-      [dateStr, ophNorm]
-    );
-    return rows.length === 0;
+    if (!dateStr) return true;
+    return !(await isNewDateBlockedForReleaseDateChange(connection, ophId, dateStr));
   }
 
   /**
@@ -195,92 +197,191 @@ class DateBookingService {
   }
 
   /**
-   * Update booking date (for date changes)
-   * Handles application logic for release date changes.
-   * Updates calender only; songs_register.release_date is updated only when admin
-   * approves the "Release date change" payment (see admin/model/payments.js setPaymentVerification).
-   *
-   * @param {string} ophId - User's OPH ID
-   * @param {string} oldDate - Old booking date
-   * @param {string} newDate - New booking date
-   * @param {string|null} reason - Reason for change (stored in reason_history)
+   * Record a pending release date change (calendar stays on old date until admin approves).
+   * Callable with an existing connection (PaymentService) or standalone transaction.
+   */
+  async updateBookingDateInConnection(
+    connection,
+    ophId,
+    oldDate,
+    newDate,
+    reason = null,
+    options = {},
+  ) {
+    const ophNorm = String(ophId).trim();
+    const oldStr = normalizeBookingDate(oldDate);
+    const newStr = normalizeBookingDate(newDate);
+
+    if (!oldStr || !newStr) {
+      throw new Error('Invalid old or new booking date');
+    }
+    if (oldStr === newStr) {
+      throw new Error('New date must be different from the current blocked date');
+    }
+    if (isWithinFiveDaysOfToday(oldStr)) {
+      throw new Error('You cannot change dates that are within 5 days of today');
+    }
+
+    const [oldBookings] = await connection.query(
+      `SELECT * FROM calender
+       WHERE oph_id = ?
+         AND (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)`,
+      [ophNorm, oldStr, oldStr],
+    );
+
+    if (oldBookings.length === 0) {
+      throw new Error('No booking found for the old date');
+    }
+
+    const existingHistory = parseReasonHistory(oldBookings[0].reason_history);
+    const lastPending = [...existingHistory].reverse().find((e) => e.status === 'pending');
+    if (lastPending && normalizeCalendarDateOnly(lastPending.new_date) === newStr) {
+      return { success: true, message: 'Release date change already recorded', idempotent: true };
+    }
+
+    if (await hasPendingReleaseDateChangeForOph(connection, ophNorm, options)) {
+      throw new Error('A release date change is already pending admin approval');
+    }
+
+    if (await isNewDateBlockedForReleaseDateChange(connection, ophNorm, newStr, options)) {
+      throw new Error('New date is already booked or reserved pending approval');
+    }
+
+    const updatedHistory = [...existingHistory];
+    updatedHistory.push({
+      reason: reason && reason.trim() ? reason.trim() : null,
+      timestamp: new Date().toISOString(),
+      old_date: oldStr,
+      new_date: newStr,
+      status: 'pending',
+    });
+
+    const [result] = await connection.query(
+      `UPDATE calender
+       SET reason = ?,
+           reason_history = ?,
+           updated_at = NOW()
+       WHERE oph_id = ?
+         AND (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)`,
+      [
+        reason && reason.trim() ? reason.trim() : null,
+        JSON.stringify(updatedHistory),
+        ophNorm,
+        oldStr,
+        oldStr,
+      ],
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error('Failed to record release date change');
+    }
+
+    return { success: true, message: 'Release date change submitted for approval' };
+  }
+
+  /**
+   * Apply approved release date change: move calender to new date; songs_register updates in admin verify.
+   */
+  async applyApprovedReleaseDateChange(connection, ophId, oldDate, newDate) {
+    const ophNorm = String(ophId).trim();
+    const oldStr = normalizeBookingDate(oldDate);
+    const newStr = normalizeBookingDate(newDate);
+    if (!oldStr || !newStr) return { applied: false };
+
+    if (
+      await isNewDateBlockedForReleaseDateChange(connection, ophNorm, newStr, {
+        excludeOphPending: true,
+      })
+    ) {
+      throw new Error('New date is no longer available');
+    }
+
+    const [rows] = await connection.query(
+      `SELECT reason_history FROM calender
+       WHERE oph_id = ?
+         AND (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)`,
+      [ophNorm, oldStr, oldStr],
+    );
+    if (rows.length === 0) return { applied: false };
+
+    const history = parseReasonHistory(rows[0].reason_history).map((item, index, arr) => {
+      if (index === arr.length - 1 && item.status === 'pending') {
+        return { ...item, status: 'approved', approved_at: new Date().toISOString() };
+      }
+      return item;
+    });
+
+    const [result] = await connection.query(
+      `UPDATE calender
+       SET previous_booking_date = ?,
+           current_booking_date = ?,
+           reason = NULL,
+           reason_history = ?,
+           updated_at = NOW()
+       WHERE oph_id = ?
+         AND (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)`,
+      [oldStr, newStr, JSON.stringify(history), ophNorm, oldStr, oldStr],
+    );
+
+    return { applied: result.affectedRows > 0 };
+  }
+
+  /**
+   * Clear pending release date change on reject (calendar was never moved to the new date).
+   */
+  async clearPendingReleaseDateChangeOnReject(connection, ophId, newDate, rejectReason) {
+    const ophNorm = String(ophId).trim();
+    const newStr = normalizeBookingDate(newDate);
+    if (!ophNorm || !newStr) return { cleared: false };
+
+    const [rows] = await connection.query(
+      `SELECT reason_history FROM calender WHERE oph_id = ? LIMIT 1`,
+      [ophNorm],
+    );
+
+    if (rows.length === 0) return { cleared: false };
+
+    const history = parseReasonHistory(rows[0].reason_history).map((item, index, arr) => {
+      if (index === arr.length - 1 && item.status === 'pending') {
+        return {
+          ...item,
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          admin_reject_reason: rejectReason,
+        };
+      }
+      return item;
+    });
+
+    await connection.query(
+      `UPDATE calender
+       SET reason = NULL,
+           reason_history = ?,
+           updated_at = NOW()
+       WHERE oph_id = ?`,
+      [JSON.stringify(history), ophNorm],
+    );
+
+    return { cleared: true };
+  }
+
+  /**
+   * Update booking date (for date changes) — records pending change; public API unchanged.
    */
   async updateBookingDate(ophId, oldDate, newDate, reason = null) {
     const connection = await db.getConnection();
-    
+
     try {
       await connection.beginTransaction();
-
-      // Check if old booking exists and get song_id, existing reason_history
-      const [oldBookings] = await connection.query(
-        `SELECT * FROM calender WHERE oph_id = ? AND current_booking_date = ?`,
-        [ophId, oldDate]
+      const response = await this.updateBookingDateInConnection(
+        connection,
+        ophId,
+        oldDate,
+        newDate,
+        reason,
       );
-
-      if (oldBookings.length === 0) {
-        throw new Error('No booking found for the old date');
-      }
-
-      const songId = oldBookings[0].song_id;
-      const existingHistory = oldBookings[0].reason_history ? JSON.parse(oldBookings[0].reason_history) : [];
-
-      // Check if new date is already booked by another user
-      const [existingBookings] = await connection.query(
-        `SELECT * FROM calender WHERE current_booking_date = ? AND oph_id != ?`,
-        [newDate, ophId]
-      );
-
-      if (existingBookings.length > 0) {
-        throw new Error('New date is already booked by another user');
-      }
-
-      // Prepare reason history - add current reason to history if provided
-      let updatedHistory = [...existingHistory];
-      if (reason && reason.trim()) {
-        updatedHistory.push({
-          reason: reason.trim(),
-          timestamp: new Date().toISOString(),
-          old_date: oldDate,
-          new_date: newDate,
-          status: 'pending'
-        });
-      }
-
-      // Update calender (master) - single source of truth
-      // Store reason and update reason_history
-      const [result] = await connection.query(
-        `UPDATE calender 
-         SET previous_booking_date = ?, 
-             current_booking_date = ?, 
-             reason = ?,
-             reason_history = ?,
-             updated_at = NOW()
-         WHERE oph_id = ? AND current_booking_date = ?`,
-        [
-          oldDate, 
-          newDate, 
-          reason && reason.trim() ? reason.trim() : null,
-          JSON.stringify(updatedHistory),
-          ophId, 
-          oldDate
-        ]
-      );
-
-      if (result.affectedRows === 0) {
-        throw new Error('Failed to update booking');
-      }
-
-      // Do NOT update songs_register here. Release date in songs_register is updated
-      // only when admin approves the "Release date change" payment (setPaymentVerification
-      // in admin/model/payments.js). Until then, songs_register keeps the old date.
-
       await connection.commit();
-
-      return {
-        success: true,
-        message: "Date Updated successfully"
-      };
-
+      return response;
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -325,6 +426,8 @@ class DateBookingService {
 }
 
 module.exports = new DateBookingService();
+module.exports.parseReasonHistory = parseReasonHistory;
+module.exports.normalizeBookingDate = normalizeBookingDate;
 
 
 

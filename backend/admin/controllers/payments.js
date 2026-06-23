@@ -677,13 +677,19 @@ const getTransactionDetailsController = async (req, res) => {
       song_id || null,
     );
 
-    if (response) {
-      return res.status(200).json({
-        success: true,
-        message: "Data fetched successfully",
-        data: response,
-      });
-    }
+    const pendingRdcApprovalDate =
+      oph_id &&
+      (await payment_details.getPendingRdcApprovalDateForSlot(
+        release_date,
+        oph_id,
+      ));
+
+    return res.status(200).json({
+      success: true,
+      message: "Data fetched successfully",
+      data: response || [],
+      pending_rdc_approval_date: pendingRdcApprovalDate || null,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
