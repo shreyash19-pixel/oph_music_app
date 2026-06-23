@@ -34,7 +34,6 @@ export default function TimeCalendar() {
   const toastShownRef = useRef(false);
   const [data, setData] = useState([]);
   const [todaysBookings, setTodaysBookings] = useState([]);
-  const [pendingReleaseDateChange, setPendingReleaseDateChange] = useState(null);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
@@ -87,24 +86,6 @@ export default function TimeCalendar() {
     };
 
     fetchBlockedDates();
-  }, [headers]);
-
-  useEffect(() => {
-    if (!headers?.Authorization) return;
-
-    let cancelled = false;
-    axiosApi
-      .get("/pending-release-date-change", { headers })
-      .then((res) => {
-        if (!cancelled && res.data?.pending) {
-          setPendingReleaseDateChange(res.data.pending);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
   }, [headers]);
 
   useEffect(() => {
@@ -232,12 +213,6 @@ export default function TimeCalendar() {
     );
 
     if (dateInfo && ownerRow) {
-      if (pendingReleaseDateChange) {
-        toast.error(
-          `A release date change to ${pendingReleaseDateChange.release_date} is already pending admin approval.`,
-        );
-        return;
-      }
       if (isWithinFiveDays(year, month, day)) {
         toast.error(
           "You cannot change dates that are within 5 days of today",

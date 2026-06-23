@@ -19,26 +19,7 @@ export default function DateChangeForm() {
     newDate: "",
     reason: "",
   });
-  const [pendingChange, setPendingChange] = useState(null);
   const { headers, ophid } = useArtist();
-
-  useEffect(() => {
-    if (!ophid || !headers?.Authorization) return;
-
-    let cancelled = false;
-    axiosApi
-      .get("/pending-release-date-change", { headers })
-      .then((res) => {
-        if (!cancelled && res.data?.pending) {
-          setPendingChange(res.data.pending);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ophid, headers]);
 
   useEffect(() => {
     const dateStr = formData.newDate?.slice?.(0, 10) || formData.newDate;
@@ -74,13 +55,6 @@ export default function DateChangeForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (pendingChange) {
-      toast.error(
-        `You already have a release date change to ${pendingChange.release_date} pending admin approval.`,
-      );
-      return;
-    }
 
     if (newDateTaken) {
       toast.error("This date is already booked by another artist");
@@ -149,16 +123,6 @@ export default function DateChangeForm() {
           </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6 max-w-xl">
-          {pendingChange && (
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200 text-sm">
-              A release date change to {pendingChange.release_date} is already
-              pending admin approval. Please wait for review before requesting
-              another change.{" "}
-              <Link to="/dashboard/time-calendar" className="underline">
-                Back to calendar
-              </Link>
-            </div>
-          )}
           <div className="space-y-2">
             <label className="block">
               OPH ID <span className="text-red-500">*</span>
@@ -239,9 +203,7 @@ export default function DateChangeForm() {
 
           <button
             type="submit"
-            disabled={
-              isProcessing || checkingNewDate || newDateTaken || !!pendingChange
-            }
+            disabled={isProcessing || checkingNewDate || newDateTaken}
             className="w-full bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors mt-8 disabled:opacity-50"
           >
             {isProcessing ? "Processing..." : "Change Date"}

@@ -115,9 +115,7 @@ exports.getPendingReleaseDateChange = async (req, res) => {
       req.user?.userData?.artist?.id ||
       req.user?.userData?.artist?.OPH_ID ||
       req.user?.ophid ||
-      req.user?.oph_id ||
-      req.query.ophid ||
-      req.query.oph_id;
+      req.user?.oph_id;
 
     if (!oph_id) {
       return res.status(400).json({
