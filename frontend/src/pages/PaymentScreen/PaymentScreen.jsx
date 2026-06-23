@@ -669,7 +669,7 @@ const PaymentScreen = () => {
   return (
     <div className="relative">
       {loading && <Loading />}
-      <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center p-8">
+      <div className="bg-black min-h-[calc(100vh-70px)] text-white flex flex-col items-center justify-center px-[16px] py-[16px] md:p-8">
         <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] text-center">
           {heading}{" "}
           <span className="text-cyan-400">₹{Math.round(Number(getDisplayAmount()) || 0)}/-</span>

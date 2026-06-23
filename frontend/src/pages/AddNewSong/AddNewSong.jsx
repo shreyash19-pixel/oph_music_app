@@ -3,6 +3,8 @@ import { Plus, X } from "lucide-react";
 import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import { useLocation, useNavigate } from "react-router-dom";
+import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const AddNewSong = () => {
   const [formData, setFormData] = useState({
@@ -264,16 +266,25 @@ const AddNewSong = () => {
   }
 
   return (
-    <div className="ml-[63px] mr-[63px]">
-      <h1 className="mt-[55px] font-bold text-[35px] text-[#5DC9DE] drop-shadow-[0_0_15px_rgba(34,211,238,1)] uppercase">
-        Add New Song{" "}
-      </h1>
+    <div className=" mx-[16px] lg:ml-[63px] lg:mr-[63px] mt-[20px] md:mt-[35px]">
+      <div className="flex flex-col lg:flex-row justify-between lg:mb-8">
+        <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
+        <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+           Add New Song{" "}
+        </h2>
+        <div className="hidden lg:block">
+          <NavbarRight />
+        </div>
+      </div>
       <form
-        className="mt-[40px] flex items-center justify-center flex-col w-full"
+        className="mt-0 lg:mt-[40px] flex items-start lg:items-center justify-center flex-col w-full"
         onSubmit={handleSubmit}
       >
         {/* Song Name */}
-        <div className="w-full max-w-[764px]">
+        <div className="w-full max-w-unset lg:max-w-[764px]">
           <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
             Song name :
           </p>
@@ -291,7 +302,7 @@ const AddNewSong = () => {
         </div>
 
         {/* Views */}
-        <div className="w-full max-w-[764px]">
+        <div className="w-full max-w-unset lg:max-w-[764px]">
           <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
             Views :
           </p>
@@ -309,7 +320,7 @@ const AddNewSong = () => {
         </div>
 
         {/* Credits */}
-        <div className="w-full max-w-[764px]">
+        <div className="w-full max-w-unset lg:max-w-[764px]">
           <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
             Credits :
           </p>
@@ -327,7 +338,7 @@ const AddNewSong = () => {
         </div>
 
         {/* Time */}
-        <div className="w-full max-w-[764px]">
+        <div className="w-full max-w-unset lg:max-w-[764px]">
           <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
             Time :
           </p>
@@ -353,7 +364,7 @@ const AddNewSong = () => {
         </div>
 
         {/* Proof */}
-        <div className="w-full max-w-[764px]">
+        <div className="w-full max-w-unset lg:max-w-[764px]">
           <p className="text-[17px] font-semibold text-white mt-[32px] mb-[12px]">
             Proof :
           </p>
@@ -368,7 +379,7 @@ const AddNewSong = () => {
         </div>
 
         {/* Audio File */}
-        <div className="flex flex-col gap-[12px] mt-[36px] w-full max-w-[764px]">
+        <div className="flex flex-col gap-[12px] mt-[36px] w-full max-w-unset lg:max-w-[764px]">
           <p className="text-[17px] font-semibold text-white">Audio file :</p>
           <input
             type="file"
@@ -411,7 +422,7 @@ const AddNewSong = () => {
         </div>
 
         {/* Terms */}
-        <div className="mt-[50px] flex items-center">
+        <div className="mt-[24px] md:mt-[50px] flex items-center">
           <input
             type="checkbox"
             id="terms"
@@ -428,7 +439,7 @@ const AddNewSong = () => {
 
         <button
           type="submit"
-          className="w-[374px] mx-auto mt-[60px] bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors mb-[20px]"
+          className="w-[374px] mx-auto mt-[30px] md:mt-[60px] bg-cyan-400 text-gray-900 rounded-full py-3 font-semibold hover:bg-cyan-300 transition-colors mb-[20px]"
         >
           SUBMIT
         </button>
@@ -436,9 +447,10 @@ const AddNewSong = () => {
 
       {status.length > 0 && (
         <section className="mb-[20px]">
-          <h1 className="font-extrabold text-[55px] mt-[55px]">Status</h1>
+          <h1 className="font-extrabold text-[55px] mt-[20px] md:mt-[55px]">Status</h1>
 
-          <table className="w-full border-collapse mt-[41px]">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table className="border-collapse mt-[41px]" style={{ minWidth: "700px", width: "100%" }}>
             <thead>
               <tr className="border-b border-b-[#FFFFFF33] text-left">
                 <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
@@ -546,7 +558,8 @@ const AddNewSong = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </section>
       )}
     </div>

@@ -5,6 +5,7 @@ import Loading from "../../components/Loading";
 import { useArtist } from "../auth/API/ArtistContext";
 import { ChevronDown } from "lucide-react";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 const MONTH_NAMES = [
   "January",
@@ -216,13 +217,17 @@ export default function KPIDashboard() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="min-h-[calc(100vh-70px)] px-8 py-6">
+    <div className="min-h-[calc(100vh-70px)] px-[16px] py-[16px] lg:px-8 lg:py-6">
       {loading ? (
         <Loading />
       ) : (
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-center flex-wrap gap-3">
+          <div className="w-full flex justify-between items-center flex-wrap gap-3">
+            <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+              <NavbarLeft />
+              <NavbarRight />
+            </div>
             <div>
               <h1 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 KEY PERFORMANCE INDICATORS
@@ -237,7 +242,9 @@ export default function KPIDashboard() {
               )}
               */}
             </div>
-            <NavbarRight />
+            <div className="hidden lg:block">
+              <NavbarRight />
+            </div>
           </div>
 
           {!isSpecialArtist && (
@@ -261,7 +268,11 @@ export default function KPIDashboard() {
                   }}
                 >
                   {durationOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="bg-[#191D27] text-gray-200">
+                    <option
+                      key={option.value}
+                      value={option.value}
+                      className="bg-[#191D27] text-gray-200"
+                    >
                       {option.label}
                     </option>
                   ))}
@@ -272,25 +283,28 @@ export default function KPIDashboard() {
           )}
 
           {/* Ranking position — hidden for special artists (no IA KPI leaderboard row) */}
-          {!isSpecialArtist && kpiData && kpiData.trafficData && kpiData.trafficData.length > 0 && (
-            <div className="bg-gray-800/50 rounded-lg p-4 flex justify-between items-center">
-              <div>
-                <p className="text-white-400">Your Ranking Position</p>
-                <p className="text-xl font-semibold text-cyan-200">
-                  {artistRank
-                    ? `${String(artistRank).padStart(2, "0")}th`
-                    : "N/A"}
-                </p>
+          {!isSpecialArtist &&
+            kpiData &&
+            kpiData.trafficData &&
+            kpiData.trafficData.length > 0 && (
+              <div className="bg-gray-800/50 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                  <p className="text-white-400">Your Ranking Position</p>
+                  <p className="text-xl font-semibold text-cyan-200">
+                    {artistRank
+                      ? `${String(artistRank).padStart(2, "0")}th`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gray-700">
+                  <img
+                    src={artistImage || "/placeholder.svg?height=40&width=40"}
+                    alt="Profile"
+                    className="w-full h-full rounded-full"
+                  />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-gray-700">
-                <img
-                  src={artistImage || "/placeholder.svg?height=40&width=40"}
-                  alt="Profile"
-                  className="w-full h-full rounded-full"
-                />
-              </div>
-            </div>
-          )}
+            )}
 
           {/* Charts Grid */}
           <div className="space-y-6">

@@ -70,7 +70,7 @@ const getAllTickets = async (req, res) => {
       const tickets = await ticketModel.getAllTickets(ophID);
       res.status(200).json({ success: true, data: tickets });
       console.log("req.query:", tickets);
-      console.log("Controller - ophID:", ophID);
+      // console.log("Controller - ophID:", ophID);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       console.log("Controller - ophID:", ophID);
@@ -159,7 +159,7 @@ const getTicket = async (req, res) => {
       const tv = await ticketModel.getTicket(ticketNumber);
       res.status(200).json({ success: true, data: tv });
       console.log("req.query:", tv);
-      console.log("Controller - ticketNumber:", ticketNumber);
+      // console.log("Controller - ticketNumber:", ticketNumber);
     } catch (error) {
       console.error("Error fetching tv based on ticketNumber:", error);
       console.log("Controller - ticketNumber:", ticketNumber);

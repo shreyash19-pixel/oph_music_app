@@ -9,6 +9,7 @@ import Loading from "../../../components/Loading";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import NavbarRight from "../../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../../components/Navbar/NavbarLeft";
 
 function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   const [name, setName] = useState("");
@@ -21,7 +22,7 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   const [uploading, setUploading] = useState(false);
 
   const { headers } = useArtist();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   console.log(contentId);
 
@@ -134,12 +135,12 @@ function SecondaryArtistForm({ artistType, onClose, onArtistAdd, contentId }) {
   }
 
   return (
-    <div className="mt-4 p-6 bg-gray-900/50 rounded-xl border border-gray-700">
+    <div className="py-0 mt-0 md:mt-4 md:p-6 bg-none border-none md:bg-gray-900/50 rounded-xl md:border border-gray-700">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-cyan-400">
           Add Secondary Artist
         </h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-300 text-2xl">
           ×
         </button>
       </div>
@@ -978,12 +979,18 @@ export default function AudioMetadataForm() {
   // }
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
-      <div className="flex justify-between items-center  mb-8">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] lg:px-8 lg:p-6">
+      <div className="flex justify-between flex-col lg:flex-row mb-8">
+        <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+          <NavbarLeft />
+          <NavbarRight />
+        </div>
         <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           Audio Metadata
         </h2>
-        <NavbarRight />
+        <div className="hidden lg:block">
+          <NavbarRight />
+        </div>
       </div>
       {isLoading && (
         <div className="text-center py-4 min-h-[calc(100dvh-170px)] flex justify-center items-center flex-col">
@@ -1143,7 +1150,7 @@ export default function AudioMetadataForm() {
                     { type: "Producer Artist", artists: producerArtists },
                   ].map(({ type, artists }) => (
                     <div key={type} className="space-y-4">
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between flex-col md:flex-row">
                         <h3 className="text-lg font-semibold">{type}s</h3>
                         <button
                           type="button"
@@ -1156,7 +1163,7 @@ export default function AudioMetadataForm() {
                               behavior: "smooth", // This creates a smooth scrolling effect
                             });
                           }}
-                          className="bg-none border border-cyan-400 text-cyan-400 px-4 py-2 rounded-full hover:bg-cyan-300 hover:text-black transition-colors"
+                          className="bg-none border border-cyan-400 text-cyan-400 px-4 py-2 rounded-full hover:bg-cyan-300 hover:text-black transition-colors w-fit"
                         >
                           Add {type}
                         </button>

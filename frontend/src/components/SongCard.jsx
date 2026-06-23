@@ -118,7 +118,7 @@ const SongCard = ({ releaseData }) => {
       style={{
         backgroundImage: "url('/assets/images/songUploadCardBg.png')",
       }}
-      className="p-10 mt-8 rounded-lg hover:cursor-pointer flex flex-col md:flex-row md:justify-between md:items-center gap-6"
+      className="px-[16px] py-[16px] md:p-10 mt-8 rounded-lg hover:cursor-pointer flex flex-col md:flex-row md:justify-between md:items-center gap-6"
     >
       <div className="space-y-4">
         <div>
@@ -145,14 +145,14 @@ const SongCard = ({ releaseData }) => {
           )}
         </div>
 
-        <button className="bg-[#5DC9DE] text-black rounded-full shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.2),0_1px_2px_rgba(93,201,222,0.15),0_2px_4px_rgba(93,201,222,0.15),0_4px_8px_rgba(93,201,222,0.15),0_8px_16px_rgba(93,201,222,0.15),0_16px_32px_rgba(93,201,222,0.15)]
+        <button className="w-full md:w-fit bg-[#5DC9DE] text-black rounded-full shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.2),0_1px_2px_rgba(93,201,222,0.15),0_2px_4px_rgba(93,201,222,0.15),0_4px_8px_rgba(93,201,222,0.15),0_8px_16px_rgba(93,201,222,0.15),0_16px_32px_rgba(93,201,222,0.15)]
 cursor-pointer inline-block font-sans px-8 py-2 text-center text-base
 transition-all duration-250 border-0 select-none hover:shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.35),0_1px_2px_rgba(93,201,222,0.25),0_2px_4px_rgba(93,201,222,0.25),0_4px_8px_rgba(93,201,222,0.25),0_8px_16px_rgba(93,201,222,0.25),0_16px_32px_rgba(93,201,222,0.25)]">
           Get Details
         </button>
       </div>
 
-      <div className="w-48 h-48 rounded-lg overflow-hidden">
+      <div className="w-full md:w-48 md:h-48 rounded-lg overflow-hidden">
         <img
           src={thumbnailUrl}
           alt={thumbnailAlt}

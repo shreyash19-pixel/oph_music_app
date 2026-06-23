@@ -92,7 +92,7 @@ exports.updateBooking = async (req, res) => {
 };
 
 exports.getAllBookings = async (req, res) => {
-    try {
+    try {        
         const bookings = await bookingModel.getAllBookings();
 
         return res.status(200).json({

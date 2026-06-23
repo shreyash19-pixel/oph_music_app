@@ -5,6 +5,7 @@ import axiosApi from "../../conf/axios";
 import { useArtist } from "../auth/API/ArtistContext";
 import CustomVideoPlayer from "../../components/CustomVideoPlayer/CustomVideoPlayer";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 import "./styles.css";
 
 const AUDIO_CHART_COLORS = [
@@ -478,11 +479,15 @@ export default function AnalyticsDashboard() {
         </div>
       )}
       {!isLoading && !error && (
-        <div className="min-h-[calc(100vh-70px)] px-8 py-6">
+        <div className="min-h-[calc(100vh-70px)] px-[16px] py-[16px] lg:px-8 lg:py-6">
           <div className="space-y-6">
             {/* Header */}
             <div className="flex justify-between items-center  mb-4">
-              <div className="flex items-center justify-between w-full">
+              <div className="flex lg:items-center flex-col lg:flex-row justify-between w-full">
+                <div className="flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+                  <NavbarLeft />
+                  <NavbarRight />
+                </div>
                 <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                   ANALYTICS
                 </h2>
@@ -523,11 +528,13 @@ export default function AnalyticsDashboard() {
                   </button>
                 </div>
               </div>
-              <NavbarRight />
+              <div className="hidden lg:block">
+                <NavbarRight />
+              </div>
             </div>
 
             {/* Song Selection and Platform */}
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <select
                   className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-10 text-gray-200 focus:outline-none focus:border-cyan-400"
@@ -598,7 +605,7 @@ export default function AnalyticsDashboard() {
 
             {/* Video Preview */}
             {selectedStream !== "Audio Platform" && (
-              <div className="overflow-hidden flex items-stretch justify-start">
+              <div className="overflow-hidden flex items-stretch flex-col md:flex-row justify-start gap-[16px] md:gap-0">
                 <div className="relative">
                   {videoData?.video_url ? (
                     <CustomVideoPlayer
@@ -608,7 +615,7 @@ export default function AnalyticsDashboard() {
                           ? JSON.parse(videoData.image_url)[0]
                           : "/assets/images/ytVideoBg.png"
                       }
-                      className="w-[400px] h-[200px] object-cover rounded-lg"
+                      className="w-full md:w-[400px] h-[200px] object-cover rounded-lg"
                       pauseOtherVideos={true}
                     />
                   ) : (
@@ -619,12 +626,12 @@ export default function AnalyticsDashboard() {
                           : "/assets/images/ytVideoBg.png"
                       }
                       alt="Video thumbnail"
-                      className="w-[400px] h-[200px] object-cover rounded-lg"
+                      className="w-full md:w-[400px] h-[200px] object-cover rounded-lg"
                     />
                   )}
                 </div>
 
-                <div className="px-4 py-1">
+                <div className="px-0 md:px-4 py-1">
                   <h3 className="text-lg font-semibold">
                     {selectedContent?.[0]?.song_name ||
                       selectedContent?.[0]?.name ||

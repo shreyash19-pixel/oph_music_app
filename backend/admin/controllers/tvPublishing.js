@@ -14,7 +14,7 @@ const getTv = async (req, res) => {
       const tv = await tvModel.getTv(song_id);
       res.status(200).json({ success: true, data: tv });
       console.log("req.query:", tv);
-      console.log("Controller - song_id:", song_id);
+      // console.log("Controller - song_id:", song_id);
     } catch (error) {
       console.error("Error fetching tv based on song_id:", error);
       console.log("Controller - song_id:", song_id);

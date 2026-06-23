@@ -62,9 +62,9 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
   };
 
   return (
-    <div className="text-white px-8 p-8">
+    <div className="text-white px-[16px] py-[16px] md:px-8 md:py-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+        <h2 className="text-cyan-400 text-xl font-extrabold mb-0 md:mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
           LEADERBOARD
         </h2>
       </div>

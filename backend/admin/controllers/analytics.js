@@ -127,7 +127,7 @@ const getMetricByOph = async (req, res) => {
       });
     } catch (error) {
       console.error("Error fetching Metric:", error);
-      console.log("Controller - ophID:", OPH_ID);
+      // console.log("Controller - ophID:", OPH_ID);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });

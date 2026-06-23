@@ -300,17 +300,17 @@ export default function IncomeWithdrawal() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] md:px-8 py-[16px] md:py-6">
-      <div className="container">
-        <div className="flex items-center justify-between lg:justify-end mb-[16px] block md:hidden">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] lg:px-8 py-[16px] lg:py-6">
+      <div className="w-full">
+        <div className="flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
           <NavbarLeft />
           <NavbarRight />
         </div>
-        <div className="flex justify-between items-center mb-[12px] md:mb-8">
+        <div className="flex justify-between items-center mb-[12px] lg:mb-8">
           <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
             INCOME
           </h2>
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <NavbarRight />
           </div>
         </div>

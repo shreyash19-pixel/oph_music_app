@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useArtist } from "../auth/API/ArtistContext";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 function toLocalDateStr(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -32,6 +33,7 @@ export default function TimeCalendar() {
   const location = useLocation();
   const toastShownRef = useRef(false);
   const [data, setData] = useState([]);
+  const [todaysBookings, setTodaysBookings] = useState([]);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
@@ -44,6 +46,18 @@ export default function TimeCalendar() {
           const dateMap = {};
           const rows = response.data.data || [];
           setData(rows);
+
+          const today = toLocalDateStr(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            new Date().getDate(),
+          );
+          const todays = rows.filter(
+            (item) =>
+              normalizeBookingDateFromApi(item.current_booking_date) === today,
+          );
+          setTodaysBookings(todays);
+
           rows.forEach((item) => {
             const localDateStr = normalizeBookingDateFromApi(
               item.current_booking_date,
@@ -301,7 +315,7 @@ export default function TimeCalendar() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 py-6 ">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] md:px-8 md:py-6 ">
       <div className="space-y-6">
         {isLoading && (
           <div className="text-center py-4">
@@ -324,47 +338,156 @@ export default function TimeCalendar() {
 
         {!isLoading && !error && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row justify-between mb-[16px] lg:mb-8">
+              <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+                <NavbarLeft />
+                <NavbarRight />
+              </div>
               <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                 TIME CALENDAR
               </h2>
-              <NavbarRight />
-            </div>
-
-            <div className="flex items-center justify-end gap-6 flex-wrap">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
-                <span>Booked</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#6B7280]"></div>
-                <span>Reserved (pending approval)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#FF6B6B]"></div>
-                <span>Locked (within 5 days)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>
-                <span>Available</span>
+              <div className="hidden lg:block">
+                <NavbarRight />
               </div>
             </div>
 
-            <div className="border border-gray-800 rounded-lg overflow-hidden">
-              <div className="grid grid-cols-7  bg-cyan-400  text-xs lg:text-lg">
-                {weekDays.map((day, idx) => (
-                  <React.Fragment key={idx}>
-                    <div className="lg:p-6 text-center border border-gray-500 py-3 hidden lg:block font-bold text-gray-900">
-                      {day}
-                    </div>
-                    <div className="lg:p-4 text-center block border border-gray-500 lg:hidden py-4 font-bold text-gray-900">
-                      {day[0] + day[1] + day[2]}
-                    </div>
-                  </React.Fragment>
-                ))}
+            <div className="hidden lg:block">
+              <div className="flex items-center justify-end gap-6 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#6F4FA0]"></div>
+                  <span>Booked</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#6B7280]"></div>
+                  <span>Reserved (pending approval)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#FF6B6B]"></div>
+                  <span>Locked (within 5 days)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#2DDA89]"></div>
+                  <span>Available</span>
+                </div>
               </div>
 
-              <div className="divide-y divide-gray-800">
+              <div className="border border-gray-800 rounded-lg overflow-hidden">
+                <div className="grid grid-cols-7  bg-cyan-400  text-xs lg:text-lg">
+                  {weekDays.map((day, idx) => (
+                    <React.Fragment key={idx}>
+                      <div className="lg:p-6 text-center border border-gray-500 py-3 hidden lg:block font-bold text-gray-900">
+                        {day}
+                      </div>
+                      <div className="lg:p-4 text-center block border border-gray-500 lg:hidden py-4 font-bold text-gray-900">
+                        {day[0] + day[1] + day[2]}
+                      </div>
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                <div className="divide-y divide-gray-800">
+                  {Array.from(
+                    { length: calendarDays.length / 7 },
+                    (_, weekIndex) => (
+                      <div key={weekIndex} className="grid grid-cols-7">
+                        {calendarDays
+                          .slice(weekIndex * 7, weekIndex * 7 + 7)
+                          .map((dayData, idx) =>
+                            renderCalendarCell(dayData, idx),
+                          )}
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end items-center mt-4 gap-4">
+                <button
+                  onClick={() =>
+                    setCurrentMonthIndex((prev) => (prev === 0 ? 11 : prev - 1))
+                  }
+                  className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
+                >
+                  {"<"}
+                </button>
+                <div className="text-white text-lg font-semibold min-w-[120px] text-center">
+                  {months[currentMonthIndex]}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentMonthIndex((prev) => (prev === 11 ? 0 : prev + 1))
+                  }
+                  className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
+                >
+                  {">"}
+                </button>
+                <select
+                  value={currentYear}
+                  onChange={(e) =>
+                    setCurrentYear(parseInt(e.target.value, 10))
+                  }
+                  className="bg-gray-800 text-white rounded px-4 py-2 ml-2"
+                >
+                  {Array.from(
+                    { length: 5 },
+                    (_, i) => new Date().getFullYear() + i,
+                  ).map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="lg:hidden bg-[#1E1A2D]/70 rounded-2xl p-3">
+              <div className="bg-[#4A425B] rounded-lg px-3 py-2">
+                <select
+                  className="w-full bg-transparent text-white font-semibold outline-none cursor-pointer"
+                  value={`${currentMonthIndex}-${currentYear}`}
+                  onChange={(e) => {
+                    const [month, year] = e.target.value.split("-");
+                    setCurrentMonthIndex(Number(month));
+                    setCurrentYear(Number(year));
+                  }}
+                >
+                  {Array.from(
+                    { length: 5 },
+                    (_, y) => new Date().getFullYear() + y,
+                  ).flatMap((year) =>
+                    months.map((month, index) => (
+                      <option
+                        key={`${index}-${year}`}
+                        value={`${index}-${year}`}
+                        className="bg-[#4A425B]"
+                      >
+                        {month} {year}
+                      </option>
+                    )),
+                  )}
+                </select>
+              </div>
+
+              <div className="flex flex-wrap justify-between gap-2 mt-4 text-[10px]">
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 rounded-full bg-[#6F4FA0]" />
+                  <span>Booked</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 rounded-full bg-[#6B7280]" />
+                  <span>Reserved</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 rounded-full bg-[#2DDA89]" />
+                  <span>Available</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 rounded-full bg-[#FF4444]" />
+                  <span>Locked (5 days)</span>
+                </div>
+              </div>
+
+              <div className="mt-4 border border-gray-700">
                 {Array.from(
                   { length: calendarDays.length / 7 },
                   (_, weekIndex) => (
@@ -378,42 +501,27 @@ export default function TimeCalendar() {
                   ),
                 )}
               </div>
-            </div>
 
-            <div className="flex justify-end items-center mt-4 gap-4">
-              <button
-                onClick={() =>
-                  setCurrentMonthIndex((prev) => (prev === 0 ? 11 : prev - 1))
-                }
-                className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
-              >
-                {"<"}
-              </button>
-              <div className="text-white text-lg font-semibold min-w-[120px] text-center">
-                {months[currentMonthIndex]}
+              <div className="bg-[#2A2832] rounded-lg mt-4 overflow-hidden">
+                <div className="bg-cyan-400 text-center text-black font-bold py-2">
+                  {new Date().toLocaleDateString("en-US", { weekday: "long" })}
+                </div>
+
+                {todaysBookings.length > 0 ? (
+                  <div className="flex justify-center items-center gap-2 py-3">
+                    <img
+                      src={todaysBookings[0].personal_photo}
+                      alt={todaysBookings[0].full_name}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <span>{todaysBookings[0].full_name}</span>
+                  </div>
+                ) : (
+                  <div className="py-3 text-center text-gray-400">
+                    No show today
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() =>
-                  setCurrentMonthIndex((prev) => (prev === 11 ? 0 : prev + 1))
-                }
-                className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-full transition"
-              >
-                {">"}
-              </button>
-              <select
-                value={currentYear}
-                onChange={(e) => setCurrentYear(parseInt(e.target.value, 10))}
-                className="bg-gray-800 text-white rounded px-4 py-2 ml-2"
-              >
-                {Array.from(
-                  { length: 5 },
-                  (_, i) => new Date().getFullYear() + i,
-                ).map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
             </div>
           </>
         )}

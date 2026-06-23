@@ -6,6 +6,7 @@ import Loading from "../../components/Loading";
 import toast from "react-hot-toast";
 import { useOutletContext } from "react-router-dom";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 export default function TVPublishing() {
   const [loading, setLoading] = useState(false);
@@ -36,15 +37,16 @@ export default function TVPublishing() {
         console.log("[TVPublishing] contents array:", response.data.data);
 
         setContents(response.data.data);
-        
+
         // Filter only Open and Rejected status items
-        const availableContents = response.data.data.filter(
-          (content) => {
-            const status = content.status?.toLowerCase();
-            return status === "open" || status === "rejected";
-          }
-        );
+        const availableContents = response.data.data.filter((content) => {
+          const status = content.status?.toLowerCase();
+          return status === "open" || status === "rejected";
+        });
+
+        console.log("available contents",availableContents);
         
+
         if (availableContents.length > 0) {
           const first = availableContents[0];
           console.log("[TVPublishing] first item keys:", Object.keys(first));
@@ -61,7 +63,9 @@ export default function TVPublishing() {
           setSelectedContentId(first.song_id);
           setSelectedContent(first);
         } else {
-          console.warn("[TVPublishing] No Open or Rejected status contents available");
+          console.warn(
+            "[TVPublishing] No Open or Rejected status contents available",
+          );
           setSelectedContentId(null);
           setSelectedContent(null);
         }
@@ -130,20 +134,16 @@ export default function TVPublishing() {
       setLoading(true);
       const toastId = toast.loading("Uploading video to storage...");
 
-      const videoUrl = await uploadVideoViaPresignedPut(
-        axiosApi,
-        files.video,
-        {
-          purpose: "tv-publishing",
-          headers,
-          params: { song_id: selectedContent.song_id },
-          onUploadProgress: (e) => {
-            if (!e.total) return;
-            const progress = Math.round((e.loaded / e.total) * 100);
-            setUploadProgress((prev) => ({ ...prev, video: progress }));
-          },
+      const videoUrl = await uploadVideoViaPresignedPut(axiosApi, files.video, {
+        purpose: "tv-publishing",
+        headers,
+        params: { song_id: selectedContent.song_id },
+        onUploadProgress: (e) => {
+          if (!e.total) return;
+          const progress = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress((prev) => ({ ...prev, video: progress }));
         },
-      );
+      });
       formData.append("video_url", videoUrl);
 
       toast.loading("Uploading audio...", { id: toastId });
@@ -165,18 +165,16 @@ export default function TVPublishing() {
         toast.success("Content uploaded successfully!");
         setFiles({ audio: null, video: null });
         setAgreement(false);
-        
+
         const refreshResponse = await axiosApi.get(`/TvUser?OPH_ID=${ophid}`);
         setContents(refreshResponse.data.data);
-        
+
         // Filter only Open and Rejected status items after refresh
-        const availableContents = refreshResponse.data.data.filter(
-          (c) => {
-            const status = c.status?.toLowerCase();
-            return status === "open" || status === "rejected";
-          }
-        );
-        
+        const availableContents = refreshResponse.data.data.filter((c) => {
+          const status = c.status?.toLowerCase();
+          return status === "open" || status === "rejected";
+        });
+
         if (availableContents.length > 0) {
           // Select the first available item
           setSelectedContentId(availableContents[0].song_id);
@@ -232,7 +230,7 @@ export default function TVPublishing() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-8 p-6">
+    <div className="min-h-[calc(100vh-70px)] text-gray-100 px-[16px] py-[16px] lg:px-8 lg:p-6">
       {loading && <Loading />}
       {!loading && (
         <div
@@ -240,17 +238,28 @@ export default function TVPublishing() {
             contents.length === 0 ? "" : "w-full"
           }`}
         >
-          <div className="flex justify-between items-center  mb-8">
+          <div className="flex justify-between flex-col lg:flex-row mb-8">
+            <div className="flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+              <NavbarLeft />
+              <NavbarRight />
+            </div>
             <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
               TV PUBLISHING
             </h2>
-            <NavbarRight />
+            <div className="hidden lg:block">
+              <NavbarRight />
+            </div>
           </div>
 
           {contents.length === 0 ? (
-            <div className="flex items-center justify-center h-[60vh] flex-col gap-6">
+            <div className="flex items-center justify-center h-[60vh] flex-col gap-0 lg:gap-6 ">
               <UnlockIcon />
-              <p className="text-center text-cyan-300">You can submit your songs to request access to this section. If your song meets the eligibility criteria for TV,<br/>  the OPH Community Administration team will review your submission and unlock the section for you. Thank you.</p>
+              <p className="text-center text-cyan-300 max-w-[800px]">
+                You can submit your songs to request access to this section. If
+                your song meets the eligibility criteria for TV,
+                the OPH Community Administration team will review your
+                submission and unlock the section for you. Thank you.
+              </p>
             </div>
           ) : (
             <div className="  ">
@@ -275,7 +284,9 @@ export default function TVPublishing() {
                       const status = content.status?.toLowerCase();
                       return status === "open" || status === "rejected";
                     })
-                    .sort((a, b) => (a.song_name || "").localeCompare(b.song_name || ""))
+                    .sort((a, b) =>
+                      (a.song_name || "").localeCompare(b.song_name || ""),
+                    )
                     .map((content) => (
                       <option key={content.song_id} value={content.song_id}>
                         {content.song_name}
@@ -301,7 +312,7 @@ export default function TVPublishing() {
 
                 return (
                   shouldShowForm && (
-                    <div className="relative space-y-6 mt-6 p-4 border rounded-lg">
+                    <div className="relative space-y-6 mt-6 p-0 md:p-4 border-none md:border rounded-lg">
                       {(selectedContent?.status === "Rejected" ||
                         selectedContent?.status === "rejected") &&
                         selectedContent?.reason && (
