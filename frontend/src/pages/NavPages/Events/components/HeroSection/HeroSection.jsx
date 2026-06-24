@@ -271,30 +271,22 @@ export default function HeroSection({ professions = [] }) {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg max-w-md w-full mx-4">
-          <form onSubmit={onSubmit} className="space-y-4 p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div className="relative bg-gray-800 rounded-lg w-[90%] sm:w-full sm:max-w-md max-h-[85vh] overflow-y-auto mx-auto">
+          <form onSubmit={onSubmit} className="space-y-3 p-5">
             <div className="flex justify-between items-center">
-              <h3 className="text-white text-lg font-semibold">
-                Register for Event
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
+              <h3 className="text-white text-sm sm:text-lg font-semibold">Register for Event</h3>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white text-sm">✕</button>
             </div>
 
-            <div className="flex gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <input
                 name="first_name"
                 value={form.first_name}
                 onChange={onChange}
                 required
                 placeholder="First name*"
-                className="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600"
+                className="w-full px-3 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600"
               />
               <input
                 name="last_name"
@@ -302,7 +294,7 @@ export default function HeroSection({ professions = [] }) {
                 onChange={onChange}
                 required
                 placeholder="Last name*"
-                className="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600"
+                className="w-full px-3 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600"
               />
             </div>
 
@@ -313,7 +305,7 @@ export default function HeroSection({ professions = [] }) {
               required
               type="email"
               placeholder="Email*"
-              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+              className="w-full px-3 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600"
             />
             <input
               name="instagram_handle"
@@ -321,11 +313,11 @@ export default function HeroSection({ professions = [] }) {
               onChange={onChange}
               required
               placeholder="username or https://instagram.com/username"
-              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+              className="w-full px-3 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600"
             />
 
             <div className="flex gap-2">
-              <select className="w-16 p-2 rounded bg-gray-700 text-white border border-gray-600">
+              <select className="w-16 px-2 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600 appearance-none text-center">
                 <option>+91</option>
               </select>
               <input
@@ -334,28 +326,33 @@ export default function HeroSection({ professions = [] }) {
                 onChange={onChange}
                 required
                 placeholder="Phone*"
-                className="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600"
+                className="flex-1 px-3 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600"
               />
             </div>
 
-            <select
-              name="profession_id"
-              value={form.profession_id}
-              onChange={onChange}
-              required
-              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-            >
-              <option value="">Select Profession</option>
-              {professions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative w-full">
+              <select
+                name="profession_id"
+                value={form.profession_id}
+                onChange={onChange}
+                required
+                className="w-full px-3 py-2 text-sm rounded-md bg-[#2d3748] text-white border border-gray-600 appearance-none pr-8"
+              >
+                <option value="">Select Profession</option>
+                {professions.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
 
             <button
               disabled={isSubmitting}
-              className="w-full bg-cyan-400 text-black py-2 rounded font-medium"
+              className="w-full bg-cyan-400 text-black py-2 text-sm rounded-md font-medium"
             >
               {isSubmitting ? "Submitting..." : "Submit"}
             </button>
@@ -459,7 +456,7 @@ export default function HeroSection({ professions = [] }) {
                     </div>
 
                     <div className="mt-6 lg:mt-0">
-                      <div className="flex flex-col items-center bg-gradient-to-b from-[#FFFFFF26] to-[#FFFFFF00] w-[285px] h-[118px] rounded-xl py-5 backdrop-blur-[12px]">
+                      <div className="flex flex-col items-center bg-gradient-to-b from-[#FFFFFF26] to-[#FFFFFF00] w-[285px] h-[118px] rounded-xl py-5 backdrop-blur-[12px] mb-6 sm:mb-0">
                         <span className="text-[18px] uppercase text-white">
                           Chance to Win
                         </span>

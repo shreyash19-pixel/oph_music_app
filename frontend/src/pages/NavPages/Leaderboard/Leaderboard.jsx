@@ -107,11 +107,15 @@ function Leaderboard() {
   const [uniqueLocations, setUniqueLocations] = useState([]);
   const [uniqueStageNames, setUniqueStageNames] = useState([]);
   const [uniqueRanks, setUniqueRanks] = useState([]);
-  // const [uniqueProfessions, setUniqueProfessions] = useState([]);
-  const leaderboardMonthEntries = useMemo(
-    () => flattenLeaderboardHistory(artistsData),
-    [artistsData],
-  );
+  const getCurrentYear = new Date().getFullYear();
+
+  const leaderboardMonthEntries = useMemo(() => {
+    const data = asMonthArtistMap(artistsData);
+    const entries = Object.entries(data).filter(([, artists]) =>
+      Array.isArray(artists),
+    );
+    return sortMonthEntriesLatestFirst(entries);
+  }, [artistsData]);
 
   useEffect(() => {
     const fetchArtist = async () => {
@@ -139,14 +143,11 @@ function Leaderboard() {
   }, []);
 
   const handleSearch = (artist_name) => {
-    console.log(artist_name);
-
     if (artist_name.trim() === "") {
       setArtistExists([]);
       return;
     }
     const normalizedArtistName = artist_name.toLowerCase();
-    console.log(normalizedArtistName);
 
     setSearchArtist(normalizedArtistName);
     const data = asMonthArtistMapFromHistory(artistsData);
@@ -231,6 +232,12 @@ function Leaderboard() {
     setShowFilterModal(false);
   };
 
+  const getRankBadgeStyles = (index) => {
+    if (index === 0) return "bg-[#F3A823] text-black";
+    if (index === 1) return "bg-[#26D07C] text-black";
+    return "bg-[#29B6F6] text-black";
+  };
+
   const customStyles = {
     control: (provided) => ({
       ...provided,
@@ -279,31 +286,36 @@ function Leaderboard() {
           content="Find top-ranked independent artists epk on India’s top music networking platform for creators. Use filters by location and profession to connect and collaborate."
         />
       </Helmet>
+
       {loading && (
         <div className="text-center h-[90vh] w-full py-32">
           <div className="animate-spin rounded-full w-12 h-12 border-b-2 border-[#5DC9DE] mx-auto"></div>
           <p className="mt-2 text-[#5DC9DE]">Warming up... Almost there!</p>
         </div>
       )}
+
       {!loading && (
         <div className="scroll-smooth min-h-screen bg-black text-white">
           <HeroSection
             handleSearch={handleSearch}
             setArtistExists={setArtistExists}
             artistExists={artistExists}
-            handleFilter={() => setShowFilterModal(true)} // Pass handleFilter as a prop
+            handleFilter={() => setShowFilterModal(true)}
           />
           <div className="lg:px-10 px-6 xl:px-16">
             <div className="container w-full mb-8 h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
           </div>
+
           {leaderboardMonthEntries.length === 0 && (
             <div className="px-6 lg:px-10 xl:px-16 pb-24 text-center">
               <p className="text-gray-400 text-lg max-w-xl mx-auto">
-                Leaderboard rankings are not available yet. When monthly KPI data
-                is published, top artists will appear here.
+                Leaderboard rankings are not available yet. When monthly KPI
+                data is published, top artists will appear here.
               </p>
             </div>
           )}
+
+          {/* ================= DESKTOP VIEW ================= */}
           {leaderboardMonthEntries.map(([title, artists]) => {
             const topArtists = getTopArtistsForMonth(artists);
             return (
@@ -312,44 +324,32 @@ function Leaderboard() {
                 className="bg-black hidden sm:block p-4 md:px-10 xl:px-16 text-white"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2
-                    className="text-[#5DC9DE] text-3xl sm:text-3xl font-extrabold uppercase tracking-wide 
-   drop-shadow-[0_0_15px_rgba(34,211,238,1)]"
-                  >
+                  <h2 className="text-[#5DC9DE] text-3xl font-extrabold uppercase tracking-wide drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
                     {title}
                   </h2>
                 </div>
 
-                {/* Table Header */}
                 <div className="flex items-center text-gray-400 text-sm uppercase mb-4 px-4">
                   <div className="flex-1 relative left-2">#</div>
                   <div className="flex-1">Artist</div>
                   <div className="flex-1">Stage Name</div>
-                  <div className="flex-1 hidden sm:block">Location</div>
+                  <div className="flex-1">Location</div>
                   <div className="flex-1 text-center">Songs</div>
                   <div className="flex-1 text-center">Reach</div>
-                  <div className="flex-1 hidden sm:block text-center">
-                    Profile
-                  </div>
+                  <div className="flex-1 text-center">Profile</div>
                 </div>
-                <div className="container w-full  h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
+                <div className="container w-full h-[1px] mx-auto bg-gray-400 opacity-30 relative mb-2"></div>
 
-                {/* Artist Rows */}
                 <div className="space-y-2">
                   {topArtists.map((artist, index) => (
                     <div
                       key={`${title}-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
-                      ref={(el) => {
-                        const key = (artist.stage_name || "").toLowerCase();
-                        if (key) artistRefs.current[key] = el;
-                      }}
                       className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                         artistExists &&
                         artistExists.some(
                           (art) =>
                             (art.stage_name || "").toLowerCase() ===
                             (artist.stage_name || "").toLowerCase(),
-                          // || art.name.toLowerCase() === artist.name.toLowerCase()
                         )
                           ? "bg-[#6F4FA0] text-white"
                           : "hover:bg-gray-900/30"
@@ -357,22 +357,13 @@ function Leaderboard() {
                     >
                       <div className="flex-1">
                         <span
-                          className={`text-lg font-bold ${
-                            index === 0
-                              ? "bg-amber-400 p-2 text-black text-xl"
-                              : index === 1
-                                ? "bg-green-400 p-2 text-black text-xl"
-                                : index === 2
-                                  ? "bg-cyan-400 p-2 text-black text-xl"
-                                  : "p-2 text-gray-300"
-                          }`}
+                          className={`text-lg font-bold ${index === 0 ? "bg-amber-400 p-2 text-black text-xl" : index === 1 ? "bg-green-400 p-2 text-black text-xl" : index === 2 ? "bg-cyan-400 p-2 text-black text-xl" : "p-2 text-gray-300"}`}
                         >
-                          {artist.rank < 10
+                          {artist.ranks < 10
                             ? `0${artist.ranks}`
                             : `${artist.ranks}`}
                         </span>
                       </div>
-
                       <div className="flex-1">
                         <div className="w-10 h-10 rounded-full overflow-hidden">
                           <img
@@ -382,11 +373,10 @@ function Leaderboard() {
                           />
                         </div>
                       </div>
-
                       <div className="flex-1 text-gray-300">
                         {artist.stage_name}
                       </div>
-                      <div className="flex-1 text-gray-300 hidden sm:block">
+                      <div className="flex-1 text-gray-300">
                         {artist.location}
                       </div>
                       <div className="flex-1 text-center text-gray-300">
@@ -395,23 +385,19 @@ function Leaderboard() {
                       <div className="flex-1 text-center text-gray-300">
                         {formatListeners(artist.total_views)}
                       </div>
-
-                      {/* Show the View Profile button on medium screens and above */}
-                      <div className="flex-1 justify-center items-center w-full hidden sm:flex">
-                        <div className="flex-1 justify-center items-center w-full hidden sm:flex">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const oid = resolveLeaderboardOphId(artist);
-                              if (!oid) return;
-                              void navigateToArtistDetail(navigate, oid);
-                            }}
-                            className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
-                          >
-                            View Profile
-                          </button>
-                        </div>
+                      <div className="flex-1 justify-center items-center flex">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const oid = resolveLeaderboardOphId(artist);
+                            if (!oid) return;
+                            void navigateToArtistDetail(navigate, oid);
+                          }}
+                          className="px-4 py-1 text-sm text-[#5DC9DE] border border-[#5DC9DE] rounded-full hover:bg-cyan-400 hover:text-black transition-colors"
+                        >
+                          View Profile
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -419,105 +405,131 @@ function Leaderboard() {
               </div>
             );
           })}
+
+          {/* ================= FIXED MOBILE SPECIFIC VERTICAL CARDS VIEW ================= */}
           {leaderboardMonthEntries.map(([title, artists]) => {
             const topArtists = getTopArtistsForMonth(artists);
             return (
               <div
-                key={title}
-                className="bg-black block sm:hidden p-4 md:px-10 xl:px-16 text-white"
+                key={`${title}-mobile-container`}
+                className="bg-black block sm:hidden p-6 text-white max-w-sm mx-auto"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-[#5DC9DE] text-2xl font-bold">{title}</h2>
+                {/* Left aligned header title like LEADERBOARD.jpg */}
+                <div className="mb-6 text-left">
+                  <h2 className="text-[#5DC9DE] text-2xl font-extrabold uppercase tracking-widest drop-shadow-[0_0_12px_rgba(34,211,238,0.6)]">
+                    {title}
+                  </h2>
                 </div>
 
-                {/* Table Header */}
-                <div className="flex items-center text-gray-400 text-sm uppercase mb-4 px-4">
-                  <div className="flex-1 relative left-2">#</div>
-                  <div className="flex-1">Artist</div>
-                  <div className="flex-1">Stage Name</div>
-                  <div className="flex-1 text-center">Songs</div>
-                  <div className="flex-1 text-center">Reach</div>
-                  <div className="flex-1 hidden sm:block text-center">
-                    Profile
-                  </div>
-                </div>
-                <div className="container w-full  h-[1px] mx-auto bg-gray-400 opacity-30 relative"></div>
+                {/* Pure Vertical Cards Stack Stacked Top-to-Bottom */}
+                <div className="flex flex-col space-y-8">
+                  {topArtists.map((artist, index) => {
+                    const formattedRank =
+                      artist.ranks < 10
+                        ? `0${artist.ranks}`
+                        : `${artist.ranks}`;
+                    const isHighlighted =
+                      artistExists &&
+                      artistExists.some(
+                        (art) =>
+                          (art.stage_name || "").toLowerCase() ===
+                          (artist.stage_name || "").toLowerCase(),
+                      );
 
-                {/* Artist Rows */}
-                <div className="space-y-2">
-                  {topArtists.map((artist, index) => (
-                    <div
-                      key={`${title}-mobile-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
-                      ref={(el) => {
-                        const key = (artist.stage_name || "").toLowerCase();
-                        if (key) artistRefs.current[key] = el;
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
-                        const oid = resolveLeaderboardOphId(artist);
-                        if (!oid) return;
-                        void navigateToArtistDetail(navigate, oid);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          const oid = resolveLeaderboardOphId(artist);
-                          if (!oid) return;
-                          void navigateToArtistDetail(navigate, oid);
-                        }
-                      }}
-                      className={`flex items-center px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                        artistExists &&
-                        artistExists.some(
-                          (art) =>
-                            (art.stage_name || "").toLowerCase() ===
-                            (artist.stage_name || "").toLowerCase(),
-                          // ||
-                          //art.name.toLowerCase() === artist.name.toLowerCase()
-                        )
-                          ? "bg-[#6F4FA0] text-white"
-                          : "hover:bg-gray-900/30"
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <span
-                          className={`text-lg font-bold ${
-                            index === 0
-                              ? "bg-amber-400 p-2 text-black text-xl"
-                              : index === 1
-                                ? "bg-green-400 p-2 text-black text-xl"
-                                : index === 2
-                                  ? "bg-cyan-400 p-2 text-black text-xl"
-                                  : "p-2 text-gray-300"
-                          }`}
-                        >
-                          {artist.rank < 10
-                            ? `0${artist.ranks}`
-                            : `${artist.ranks}`}
-                        </span>
-                      </div>
+                    return (
+                      <div
+                        key={`${title}-mobile-card-${resolveLeaderboardOphId(artist) || artist.stage_name || index}`}
+                        ref={(el) => {
+                          const key = (artist.stage_name || "").toLowerCase();
+                          if (key) artistRefs.current[key] = el;
+                        }}
+                        className={`w-full flex flex-col bg-transparent pb-6 border-b border-gray-900 last:border-b-0 text-left transition-colors rounded-md ${
+                          isHighlighted ? "bg-[#6F4FA0]/20 px-2 pt-2" : ""
+                        }`}
+                      >
+                        {/* 1. CARD HEADER ROW: Rank box, Avatar circle, Stage name text label column */}
+                        <div className="flex items-center space-x-4 w-full">
+                          {/* Design Accurate Square Rank Box */}
+                          <div
+                            className={`w-11 h-11 flex items-center justify-center font-black text-base shrink-0 ${getRankBadgeStyles(index)}`}
+                          >
+                            {formattedRank}
+                          </div>
 
-                      <div className="flex-1">
-                        <div className="w-10 h-10 rounded-full overflow-hidden">
-                          <img
-                            src={artist.personal_photo}
-                            alt={artist.stage_name}
-                            className="w-full h-full object-cover"
-                          />
+                          {/* Round Profile Thumbnail */}
+                          <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-800 shrink-0">
+                            <img
+                              src={artist.personal_photo}
+                              alt={artist.stage_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.src =
+                                  "https://via.placeholder.com/150";
+                              }}
+                            />
+                          </div>
+
+                          {/* Description Stack Container */}
+                          <div className="flex flex-col justify-center">
+                            <span className="text-[10px] text-gray-500 font-bold tracking-widest uppercase leading-none">
+                              STAGE NAME
+                            </span>
+                            <span className="text-sm font-extrabold text-white uppercase tracking-wide mt-1">
+                              {artist.stage_name || "UNKNOWN"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 2. MIDDLE METRICS COMPONENT: 3 Columns Grid View */}
+                        <div className="grid grid-cols-3 gap-2 w-full mt-5 pt-4 border-t border-gray-900/50">
+                          {/* Location Block */}
+                          <div className="flex flex-col">
+                            <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
+                              LOCATION
+                            </span>
+                            <span className="text-xs font-black text-white uppercase mt-0.5 truncate">
+                              {artist.location || "MUMBAI"}
+                            </span>
+                          </div>
+
+                          {/* Songs Block */}
+                          <div className="flex flex-col text-center">
+                            <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
+                              SONGS
+                            </span>
+                            <span className="text-xs font-black text-white mt-0.5">
+                              {artist.song_count ?? "0"}
+                            </span>
+                          </div>
+
+                          {/* Reach Block */}
+                          <div className="flex flex-col text-right">
+                            <span className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">
+                              REACH
+                            </span>
+                            <span className="text-xs font-black text-white mt-0.5 break-all">
+                              {formatListeners(artist.total_views)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 3. BOTTOM FOOTER SECTION: Full width pill button link */}
+                        <div className="w-full mt-5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const oid = resolveLeaderboardOphId(artist);
+                              if (!oid) return;
+                              void navigateToArtistDetail(navigate, oid);
+                            }}
+                            className="w-full py-2.5 text-center text-xs font-bold tracking-widest text-[#5DC9DE] bg-transparent border border-gray-800 rounded-full active:bg-[#5DC9DE] active:text-black transition-all duration-150 uppercase"
+                          >
+                            View Profile
+                          </button>
                         </div>
                       </div>
-                      <div className="flex-1 text-gray-300">
-                        {artist.stage_name}
-                      </div>
-                      <div className="flex-1 text-center text-gray-300">
-                        {artist.song_count}
-                      </div>
-                      <div className="flex-1 text-center text-gray-300">
-                        {formatListeners(artist.total_views)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -528,7 +540,7 @@ function Leaderboard() {
       {/* Filter Modal */}
       {showFilterModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-black p-6 rounded-lg max-w-md w-full">
+          <div className="bg-black p-6 rounded-lg max-w-md w-full border border-gray-900">
             <h2 className="text-2xl font-bold mb-4 text-white">
               Filter Artists
             </h2>
@@ -547,31 +559,15 @@ function Leaderboard() {
                 onChange={handleFilterChange}
               />
             </div>
-            {/* <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Profession</label>
-              <Select
-                name="profession"
-                isMulti
-                options={uniqueProfessions.map((profession) => ({
-                  value: profession,
-                  label: profession,
-                }))}
-                className="basic-multi-select"
-                classNamePrefix="select"
-                styles={customStyles}
-                onChange={handleFilterChange}
-              />
-            </div> */}
-
-            <div className="flex justify-end">
+            <div className="flex justify-end mt-6">
               <button
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg mr-2"
+                className="bg-gray-800 text-gray-300 px-4 py-2 rounded-lg mr-2 text-sm font-semibold"
                 onClick={() => setShowFilterModal(false)}
               >
                 Cancel
               </button>
               <button
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg"
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
                 onClick={applyFilters}
               >
                 Apply

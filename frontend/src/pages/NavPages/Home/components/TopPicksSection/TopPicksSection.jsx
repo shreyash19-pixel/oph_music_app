@@ -207,145 +207,285 @@ const TopPicksSection = () => {
           </p>
         </div>
 
-        <Slider {...settings} className="gap-6">
-          {Array.isArray(artistData) &&
-            artistData.map((artist, index) => {
-                const fullName = String(artist.fullName || "").trim();
-                const stageName = String(artist.stageName || "").trim();
-                const headline = fullName || stageName || "Artist";
-                const showStage =
-                  Boolean(fullName && stageName) && fullName.toLowerCase() !== stageName.toLowerCase();
+        {/* Desktop - Original Slider */}
+        <div className="hidden md:block">
+          <Slider {...settings} className="gap-6">
+            {Array.isArray(artistData) &&
+              artistData.map((artist, index) => {
+                  const fullName = String(artist.fullName || "").trim();
+                  const stageName = String(artist.stageName || "").trim();
+                  const headline = fullName || stageName || "Artist";
+                  const showStage =
+                    Boolean(fullName && stageName) && fullName.toLowerCase() !== stageName.toLowerCase();
 
-                return (
-                <div
-                  key={index}
-                  className="lg:px-4 px-10 py-5 max-w-full sm:max-w-[95%]"
-                >
-                  <div className="relative overflow-visible rounded-xl">
-                    <div
-                      className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
-                        index + 1
-                      )} w-16 h-16 flex items-center justify-center rounded-lg -rotate-12`}
-                    >
-                      <span className="text-black text-4xl font-bold">
-                        {index + 1}
-                      </span>
-                    </div>
-
-                    <div
-                      className="relative h-64 hover:cursor-pointer overflow-hidden rounded-t-xl"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log("Clicked artist:", artist.oph_id);
-                        navigateToArtistDetail(navigate, artist.oph_id);
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />
-                      <Image
-                        src={artist.personalPhoto || "/default-avatar.png"}
-                        fallback={<Shimmer width={400} height={300} />}
-                        alt={headline}
-                        NativeImgProps={{
-                          className: "w-full h-full object-cover",
-                        }}
-                      />
-                      <div className="absolute bottom-0 left-0 p-6 text-white z-10">
-                        <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
-                          {headline}
-                        </h3>
-                        {showStage && (
-                          <p className="text-sm text-gray-300">
-                            Stage name:{" "}
-                            <span className="text-[#5DC9DE]">{stageName}</span>
-                          </p>
-                        )}
+                  return (
+                  <div
+                    key={index}
+                    className="lg:px-4 px-10 py-5 max-w-full sm:max-w-[95%]"
+                  >
+                    <div className="relative overflow-visible rounded-xl">
+                      <div
+                        className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
+                          index + 1
+                        )} w-16 h-16 flex items-center justify-center rounded-lg -rotate-12`}
+                      >
+                        <span className="text-black text-4xl font-bold">
+                          {index + 1}
+                        </span>
                       </div>
-                    </div>
 
-                    <div className="xl:p-6 p-4 bg-black">
-                      {artist.songs && artist.songs.length > 0 ? (
-                        artist.songs.slice(0, 5).map((song, songIndex) => (
-                          <div
-                            key={song.songId}
-                            className="flex items-start z-40 justify-between py-3 border-b border-gray-800 last:border-0"
-                          >
-                            <div>
-                              <div className="flex items-center gap-4">
-                                <span className="text-gray-500">
-                                  {songIndex < 10
-                                    ? "0" + (songIndex + 1)
-                                    : songIndex + 1}
-                                </span>
-                                <div>
-                                  <h4 className="font-semibold">{song.songName}</h4>
-                                  <p className="text-sm text-gray-400">
-                                    {song.primaryArtist}
-                                    {(song.secondaryArtist || []).length > 0 && (
-                                      <span>, {(song.secondaryArtist || []).join(", ")}</span>
-                                    )}
-                                  </p>
+                      <div
+                        className="relative h-64 hover:cursor-pointer overflow-hidden rounded-t-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log("Clicked artist:", artist.oph_id);
+                          navigateToArtistDetail(navigate, artist.oph_id);
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />
+                        <Image
+                          src={artist.personalPhoto || "/default-avatar.png"}
+                          fallback={<Shimmer width={400} height={300} />}
+                          alt={headline}
+                          NativeImgProps={{
+                            className: "w-full h-full object-cover",
+                          }}
+                        />
+                        <div className="absolute bottom-0 left-0 p-6 text-white z-10">
+                          <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
+                            {headline}
+                          </h3>
+                          {showStage && (
+                            <p className="text-sm text-gray-300">
+                              Stage name:{" "}
+                              <span className="text-[#5DC9DE]">{stageName}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="xl:p-6 p-4 bg-black">
+                        {artist.songs && artist.songs.length > 0 ? (
+                          artist.songs.slice(0, 5).map((song, songIndex) => (
+                            <div
+                              key={song.songId}
+                              className="flex items-start z-40 justify-between py-3 border-b border-gray-800 last:border-0"
+                            >
+                              <div>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-gray-500">
+                                    {songIndex < 10
+                                      ? "0" + (songIndex + 1)
+                                      : songIndex + 1}
+                                  </span>
+                                  <div>
+                                    <h4 className="font-semibold">{song.songName}</h4>
+                                    <p className="text-sm text-gray-400">
+                                      {song.primaryArtist}
+                                      {(song.secondaryArtist || []).length > 0 && (
+                                        <span>, {(song.secondaryArtist || []).join(", ")}</span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div
+                                className="flex flex-col items-center gap-1.5 ml-4 flex-shrink-0 min-w-[104px]"
+                                onPointerDown={stopSlickSwipe}
+                                onMouseDown={stopSlickSwipe}
+                                onTouchStart={stopSlickSwipe}
+                                onTouchMove={stopSlickSwipe}
+                              >
+                                <button
+                                  type="button"
+                                  className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePlayPause(song);
+                                  }}
+                                >
+                                  {playingSongId === song.songId && !audioRef.current?.paused ? (
+                                    <FaPause className="text-black" size={11} />
+                                  ) : (
+                                    <FaPlay className="text-black ml-[0.5px]" size={11} />
+                                  )}
+                                </button>
+                                <div className="h-8 w-full flex items-center shrink-0 touch-none">
+                                  {activeSeekSongId === song.songId && audioProgress.duration > 0 && (
+                                    <input
+                                      type="range"
+                                      min={0}
+                                      max={audioProgress.duration}
+                                      step={0.01}
+                                      value={Math.min(audioProgress.current, audioProgress.duration)}
+                                      onChange={(e) => handleSeek(song.songId, e.target.value)}
+                                      onPointerDown={(e) => {
+                                        stopSlickSwipe(e);
+                                        isSeekingRef.current = true;
+                                      }}
+                                      onMouseDown={(e) => {
+                                        stopSlickSwipe(e);
+                                        isSeekingRef.current = true;
+                                      }}
+                                      onTouchStart={(e) => {
+                                        stopSlickSwipe(e);
+                                        isSeekingRef.current = true;
+                                      }}
+                                      aria-label={`Seek ${song.songName || "track"}`}
+                                      className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
+                                    />
+                                  )}
                                 </div>
                               </div>
                             </div>
-                            <div
-                              className="flex flex-col items-center gap-1.5 ml-4 flex-shrink-0 min-w-[104px]"
-                              onPointerDown={stopSlickSwipe}
-                              onMouseDown={stopSlickSwipe}
-                              onTouchStart={stopSlickSwipe}
-                              onTouchMove={stopSlickSwipe}
-                            >
-                              <button
-                                type="button"
-                                className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handlePlayPause(song);
-                                }}
-                              >
-                                {playingSongId === song.songId && !audioRef.current?.paused ? (
-                                  <FaPause className="text-black" size={11} />
-                                ) : (
-                                  <FaPlay className="text-black ml-[0.5px]" size={11} />
-                                )}
-                              </button>
-                              <div className="h-8 w-full flex items-center shrink-0 touch-none">
-                                {activeSeekSongId === song.songId && audioProgress.duration > 0 && (
-                                  <input
-                                    type="range"
-                                    min={0}
-                                    max={audioProgress.duration}
-                                    step={0.01}
-                                    value={Math.min(audioProgress.current, audioProgress.duration)}
-                                    onChange={(e) => handleSeek(song.songId, e.target.value)}
-                                    onPointerDown={(e) => {
-                                      stopSlickSwipe(e);
-                                      isSeekingRef.current = true;
-                                    }}
-                                    onMouseDown={(e) => {
-                                      stopSlickSwipe(e);
-                                      isSeekingRef.current = true;
-                                    }}
-                                    onTouchStart={(e) => {
-                                      stopSlickSwipe(e);
-                                      isSeekingRef.current = true;
-                                    }}
-                                    aria-label={`Seek ${song.songName || "track"}`}
-                                    className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
-                                  />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-500 text-center py-4">No songs available</p>
-                      )}
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">No songs available</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                );
-              })}
-        </Slider>
+                  );
+                })}
+          </Slider>
+        </div>
+
+        {/* Mobile - Horizontal Scroll */}
+        <div className="block md:hidden px-4 mb-16">
+          <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide">
+            {Array.isArray(artistData) &&
+              artistData.map((artist, index) => {
+                  const fullName = String(artist.fullName || "").trim();
+                  const stageName = String(artist.stageName || "").trim();
+                  const headline = fullName || stageName || "Artist";
+                  const showStage =
+                    Boolean(fullName && stageName) && fullName.toLowerCase() !== stageName.toLowerCase();
+
+                  return (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 w-[300px]"
+                  >
+                    <div className="relative overflow-visible rounded-xl">
+                      <div
+                        className={`absolute left-[-10px] top-[-10px] z-10 ${rankToColor(
+                          index + 1
+                        )} w-16 h-16 flex items-center justify-center rounded-lg -rotate-12`}
+                      >
+                        <span className="text-black text-4xl font-bold">
+                          {index + 1}
+                        </span>
+                      </div>
+
+                      <div
+                        className="relative h-64 hover:cursor-pointer overflow-hidden rounded-t-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log("Clicked artist:", artist.oph_id);
+                          navigateToArtistDetail(navigate, artist.oph_id);
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0" />
+                        <Image
+                          src={artist.personalPhoto || "/default-avatar.png"}
+                          fallback={<Shimmer width={400} height={300} />}
+                          alt={headline}
+                          NativeImgProps={{
+                            className: "w-full h-full object-cover",
+                          }}
+                        />
+                        <div className="absolute bottom-0 left-0 p-6 text-white z-10">
+                          <h3 className="text-2xl drop-shadow-[0_0_20px_white] font-bold mb-1">
+                            {headline}
+                          </h3>
+                          {showStage && (
+                            <p className="text-sm text-gray-300">
+                              Stage name:{" "}
+                              <span className="text-[#5DC9DE]">{stageName}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-black">
+                        {artist.songs && artist.songs.length > 0 ? (
+                          artist.songs.slice(0, 5).map((song, songIndex) => (
+                            <div
+                              key={song.songId}
+                              className="flex items-start justify-between py-3 border-b border-gray-800 last:border-0"
+                            >
+                              <div>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-gray-500">
+                                    {songIndex < 10
+                                      ? "0" + (songIndex + 1)
+                                      : songIndex + 1}
+                                  </span>
+                                  <div>
+                                    <h4 className="font-semibold">{song.songName}</h4>
+                                    <p className="text-sm text-gray-400">
+                                      {song.primaryArtist}
+                                      {(song.secondaryArtist || []).length > 0 && (
+                                        <span>, {(song.secondaryArtist || []).join(", ")}</span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-center gap-1.5 ml-4 flex-shrink-0 min-w-[104px]">
+                                <button
+                                  type="button"
+                                  className="min-w-[35px] w-[35px] min-h-[35px] h-[35px] flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:bg-cyan-300 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePlayPause(song);
+                                  }}
+                                >
+                                  {playingSongId === song.songId && !audioRef.current?.paused ? (
+                                    <FaPause className="text-black" size={11} />
+                                  ) : (
+                                    <FaPlay className="text-black ml-[0.5px]" size={11} />
+                                  )}
+                                </button>
+                                <div className="h-8 w-full flex items-center shrink-0 touch-none">
+                                  {activeSeekSongId === song.songId && audioProgress.duration > 0 && (
+                                    <input
+                                      type="range"
+                                      min={0}
+                                      max={audioProgress.duration}
+                                      step={0.01}
+                                      value={Math.min(audioProgress.current, audioProgress.duration)}
+                                      onChange={(e) => handleSeek(song.songId, e.target.value)}
+                                      onPointerDown={(e) => {
+                                        e.stopPropagation();
+                                        isSeekingRef.current = true;
+                                      }}
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        isSeekingRef.current = true;
+                                      }}
+                                      onTouchStart={(e) => {
+                                        e.stopPropagation();
+                                        isSeekingRef.current = true;
+                                      }}
+                                      aria-label={`Seek ${song.songName || "track"}`}
+                                      className="w-full h-2 cursor-pointer accent-[#5DC9DE]"
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4">No songs available</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import searchIc from "/assets/images/artists/searchIc.svg";
 import { ChevronDown } from "lucide-react";
 
 const selectClass =
-  "w-full sm:flex-1 min-w-[140px] appearance-none rounded-full border border-white/20 bg-gray-100/20 backdrop-blur-sm py-3 pl-4 pr-10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5DC9DE]/60 cursor-pointer";
+  "w-full max-w-full appearance-none rounded-full border border-white/20 bg-gray-100/20 backdrop-blur-sm py-3 pl-4 pr-10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#5DC9DE]/60 cursor-pointer truncate";
 
 const HeroSection = ({
   onSearchQueryChange,
@@ -70,8 +70,8 @@ const HeroSection = ({
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row w-full max-w-[600px] gap-3 justify-center">
-            <div className="relative w-full sm:flex-1">
+          <div className="flex flex-col sm:flex-row w-full max-w-[600px] gap-3 justify-center overflow-hidden">
+            <div className="relative w-full sm:flex-1 min-w-0">
               <select
                 className={selectClass}
                 value={profession}
@@ -92,18 +92,25 @@ const HeroSection = ({
                 aria-hidden
               />
             </div>
-            <div className="relative w-full sm:flex-1">
+            <div className="relative w-full sm:flex-1 min-w-0">
               <select
                 className={selectClass}
                 value={location}
                 onChange={(e) => onLocationChange?.(e.target.value)}
                 aria-label="Filter by location"
               >
-                <option value="" className="bg-gray-900 text-white">
+                <option
+                  value=""
+                  className="bg-gray-900 text-white font-sans text-base p-3"
+                >
                   All locations
                 </option>
                 {locationOptions.map((loc) => (
-                  <option key={loc} value={loc} className="bg-gray-900 text-white">
+                  <option
+                    key={loc}
+                    value={loc}
+                    className="bg-gray-900 text-white  "
+                  >
                     {loc}
                   </option>
                 ))}

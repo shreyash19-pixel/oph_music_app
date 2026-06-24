@@ -160,27 +160,45 @@ function Navbar() {
           ) : null}
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <div className="lg:hidden flex items-center">
-          <button
-            className="text-cyan-400 focus:outline-none"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+        {/* Mobile Login/Signup Buttons */}
+        <div className="lg:hidden flex items-center space-x-2">
+          {verified && !isPaymentPage ? (
+            <button
+              className="px-3 py-1.5 text-red-500 font-bold uppercase text-xs"
+              onClick={logout}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16m-7 6h7"
-              ></path>
-            </svg>
-          </button>
+              Logout
+            </button>
+          ) : !verified ? (
+            <div className="flex items-center space-x-2">
+              <button 
+                className="px-3 py-1.5 text-primary font-bold uppercase text-xs"
+                onClick={() => {
+                  const hostname = window.location.hostname;
+                  if (hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/login");
+                  } else {
+                    window.location.href = "/auth/login";
+                  }
+                }}
+              >
+                Login
+              </button>
+              <button 
+                className="px-4 py-1.5 bg-primary text-[#181B24] font-bold uppercase text-xs rounded-full"
+                onClick={() => {
+                  const hostname = window.location.hostname;
+                  if (hostname.includes('ophcommunity.org')) {
+                    navigate("/auth/signup");
+                  } else {
+                    window.location.href = "/auth/signup";
+                  }
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 

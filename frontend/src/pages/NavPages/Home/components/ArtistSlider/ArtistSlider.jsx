@@ -215,34 +215,23 @@ const ArtistSlider = ({
       />
       <div className="relative container mx-auto">
         {/* Header Section */}
-        <div className="flex justify-between">
-          <div className="mb-16 relative p-4 lg:px-6">
-            <h2 className="text-2xl lg:text-5xl font-bold mb-2 uppercase mt-2">
-              <div className="text-[#5DC9DE] drop-shadow-[0_0_15px_rgba(34,211,238,1)] mt-2">
-                REAL ARTISTS. REAL TRUSTS. REAL RESULTS
-              </div>
-              {/* <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] lg:px-0 px-6 lg:py-0 pt-6">ARTIST SPOTLIGHT</h1> */}
+        <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start mb-8 sm:mb-16">
+          <div className="text-center sm:text-left p-4 lg:px-6 max-w-2xl">
+            <h2 className="text-2xl lg:text-5xl font-black mb-3 uppercase tracking-tight text-white leading-tight">
+              THESE ARTISTS ARE <span className="text-[#5DC9DE]">INDUSTRY BANGERS.</span>
             </h2>
-            <p className="text-gray-400 max-w-2xl">
-              Artists trusting us to support their Music Career. Their success
-              stories are just the beginning.
+            <p className="text-gray-400 text-sm sm:text-base">
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took
             </p>
-            {/* Leaderboard total line — restore useState(totalArtistCount) + setTotalArtistCount in fetch if re-enabled:
-            <p className="mt-3 text-sm font-medium text-[#5DC9DE] tabular-nums">
-              …
-            </p> */}
           </div>
-          <div className="pe-4 py-4 lg:py-0 sm:mt-16 lg:pe-6 xl:pe-16 relative z-50 flex items-center gap-2">
+          <div className="hidden sm:flex pe-4 py-4 lg:py-0 sm:mt-8 lg:pe-6 xl:pe-16 relative z-50 items-center gap-2">
             {/* Prev Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleSliderNav("prev");
               }}
-              className="flex items-center justify-center 
-               w-10 h-10 sm:w-12 sm:h-12 
-               bg-gray-800 rounded-full 
-               hover:bg-gray-700 transition-colors cursor-pointer"
+              className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors cursor-pointer"
             >
               <img
                 src={arrowLeftIc}
@@ -257,10 +246,7 @@ const ArtistSlider = ({
                 e.stopPropagation();
                 handleSliderNav("next");
               }}
-              className="flex items-center justify-center 
-               w-10 h-10 sm:w-12 sm:h-12 
-               bg-[#6F4FA0] rounded-full 
-               hover:bg-[#5a3f80] transition-colors cursor-pointer"
+              className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-[#6F4FA0] rounded-full hover:bg-[#5a3f80] transition-colors cursor-pointer"
             >
               <img
                 src={arrowRightIc}
@@ -295,25 +281,25 @@ const ArtistSlider = ({
                   settings: {
                     slidesToShow: 4.6,
                     slidesToScroll: 1,
-                    centerMode: false, // Disable centering
+                    centerMode: false,
                     centerPadding: "0%",
                   },
                 },
                 {
                   breakpoint: 768,
                   settings: {
-                    slidesToShow: 2.6,
+                    slidesToShow: 3.8,
                     slidesToScroll: 1,
-                    centerMode: false, // Disable centering
+                    centerMode: false,
                     centerPadding: "0%",
                   },
                 },
                 {
                   breakpoint: 480,
                   settings: {
-                    slidesToShow: 1.6,
+                    slidesToShow: 2.8,
                     slidesToScroll: 1,
-                    centerMode: false, // Disable centering
+                    centerMode: false,
                     centerPadding: "0%",
                   },
                 },
@@ -325,12 +311,11 @@ const ArtistSlider = ({
               return (
                 <div
                   key={id ?? `artist-slide-${index}`}
-                  className="px-4 cursor-pointer mb-10"
+                  className="px-2 cursor-pointer mb-10"
                 >
                   <div
                     className="group relative pointer-events-auto"
                     onTouchEnd={(e) => {
-                      //  e.preventDefault();
                       handleArtistClick(id, index);
                     }}
                   >
@@ -339,21 +324,23 @@ const ArtistSlider = ({
                         src={artist.personal_photo}
                         fallback={
                           <Shimmer
-                            width={200}
-                            height={200}
+                            width={150}
+                            height={150}
                             className="rounded-full"
                           />
                         }
                         alt={artist.stage_name}
                         NativeImgProps={{
                           className: `
-        w-[150px] sm:w-[180px] lg:w-[200px]
-  aspect-square
-  rounded-full
-  object-cover
-  flex-shrink-0
-        ${id === currArtist ? "border-4 border-primary" : ""}
-      `,
+                            w-[120px] sm:w-[150px] lg:w-[180px]
+                            aspect-square
+                            rounded-full
+                            object-cover
+                            flex-shrink-0
+                            transition-all duration-300
+                            border-2
+                            ${id === currArtist ? "border-[#5DC9DE] shadow-[0_0_15px_rgba(93,201,222,0.4)]" : "border-[#6F4FA0] shadow-[0_0_15px_rgba(111,79,160,0.3)]"}
+                          `,
                         }}
                       />
                     </div>
@@ -364,7 +351,7 @@ const ArtistSlider = ({
                       }}
                     >
                       <a
-                        className={`text-lg font-semibold ${
+                        className={`text-base sm:text-lg font-semibold tracking-tight transition-colors duration-300 ${
                           id === currArtist ? "text-[#5DC9DE]" : "text-white"
                         }`}
                         onClick={(e) => {
@@ -375,7 +362,7 @@ const ArtistSlider = ({
                         {artist.stage_name}
                       </a>
                       <p
-                        className={`text-sm ${
+                        className={`text-xs sm:text-sm transition-colors duration-300 ${
                           id === currArtist ? "text-white" : "text-gray-400"
                         }`}
                       >
@@ -384,7 +371,7 @@ const ArtistSlider = ({
                           : artist.total_views >= 1000
                             ? `${(artist.total_views / 1000).toFixed(1)}K`
                             : artist.total_views}{" "}
-                        + Listeners
+                        Listeners
                       </p>
                     </div>
                   </div>
@@ -392,6 +379,36 @@ const ArtistSlider = ({
               );
             })}
           </Slider>
+        </div>
+
+        {/* Mobile Arrow buttons (below the slider) */}
+        <div className="flex sm:hidden justify-center items-center gap-4 mt-2 mb-8 relative z-50">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSliderNav("prev");
+            }}
+            className="flex items-center justify-center w-10 h-10 bg-gray-800 border border-gray-700 rounded-full hover:bg-gray-700 transition-all cursor-pointer shadow-lg active:scale-95"
+          >
+            <img
+              src={arrowLeftIc}
+              alt="Previous"
+              className="w-4 h-4 pointer-events-none"
+            />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSliderNav("next");
+            }}
+            className="flex items-center justify-center w-10 h-10 bg-[#6F4FA0] rounded-full hover:bg-[#5a3f80] transition-all cursor-pointer shadow-lg active:scale-95"
+          >
+            <img
+              src={arrowRightIc}
+              alt="Next"
+              className="w-4 h-4 pointer-events-none"
+            />
+          </button>
         </div>
       </div>
 

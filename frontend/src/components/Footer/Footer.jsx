@@ -46,6 +46,7 @@ function Footer() {
             <li><Link to="/contact" className="hover:text-gray-300">Contact</Link></li>
           </ul>
         </div>
+        
 
         {/* Divider */}
         <div className="container w-full h-[1px] opacity-30 mx-auto bg-white sm:my-8 my-2"></div>
