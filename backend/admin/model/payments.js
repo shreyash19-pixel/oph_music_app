@@ -1,6 +1,11 @@
 const db = require("../../DB/connect");
 const AdminSongService = require("../services/AdminSongService");
 const SongApplicationStatusService = require("../../services/song/SongApplicationStatusService");
+const DateBookingService = require("../../services/dateBooking/DateBookingService");
+const {
+  RELEASE_DATE_CHANGE_FROM_SQL,
+  normalizeCalendarDateOnly,
+} = require("../../utils/calendarDateUtils");
 
 const updateStatus = async (
   connection,
@@ -305,35 +310,111 @@ const getTransactionDetails = async (release_date, oph_id, song_id) => {
           sp.status AS Status,
           sp.amount,
           sp.release_date,
-          COALESCE(MIN(c.current_booking_date), sp.release_date) AS current_booking_date,
+          sp.old_release_date,
+          sp.reject_reason,
+          CASE
+            WHEN LOWER(TRIM(sp.from_source)) = 'release date change'
+              OR sp.from_source IN ('Release date change', 'Release Date Change')
+            THEN COALESCE(sp.release_date, MIN(c.current_booking_date))
+            ELSE COALESCE(MIN(c.current_booking_date), sp.release_date, sp.old_release_date)
+          END AS current_booking_date,
           MIN(c.id) AS calendar_id,
           sp.oph_id,
           MIN(c.song_id) AS calendar_song_id,
-          MIN(c.previous_booking_date) AS previous_booking_date,
+          CASE
+            WHEN LOWER(TRIM(sp.from_source)) = 'release date change'
+              OR sp.from_source IN ('Release date change', 'Release Date Change')
+            THEN COALESCE(sp.old_release_date, MIN(c.current_booking_date))
+            ELSE MIN(c.previous_booking_date)
+          END AS previous_booking_date,
           MIN(c.original_booking_date) AS original_booking_date,
           MAX(c.song_name) AS song_name,
           MAX(c.project_type) AS project_type,
-          MAX(c.reason) AS reason,
+          COALESCE(
+            NULLIF(TRIM(sp.review), ''),
+            NULLIF(TRIM(sp.review), '0'),
+            NULLIF(TRIM(sp.reject_reason), ''),
+            MAX(c.reason)
+          ) AS reason,
           MAX(c.reason_history) AS reason_history,
           MIN(c.created_at) AS created_at,
           MAX(c.updated_at) AS updated_at
         FROM payments sp 
-        LEFT JOIN calender c ON (sp.release_date = c.current_booking_date OR DATE(sp.release_date) = DATE(c.current_booking_date))
-          AND sp.oph_id = c.oph_id
-        WHERE sp.oph_id = ?
-          AND (sp.release_date = ? OR DATE(sp.release_date) = ?)
+        LEFT JOIN calender c ON sp.oph_id = c.oph_id
           AND (
-            LOWER(TRIM(sp.from_source)) = 'date booking'
-            OR sp.from_source = 'Date Booking'
-            OR sp.from_source = 'Song Registration'
-            OR sp.from_source = 'Release date change'
-            OR sp.from_source = 'Release Date Change'
+            DATE(c.current_booking_date) = DATE(?)
+            OR c.current_booking_date = ?
+            OR (sp.old_release_date IS NOT NULL AND (
+              DATE(c.current_booking_date) = DATE(sp.old_release_date)
+              OR c.current_booking_date = sp.old_release_date
+            ))
+            OR (
+              sp.old_release_date IS NULL
+              AND sp.release_date IS NOT NULL
+              AND (sp.release_date = c.current_booking_date OR DATE(sp.release_date) = DATE(c.current_booking_date))
+            )
+          )
+        WHERE sp.oph_id = ?
+          AND (
+            (
+              (LOWER(TRIM(sp.from_source)) = 'release date change'
+                OR sp.from_source IN ('Release date change', 'Release Date Change'))
+              AND (sp.release_date = ? OR DATE(sp.release_date) = DATE(?))
+            )
+            OR (
+              (LOWER(TRIM(sp.from_source)) != 'release date change'
+                AND sp.from_source NOT IN ('Release date change', 'Release Date Change'))
+              AND (
+                LOWER(TRIM(sp.from_source)) = 'date booking'
+                OR sp.from_source = 'Date Booking'
+                OR sp.from_source = 'Song Registration'
+                OR sp.from_source = 'Song Repayment'
+              )
+              AND (
+                sp.release_date = ? OR DATE(sp.release_date) = DATE(?)
+                OR sp.old_release_date = ? OR DATE(sp.old_release_date) = DATE(?)
+              )
+            )
           )
         GROUP BY sp.id
-        ORDER BY CASE WHEN LOWER(TRIM(sp.from_source)) = 'date booking' THEN 0 ELSE 1 END, sp.created_at ASC`,
-        [oph_id, release_date, release_date],
+        ORDER BY
+          CASE WHEN LOWER(TRIM(sp.status)) IN ('under review', 'pending') THEN 0 ELSE 1 END,
+          CASE
+            WHEN LOWER(TRIM(sp.from_source)) = 'release date change' THEN 0
+            WHEN LOWER(TRIM(sp.from_source)) = 'date booking' THEN 1
+            ELSE 2
+          END,
+          sp.created_at DESC`,
+        [
+          release_date,
+          release_date,
+          oph_id,
+          release_date,
+          release_date,
+          release_date,
+          release_date,
+          release_date,
+          release_date,
+        ],
       );
       if (rows && rows.length > 0) {
+        const slot = normalizeCalendarDateOnly(release_date);
+        const isRdcRow = (r) => {
+          const f = String(r.From ?? r.from_source ?? "").toLowerCase();
+          return f.includes("release date change");
+        };
+        const hasRdcTarget = rows.some(
+          (r) =>
+            isRdcRow(r) &&
+            normalizeCalendarDateOnly(r.release_date) === slot,
+        );
+        if (hasRdcTarget) {
+          return rows.filter(
+            (r) =>
+              isRdcRow(r) &&
+              normalizeCalendarDateOnly(r.release_date) === slot,
+          );
+        }
         return rows;
       }
     }
@@ -482,6 +563,40 @@ const getTransactionDetails = async (release_date, oph_id, song_id) => {
   }
 };
 
+/** Target (new) date of a pending RDC when admin opens the original calendar slot */
+const getPendingRdcApprovalDateForSlot = async (release_date, oph_id) => {
+  if (!release_date || !oph_id) return null;
+  const slot = normalizeCalendarDateOnly(release_date);
+  const ophNorm = String(oph_id).trim();
+  if (!slot || !ophNorm) return null;
+  const [rows] = await db.execute(
+    `SELECT release_date FROM payments
+     WHERE oph_id = ?
+       AND ${RELEASE_DATE_CHANGE_FROM_SQL}
+       AND (old_release_date = ? OR DATE(old_release_date) = DATE(?))
+       AND LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'pending')
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [ophNorm, slot, slot],
+  );
+  return normalizeCalendarDateOnly(rows[0]?.release_date) || null;
+};
+
+async function resolveReleaseDateChangeOphId(connection, release_date, oph_id) {
+  if (oph_id) return String(oph_id).trim();
+  const newDate = normalizeCalendarDateOnly(release_date);
+  if (!newDate) return null;
+  const [rows] = await connection.execute(
+    `SELECT oph_id FROM payments
+     WHERE (release_date = ? OR DATE(release_date) = DATE(?))
+       AND ${RELEASE_DATE_CHANGE_FROM_SQL}
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [newDate, newDate],
+  );
+  return rows[0]?.oph_id ? String(rows[0].oph_id).trim() : null;
+}
+
 const setPaymentVerification = async (decision, reason, release_date, from, song_id, oph_id) => {
   const connection = await db.getConnection();
 
@@ -492,21 +607,6 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
     const fromNorm = typeof from === "string" ? from.trim() : "";
     const isReleaseDateChange =
       fromNorm.toLowerCase().replace(/\s+/g, " ") === "release date change";
-
-    // Parse reason_history: may be string (JSON) or already an object from driver
-    const parseReasonHistory = (val) => {
-      if (val == null) return [];
-      if (Array.isArray(val)) return val;
-      if (typeof val === "string") {
-        try {
-          const parsed = JSON.parse(val);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
-      }
-      return [];
-    };
 
     let isReasonEmpty =
       reason === "null" || reason === null || reason === "" ? null : reason;
@@ -520,7 +620,7 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
 
         const [paymentsToUpdate] = await connection.execute(
           `SELECT id, oph_id, release_date, from_source, status, song_id FROM payments 
-           WHERE (LOWER(from_source) = 'date booking' OR from_source = 'Release date change')
+           WHERE (LOWER(TRIM(from_source)) = 'date booking' OR from_source = 'Date Booking')
            AND status != 'rejected'
            ${oph_id ? "AND oph_id = ?" : ""}
            AND (release_date = ? OR DATE(release_date) = ?)`,
@@ -531,7 +631,7 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
         if (paymentsToUpdate.length === 0) {
           const [allPayments] = await connection.execute(
             `SELECT id, oph_id, release_date, from_source, status, song_id FROM payments 
-             WHERE (LOWER(from_source) = 'date booking' OR from_source = 'Release date change')
+             WHERE (LOWER(TRIM(from_source)) = 'date booking' OR from_source = 'Date Booking')
              ${oph_id ? "AND oph_id = ?" : ""}
              AND (release_date = ? OR DATE(release_date) = ?)`,
             payWhereOphParams,
@@ -630,24 +730,31 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
         }
       } else if (decision === "approved") {
         // Approve the payment
+        let dateBookingApproveSql = `UPDATE payments 
+           SET status = ?, reject_reason = NULL, updated_at = NOW()
+           WHERE (release_date = ? OR DATE(release_date) = DATE(?))
+           AND (LOWER(TRIM(from_source)) = 'date booking' OR from_source = 'Date Booking')
+           AND status != 'approved'`;
+        const dateBookingApproveParams = [decision, release_date, release_date];
+        if (oph_id) {
+          dateBookingApproveSql += " AND oph_id = ?";
+          dateBookingApproveParams.push(String(oph_id).trim());
+        }
         const [updateResult] = await connection.execute(
-          `UPDATE payments 
-           SET status = ?, 
-               reject_reason = NULL,
-               updated_at = NOW()
-           WHERE release_date = ? 
-           AND (from_source = 'Date booking' OR from_source = 'Release date change')
-           AND status != 'approved'`,
-          [decision, release_date],
+          dateBookingApproveSql,
+          dateBookingApproveParams,
         );
 
         // Update song_application_status for songs using this date (paid-in-advance)
         const [approvedOphIds] = await connection.execute(
           `SELECT DISTINCT oph_id FROM payments 
-           WHERE release_date = ? 
-           AND (from_source = 'Date booking' OR from_source = 'Release date change')
-           AND oph_id IS NOT NULL`,
-          [release_date]
+           WHERE (release_date = ? OR DATE(release_date) = DATE(?))
+           AND (LOWER(TRIM(from_source)) = 'date booking' OR from_source = 'Date Booking')
+           AND oph_id IS NOT NULL
+           ${oph_id ? "AND oph_id = ?" : ""}`,
+          oph_id
+            ? [release_date, release_date, String(oph_id).trim()]
+            : [release_date, release_date],
         );
         for (const { oph_id: ophIdForSong } of approvedOphIds) {
           const [songsOnDate] = await connection.execute(
@@ -663,131 +770,77 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
         affectedRows += updateResult.affectedRows;
       }
     } else if (isReleaseDateChange) {
+      const newDate = normalizeCalendarDateOnly(release_date);
+      const ophResolved = await resolveReleaseDateChangeOphId(
+        connection,
+        release_date,
+        oph_id,
+      );
+
       if (decision === "rejected") {
-        // When rejecting a date change, restore previous date in calender
-        // Get the calendar entry to find song_id, previous_booking_date, reason, and reason_history
-        const [calendarEntries] = await connection.execute(
-          `SELECT song_id, previous_booking_date, oph_id, reason, reason_history 
-           FROM calender 
-           WHERE current_booking_date = ? 
-           AND oph_id = (SELECT oph_id FROM payments WHERE (release_date = ? OR DATE(release_date) = ?) AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change') LIMIT 1)`,
-          [release_date, release_date, release_date],
-        );
-
-        if (calendarEntries.length > 0) {
-          const entry = calendarEntries[0];
-          const songId = entry.song_id;
-          const ophId = entry.oph_id;
-          if (songId && ophId) {
-            statusUpdatesToRun.push({ songId, ophId, reason: isReasonEmpty, decision });
-          }
-          const previousDate = entry.previous_booking_date;
-          const existingHistory = parseReasonHistory(entry.reason_history);
-
-          if (previousDate) {
-            // Update reason_history - mark the latest pending entry as rejected
-            const updatedHistory = existingHistory.map((item, index) => {
-              if (
-                index === existingHistory.length - 1 &&
-                item.status === "pending"
-              ) {
-                return {
-                  ...item,
-                  status: "rejected",
-                  rejected_at: new Date().toISOString(),
-                  admin_reject_reason: isReasonEmpty || null,
-                };
-              }
-              return item;
-            });
-
-            // Restore previous date in calender (master) and clear reason
-            await connection.execute(
-              `UPDATE calender 
-               SET current_booking_date = previous_booking_date,
-                   previous_booking_date = NULL,
-                   reason = NULL,
-                   reason_history = ?,
-                   updated_at = NOW()
-               WHERE current_booking_date = ? 
-               AND oph_id = ?`,
-              [JSON.stringify(updatedHistory), release_date, ophId],
-            );
-
-            // Sync songs_register.release_date from calender if song_id exists
-            if (songId) {
-              await connection.execute(
-                `UPDATE songs_register sr
-                 JOIN calender c ON c.song_id = sr.song_id
-                 SET sr.release_date = c.current_booking_date,
-                     sr.updated_at = NOW()
-                 WHERE sr.song_id = ?
-                 AND c.oph_id = ?`,
-                [songId, ophId],
-              );
-            }
-          }
+        if (ophResolved) {
+          await DateBookingService.clearPendingReleaseDateChangeOnReject(
+            connection,
+            ophResolved,
+            newDate,
+            isReasonEmpty,
+          );
         }
 
-        // Update payment status
-        const [updateResult] = await connection.execute(
-          `UPDATE payments 
-           SET status = ?, 
+        const payParams = [decision, isReasonEmpty, release_date, release_date];
+        let paySql = `UPDATE payments
+           SET status = ?,
                reject_reason = ?,
                updated_at = NOW()
            WHERE (release_date = ? OR DATE(release_date) = ?)
-           AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change')`,
-          [decision, isReasonEmpty, release_date, release_date],
-        );
+           AND ${RELEASE_DATE_CHANGE_FROM_SQL}`;
+        if (oph_id) {
+          paySql += " AND oph_id = ?";
+          payParams.push(String(oph_id).trim());
+        } else if (ophResolved) {
+          paySql += " AND oph_id = ?";
+          payParams.push(ophResolved);
+        }
+        const [updateResult] = await connection.execute(paySql, payParams);
         affectedRows += updateResult.affectedRows;
       } else if (decision === "approved") {
-        // When approving a date change, sync songs_register from calender.
-        // This is the only place songs_register.release_date is updated for a release date change;
-        // the calendar is updated when the user pays (/change-release-date), but songs_register
-        // is updated here only after admin approval.
-        // Get the calendar entry to update reason_history (use DATE() so we match regardless of time part)
-        const [calendarEntries] = await connection.execute(
-          `SELECT song_id, oph_id, reason_history 
-           FROM calender 
-           WHERE (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)
-           AND oph_id = (SELECT oph_id FROM payments WHERE (release_date = ? OR DATE(release_date) = ?) AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change') LIMIT 1)`,
-          [release_date, release_date, release_date, release_date],
-        );
+        let oldDate = null;
+        if (ophResolved) {
+          const [payRow] = await connection.execute(
+            `SELECT old_release_date FROM payments
+             WHERE oph_id = ?
+               AND (release_date = ? OR DATE(release_date) = DATE(?))
+               AND ${RELEASE_DATE_CHANGE_FROM_SQL}
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [ophResolved, newDate, newDate],
+          );
+          oldDate = normalizeCalendarDateOnly(payRow[0]?.old_release_date);
+        }
 
-        if (calendarEntries.length > 0) {
-          const entry = calendarEntries[0];
-          const songId = entry.song_id;
-          const ophId = entry.oph_id;
-          if (songId && ophId) statusUpdatesToRun.push({ songId, ophId, reason, decision });
-          const existingHistory = parseReasonHistory(entry.reason_history);
+        if (!oldDate && ophResolved) {
+          const [calRow] = await connection.execute(
+            `SELECT current_booking_date FROM calender WHERE oph_id = ? LIMIT 1`,
+            [ophResolved],
+          );
+          oldDate = normalizeCalendarDateOnly(calRow[0]?.current_booking_date);
+        }
 
-          // Update reason_history - mark the latest pending entry as approved
-          const updatedHistory = existingHistory.map((item, index) => {
-            if (
-              index === existingHistory.length - 1 &&
-              item.status === "pending"
-            ) {
-              return {
-                ...item,
-                status: "approved",
-                approved_at: new Date().toISOString(),
-              };
-            }
-            return item;
-          });
-
-          // Clear reason and update history (use DATE() for robust match)
-          await connection.execute(
-            `UPDATE calender 
-             SET reason = NULL,
-                 reason_history = ?,
-                 updated_at = NOW()
-             WHERE (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)
-             AND oph_id = ?`,
-            [JSON.stringify(updatedHistory), release_date, release_date, ophId],
+        if (ophResolved && oldDate && newDate) {
+          await DateBookingService.applyApprovedReleaseDateChange(
+            connection,
+            ophResolved,
+            oldDate,
+            newDate,
           );
 
-          // Sync songs_register.release_date from calender if song_id exists
+          const [calAfter] = await connection.execute(
+            `SELECT song_id FROM calender
+             WHERE oph_id = ?
+               AND (DATE(current_booking_date) = DATE(?) OR current_booking_date = ?)`,
+            [ophResolved, newDate, newDate],
+          );
+          const songId = calAfter[0]?.song_id;
           if (songId) {
             await connection.execute(
               `UPDATE songs_register sr
@@ -795,35 +848,36 @@ const setPaymentVerification = async (decision, reason, release_date, from, song
                SET sr.release_date = c.current_booking_date,
                    sr.updated_at = NOW()
                WHERE sr.song_id = ?
-               AND (sr.oph_id = ? OR sr.OPH_ID = ?)`,
-              [songId, ophId, ophId],
+                 AND (sr.oph_id = ? OR sr.OPH_ID = ?)`,
+              [songId, ophResolved, ophResolved],
+            );
+          } else if (song_id && oph_id) {
+            await connection.execute(
+              `UPDATE songs_register
+               SET release_date = ?, updated_at = NOW()
+               WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?)`,
+              [newDate, song_id, oph_id, oph_id],
             );
           }
         }
 
-        // Fallback: when verify page sent oph_id and song_id, ensure songs_register.release_date is set to the new date
-        // (handles calendar lookup failure or schema differences like OPH_ID vs oph_id)
-        if (oph_id && song_id) {
-          const [srResult] = await connection.execute(
-            `UPDATE songs_register 
-             SET release_date = ?, updated_at = NOW() 
-             WHERE song_id = ? AND (oph_id = ? OR OPH_ID = ?)`,
-            [release_date, song_id, oph_id, oph_id],
-          );
-          if (srResult.affectedRows > 0 && !calendarEntries?.length) {
-            statusUpdatesToRun.push({ songId: song_id, ophId: oph_id, reason, decision });
-          }
-        }
-
-        // Update payment status
-        const [updateResult] = await connection.execute(
-          `UPDATE payments 
-           SET status = ?, 
+        const payApproveParams = [decision, release_date, release_date];
+        let payApproveSql = `UPDATE payments
+           SET status = ?,
                reject_reason = NULL,
                updated_at = NOW()
            WHERE (release_date = ? OR DATE(release_date) = ?)
-           AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source = 'Release date change' OR from_source = 'Release Date Change')`,
-          [decision, release_date, release_date],
+           AND ${RELEASE_DATE_CHANGE_FROM_SQL}`;
+        if (oph_id) {
+          payApproveSql += " AND oph_id = ?";
+          payApproveParams.push(String(oph_id).trim());
+        } else if (ophResolved) {
+          payApproveSql += " AND oph_id = ?";
+          payApproveParams.push(ophResolved);
+        }
+        const [updateResult] = await connection.execute(
+          payApproveSql,
+          payApproveParams,
         );
         affectedRows += updateResult.affectedRows;
       }
@@ -951,5 +1005,6 @@ module.exports = {
   getPaymentDetailsForSongByOphId,
   updateStatusPayment,
   getTransactionDetails,
+  getPendingRdcApprovalDateForSlot,
   setPaymentVerification,
 };

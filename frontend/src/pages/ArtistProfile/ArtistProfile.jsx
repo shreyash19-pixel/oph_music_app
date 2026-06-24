@@ -15,6 +15,7 @@ import AppleMusic from "../../../public/assets/images/apple.png";
 import { resolveProfessionLabel } from "../../utils/professionDisplay";
 import { normalizeExternalHref, socialHref } from "../../utils/socialLinks";
 import NavbarRight from "../../components/Navbar/NavbarRight";
+import NavbarLeft from "../../components/Navbar/NavbarLeft";
 
 Modal.setAppElement("#root");
 
@@ -46,6 +47,7 @@ export default function ArtistProfile() {
   /** song_id -> seconds from audio file metadata; -1 = could not read (e.g. CORS) */
   const [trackLengthSec, setTrackLengthSec] = useState({});
   const [professions, setProfessions] = useState([]);
+  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,13 +178,15 @@ export default function ArtistProfile() {
         }
       };
       newAudio.addEventListener("loadedmetadata", syncDuration);
+      newAudio.addEventListener("timeupdate", () => setCurrentTime(newAudio.currentTime));
       newAudio.play().catch(() => {
         toast.error("Could not play this track.");
         setPlayingSongId(null);
       });
       setAudio(newAudio);
+      setCurrentTime(0);
       setPlayingSongId(song.song_id);
-      newAudio.onended = () => setPlayingSongId(null);
+      newAudio.onended = () => { setPlayingSongId(null); setCurrentTime(0); };
     }
   };
 
@@ -250,6 +254,8 @@ export default function ArtistProfile() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState("details");
+
   const openModal = () => setIsModalOpen(true);
   const closeModal = (e) => {
     e.stopPropagation();
@@ -277,283 +283,436 @@ export default function ArtistProfile() {
     }
   };
 
+  const SocialLinks = () => {
+    const fb = socialHref(
+      artist,
+      "facebook_url",
+      "facebook_link",
+      "FacebookLink",
+    );
+    const ig = socialHref(
+      artist,
+      "instagram_url",
+      "instagram_link",
+      "InstagramLink",
+    );
+    const sp = socialHref(artist, "spotify_url", "spotify_link", "SpotifyLink");
+    const am = socialHref(
+      artist,
+      "apple_music_url",
+      "apple_music_link",
+      "AppleMusicLink",
+    );
+    const items = [
+      { href: fb, src: Face, alt: "Facebook" },
+      { href: ig, src: Insta, alt: "Instagram" },
+      { href: sp, src: Spotify, alt: "Spotify" },
+      { href: am, src: AppleMusic, alt: "Apple Music" },
+    ];
+    return items.map(({ href, src, alt }) => {
+      const safeHref = href ? normalizeExternalHref(href) : null;
+      const imgClass = safeHref
+        ? "opacity-70 w-10 h-10 object-cover hover:opacity-100"
+        : "opacity-35 w-10 h-10 object-cover grayscale cursor-not-allowed";
+      const img = <img src={src} alt="" className={imgClass} aria-hidden />;
+      if (safeHref)
+        return (
+          <a
+            key={alt}
+            href={safeHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={alt}
+          >
+            {img}
+          </a>
+        );
+      return (
+        <span
+          key={alt}
+          className="inline-flex select-none"
+          aria-label={`${alt}: not available`}
+          title="Not available"
+        >
+          {img}
+        </span>
+      );
+    });
+  };
+
+  const PasswordForm = () => (
+    <div className="space-y-4">
+      <h2 className="text-lg font-medium">Change Password:</h2>
+      <form onSubmit={handleChangePassword} className="space-y-4">
+        <div className="relative">
+          <input
+            type={showNewPassword ? "text" : "password"}
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-cyan-400"
+            placeholder="New Password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength="8"
+          />
+          <button
+            type="button"
+            onClick={() => setShowNewPassword(!showNewPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+          >
+            {showNewPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-cyan-400"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength="8"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={`w-full py-3 ${
+            isLoading
+              ? "bg-cyan-500 cursor-not-allowed"
+              : "bg-cyan-400 hover:bg-cyan-300"
+          } text-gray-900 rounded-full font-medium transition-colors`}
+        >
+          {isLoading ? "Saving..." : "Save Changes"}
+        </button>
+      </form>
+    </div>
+  );
+
   return (
     artist && (
-      <div className="min-h-[calc(100vh-70px)] text-gray-100 px-4 sm:px-8 py-6 overflow-x-hidden">
-        <div className="space-y-8">
-          {/* Header */}
-          <div className="flex items-start gap-6 flex-wrap">
-            <div className="relative">
+      <>
+        {/* ── DESKTOP LAYOUT (hidden on mobile) ── */}
+        <div className="hidden lg:block min-h-[calc(100vh-70px)] text-gray-100 px-4 sm:px-8 py-6 overflow-x-hidden">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-start gap-6 flex-wrap">
+              <div className="relative">
+                <img
+                  src={artist.personal_photo}
+                  alt="Profile"
+                  className="w-28 h-28 rounded-full border-4 border-cyan-600 cursor-pointer"
+                  onClick={openModal}
+                />
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  hidden
+                  disabled={isUploadingImage}
+                />
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="absolute bottom-0 right-0 bg-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploadingImage ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Edit3 className="w-4 h-4 text-white" />
+                  )}
+                </button>
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+                  {artist.name}
+                </h1>
+                <p className="text-gray-400">
+                  Stage Name:{" "}
+                  <span className="text-cyan-400">{artist.stage_name}</span>
+                </p>
+              </div>
+              <NavbarRight />
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <p className="text-gray-400">
+                OPH Artist Code:{" "}
+                <span className="text-white">#{artist.oph_id}</span>
+              </p>
+              <p className="text-gray-400">
+                Profession:{" "}
+                <span className="text-white">
+                  {resolveProfessionLabel(
+                    artist.profession ?? artist.Profession,
+                    professions,
+                  )}
+                </span>
+              </p>
+            </div>
+
+            {/* Bio */}
+            <p className="text-gray-400 leading-relaxed">{artist.bio}</p>
+
+            {/* Social links */}
+            <div className="flex flex-wrap gap-4">
+              <SocialLinks />
+            </div>
+
+            {/* Songs Table */}
+            <div className="overflow-x-auto mt-8">
+              <table className="w-full table-auto text-sm">
+                <thead>
+                  <tr className="text-center text-gray-300 border-b border-gray-800 text-xs">
+                    <th className="pb-4 font-normal">#</th>
+                    <th className="pb-4 font-normal">SONG NAME</th>
+                    <th className="pb-4 font-normal">PLAYS</th>
+                    <th
+                      className="pb-4 font-normal"
+                      title="Length of your uploaded audio file"
+                    >
+                      TIME
+                    </th>
+                    <th className="pb-4 font-normal">PLAY</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {approvedSongs.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-10 text-center text-gray-400 text-sm"
+                      >
+                        No songs added by this artist yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    approvedSongs.map((song, index) => (
+                      <tr key={song.song_id} className="group text-center">
+                        <td className="py-4">{index + 1}</td>
+                        <td className="py-4 text-center">
+                          <div className="flex justify-center">
+                            <div className="max-w-[120px] truncate">
+                              <div className="font-medium">
+                                {song.song_name}
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {song.primary_artist}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4">{song.total_song_views ?? "—"}</td>
+                        <td className="py-4 tabular-nums text-gray-200 min-w-[3.5rem]">
+                          {(() => {
+                            const sec = trackLengthSec[song.song_id];
+                            if (sec === undefined) return "…";
+                            if (sec > 0) return formatTrackLengthSeconds(sec);
+                            const mins = song.duration_in_minutes;
+                            if (
+                              mins != null &&
+                              mins !== "" &&
+                              !Number.isNaN(Number(mins)) &&
+                              Number(mins) > 0
+                            ) {
+                              return `${Math.floor(Number(mins))}:00`;
+                            }
+                            return "—";
+                          })()}
+                        </td>
+                        <td className="py-4">
+                          <button
+                            className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 transition-colors"
+                            onClick={() => handlePlayPause(song)}
+                          >
+                            {playingSongId === song.song_id &&
+                            !audio?.paused ? (
+                              <Pause className="w-4 h-4" />
+                            ) : (
+                              <Play className="w-4 h-4" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Divider */}
+            <hr className="border-gray-700 my-8" />
+
+            {/* Change Password */}
+            <PasswordForm />
+          </div>
+          {/* end desktop space-y-8 */}
+        </div>
+        {/* end hidden md:block */}
+
+        {/* ── MOBILE LAYOUT (hidden on md+) ── */}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          hidden
+          disabled={isUploadingImage}
+        />
+        <div className="lg:hidden fixed inset-0 text-gray-100 flex flex-col overflow-hidden px-[16px] py-[16px]">
+          <div className="flex flex-col lg:flex-row justify-between mb-8">
+            <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
+              <NavbarLeft />
+              <NavbarRight />
+            </div>
+            <div className="hidden lg:block">
+              <NavbarRight />
+            </div>
+          </div>
+          {/* Top: profile */}
+          <div className="flex flex-col items-center pt-8 pb-4 px-4">
+            <div className="relative mb-3">
               <img
                 src={artist.personal_photo}
                 alt="Profile"
-                className="w-28 h-28 rounded-full border-4 border-cyan-600 cursor-pointer"
+                className="w-24 h-24 rounded-full border-4 border-cyan-600 object-cover cursor-pointer"
                 onClick={openModal}
-              />
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                hidden
-                disabled={isUploadingImage}
               />
               <button
                 onClick={() => inputRef.current?.click()}
                 disabled={isUploadingImage}
-                className="absolute bottom-0 right-0 bg-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute bottom-0 right-0 bg-purple-600 w-7 h-7 rounded-full flex items-center justify-center disabled:opacity-50"
               >
                 {isUploadingImage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Edit3 className="w-4 h-4 text-white" />
+                  <Edit3 className="w-3 h-3 text-white" />
                 )}
               </button>
             </div>
-            <div className="flex-1 min-w-[200px]">
-              <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-                {artist.name}
-              </h1>
-              <p className="text-gray-400">
-                Stage Name:{" "}
-                <span className="text-cyan-400">{artist.stage_name}</span>
-              </p>
+            <h1 className="text-cyan-400 text-lg font-extrabold drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
+              {artist.name}
+            </h1>
+            <p className="text-gray-400 text-sm">
+              Stage Name:{" "}
+              <span className="text-cyan-400">{artist.stage_name}</span>
+            </p>
+            {/* Social icons */}
+            <div className="flex gap-4 mt-3">
+              <SocialLinks />
             </div>
-            <NavbarRight />
           </div>
 
-          <div className="mt-4 space-y-2">
-            <p className="text-gray-400">
-              OPH Artist Code:{" "}
-              <span className="text-white">#{artist.oph_id}</span>
-            </p>
-            <p className="text-gray-400">
-              Profession:{" "}
-              <span className="text-white">
-                {resolveProfessionLabel(
-                  artist.profession ?? artist.Profession,
-                  professions,
-                )}
-              </span>
-            </p>
-          </div>
-
-          {/* Bio */}
-          <p className="text-gray-400 leading-relaxed">{artist.bio}</p>
-
-          {/* Social links: FB / IG / Spotify / Apple come from professional_details via get-artist-detail */}
-          <div className="flex flex-wrap gap-4">
-            {(() => {
-              const fb = socialHref(
-                artist,
-                "facebook_url",
-                "facebook_link",
-                "FacebookLink",
-              );
-              const ig = socialHref(
-                artist,
-                "instagram_url",
-                "instagram_link",
-                "InstagramLink",
-              );
-              const sp = socialHref(
-                artist,
-                "spotify_url",
-                "spotify_link",
-                "SpotifyLink",
-              );
-              const am = socialHref(
-                artist,
-                "apple_music_url",
-                "apple_music_link",
-                "AppleMusicLink",
-              );
-              // const li = socialHref(artist, "linkedin_url", "linkedin_link");
-              // const tw = socialHref(artist, "twitter_url", "twitter_link");
-              const items = [
-                { href: fb, src: Face, alt: "Facebook" },
-                { href: ig, src: Insta, alt: "Instagram" },
-                { href: sp, src: Spotify, alt: "Spotify" },
-                { href: am, src: AppleMusic, alt: "Apple Music" },
-                // { href: li, src: Linkedin, alt: "LinkedIn" },
-                // { href: tw, src: Twitter, alt: "Twitter" },
-              ];
-              return items.map(({ href, src, alt }) => {
-                const safeHref = href ? normalizeExternalHref(href) : null;
-                const imgClass = safeHref
-                  ? "opacity-70 w-10 h-10 object-cover hover:opacity-100"
-                  : "opacity-35 w-10 h-10 object-cover grayscale cursor-not-allowed";
-                const img = (
-                  <img src={src} alt="" className={imgClass} aria-hidden />
-                );
-                if (safeHref) {
-                  return (
-                    <a
-                      key={alt}
-                      href={safeHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={alt}
-                    >
-                      {img}
-                    </a>
-                  );
-                }
-                return (
-                  <span
-                    key={alt}
-                    className="inline-flex select-none"
-                    aria-label={`${alt}: not available`}
-                    title="Not available"
-                  >
-                    {img}
-                  </span>
-                );
-              });
-            })()}
-          </div>
-
-          {/* Songs Table */}
-          <div className="overflow-x-auto mt-8">
-            <table className="w-full table-auto text-sm">
-              <thead>
-                <tr className="text-center text-gray-300 border-b border-gray-800 text-xs">
-                  <th className="pb-4 font-normal">#</th>
-                  <th className="pb-4 font-normal">SONG NAME</th>
-                  <th className="pb-4 font-normal">PLAYS</th>
-                  <th
-                    className="pb-4 font-normal"
-                    title="Length of your uploaded audio file"
-                  >
-                    TIME
-                  </th>
-                  <th className="pb-4 font-normal">PLAY</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {approvedSongs.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="py-10 text-center text-gray-400 text-sm"
-                    >
-                      No songs added by this artist yet.
-                    </td>
-                  </tr>
-                ) : (
-                  approvedSongs.map((song, index) => (
-                    <tr key={song.song_id} className="group text-center">
-                      <td className="py-4">{index + 1}</td>
-                      <td className="py-4 text-center">
-                        <div className="flex justify-center">
-                          <div className="max-w-[120px] truncate">
-                            <div className="font-medium">{song.song_name}</div>
-                            <div className="text-sm text-gray-400">
-                              {song.primary_artist}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4">{song.total_song_views ?? "—"}</td>
-                      <td className="py-4 tabular-nums text-gray-200 min-w-[3.5rem]">
-                        {(() => {
-                          const sec = trackLengthSec[song.song_id];
-                          if (sec === undefined) return "…";
-                          if (sec > 0) return formatTrackLengthSeconds(sec);
-                          const mins = song.duration_in_minutes;
-                          if (
-                            mins != null &&
-                            mins !== "" &&
-                            !Number.isNaN(Number(mins)) &&
-                            Number(mins) > 0
-                          ) {
-                            return `${Math.floor(Number(mins))}:00`;
-                          }
-                          return "—";
-                        })()}
-                      </td>
-                      <td className="py-4">
-                        <button
-                          className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 transition-colors"
-                          onClick={() => handlePlayPause(song)}
-                        >
-                          {playingSongId === song.song_id && !audio?.paused ? (
-                            <Pause className="w-4 h-4" />
-                          ) : (
-                            <Play className="w-4 h-4" />
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Divider */}
-          <hr className="border-gray-700 my-8" />
-
-          {/* Change Password */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-medium">Change Password:</h2>
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div className="relative">
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-cyan-400"
-                  placeholder="New Password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength="8"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                >
-                  {showNewPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:border-cyan-400"
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength="8"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
+          {/* Tabs */}
+          <div className="flex border-b border-gray-700">
+            {["details", "songs"].map((tab) => (
               <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full sm:w-auto px-6 py-3 ${
-                  isLoading
-                    ? "bg-cyan-500 cursor-not-allowed"
-                    : "bg-cyan-400 hover:bg-cyan-300"
-                } text-gray-900 rounded-lg font-medium transition-colors`}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 text-sm font-medium uppercase tracking-wide transition-colors ${
+                  activeTab === tab
+                    ? "text-cyan-400 border-b-2 border-cyan-400"
+                    : "text-gray-400"
+                }`}
               >
-                {isLoading ? "Saving..." : "Save Changes"}
+                {tab === "details" ? "Artist Details" : "Songs"}
               </button>
-            </form>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 pb-6 space-y-4">
+            {activeTab === "details" ? (
+              <>
+                <p className="text-gray-400 text-sm">
+                  OPH Artist Code:{" "}
+                  <span className="text-white font-semibold">
+                    #{artist.oph_id}
+                  </span>
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Profession:{" "}
+                  <span className="text-white font-semibold">
+                    {resolveProfessionLabel(
+                      artist.profession ?? artist.Profession,
+                      professions,
+                    )}
+                  </span>
+                </p>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {artist.bio}
+                </p>
+                <hr className="border-gray-700" />
+                <PasswordForm />
+              </>
+            ) : (
+              <>
+                {approvedSongs.length === 0 ? (
+                  <p className="text-center text-gray-400 text-sm py-10">
+                    No songs added yet.
+                  </p>
+                ) : (
+                  approvedSongs.map((song) => {
+                    const isPlaying = playingSongId === song.song_id && !audio?.paused;
+                    const duration = trackLengthSec[song.song_id];
+                    const progress = isPlaying && duration > 0 ? (currentTime / duration) * 100 : 0;
+                    return (
+                      <div key={song.song_id} className="border-b border-gray-800 pb-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={song.song_image || song.cover_image || artist.personal_photo}
+                            alt=""
+                            className="w-12 h-12 rounded object-cover flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-500 uppercase">Song</div>
+                            <div className="font-medium text-sm truncate">{song.song_name}</div>
+                            <div className="text-xs text-gray-400 truncate">{song.primary_artist}</div>
+                            <div className="text-xs text-gray-500">PLAY {song.total_song_views ?? "—"}</div>
+                          </div>
+                          <button
+                            className="p-2 bg-purple-600 rounded-full hover:bg-purple-500 flex-shrink-0"
+                            onClick={() => handlePlayPause(song)}
+                          >
+                            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {playingSongId === song.song_id && (
+                          <input
+                            type="range"
+                            min={0}
+                            max={duration > 0 ? duration : 100}
+                            value={currentTime}
+                            onChange={(e) => {
+                              const t = Number(e.target.value);
+                              if (audio) { audio.currentTime = t; setCurrentTime(t); }
+                            }}
+                            className="w-full mt-2 h-1 accent-[#5DC9DE] cursor-pointer"
+                          />
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+                <hr className="border-gray-700" />
+                <PasswordForm />
+              </>
+            )}
           </div>
         </div>
 
@@ -575,7 +734,6 @@ export default function ArtistProfile() {
               &times;
             </button>
             <video
-              // src={profile.artist_story}
               controls
               autoPlay
               className="w-full h-auto rounded-lg"
@@ -583,7 +741,7 @@ export default function ArtistProfile() {
             />
           </div>
         </Modal>
-      </div>
+      </>
     )
   );
 }

@@ -39,6 +39,7 @@ class PaymentService {
         event_id,
         release_date,
         old_release_date,
+        change_reason,
         amount,
         step,
         booking_details = {}
@@ -59,17 +60,20 @@ class PaymentService {
 
       // Handle release date change logic (old_release_date is DATE-only, no time)
       const oldReleaseDateOnly = toDateOnlyString(old_release_date);
-      if (from_source === "Release date change" && oldReleaseDateOnly) {
-        // Record previous slot on the old payment row; do not use reject_for (reserved for rejections)
+      const isReleaseDateChangePayment =
+        from_source &&
+        String(from_source).trim().toLowerCase().replace(/\s+/g, " ") ===
+          "release date change";
+
+      if (isReleaseDateChangePayment && oldReleaseDateOnly) {
+        // Preserve prior date-booking row metadata only (not other release date change payments)
         await connection.execute(
-          "UPDATE payments SET old_release_date = ?, release_date = NULL, updated_at = NOW() WHERE release_date = ? AND oph_id = ? AND (from_source = ? OR from_source = ?)",
-          [
-            oldReleaseDateOnly,
-            oldReleaseDateOnly,
-            oph_id,
-            "Date booking",
-            "Release date change",
-          ]
+          `UPDATE payments SET old_release_date = ?, release_date = NULL, updated_at = NOW()
+           WHERE (release_date = ? OR DATE(release_date) = DATE(?))
+             AND oph_id = ?
+             AND (from_source = 'Date booking' OR from_source = 'Date Booking')
+             AND (status IS NULL OR LOWER(TRIM(status)) != 'rejected')`,
+          [oldReleaseDateOnly, oldReleaseDateOnly, oldReleaseDateOnly, oph_id],
         );
       }
 
@@ -267,6 +271,70 @@ class PaymentService {
       let finalReleaseDate = toYYYYMMDD(release_date);
       if (isInvalidDate(finalReleaseDate)) finalReleaseDate = null;
 
+      if (isReleaseDateChangePayment && !finalReleaseDate) {
+        throw new Error('New release date is required for release date change');
+      }
+      if (isReleaseDateChangePayment && !oldReleaseDateOnly) {
+        throw new Error('Current release date is required for release date change');
+      }
+
+      if (isReleaseDateChangePayment) {
+        const {
+          getPendingReleaseDateChangeForOph,
+          isNewDateBlockedForReleaseDateChange,
+        } = require("../../utils/releaseDateChangeQueries");
+        const { normalizeCalendarDateOnly } = require("../../utils/calendarDateUtils");
+
+        const pending = await getPendingReleaseDateChangeForOph(
+          connection,
+          paymentOphId,
+        );
+        if (pending) {
+          const pendingOld = normalizeCalendarDateOnly(pending.old_release_date);
+          const pendingNew = normalizeCalendarDateOnly(pending.release_date);
+          const reqOld = normalizeCalendarDateOnly(oldReleaseDateOnly);
+          const reqNew = normalizeCalendarDateOnly(finalReleaseDate);
+          const sameRequest =
+            pendingNew === reqNew &&
+            (pendingOld === reqOld || (!pendingOld && reqOld));
+
+          if (sameRequest) {
+            await DateBookingService.updateBookingDateInConnection(
+              connection,
+              paymentOphId,
+              oldReleaseDateOnly,
+              finalReleaseDate,
+              change_reason || null,
+              { excludeTransactionId: pending.transaction_id },
+            );
+            await connection.commit();
+            return {
+              success: true,
+              alreadyPending: true,
+              message:
+                "Your release date change is already submitted and pending admin approval.",
+            };
+          }
+
+          throw new Error(
+            "A release date change is already pending admin approval. Please wait for admin to review it before requesting another change.",
+          );
+        }
+
+        if (
+          finalReleaseDate &&
+          (await isNewDateBlockedForReleaseDateChange(
+            connection,
+            paymentOphId,
+            finalReleaseDate,
+          ))
+        ) {
+          throw new Error(
+            "New date is already booked or reserved pending approval",
+          );
+        }
+      }
+
       // For Song Registration / Song Repayment, resolve release_date from DB when missing
       const isSongReg = from_source && String(from_source).toLowerCase().replace(/\s+/g, ' ') === 'song registration';
       const isSongRepay = from_source && String(from_source).toLowerCase().replace(/\s+/g, ' ') === 'song repayment';
@@ -341,11 +409,15 @@ class PaymentService {
         finalReleaseDate = null;
       }
       console.log('[PaymentService] Inserting payment record...');
+      const paymentReview =
+        isReleaseDateChangePayment && change_reason
+          ? change_reason
+          : review ?? null;
       await paymentModel.insertPayment(
         connection,
         paymentOphId,
         transaction_id,
-        review ?? null,
+        paymentReview,
         status,
         from_source,
         song_id ?? null,
@@ -354,6 +426,23 @@ class PaymentService {
         amount ?? null
       );
       console.log('[PaymentService] Payment record inserted successfully');
+
+      if (isReleaseDateChangePayment && oldReleaseDateOnly && finalReleaseDate) {
+        await connection.execute(
+          `UPDATE payments SET old_release_date = ?, updated_at = NOW()
+           WHERE oph_id = ? AND transaction_id = ?
+             AND (LOWER(TRIM(from_source)) = 'release date change' OR from_source IN ('Release date change', 'Release Date Change'))`,
+          [oldReleaseDateOnly, paymentOphId, transaction_id],
+        );
+        await DateBookingService.updateBookingDateInConnection(
+          connection,
+          paymentOphId,
+          oldReleaseDateOnly,
+          finalReleaseDate,
+          change_reason || null,
+          { excludeTransactionId: transaction_id },
+        );
+      }
 
       // As soon as a payment entry is created for a song, set song_application_status.status_payment to 'under review'
       const fromSourceNorm = String(from_source || '').trim();
@@ -514,7 +603,6 @@ class PaymentService {
         applicationStatus = await ApplicationStatusService.getApplicationStatus(connection, oph_id);
         
         if (user && user.length > 0) {
-          console.log(user[0] + "assasa");
           navTo = this.determineNavigationPath(user[0], applicationStatus, step);
         }
       } else {

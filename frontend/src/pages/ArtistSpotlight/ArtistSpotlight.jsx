@@ -57,83 +57,95 @@ function Leaderboard({ leaderboardData, artistId }) {
     : [];
 
   return (
-    <div className="px-6 lg:px-0">
+    <div className="lg:px-0">
       <div
-        className={`mb-6 rounded-xl border px-4 py-4 sm:px-5 sm:py-5 ${
+        className={`mb-6 rounded-xl border px-4 py-5 ${
           meRankValid != null
-            ? "border-[#5DC9DE]/35 bg-gray-800/50 ring-1 ring-[#5DC9DE]/25"
+            ? "border-[#5DC9DE]/35 bg-gray-800/50"
             : "border-gray-700/60 bg-gray-800/30"
         }`}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Mobile: centered stack */}
+        <div className="flex flex-col items-center text-center gap-2 lg:hidden">
+          <span
+            className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold tabular-nums ${
+              meRankValid != null ? rankBadgeVisualClass(meRankValid) : "bg-gray-700 text-gray-400"
+            }`}
+          >
+            {meRankValid != null ? String(meRankValid).padStart(2, "0") : "–"}
+          </span>
+          <p className="text-base font-extrabold uppercase tracking-widest text-white">Your Position</p>
+          {meRankValid != null ? (
+            <p className="text-sm text-gray-400">#{meRankValid} on community leaderboard</p>
+          ) : (
+            <p className="text-sm text-gray-400">Not on the leaderboard yet</p>
+          )}
+          {meRow && meRankValid != null && (
+            <>
+              <div className="mt-2 flex w-full justify-around text-sm">
+                <div>
+                  <p className="text-gray-500 uppercase text-xs tracking-wide">Songs</p>
+                  <p className="font-bold text-white">{meRow.song_count ?? meRow.songCount ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 uppercase text-xs tracking-wide">Stage Name</p>
+                  <p className="font-bold text-white">{meRow.stage_name ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 uppercase text-xs tracking-wide">Reach</p>
+                  <p className="font-bold text-white">{formatReach(meRow.total_views ?? meRow.Total_views ?? meRow.totalViews)}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => goToArtistProfile(myOphId)}
+                className="mt-3 w-full rounded-full bg-[#6F4fca] py-2 text-sm font-medium text-white hover:bg-[#6F4FA0] transition-colors"
+              >
+                View Profile
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Desktop: horizontal layout */}
+        <div className="hidden lg:flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            {meRankValid != null ? (
-              <span
-                className={`flex min-h-[2.25rem] min-w-[2.25rem] shrink-0 -rotate-12 items-center justify-center rounded-full px-2 py-1 text-base font-bold tabular-nums sm:min-h-[2.5rem] sm:min-w-[2.5rem] sm:text-lg ${rankBadgeVisualClass(
-                  meRankValid,
-                )}`}
-                title={`Community leaderboard rank #${meRankValid}`}
-                aria-label={`Your leaderboard rank ${meRankValid}`}
-              >
-                {meRankValid}
-              </span>
-            ) : (
-              <span
-                className="flex min-h-[2.25rem] min-w-[2.25rem] shrink-0 -rotate-12 items-center justify-center rounded-full bg-gray-800/90 px-2 py-1 text-sm font-medium tabular-nums text-gray-400 ring-1 ring-gray-600"
-                title="Not on the community leaderboard yet"
-                aria-label="Not on the community leaderboard"
-              >
-                –
-              </span>
-            )}
-            <div className="text-left">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Your position
-              </p>
+            <span
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold tabular-nums ${
+                meRankValid != null ? rankBadgeVisualClass(meRankValid) : "bg-gray-700 text-gray-400 ring-2 ring-gray-600"
+              }`}
+            >
+              {meRankValid != null ? meRankValid : "–"}
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Your Position</p>
               {meRankValid != null ? (
-                <p className="text-lg font-bold text-white sm:text-xl">
-                  #{meRankValid}{" "}
-                  <span className="font-normal text-gray-400">
-                    on the community leaderboard
-                  </span>
+                <p className="text-lg font-bold text-white">
+                  #{meRankValid} <span className="font-normal text-gray-400">on the community leaderboard</span>
                 </p>
               ) : (
-                <p className="text-base text-gray-400">
-                  You&apos;re not on the leaderboard yet — keep publishing and
-                  engaging to appear here.
-                </p>
+                <p className="text-sm text-gray-400">Not on the leaderboard yet</p>
               )}
             </div>
           </div>
           {meRow && meRankValid != null && (
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-300 sm:justify-end">
+            <div className="flex items-center gap-6 text-sm text-gray-300">
               <span>
                 <span className="text-gray-500">Stage: </span>
-                <span className="font-medium text-[#5DC9DE]">
-                  {meRow.stage_name ?? "—"}
-                </span>
+                <span className="font-medium text-[#5DC9DE]">{meRow.stage_name ?? "—"}</span>
               </span>
               <span>
                 <span className="text-gray-500">Songs: </span>
-                <span className="font-semibold text-white">
-                  {meRow.song_count ??
-                    meRow.songCount ??
-                    meRow.SONG_COUNT ??
-                    "—"}
-                </span>
+                <span className="font-bold text-white">{meRow.song_count ?? meRow.songCount ?? "—"}</span>
               </span>
               <span>
                 <span className="text-gray-500">Reach: </span>
-                <span className="font-semibold text-white">
-                  {formatReach(
-                    meRow.total_views ?? meRow.Total_views ?? meRow.totalViews,
-                  )}
-                </span>
+                <span className="font-bold text-white">{formatReach(meRow.total_views ?? meRow.Total_views ?? meRow.totalViews)}</span>
               </span>
               <button
                 type="button"
                 onClick={() => goToArtistProfile(myOphId)}
-                className="shrink-0 rounded-lg border border-[#5DC9DE]/35 bg-[#5DC9DE]/10 px-4 py-2 text-sm font-medium text-[#5DC9DE] ring-1 ring-[#5DC9DE]/25 transition-colors hover:border-[#5DC9DE]/50 hover:bg-[#5DC9DE]/20 hover:text-white"
+                className="shrink-0 rounded-lg border border-[#5DC9DE]/50 px-4 py-2 text-sm font-medium text-[#5DC9DE] hover:bg-[#5DC9DE]/10 transition-colors"
               >
                 View Profile
               </button>
@@ -142,89 +154,171 @@ function Leaderboard({ leaderboardData, artistId }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-[100%] border-separate border-spacing-y-2">
-          <thead>
-            <tr className="text-center text-gray-400 rounded-2xl border-gray-800 rounded-2xl">
-              <th className="py-2 px-3 lg:px-4">#</th>
-              <th className="py-2 px-3 lg:px-4">ARTIST</th>
-              <th className="py-2 px-3 lg:px-4">STAGE NAME</th>
-              <th className="py-2 hidden lg:block px-3 lg:px-4">LOCATION</th>
-              <th className="py-2 px-3 lg:px-4">SONGS</th>
-              <th className="py-2 px-3 lg:px-4">REACH</th>
-              <th className="py-2 hidden lg:block px-3 lg:px-4">PROFILE</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 &&
-              rows.map((artist, index) => (
-                <tr
-                  role="button"
-                  tabIndex={0}
-                  onClick={() =>
-                    goToArtistProfile(resolveLeaderboardOphId(artist))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      goToArtistProfile(resolveLeaderboardOphId(artist));
-                    }
-                  }}
-                  key={`${resolveLeaderboardOphId(artist) || "row"}-${index}`}
-                  className={`cursor-pointer rounded-2xl text-center border-gray-800 rounded-full overflow-hidden ${
-                    artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
-                  }`}
-                >
-                  <td className="px-3 lg:px-4 py-2">
-                    <span
-                      className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${
-                        artist.ranks === 1
-                          ? "bg-yellow-400"
-                          : artist.ranks === 2
-                            ? "bg-emerald-400"
-                            : artist.ranks === 3
-                              ? "bg-cyan-400"
-                              : "bg-transparent text-white"
-                      }`}
-                    >
-                      {String(artist.ranks).padStart(2, "0")}
-                    </span>
-                  </td>
-                  <td className="py-2 flex items-center justify-center px-3 lg:px-4">
-                    <img
-                      src={`${artist.personal_photo}?height=40&width=40`}
-                      alt={artist.stage_name}
-                      className="w-8 h-8 rounded-full"
-                    />
-                  </td>
-                  <td className="py-2 px-3 lg:px-4">{artist.stage_name}</td>
-                  <td className="py-2 hidden lg:block px-3 lg:px-4">
-                    {artist.location}
-                  </td>
-                  <td className="py-2 px-3 lg:px-4">{artist.song_count}</td>
-                  <td className="py-2 px-3 lg:px-4">
+      {/* Mobile card list */}
+      <div className="space-y-3 lg:hidden">
+        {rows.map((artist, index) => (
+          <div className="flex items-start gap-3 border-b-[1px] border-[#FFFFFF33] px-[12px] py-[16px]">
+            {/* Rank */}
+            <div className="flex flex-col shrink-0">
+              <span className="text-gray-500 text-sm">#</span>
+
+              <span
+                className={`w-10 h-10 flex items-center justify-center text-lg font-bold ${
+                  artist.ranks === 1
+                    ? "bg-[#EAB54F] text-black"
+                    : artist.ranks === 2
+                      ? "bg-emerald-400 text-black"
+                      : artist.ranks === 3
+                        ? "bg-cyan-400 text-black"
+                        : "bg-[#1a1a2e] text-white border border-gray-600"
+                }`}
+              >
+                {String(artist.ranks).padStart(2, "0")}
+              </span>
+            </div>
+
+            {/* Profile image */}
+
+            {/* Content */}
+            <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-4 text-xs">
+              {/* Left column */}
+
+              <div>
+                <img
+                  src={`${artist.personal_photo}?height=60&width=60`}
+                  alt={artist.stage_name}
+                  className="w-[60px] h-[60px] rounded-full object-cover shrink-0 mb-[8px]"
+                />
+                <p className="text-gray-500 uppercase">Location</p>
+                <p className="text-white font-bold text-lg">
+                  {artist.location ?? "—"}
+                </p>
+
+                <div className="mt-4">
+                  <p className="text-gray-500 uppercase">Reach</p>
+                  <p className="text-white font-bold text-lg">
                     {formatReach(
                       artist.total_views ??
                         artist.Total_views ??
                         artist.totalViews,
                     )}
-                  </td>
-                  <td className="py-2 hidden lg:block px-3 lg:px-4">
-                    <button
-                      type="button"
-                      className="px-3 lg:px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const oid = resolveLeaderboardOphId(artist);
-                        if (!oid) return;
-                        goToArtistProfile(oid);
-                      }}
-                    >
-                      View Profile
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right column */}
+              <div>
+                <p className="text-gray-500 uppercase">Stage Name</p>
+                <p className="text-white font-bold text-lg truncate">
+                  {artist.stage_name}
+                </p>
+
+                <div className="mt-4">
+                  <p className="text-gray-500 uppercase">Songs</p>
+                  <p className="text-white font-bold text-lg">
+                    {artist.song_count ?? "—"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="mt-[16px] px-6 py-3 rounded-full bg-[#7C55C7] text-white font-medium shadow-[0_0_25px_rgba(124,85,199,0.5)]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const oid = resolveLeaderboardOphId(artist);
+                    if (!oid) return;
+                    goToArtistProfile(oid);
+                  }}
+                >
+                  View Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden lg:block overflow-x-auto">
+        <table className="w-[100%] border-separate border-spacing-y-2">
+          <thead>
+            <tr className="text-center text-gray-400 rounded-2xl border-gray-800">
+              <th className="py-2 px-4">#</th>
+              <th className="py-2 px-4">ARTIST</th>
+              <th className="py-2 px-4">STAGE NAME</th>
+              <th className="py-2 px-4">LOCATION</th>
+              <th className="py-2 px-4">SONGS</th>
+              <th className="py-2 px-4">REACH</th>
+              <th className="py-2 px-4">PROFILE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((artist, index) => (
+              <tr
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  goToArtistProfile(resolveLeaderboardOphId(artist))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goToArtistProfile(resolveLeaderboardOphId(artist));
+                  }
+                }}
+                key={`${resolveLeaderboardOphId(artist) || "row"}-${index}`}
+                className={`cursor-pointer rounded-2xl text-center border-gray-800 overflow-hidden ${
+                  artist.OPH_ID == artistId ? "bg-[#6F4aA0]" : ""
+                }`}
+              >
+                <td className="px-4 py-2">
+                  <span
+                    className={`w-8 h-8 flex items-center justify-center text-md font-bold text-black ${
+                      artist.ranks === 1
+                        ? "bg-yellow-400"
+                        : artist.ranks === 2
+                          ? "bg-emerald-400"
+                          : artist.ranks === 3
+                            ? "bg-cyan-400"
+                            : "bg-transparent text-white"
+                    }`}
+                  >
+                    {String(artist.ranks).padStart(2, "0")}
+                  </span>
+                </td>
+                <td className="py-2 px-4">
+                  <img
+                    src={`${artist.personal_photo}?height=40&width=40`}
+                    alt={artist.stage_name}
+                    className="w-8 h-8 rounded-full mx-auto"
+                  />
+                </td>
+                <td className="py-2 px-4">{artist.stage_name}</td>
+                <td className="py-2 px-4">{artist.location}</td>
+                <td className="py-2 px-4">{artist.song_count}</td>
+                <td className="py-2 px-4">
+                  {formatReach(
+                    artist.total_views ??
+                      artist.Total_views ??
+                      artist.totalViews,
+                  )}
+                </td>
+                <td className="py-2 px-4">
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-[#6F4fca] rounded-full text-sm hover:bg-[#6F4FA0] transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const oid = resolveLeaderboardOphId(artist);
+                      if (!oid) return;
+                      goToArtistProfile(oid);
+                    }}
+                  >
+                    View Profile
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -444,7 +538,7 @@ export default function ArtistSpotlight() {
                 <NavbarRight />
               </div>
             </div>
-            <div className="flex justify-start items-center gap-4 px-6">
+            <div className="flex flex-col items-center gap-4 px-6 lg:flex-row lg:justify-start">
               {/* Artist Image with Rank Badge */}
               <div className="relative">
                 <img
@@ -486,36 +580,37 @@ export default function ArtistSpotlight() {
               </div>
 
               {/* Artist Info */}
-              <div className="text-left">
-                <h2 className="text-[45px] font-bold text-white">
+              <div className="text-center lg:text-left">
+                <h2 className="text-3xl sm:text-[45px] font-bold mb-[12px] text-[#5DC9DE] lg:text-white ">
                   {artist.full_name}
                 </h2>
                 <p className="text-gray-400">
                   Stage Name:{" "}
                   <span className="text-[#5DC9DE]">{artist.stage_name}</span>
                 </p>
+                <p className="text-gray-400 mt-1">
+                  Profession:{" "}
+                  {formatProfessionLabel(
+                    artist.Profession ?? artist.profession,
+                  )}
+                </p>
               </div>
             </div>
 
-            <div className="px-6">
-              <p className="text-gray-400">
-                Profession:{" "}
-                {formatProfessionLabel(artist.Profession ?? artist.profession)}
-              </p>
-              <p className="text-gray-500 mt-4">{artist.Bio}</p>
+            <div className="px-6 text-center lg:text-left">
+              <p className="text-gray-500">{artist.Bio}</p>
             </div>
+
             {/* Tab Buttons */}
-            <div className="flex justify-between sm:px-3 items-center">
-              <div>
-                <h1 className="text-cyan-400 text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] lg:px-0 px-6 lg:py-0 pt-6 uppercase">
-                  {activeTab}
-                </h1>
-              </div>
-              <div className="flex lg:px-0 gap-4 px-3">
+            <div className="flex flex-col lg:flex-row justify-between sm:px-3 items-start lg:items-center gap-[12px]">
+              <h1 className="text-cyan-400 text-3xl lg:text-xl font-extrabold mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,1)] lg:px-0 lg:py-0 pt-6 uppercase">
+                {activeTab}
+              </h1>
+              <div className="w-full lg:w-[unset] flex lg:px-0 gap-4">
                 <button
-                  className={`hover:text-cyan-400 ${
+                  className={`pb-1 hover:text-cyan-400 w-full ${
                     activeTab === "leaderboard"
-                      ? "text-cyan-400 border-cyan-400"
+                      ? "text-cyan-400 border-b-2 border-cyan-400"
                       : "text-gray-400"
                   }`}
                   onClick={() => setActiveTab("leaderboard")}
@@ -523,9 +618,9 @@ export default function ArtistSpotlight() {
                   ARTISTS
                 </button>
                 <button
-                  className={` hover:text-cyan-400 ${
+                  className={`pb-1 hover:text-cyan-400 w-full ${
                     activeTab === "songs"
-                      ? "text-cyan-400 border-cyan-400"
+                      ? "text-cyan-400 border-b-2 border-cyan-400"
                       : "text-gray-400"
                   }`}
                   onClick={() => setActiveTab("songs")}
