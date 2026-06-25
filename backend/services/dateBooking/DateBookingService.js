@@ -6,7 +6,6 @@ const {
 } = require('../../utils/calendarDateUtils');
 const {
   isNewDateBlockedForReleaseDateChange,
-  hasPendingReleaseDateChangeForOph,
 } = require('../../utils/releaseDateChangeQueries');
 
 function normalizeBookingDate(bookingDate) {
@@ -237,10 +236,6 @@ class DateBookingService {
     const lastPending = [...existingHistory].reverse().find((e) => e.status === 'pending');
     if (lastPending && normalizeCalendarDateOnly(lastPending.new_date) === newStr) {
       return { success: true, message: 'Release date change already recorded', idempotent: true };
-    }
-
-    if (await hasPendingReleaseDateChangeForOph(connection, ophNorm, options)) {
-      throw new Error('A release date change is already pending admin approval');
     }
 
     if (await isNewDateBlockedForReleaseDateChange(connection, ophNorm, newStr, options)) {

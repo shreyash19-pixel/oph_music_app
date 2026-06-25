@@ -362,6 +362,13 @@ const PaymentScreen = () => {
 
       const response = await axiosApi.post(apiPath, formData);
 
+      if (!response.data?.success) {
+        setError(
+          response.data?.message || "Payment processing failed. Please try again.",
+        );
+        return;
+      }
+
       if (response.data.success && from == "Date booking") {
         {
           // For Date Booking repayment with linked song, pass song_id and song_name
@@ -389,11 +396,13 @@ const PaymentScreen = () => {
           }
         }
       } else if (response.data.success && from == "Release date change") {
-        // PaymentService already records the pending calendar change on payment insert.
         navigate("/dashboard/success", {
           state: {
             heading:
-              "Release date change submitted — pending admin approval",
+              response.data.message ||
+              (response.data.alreadyPending
+                ? "Your release date change is already submitted and pending admin approval."
+                : "Release date change submitted — pending admin approval"),
             btnText: "View Calendar",
             redirectTo: "/dashboard/time-calendar",
           },
@@ -613,7 +622,11 @@ const PaymentScreen = () => {
       }
     } catch (err) {
       console.error("Payment error:", err);
-      setError("Payment processing failed. Please try again.");
+      const serverMessage =
+        err.response?.data?.message || err.response?.data?.error;
+      setError(
+        serverMessage || "Payment processing failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }

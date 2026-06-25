@@ -283,7 +283,10 @@ class PaymentService {
           getPendingReleaseDateChangeForOph,
           isNewDateBlockedForReleaseDateChange,
         } = require("../../utils/releaseDateChangeQueries");
-        const { normalizeCalendarDateOnly } = require("../../utils/calendarDateUtils");
+        const {
+          normalizeCalendarDateOnly,
+          RELEASE_DATE_CHANGE_FROM_SQL,
+        } = require("../../utils/calendarDateUtils");
 
         const pending = await getPendingReleaseDateChangeForOph(
           connection,
@@ -294,15 +297,31 @@ class PaymentService {
           const pendingNew = normalizeCalendarDateOnly(pending.release_date);
           const reqOld = normalizeCalendarDateOnly(oldReleaseDateOnly);
           const reqNew = normalizeCalendarDateOnly(finalReleaseDate);
-          const sameRequest =
-            pendingNew === reqNew &&
-            (pendingOld === reqOld || (!pendingOld && reqOld));
+          const isRetryOfPending =
+            pendingNew && reqNew && pendingNew === reqNew;
 
-          if (sameRequest) {
+          if (isRetryOfPending) {
+            let effectiveOld = reqOld || pendingOld;
+            if (!effectiveOld) {
+              const [calRows] = await connection.query(
+                `SELECT current_booking_date FROM calender
+                 WHERE oph_id = ? ORDER BY updated_at DESC LIMIT 1`,
+                [paymentOphId],
+              );
+              effectiveOld = normalizeCalendarDateOnly(
+                calRows[0]?.current_booking_date,
+              );
+            }
+            if (!effectiveOld) {
+              throw new Error(
+                "Current release date is required for release date change",
+              );
+            }
+
             await DateBookingService.updateBookingDateInConnection(
               connection,
               paymentOphId,
-              oldReleaseDateOnly,
+              effectiveOld,
               finalReleaseDate,
               change_reason || null,
               { excludeTransactionId: pending.transaction_id },
@@ -316,8 +335,13 @@ class PaymentService {
             };
           }
 
-          throw new Error(
-            "A release date change is already pending admin approval. Please wait for admin to review it before requesting another change.",
+          // Allow a new request: supersede this artist's previous pending change(s)
+          await connection.execute(
+            `UPDATE payments SET status = 'rejected', updated_at = NOW()
+             WHERE oph_id = ?
+               AND ${RELEASE_DATE_CHANGE_FROM_SQL}
+               AND LOWER(TRIM(COALESCE(status, ''))) IN ('under review', 'pending')`,
+            [paymentOphId],
           );
         }
 
