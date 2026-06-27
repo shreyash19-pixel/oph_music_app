@@ -558,7 +558,7 @@ export default function ArtistSpotlight() {
                   if (rank == null) {
                     return (
                       <span
-                        className={`absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums ${rankBgClass}`}
+                        className={`absolute bottom-0 right-0 min-w-9 px-1.5 py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-medium tabular-nums ${rankBgClass}`}
                         title="Not on the community leaderboard yet. Rankings are for artists who appear on the public leaderboard."
                         aria-label="Not on the community leaderboard"
                       >
@@ -569,7 +569,7 @@ export default function ArtistSpotlight() {
 
                   return (
                     <span
-                      className={`absolute bottom-0 right-0 min-w-[1.75rem] lg:min-w-9 px-1 lg:px-1.5 py-0.5 lg:py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-bold tabular-nums ${rankBgClass}`}
+                      className={`absolute bottom-0 right-0 min-w-9 px-1.5 py-1 rounded-full transform -rotate-12 flex items-center justify-center text-xs lg:text-sm font-bold tabular-nums ${rankBgClass}`}
                       title={`Community leaderboard rank #${rank}`}
                       aria-label={`Leaderboard rank ${rank}`}
                     >

@@ -56,8 +56,6 @@ const HeroSection = ({
   const [videoModal, setVideoModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
   const eventID = useSelector((state) => state.event.selectedEvent);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -110,16 +108,22 @@ const HeroSection = ({
     if (currentSlide >= slides.length) setCurrentSlide(0);
   }, [slides.length, currentSlide]);
 
-  const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
-  const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const touchStartRef = useRef(0);
+  const touchEndRef = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.targetTouches[0].clientX;
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
+  const handleTouchMove = (e) => {
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
   const handleTouchEnd = () => {
     if (!multiSlide || slides.length === 0) return;
-    if (touchStart - touchEnd > 50) {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }
-    if (touchStart - touchEnd < -50) {
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    }
+    const diff = touchStartRef.current - touchEndRef.current;
+    if (Math.abs(diff) < 50) return;
+    if (diff > 0) setCurrentSlide((prev) => (prev + 1) % slides.length);
+    else setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
   const handleClick = async (e) => {
@@ -282,6 +286,7 @@ const HeroSection = ({
                       ) : (
                         <button
                           onClick={() => handleClick(ev)}
+                          onTouchEnd={(e) => { e.stopPropagation(); handleClick(ev); }}
                           className="bg-cyan-400 text-gray-900 px-4 py-2 rounded-full text-sm font-extrabold mt-[20px]"
                         >
                           Register Now!

@@ -279,6 +279,9 @@ export default function TVPublishing() {
                   }}
                   className="bg-[#191D27]/35 text-white p-2 rounded"
                 >
+                  <option value="" disabled className="bg-[#191D27] text-gray-400">
+                    Select the Song
+                  </option>
                   {contents
                     .filter((content) => {
                       const status = content.status?.toLowerCase();

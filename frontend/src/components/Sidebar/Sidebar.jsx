@@ -148,10 +148,12 @@ const SidebarNav = ({ onClose, contents, setContents, showNav, setShowNav }) => 
           songName: data.Song_name,
         },
       });
-
+      setShowNav?.(false);
+      onClose?.();
       return;
     }
     navigate(path);
+    setShowNav?.(false);
     onClose?.();
   };
 

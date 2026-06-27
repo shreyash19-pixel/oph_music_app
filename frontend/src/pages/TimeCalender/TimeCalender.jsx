@@ -288,7 +288,7 @@ export default function TimeCalendar() {
           </span>
           {isBlocked && isCurrentMonth && (
             <svg
-              className="absolute top-0 right-0 sm:top-4 sm:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
+              className="absolute top-[10px] right-[10px] md:top-4 md:right-4 sm:w-7 sm:h-7 w-4 h-4 translate-x-1 -translate-y-1"
               viewBox="0 0 18 21"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"

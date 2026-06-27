@@ -97,7 +97,7 @@ const ArtistRankingSection = ({ data, selectedMonth }) => {
               <div className="flex gap-3">
                 {/* Rank */}
                 <div className="flex flex-col">
-                  <span>#</span>
+                  {/* <span>#</span> */}
                   <div>
                     {artist.ranks === 1 ? (
                       <span className="bg-[#ECAB43] text-black font-bold px-2 py-1">

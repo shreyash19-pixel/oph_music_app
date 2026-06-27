@@ -277,7 +277,7 @@ const EventsNewReleases = ({ upcomingEvent, artistBookEvents = [] }) => {
                     <div className="flex items-center gap-3">
                       {/* Number */}
                       <div className="flex flex-col">
-                        <span className="text-gray-400 text-sm">#</span>
+                        {/* <span className="text-gray-400 text-sm">#</span> */}
 
                         {/* Cover */}
                         <img

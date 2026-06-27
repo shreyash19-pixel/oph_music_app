@@ -574,8 +574,8 @@ export default function ArtistProfile() {
           hidden
           disabled={isUploadingImage}
         />
-        <div className="lg:hidden fixed inset-0 text-gray-100 flex flex-col overflow-hidden px-[16px] py-[16px]">
-          <div className="flex flex-col lg:flex-row justify-between mb-8">
+        <div className="lg:hidden text-gray-100 flex flex-col px-[16px] py-[16px]">
+          <div className="flex flex-col lg:flex-row justify-between mb-[10px] lg:mb-8">
             <div className="w-full flex items-center justify-between lg:justify-end mb-[16px] block lg:hidden">
               <NavbarLeft />
               <NavbarRight />
@@ -585,7 +585,7 @@ export default function ArtistProfile() {
             </div>
           </div>
           {/* Top: profile */}
-          <div className="flex flex-col items-center pt-8 pb-4 px-4">
+          <div className="flex flex-col items-center pt-0 lg:pt-8 pb-4 px-4">
             <div className="relative mb-3">
               <img
                 src={artist.personal_photo}
@@ -636,14 +636,12 @@ export default function ArtistProfile() {
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 pb-6 space-y-4">
+          <div className="px-4 py-4 space-y-4">
             {activeTab === "details" ? (
               <>
                 <p className="text-gray-400 text-sm">
                   OPH Artist Code:{" "}
-                  <span className="text-white font-semibold">
-                    #{artist.oph_id}
-                  </span>
+                  <span className="text-white font-semibold">#{artist.oph_id}</span>
                 </p>
                 <p className="text-gray-400 text-sm">
                   Profession:{" "}
@@ -654,23 +652,16 @@ export default function ArtistProfile() {
                     )}
                   </span>
                 </p>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  {artist.bio}
-                </p>
-                <hr className="border-gray-700" />
-                <PasswordForm />
+                <p className="text-gray-300 text-sm leading-relaxed">{artist.bio}</p>
               </>
             ) : (
               <>
                 {approvedSongs.length === 0 ? (
-                  <p className="text-center text-gray-400 text-sm py-10">
-                    No songs added yet.
-                  </p>
+                  <p className="text-center text-gray-400 text-sm py-10">No songs added yet.</p>
                 ) : (
                   approvedSongs.map((song) => {
                     const isPlaying = playingSongId === song.song_id && !audio?.paused;
                     const duration = trackLengthSec[song.song_id];
-                    const progress = isPlaying && duration > 0 ? (currentTime / duration) * 100 : 0;
                     return (
                       <div key={song.song_id} className="border-b border-gray-800 pb-3">
                         <div className="flex items-center gap-3">
@@ -709,10 +700,14 @@ export default function ArtistProfile() {
                     );
                   })
                 )}
-                <hr className="border-gray-700" />
-                <PasswordForm />
               </>
             )}
+          </div>
+
+          {/* Change Password — always visible below tabs */}
+          <div className="px-4 pb-8">
+            <hr className="border-gray-700 mb-4" />
+            <PasswordForm />
           </div>
         </div>
 

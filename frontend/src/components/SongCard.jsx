@@ -110,11 +110,6 @@ const SongCard = ({ releaseData }) => {
 
   return (
     <div
-      onClick={() => navigate("/dashboard/song-details", {
-        state: {
-          song_id : releaseData?.song_id
-        }
-      })}
       style={{
         backgroundImage: "url('/assets/images/songUploadCardBg.png')",
       }}
@@ -145,9 +140,18 @@ const SongCard = ({ releaseData }) => {
           )}
         </div>
 
-        <button className="w-full md:w-fit bg-[#5DC9DE] text-black rounded-full shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.2),0_1px_2px_rgba(93,201,222,0.15),0_2px_4px_rgba(93,201,222,0.15),0_4px_8px_rgba(93,201,222,0.15),0_8px_16px_rgba(93,201,222,0.15),0_16px_32px_rgba(93,201,222,0.15)]
+        <button
+          className="w-full md:w-fit bg-[#5DC9DE] text-black rounded-full shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.2),0_1px_2px_rgba(93,201,222,0.15),0_2px_4px_rgba(93,201,222,0.15),0_4px_8px_rgba(93,201,222,0.15),0_8px_16px_rgba(93,201,222,0.15),0_16px_32px_rgba(93,201,222,0.15)]
 cursor-pointer inline-block font-sans px-8 py-2 text-center text-base
-transition-all duration-250 border-0 select-none hover:shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.35),0_1px_2px_rgba(93,201,222,0.25),0_2px_4px_rgba(93,201,222,0.25),0_4px_8px_rgba(93,201,222,0.25),0_8px_16px_rgba(93,201,222,0.25),0_16px_32px_rgba(93,201,222,0.25)]">
+transition-all duration-250 border-0 select-none hover:shadow-[inset_0_-25px_18px_-14px_rgba(93,201,222,0.35),0_1px_2px_rgba(93,201,222,0.25),0_2px_4px_rgba(93,201,222,0.25),0_4px_8px_rgba(93,201,222,0.25),0_8px_16px_rgba(93,201,222,0.25),0_16px_32px_rgba(93,201,222,0.25)]"
+          onClick={() => 
+            navigate("/dashboard/song-details", {
+              state: {
+                song_id: releaseData?.song_id,
+              },
+            })
+          }
+        >
           Get Details
         </button>
       </div>

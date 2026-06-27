@@ -493,27 +493,16 @@ export default function AnalyticsDashboard() {
                 </h2>
 
                 <div className="flex justify-end">
-                  <button
-                    className="flex items-center px-4 py-2 w-[150px]   text-sm text-white-400 appearance-none focus:outline-none "
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const selectElement =
-                        e.currentTarget.querySelector("select");
-                      if (selectElement) {
-                        selectElement.focus();
-                        selectElement.click();
-                      }
-                    }}
-                  >
+                  {/* Mobile: pill button */}
+
+                  {/* Desktop: styled select */}
+                  <div className="relative hidden lg:block">
                     <select
-                      className="w-full appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg p-3 pr-3 text-gray-200 focus:outline-none focus:border-[#5dc9de]"
+                      className="appearance-none bg-[#191D27]/80 border border-gray-700 rounded-lg px-4 py-3 pr-10 text-gray-200 focus:outline-none focus:border-[#5dc9de] text-sm"
                       value={selectedDuration}
-                      onChange={(e) => {
-                        setSelectedDuration(Number(e.target.value));
-                        if (streams.length > 0) {
-                          handleStreamChange(streams[0].content_stream_id);
-                        }
-                      }}
+                      onChange={(e) =>
+                        setSelectedDuration(Number(e.target.value))
+                      }
                     >
                       {durationOptions.map((option) => (
                         <option
@@ -525,7 +514,8 @@ export default function AnalyticsDashboard() {
                         </option>
                       ))}
                     </select>
-                  </button>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-4 h-4" />
+                  </div>
                 </div>
               </div>
               <div className="hidden lg:block">
@@ -600,6 +590,36 @@ export default function AnalyticsDashboard() {
                 </select>
 
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="relative lg:hidden w-full lg:w-[unset]">
+              <select
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                value={selectedDuration}
+                onChange={(e) => setSelectedDuration(Number(e.target.value))}
+              >
+                {durationOptions.map((option) => (
+                  <option key={`duration-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-center justify-center gap-2 px-5 py-3 bg-[#191D27] border border-gray-700 rounded-full text-white text-sm font-medium pointer-events-none">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4 text-gray-300"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Duration
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
@@ -24,7 +24,13 @@ const ArtistLayout = () => {
   const [contents, setContents] = useState([]);
   const [showNav, setShowNav] = useState(false);
 
-  // Add effect to handle body scrolling
+
+  const location = useLocation();
+
+  useEffect(() => {
+    setShowNav(false);
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
   useEffect(() => {
     if (isSidebarOpen) {
       document.body.style.overflow = "hidden";
