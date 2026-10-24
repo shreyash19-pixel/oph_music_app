@@ -43,6 +43,7 @@ const AddNewSong = () => {
     const durationRegex = /^[0-9]{1,2}:[0-5][0-9]$/;
 
     if (!formData.songName.trim()) newErrors.songName = "Song name is required";
+    if (!formData.proof.trim()) newErrors.proof = "Proof is required";
     if (!formData.views || isNaN(formData.views))
       newErrors.views = "Views must be a number";
     if (!formData.credits.trim())
@@ -273,7 +274,7 @@ const AddNewSong = () => {
           <NavbarRight />
         </div>
         <h2 className="text-[#5DC9DE] text-2xl sm:text-3xl font-bold uppercase drop-shadow-[0_0_15px_rgba(34,211,238,1)]">
-           Add New Song{" "}
+          Add New Song{" "}
         </h2>
         <div className="hidden lg:block">
           <NavbarRight />
@@ -376,6 +377,9 @@ const AddNewSong = () => {
             className="w-full bg-gray-800/50 border border-gray-700 rounded-full p-3 focus:outline-none focus:border-cyan-400"
             placeholder="Add your link here"
           />
+          {errors.proof && (
+            <p className="text-red-500 text-sm">{errors.proof}</p>
+          )}
         </div>
 
         {/* Audio File */}
@@ -447,7 +451,9 @@ const AddNewSong = () => {
 
       {status.length > 0 && (
         <section className="mb-[20px]">
-          <h1 className="font-extrabold text-[35px] lg:text-[55px] mt-[20px] md:mt-[55px] text-[#5DC9DE]">Status</h1>
+          <h1 className="font-extrabold text-[35px] lg:text-[55px] mt-[20px] md:mt-[55px] text-[#5DC9DE]">
+            Status
+          </h1>
 
           {/* Mobile card layout */}
           <div className="lg:hidden mt-6 flex flex-col">
@@ -455,98 +461,215 @@ const AddNewSong = () => {
               <div key={index}>
                 <div className="grid grid-cols-2 gap-y-4 py-5">
                   <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">Date</p>
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
+                      Date
+                    </p>
                     <p className="text-white font-bold text-base">
-                      {new Date(stat.created_at).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
+                      {new Date(stat.created_at).toLocaleDateString("en-GB", {
+                        timeZone: "Asia/Kolkata",
+                      })}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">Song Name</p>
-                    <p className="text-white font-bold text-base uppercase">{stat.song_name}</p>
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
+                      Song Name
+                    </p>
+                    <p className="text-white font-bold text-base uppercase">
+                      {stat.song_name}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">Song Type</p>
-                    <p className="text-white font-bold text-base uppercase">{stat.song_type}</p>
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
+                      Song Type
+                    </p>
+                    <p className="text-white font-bold text-base uppercase">
+                      {stat.song_type}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">Status</p>
-                    <p className={`font-bold text-base uppercase ${
-                      stat.status?.toLowerCase().includes("rejected") ? "text-red-500" :
-                      stat.status === "pending" && stat.song_type === "paid" && stat.payment_status === null ? "text-blue-400" : "text-white"
-                    }`}
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
+                      Status
+                    </p>
+                    <p
+                      className={`font-bold text-base uppercase ${
+                        stat.status?.toLowerCase().includes("rejected")
+                          ? "text-red-500"
+                          : stat.status === "pending" &&
+                              stat.song_type === "paid" &&
+                              stat.payment_status === null
+                            ? "text-blue-400"
+                            : "text-white"
+                      }`}
                       onClick={() => {
                         const s = stat.status?.toLowerCase();
                         const isPaid = stat.song_type === "paid";
-                        if (s === "pending" && isPaid && stat.payment_status === null) {
-                          navigate("/auth/payment", { state: { from: "Special artist song registration", song_id: stat.song_id, backPath: "/dashboard/add-new-song" } });
+                        if (
+                          s === "pending" &&
+                          isPaid &&
+                          stat.payment_status === null
+                        ) {
+                          navigate("/auth/payment", {
+                            state: {
+                              from: "Special artist song registration",
+                              song_id: stat.song_id,
+                              backPath: "/dashboard/add-new-song",
+                            },
+                          });
                         } else if (isPaid && s === "song & payment rejected") {
-                          window.location.reload(); navigate("/dashboard/add-new-song", { state: { song_id: stat.song_id } });
+                          window.location.reload();
+                          navigate("/dashboard/add-new-song", {
+                            state: { song_id: stat.song_id },
+                          });
                         } else if (s === "song rejected") {
-                          window.location.reload(); navigate("/dashboard/add-new-song", { state: { song_id: stat.song_id } });
+                          window.location.reload();
+                          navigate("/dashboard/add-new-song", {
+                            state: { song_id: stat.song_id },
+                          });
                         } else if (s === "payment rejected") {
-                          navigate("/auth/payment", { state: { from: "Special artist song registration", song_id: stat.song_id, backPath: "/dashboard/add-new-song" } });
+                          navigate("/auth/payment", {
+                            state: {
+                              from: "Special artist song registration",
+                              song_id: stat.song_id,
+                              backPath: "/dashboard/add-new-song",
+                            },
+                          });
                         }
                       }}
-                    >{stat.status}</p>
+                    >
+                      {stat.status}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">Song Rej Reason</p>
-                    <p className="text-white font-bold text-base">{stat.song_rejection_reason || "-"}</p>
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
+                      Song Rej Reason
+                    </p>
+                    <p className="text-white font-bold text-base">
+                      {stat.song_rejection_reason || "-"}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">Payment Rej Reason</p>
-                    <p className="text-white font-bold text-base">{stat.payment_rejection_reason || "-"}</p>
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">
+                      Payment Rej Reason
+                    </p>
+                    <p className="text-white font-bold text-base">
+                      {stat.payment_rejection_reason || "-"}
+                    </p>
                   </div>
                 </div>
-                {index < status.length - 1 && <div className="border-b border-[#FFFFFF33]" />}
+                {index < status.length - 1 && (
+                  <div className="border-b border-[#FFFFFF33]" />
+                )}
               </div>
             ))}
           </div>
 
           {/* Desktop table */}
-          <div className="hidden lg:block" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table className="border-collapse mt-[41px]" style={{ minWidth: "700px", width: "100%" }}>
-            <thead>
-              <tr className="border-b border-b-[#FFFFFF33] text-left">
-                <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
-                <th className="pb-[14px] text-[15px] font-semibold">SONG NAME</th>
-                <th className="pb-[14px] text-[15px] font-semibold">SONG TYPE</th>
-                <th className="pb-[14px] text-[15px] font-semibold">STATUS</th>
-                <th className="pb-[14px] text-[15px] font-semibold">SONG REJ REASON</th>
-                <th className="pb-[14px] text-[15px] font-semibold">PAYMENT REJ REASON</th>
-              </tr>
-            </thead>
-            <tbody>
-              {status.map((stat) => (
-                <tr>
-                  <td className="py-[12px] font-bold text-[16px]">
-                    {new Date(stat.created_at).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" })}
-                  </td>
-                  <td className="py-[12px] font-bold text-[16px]">{stat.song_name}</td>
-                  <td className="py-[12px] font-bold text-[16px]">{stat.song_type}</td>
-                  <td className={`py-[12px] font-bold text-[16px] ${
-                      stat.status?.toLowerCase().includes("rejected") ? "text-red-600 cursor-pointer" :
-                      stat.status === "pending" && stat.song_type === "paid" && stat.payment_status === null ? "cursor-pointer text-blue-600 hover:underline" : ""
-                    }`}
-                    onClick={() => {
-                      const status = stat.status?.toLowerCase();
-                      const isPaid = stat.song_type === "paid";
-                      if (status === "pending" && isPaid && stat.payment_status === null) {
-                        navigate("/auth/payment", { state: { from: "Special artist song registration", song_id: stat.song_id, backPath: "/dashboard/add-new-song" } });
-                      } else if (isPaid && status === "song & payment rejected") {
-                        window.location.reload(); navigate("/dashboard/add-new-song", { state: { song_id: stat.song_id } });
-                      } else if (status === "song rejected") {
-                        window.location.reload(); navigate("/dashboard/add-new-song", { state: { song_id: stat.song_id } });
-                      } else if (status === "payment rejected") {
-                        navigate("/auth/payment", { state: { from: "Special artist song registration", song_id: stat.song_id, backPath: "/dashboard/add-new-song" } });
-                      }
-                    }}
-                  >{stat.status}</td>
-                  <td className="py-[12px] font-bold text-[16px]">{stat.song_rejection_reason ? stat.song_rejection_reason : "-"}</td>
-                  <td className="py-[12px] font-bold text-[16px]">{stat.payment_rejection_reason ? stat.payment_rejection_reason : "-"}</td>
+          <div
+            className="hidden lg:block"
+            style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}
+          >
+            <table
+              className="border-collapse mt-[41px]"
+              style={{ minWidth: "700px", width: "100%" }}
+            >
+              <thead>
+                <tr className="border-b border-b-[#FFFFFF33] text-left">
+                  <th className="pb-[14px] text-[15px] font-semibold">DATE</th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    SONG NAME
+                  </th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    SONG TYPE
+                  </th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    STATUS
+                  </th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    SONG REJ REASON
+                  </th>
+                  <th className="pb-[14px] text-[15px] font-semibold">
+                    PAYMENT REJ REASON
+                  </th>
                 </tr>
-              ))}
-            </tbody>
+              </thead>
+              <tbody>
+                {status.map((stat) => (
+                  <tr>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {new Date(stat.created_at).toLocaleDateString("en-GB", {
+                        timeZone: "Asia/Kolkata",
+                      })}
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.song_name}
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.song_type}
+                    </td>
+                    <td
+                      className={`py-[12px] font-bold text-[16px] ${
+                        stat.status?.toLowerCase().includes("rejected")
+                          ? "text-red-600 cursor-pointer"
+                          : stat.status === "pending" &&
+                              stat.song_type === "paid" &&
+                              stat.payment_status === null
+                            ? "cursor-pointer text-blue-600 hover:underline"
+                            : ""
+                      }`}
+                      onClick={() => {
+                        const status = stat.status?.toLowerCase();
+                        const isPaid = stat.song_type === "paid";
+                        if (
+                          status === "pending" &&
+                          isPaid &&
+                          stat.payment_status === null
+                        ) {
+                          navigate("/auth/payment", {
+                            state: {
+                              from: "Special artist song registration",
+                              song_id: stat.song_id,
+                              backPath: "/dashboard/add-new-song",
+                            },
+                          });
+                        } else if (
+                          isPaid &&
+                          status === "song & payment rejected"
+                        ) {
+                          window.location.reload();
+                          navigate("/dashboard/add-new-song", {
+                            state: { song_id: stat.song_id },
+                          });
+                        } else if (status === "song rejected") {
+                          window.location.reload();
+                          navigate("/dashboard/add-new-song", {
+                            state: { song_id: stat.song_id },
+                          });
+                        } else if (status === "payment rejected") {
+                          navigate("/auth/payment", {
+                            state: {
+                              from: "Special artist song registration",
+                              song_id: stat.song_id,
+                              backPath: "/dashboard/add-new-song",
+                            },
+                          });
+                        }
+                      }}
+                    >
+                      {stat.status}
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.song_rejection_reason
+                        ? stat.song_rejection_reason
+                        : "-"}
+                    </td>
+                    <td className="py-[12px] font-bold text-[16px]">
+                      {stat.payment_rejection_reason
+                        ? stat.payment_rejection_reason
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </section>

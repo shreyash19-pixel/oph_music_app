@@ -35,8 +35,8 @@ const insertSecondaryArtist = async (req, res) => {
       legal_name,
       imageURL,
       spotify_url,
-      facebook_url,
       instagram_url,
+      facebook_url,
       apple_music_url
     )
 
