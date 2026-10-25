@@ -15,6 +15,7 @@ const insertSecondaryArtist = async (
   FacebookLink,
   AppleMusicLink
 ) => {
+
   const [result] = await db.execute(
     `INSERT INTO secondary_artist (
       song_id,

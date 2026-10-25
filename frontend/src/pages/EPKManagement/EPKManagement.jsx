@@ -95,6 +95,7 @@ const EPKManagement = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+      // console.log(formData.updateImages.length);
 
     const hasData =
       (formData.bio && formData.bio.trim() !== "") ||
@@ -102,7 +103,7 @@ const EPKManagement = () => {
       (formData.artistStory && formData.artistStory.trim() !== "") ||
       formData.artistStoryVideo ||
       formData.artistPhoto ||
-      (formData.updateImages && formData.updateImages.length > 0);
+      formData.updateImages;
 
     if (hasData) {
       if (!formData.terms) {
@@ -112,6 +113,9 @@ const EPKManagement = () => {
 
       setLoading(true);
       const sendFormData = new FormData();
+
+    
+      
 
       sendFormData.append("ophid", ophid);
       if (formData.bio !== "") {
