@@ -347,8 +347,12 @@ const getTopArtists = async (page = 1, perPage = 6, { includeSongs = false } = {
           LEFT JOIN secondary_artist sa
             ON sr.song_id = sa.song_id
 
-          LEFT JOIN song_social_metrics ssm
-            ON sr.song_id = ssm.song_id
+          LEFT JOIN (
+            SELECT song_id, OPH_ID, SUM(COALESCE(youtube_views, 0)) AS youtube_views
+            FROM song_social_metrics
+            GROUP BY song_id, OPH_ID
+          ) ssm
+            ON sr.song_id = ssm.song_id AND ssm.OPH_ID = sr.oph_id
 
           WHERE sr.oph_id = ?
             AND LOWER(TRIM(COALESCE(sas.overall_status, ''))) = 'approved'
@@ -403,6 +407,12 @@ const getTopArtists = async (page = 1, perPage = 6, { includeSongs = false } = {
   // =========================================================
 
   artistRows.forEach((artist) => {
+    if (Array.isArray(artist.songs) && artist.songs.length > 0) {
+      artist.total_views = artist.songs.reduce(
+        (sum, song) => sum + (Number(song.total_views) || 0),
+        0,
+      );
+    }
     delete artist.artist_type;
   });
 
@@ -447,9 +457,13 @@ const getArtistProfile = async (ophid) => {
       LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
       LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
       LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
-      LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
-      LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
-      WHERE ud.oph_id = ?
+        LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
+        LEFT JOIN (
+          SELECT song_id, OPH_ID, SUM(COALESCE(youtube_views, 0)) AS youtube_views
+          FROM song_social_metrics
+          GROUP BY song_id, OPH_ID
+        ) ssm ON sr.song_id = ssm.song_id AND ssm.OPH_ID = ud.oph_id
+        WHERE ud.oph_id = ?
     )
     SELECT *
     FROM CTEArtistProfile
@@ -522,7 +536,12 @@ const getArtistProfile = async (ophid) => {
   });
 
   if (songMap[ophid]) {
-    return songMap[ophid];
+    const profile = songMap[ophid];
+    profile.total_views = profile.songs.reduce(
+      (sum, song) => sum + (Number(song.total_views) || 0),
+      0,
+    );
+    return profile;
   }
 
   // /get-top-artist lists all fully registered artists (Independent -IA- and Special -SA-);

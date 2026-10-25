@@ -301,7 +301,7 @@ const getArtistDetail = async (ophid) => {
     ad.primary_artist AS primary_artist,
     ad.audio_url AS audio_url,
     sas.overall_status AS overall_status,
-    SUM(ssm.youtube_views) AS total_song_views,
+    MAX(ssm.youtube_views) AS total_song_views,
     GROUP_CONCAT(DISTINCT sa.artist_name SEPARATOR ', ') AS secondary_artist
   FROM user_details ud
   LEFT JOIN professional_details pd ON ud.oph_id = pd.OPH_ID
@@ -309,7 +309,11 @@ const getArtistDetail = async (ophid) => {
   LEFT JOIN songs_register sr ON ud.oph_id = sr.oph_id
   LEFT JOIN audio_details ad ON sr.song_id = ad.song_id
   LEFT JOIN song_application_status sas ON sr.song_id = sas.song_id
-  LEFT JOIN song_social_metrics ssm ON sr.song_id = ssm.song_id
+  LEFT JOIN (
+    SELECT song_id, OPH_ID, SUM(COALESCE(youtube_views, 0)) AS youtube_views
+    FROM song_social_metrics
+    GROUP BY song_id, OPH_ID
+  ) ssm ON sr.song_id = ssm.song_id AND ssm.OPH_ID = ud.oph_id
   LEFT JOIN secondary_artist sa ON sr.song_id = sa.song_id
   WHERE ud.oph_id = ?
   GROUP BY
@@ -408,7 +412,12 @@ WHERE overall_status = 'approved';
   });
 
   if (songMap[ophid]) {
-    return songMap[ophid];
+    const profile = songMap[ophid];
+    profile.total_views = (profile.songs || []).reduce(
+      (sum, song) => sum + (Number(song.total_song_views) || 0),
+      0,
+    );
+    return profile;
   }
 
   const [fb] = await db.execute(

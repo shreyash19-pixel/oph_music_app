@@ -294,14 +294,15 @@ const ArtistDetail = () => {
     };
   }, []);
 
-  const formatListeners = (views) => {
-    if (views >= 1000000) {
-      return `${(views / 1000000).toFixed(1)}M+ Listeners`;
-    } else if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}K+ Listeners`;
-    }
-    return `${views} Listeners`;
+  const formatCount = (views) => {
+    const n = Number(views);
+    if (!Number.isFinite(n) || n < 0) return "0";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return String(Math.round(n));
   };
+
+  const formatListeners = (views) => `${formatCount(views)}+ Listeners`;
 
   // const handleSongDownload = (song, name) => {
   //   const link = document.createElement("a");
@@ -315,14 +316,17 @@ const ArtistDetail = () => {
 
   const [professions, setProfessions] = useState([]);
 
-  const sumOfPlays = (song) => {
-    let sum = 0;
+  const songPlays = (song) => {
+    if (!song || typeof song !== "object") return 0;
+    const n = Number(
+      song.total_song_views ?? song.total_views ?? song.youtube_views ?? 0,
+    );
+    return Number.isFinite(n) ? n : 0;
+  };
 
-    for (let i = 0; i < song.length; i++) {
-      sum += song[i].total_song_views;
-    }
-
-    return sum;
+  const sumOfPlays = (songs) => {
+    if (!Array.isArray(songs)) return 0;
+    return songs.reduce((sum, song) => sum + songPlays(song), 0);
   };
 
   // Fetch professions from API
@@ -617,7 +621,7 @@ const ArtistDetail = () => {
                     {/* Plays */}
                     <td className="py-3 px-1 text-center">
                       <div className="flex justify-center items-center h-full w-full">
-                        {song.total_song_views}
+                        {formatCount(songPlays(song))}
                       </div>
                     </td>
 
@@ -734,7 +738,7 @@ const ArtistDetail = () => {
                           )}
                           <div className="flex flex-col gap-2">
                             <div className="text-base text-gray-300">
-                              {song.total_song_views ?? "—"}
+                              {formatCount(songPlays(song))}
                             </div>
                             <div className="text-base text-gray-300">
                               <SongDuration url={audioSrc} />
@@ -836,24 +840,25 @@ export default ArtistDetail;
 const RelatedArtists = ({ rankedArtists }) => {
   const navigate = useNavigate();
 
-  const sumOfPlays = (song) => {
-    let sum = 0;
+  const songPlays = (song) => {
+    if (!song || typeof song !== "object") return 0;
+    const n = Number(
+      song.total_song_views ?? song.total_views ?? song.youtube_views ?? 0,
+    );
+    return Number.isFinite(n) ? n : 0;
+  };
 
-    for (let i = 0; i < song.length; i++) {
-      sum += song[i].total_song_views;
-    }
-
-    return sum;
+  const sumOfPlays = (songs) => {
+    if (!Array.isArray(songs)) return 0;
+    return songs.reduce((sum, song) => sum + songPlays(song), 0);
   };
 
   const formatListeners = (views) => {
-    const v = views == null || Number.isNaN(Number(views)) ? 0 : Number(views);
-    if (v >= 1000000) {
-      return `${(v / 1000000).toFixed(1)}M+ Listeners`;
-    } else if (v >= 1000) {
-      return `${(v / 1000).toFixed(1)}K+ Listeners`;
-    }
-    return `${v} Listeners`;
+    const n = Number(views);
+    if (!Number.isFinite(n) || n < 0) return "0 Listeners";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+ Listeners`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K+ Listeners`;
+    return `${Math.round(n)} Listeners`;
   };
   return (
     <div className="w-full lg:pb-20 lg:pt-28">

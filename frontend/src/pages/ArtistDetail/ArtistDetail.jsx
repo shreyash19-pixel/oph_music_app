@@ -304,13 +304,27 @@ const ArtistDetail = () => {
     };
   }, []);
 
-  const formatListeners = (views) => {
-    if (views >= 1000000) {
-      return `${(views / 1000000).toFixed(1)}M+ Listeners`;
-    } else if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}K+ Listeners`;
-    }
-    return `${views} Listeners`;
+  const formatCount = (views) => {
+    const n = Number(views);
+    if (!Number.isFinite(n) || n < 0) return "0";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return String(Math.round(n));
+  };
+
+  const formatListeners = (views) => `${formatCount(views)}+ Listeners`;
+
+  const songPlays = (song) => {
+    if (!song || typeof song !== "object") return 0;
+    const n = Number(
+      song.total_song_views ?? song.total_views ?? song.youtube_views ?? 0,
+    );
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const sumOfPlays = (songs) => {
+    if (!Array.isArray(songs)) return 0;
+    return songs.reduce((sum, song) => sum + songPlays(song), 0);
   };
 
   // const handleSongDownload = (song, name) => {
@@ -435,7 +449,7 @@ const ArtistDetail = () => {
                 <p className="text-primary mb-2 font-bold">
                   {artist.total_content}{" "}
                   {artist.total_content > 1 ? "Songs" : "Song"} —{" "}
-                  {formatListeners(artist.total_views)}
+                  {formatListeners(sumOfPlays(artist.songs))}
                 </p>
                 <p className="text-gray-400 mb-6">{artist.bio}</p>
 
@@ -608,7 +622,7 @@ const ArtistDetail = () => {
                     {/* Plays */}
                     <td className="py-3 px-1 text-center">
                       <div className="flex justify-center items-center h-full w-full">
-                        {song.total_song_views}
+                        {formatCount(songPlays(song))}
                       </div>
                     </td>
 

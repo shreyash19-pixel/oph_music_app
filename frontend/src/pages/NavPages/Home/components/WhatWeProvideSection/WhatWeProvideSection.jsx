@@ -3,7 +3,7 @@ import provideImg1 from "/assets/images/provide1.png";
 import provideImg2 from "/assets/images/provide2.png";
 import provideImg3 from "/assets/images/provide3.png";
 import provideImg4 from "/assets/images/provide4.png";
-import whatWePro from "../../../../../../public/assets/images/what-we-provide.jpg";
+import whatWePro from "../../../../../../public/assets/images/what-we-provide.png";
 import Struggle from "../../../../../../public/assets/images/struggle2.png";
 
 const WhatWeProvide = () => {
